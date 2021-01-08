@@ -50,29 +50,32 @@ namespace Coocoo3DGraphics
 	public ref class MMDMesh sealed
 	{
 	public:
-		static MMDMesh^ Load(DeviceResources^ deviceResources, const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, int indexStride);
-		void Reload(DeviceResources^ deviceResources, const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, int indexStride);
-		static MMDMesh^ Load(DeviceResources^ deviceResources, const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, int indexStride, PrimitiveTopology pt);
-		void Reload(DeviceResources^ deviceResources, const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, int indexStride, PrimitiveTopology pt);
-		static MMDMesh^ Load1(DeviceResources^ deviceResources, const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ verticeData2, const Platform::Array<byte>^ indexData, int vertexStride, int vertexStride2, int indexStride, PrimitiveTopology pt);
-		void Reload1(DeviceResources^ deviceResources, const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ verticeData2, const Platform::Array<byte>^ indexData, int vertexStride, int vertexStride2, int indexStride, PrimitiveTopology pt);
+		static MMDMesh^ Load1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
+		//在上传GPU之前是无法使用的。使用GraphicsContext::void UploadMesh(MMDMesh^ mesh)上传。
+		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
+		void ReloadNDCQuad();
+		void ReloadCube();
+		void ReloadCubeWire();
+		void ReleaseUploadHeapResource();
+		static void CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics::float3>^ Target, const Platform::Array<byte>^ source);
 		virtual ~MMDMesh();
-		//存储一些额外的数据，便于重建。手动为它赋值。
+
 		property Platform::Array<byte>^ m_verticeData;
-		property Platform::Array<byte>^ m_verticeData2;
-		//存储一些额外的数据，便于重建。手动为它赋值。
-		property Platform::Array<byte>^ m_indexData;
 		property int m_indexCount;
 		property int m_vertexCount;
 	internal:
+		const static UINT c_indexStride = sizeof(UINT);
 		UINT m_vertexStride;
-		UINT m_indexStride;
-		UINT m_vertexStride2;
-		UINT m_vertexOffset = 0;
-		D3D11_PRIMITIVE_TOPOLOGY m_primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer2;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
+		Microsoft::WRL::ComPtr<ID3DBlob> m_indexData;
+
+		D3D_PRIMITIVE_TOPOLOGY m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource>				m_vertexBuffer;
+		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+		Microsoft::WRL::ComPtr<ID3D12Resource>				m_indexBuffer;
+		D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferUpload;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferUpload;
 	};
 }
 

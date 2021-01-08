@@ -26,21 +26,48 @@ namespace Coocoo3D.MMDSupport
         }
     }
 
-    public struct MorphKeyFrame
+    public struct MorphKeyFrame : IComparable<MorphKeyFrame>
     {
         public int Frame;
         public float Weight;
+
+        public int CompareTo(MorphKeyFrame other)
+        {
+            return Frame.CompareTo(other.Frame);
+        }
     }
 
-    public struct CameraKeyFrame
+    public struct CameraKeyFrame : IComparable<CameraKeyFrame>
     {
         public int Frame;
-        public float focalLength;
+        public float distance;
         public Vector3 position;
         public Vector3 rotation;
-        public byte[] Interpolator;
-        public int FOV;
+        public Interpolator mxInterpolator;
+        public Interpolator myInterpolator;
+        public Interpolator mzInterpolator;
+        public Interpolator rInterpolator;
+        public Interpolator dInterpolator;
+        public Interpolator fInterpolator;
+        public float FOV;
         public bool orthographic;
+
+        public int CompareTo(CameraKeyFrame other)
+        {
+            return Frame.CompareTo(other.Frame);
+        }
+    }
+
+    public struct LightKeyFrame : IComparable<LightKeyFrame>
+    {
+        public int Frame;
+        public Vector3 Color;
+        public Vector3 Position;
+
+        public int CompareTo(LightKeyFrame other)
+        {
+            return Frame.CompareTo(other.Frame);
+        }
     }
 
     public struct Interpolator

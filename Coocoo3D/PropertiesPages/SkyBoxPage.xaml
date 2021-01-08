@@ -1,0 +1,58 @@
+﻿<Page
+    x:Class="Coocoo3D.PropertiesPages.SkyBoxPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Coocoo3D.PropertiesPages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mu="using:Microsoft.UI.Xaml.Controls"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Page.Resources>
+        <Style TargetType="Image">
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="100"/>
+            <Setter Property="AllowDrop" Value="True"/>
+        </Style>
+        <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="HorizontalAlignment"  Value="Left"/>
+            <Setter Property="VerticalAlignment"  Value="Top"/>
+        </Style>
+    </Page.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer>
+            <StackPanel>
+                <TextBlock Text="从资源窗口中拖拽图片来放置"/>
+                <Border>
+                    <Image x:Name="_img1" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="1" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                </Border>
+                <Border>
+                    <Image x:Name="_img0" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="0" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                </Border>
+                <Border>
+                    <Image x:Name="_img2" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="2" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                </Border>
+                <Border>
+                    <Image x:Name="_img3" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="3" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                </Border>
+                <Border>
+                    <Image x:Name="_img5" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="5" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                </Border>
+                <Border>
+                    <Image x:Name="_img4" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="4" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                </Border>
+                <TextBlock x:Name="showInfo"/>
+                <mu:NumberBox x:Uid="Page_SkyBox_TextBox_SkyBoxLightMultiple" Value="{x:Bind VSkyBoxMultiple,Mode=TwoWay}"/>
+            </StackPanel>
+        </ScrollViewer>
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <Button x:Uid="Page_SkyBox_Button_Apply" Click="Apply_Click"/>
+        </StackPanel>
+    </Grid>
+</Page>

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Coocoo3D</RootNamespace>
     <AssemblyName>Coocoo3D</AssemblyName>
-    <DefaultLanguage>zh-CN</DefaultLanguage>
+    <DefaultLanguage>zh-cn</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.18362.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -92,17 +92,18 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;NETFX_CORE;WINDOWS_UWP;CODE_ANALYSIS;CODE_ANALYSIS</DefineConstants>
     <NoWarn>;2008</NoWarn>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>0</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP;CODE_ANALYSIS;CODE_ANALYSIS</DefineConstants>
     <Optimize>true</Optimize>
     <NoWarn>;2008</NoWarn>
     <DebugType>pdbonly</DebugType>
@@ -110,7 +111,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
-    <UseDotNetNativeToolchain>false</UseDotNetNativeToolchain>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
   </PropertyGroup>
   <PropertyGroup>
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
@@ -119,13 +120,19 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Components\CooRendererTypes.cs" />
     <Compile Include="Components\MMDMorphStateComponent.cs" />
     <Compile Include="Components\MMDMotionComponent.cs" />
     <Compile Include="Components\MMDRendererComponent.cs" />
-    <Compile Include="Core\DefaultResources.cs" />
+    <Compile Include="Core\ModelReloader.cs" />
+    <Compile Include="Present\CameraMotion.cs" />
+    <Compile Include="Core\GameDriver.cs" />
+    <Compile Include="Core\GeneralGameDriver.cs" />
+    <Compile Include="RenderPipeline\DeferredRenderPipeline1.cs" />
+    <Compile Include="RenderPipeline\ProcessingList.cs" />
+    <Compile Include="Core\RecorderGameDriver.cs" />
     <Compile Include="Core\Scene.cs" />
     <Compile Include="FileFormat\CCSceneFormat.cs" />
-    <Compile Include="FileFormat\CCShaderFormat.cs" />
     <Compile Include="FileFormat\VPDFormat.cs" />
     <Compile Include="Present\Camera.cs" />
     <Compile Include="Components\MMDBoneComponent.cs" />
@@ -138,13 +145,11 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MMDSupport\MMDMeshDataDescriptions.cs" />
     <Compile Include="MMDSupport\MMDMotionDataDescriptions.cs" />
     <Compile Include="Present\ISceneObject.cs" />
     <Compile Include="Present\Lighting.cs" />
     <Compile Include="Present\MMD3DEntity.cs" />
-    <Compile Include="Present\PresentData.cs" />
-    <Compile Include="Present\WidgetRenderer.cs" />
+    <Compile Include="RenderPipeline\PresentData.cs" />
     <Compile Include="PropertiesPages\CommonPage.xaml.cs">
       <DependentUpon>CommonPage.xaml</DependentUpon>
     </Compile>
@@ -160,30 +165,66 @@
     <Compile Include="PropertiesPages\LightingPropertiesPage.xaml.cs">
       <DependentUpon>LightingPropertiesPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="PropertiesPages\PostProcessPage.xaml.cs">
+      <DependentUpon>PostProcessPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="PropertiesPages\RecordPage.xaml.cs">
+      <DependentUpon>RecordPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PropertiesPages\ResourcesPage.xaml.cs">
       <DependentUpon>ResourcesPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="PropertiesPages\ScenePage.xaml.cs">
       <DependentUpon>ScenePage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="PropertiesPages\SkyBoxPage.xaml.cs">
+      <DependentUpon>SkyBoxPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PropertiesPages\SoftwareInfoPropertiesPage.xaml.cs">
       <DependentUpon>SoftwareInfoPropertiesPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RenderPipeline\ForwardRenderPipeline1.cs" />
+    <Compile Include="RenderPipeline\InShaderSettings.cs" />
+    <Compile Include="RenderPipeline\MiscProcess.cs" />
+    <Compile Include="RenderPipeline\PostProcess.cs" />
+    <Compile Include="RenderPipeline\RayTracingRenderPipeline1.cs" />
+    <Compile Include="RenderPipeline\RenderPipeline.cs" />
+    <Compile Include="RenderPipeline\RenderPipelineContext.cs" />
+    <Compile Include="RenderPipeline\RPAssetsManager.cs" />
+    <Compile Include="RenderPipeline\WidgetRenderer.cs" />
+    <Compile Include="RenderPipeline\Wrap\ConstantBufferGroup.cs" />
+    <Compile Include="ResourceWarp\MeshAppendUploadPack.cs" />
+    <Compile Include="ResourceWarp\ModelPack.cs" />
+    <Compile Include="ResourceWarp\ShaderPack.cs" />
+    <Compile Include="ResourceWarp\Texture2DPack.cs" />
+    <Compile Include="ResourceWarp\Texture2DUploadPack.cs" />
+    <Compile Include="ResourceWarp\TextureCubeUploadPack.cs" />
+    <Compile Include="UI\PlayControl.cs" />
     <Compile Include="Utility\CubicBezierCurve.cs" />
     <Compile Include="UI\UISharedCode.cs" />
     <Compile Include="Utility\IDictionaryExt.cs" />
-    <Compile Include="Core\MainCaches.cs" />
+    <Compile Include="RenderPipeline\MainCaches.cs" />
     <Compile Include="Utility\DoubleVector3.cs" />
+    <Compile Include="Utility\IListExt.cs" />
+    <Compile Include="Utility\SingleLocker.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
     <None Include="Coocoo3D_TemporaryKey.pfx" />
+    <PRIResource Include="Strings\ja-JP\Resources.resw" />
+    <PRIResource Include="Strings\en-US\Resources.resw" />
+    <PRIResource Include="Strings\zh-CN\Resources.resw" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\Textures\brdflut.png" />
+    <Content Include="Assets\Textures\UI_1.png" />
     <Content Include="Assets\Textures\UI_0.png" />
+    <Content Include="PhysXCommon_64.dll" />
+    <Content Include="PhysXFoundation_64.dll" />
+    <Content Include="PhysX_64.dll" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -192,6 +233,7 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Samples\SampleShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -226,11 +268,23 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="PropertiesPages\PostProcessPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="PropertiesPages\RecordPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="PropertiesPages\ResourcesPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="PropertiesPages\ScenePage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="PropertiesPages\SkyBoxPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -258,6 +312,10 @@
     <ProjectReference Include="..\Coocoo3DGraphics\Coocoo3DGraphics.vcxproj">
       <Project>{8f8bf5cc-3dee-4f9f-abd5-8fa89ba6109c}</Project>
       <Name>Coocoo3DGraphics</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Coocoo3DPhysics\Coocoo3DPhysics.vcxproj">
+      <Project>{3a646f41-2ae9-436f-8b6d-d399f6fb3f79}</Project>
+      <Name>Coocoo3DPhysics</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

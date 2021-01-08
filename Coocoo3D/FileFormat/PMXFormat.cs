@@ -1,5 +1,4 @@
-﻿using Coocoo3D.MMDSupport;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,25 +8,323 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.FileFormat
 {
-    public partial class PMXFormat
+    enum PMX_BoneWeightDeformType
+    {
+        BDEF1 = 0,
+        BDEF2 = 1,
+        BDEF4 = 2,
+        SDEF = 3,
+        QDEF = 4
+    }
+
+    public struct PMX_Vertex
+    {
+        public struct VertexStruct
+        {
+            public Vector3 Normal;
+            public Vector2 UvCoordinate;
+            public float EdgeScale;
+        }
+
+        public Vector3 Normal { get => innerStruct.Normal; set { innerStruct.Normal = value; } }
+        public Vector2 UvCoordinate { get => innerStruct.UvCoordinate; set { innerStruct.UvCoordinate = value; } }
+        public Vector4[] ExtraUvCoordinate;
+        public int boneId0;
+        public int boneId1;
+        public int boneId2;
+        public int boneId3;
+        public Vector4 Weights;
+        public float EdgeScale { get => innerStruct.EdgeScale; set { innerStruct.EdgeScale = value; } }
+        public Vector3 Coordinate;
+        public VertexStruct innerStruct;
+        public override string ToString()
+        {
+            return Coordinate.ToString();
+        }
+    }
+
+    public struct PMX_Texture
+    {
+        public string TexturePath;
+        public override string ToString()
+        {
+            return string.Format("{0}", TexturePath);
+        }
+    }
+
+    public class PMX_Material
+    {
+        public string Name;
+        public string NameEN;
+        public Vector4 DiffuseColor;
+        public Vector4 SpecularColor;
+        public Vector3 AmbientColor;
+        public PMX_DrawFlag DrawFlags;
+        public Vector4 EdgeColor;
+        public float EdgeScale;
+        public int TextureIndex;
+        public int SecondaryTextureIndex;
+        public byte SecondaryTextureType;
+        public bool UseToon;
+        public int ToonIndex;
+        public string Meta;
+        public int TriangeIndexStartNum;
+        public int TriangeIndexNum;
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
+        }
+    }
+
+    public enum PMX_BoneFlag
+    {
+        ChildUseId = 1,
+        Rotatable = 2,
+        Movable = 4,
+        Visible = 8,
+        Controllable = 16,
+        HasIK = 32,
+        AcquireRotate = 256,
+        AcquireTranslate = 512,
+        RotAxisFixed = 1024,
+        UseLocalAxis = 2048,
+        PostPhysics = 4096,
+        ReceiveTransform = 8192
+    }
+    public class PMX_BoneIKLink
+    {
+        public int LinkedIndex;
+        public bool HasLimit;
+        public Vector3 LimitMin;
+        public Vector3 LimitMax;
+    }
+
+    public class PMX_BoneIK
+    {
+        public int IKTargetIndex;
+        public int CCDIterateLimit;
+        public float CCDAngleLimit;
+        public PMX_BoneIKLink[] IKLinks;
+    }
+
+    public class PMX_Bone
+    {
+        public string Name;
+        public string NameEN;
+        public Vector3 Position;
+        public int ParentIndex;
+        public int TransformLevel;
+        public PMX_BoneFlag Flags;
+        public int ChildId;
+        public Vector3 ChildOffset;
+        public Vector3 RotAxisFixed;
+
+        public int AppendBoneIndex;
+        public float AppendBoneRatio;
+
+        public Vector3 LocalAxisX;
+        public Vector3 LocalAxisY;
+        public Vector3 LocalAxisZ;
+
+        public int ExportKey;
+
+        public PMX_BoneIK boneIK;
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
+        }
+    }
+
+    public enum PMX_DrawFlag
+    {
+        DrawDoubleFace = 1,
+        DrawGroundShadow = 2,
+        CastSelfShadow = 4,
+        DrawSelfShadow = 8,
+        DrawEdge = 16,
+    }
+
+    public enum PMX_MorphType
+    {
+        Group = 0,
+        Vertex = 1,
+        Bone = 2,
+        UV = 3,
+        ExtUV1 = 4,
+        ExtUV2 = 5,
+        ExtUV3 = 6,
+        ExtUV4 = 7,
+        Material = 8
+    }
+
+    public enum PMX_MorphCategory
+    {
+        System = 0,
+        Eyebrow = 1,
+        Eye = 2,
+        Mouth = 3,
+        Other = 4,
+    };
+    public enum PMX_MorphMaterialMethon
+    {
+        Mul = 0,
+        Add = 1,
+    };
+    public struct PMX_MorphSubMorphDesc
+    {
+        public int GroupIndex;
+        public float Rate;
+    }
+    public struct PMX_MorphUVDesc
+    {
+        public int VertexIndex;
+        public Vector4 Offset;
+    }
+
+    public struct PMX_MorphMaterialDesc
+    {
+        public int MaterialIndex;
+        public PMX_MorphMaterialMethon MorphMethon;
+        public Vector4 Diffuse;
+        public Vector4 Specular;
+        public Vector3 Ambient;
+        public Vector4 EdgeColor;
+        public float EdgeSize;
+        public Vector4 Texture;
+        public Vector4 SubTexture;
+        public Vector4 ToonTexture;
+    }
+
+    public struct PMX_MorphVertexDesc
+    {
+        public int VertexIndex;
+        public Vector3 Offset;
+    }
+
+    public struct PMX_MorphBoneDesc
+    {
+        public int BoneIndex;
+        public Vector3 Translation;
+        public Quaternion Rotation;
+    }
+
+    public class PMX_Morph
+    {
+        public string Name;
+        public string NameEN;
+        public PMX_MorphCategory Category;
+        public PMX_MorphType Type;
+
+        public PMX_MorphSubMorphDesc[] SubMorphs;
+        public PMX_MorphVertexDesc[] MorphVertexs;
+        public PMX_MorphBoneDesc[] MorphBones;
+        public PMX_MorphUVDesc[] MorphUVs;
+        public PMX_MorphMaterialDesc[] MorphMaterials;
+
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
+        }
+    }
+
+    public class PMX_Joint
+    {
+        public string Name;
+        public string NameEN;
+        public byte Type;
+        public int AssociatedRigidBodyIndex1;
+        public int AssociatedRigidBodyIndex2;
+        public Vector3 Position;
+        public Vector3 Rotation;
+        public Vector3 PositionMinimum;
+        public Vector3 PositionMaximum;
+        public Vector3 RotationMinimum;
+        public Vector3 RotationMaximum;
+        public Vector3 PositionSpring;
+        public Vector3 RotationSpring;
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
+        }
+    }
+
+    public enum PMX_RigidBodyType
+    {
+        Kinematic = 0,
+        Physics = 1,
+        PhysicsStrict = 2,
+        PhysicsGhost = 3
+    }
+
+    public enum PMX_RigidBodyShape
+    {
+        Sphere = 0,
+        Box = 1,
+        Capsule = 2
+    }
+
+    public class PMX_RigidBody
+    {
+        public string Name;
+        public string NameEN;
+        public int AssociatedBoneIndex;
+        public byte CollisionGroup;
+        public ushort CollisionMask;
+        public PMX_RigidBodyShape Shape;
+        public Vector3 Dimemsions;
+        public Vector3 Position;
+        public Vector3 Rotation;
+        public float Mass;
+        public float TranslateDamp;
+        public float RotateDamp;
+        public float Restitution;
+        public float Friction;
+        public PMX_RigidBodyType Type;
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
+        }
+    }
+
+    public struct PMX_EntryElement
+    {
+        public byte Type;
+        public int Index;
+        public override string ToString()
+        {
+            return string.Format("{0},{1}", Type, Index);
+        }
+    }
+
+    public class PMX_Entry
+    {
+        public string Name;
+        public string NameEN;
+        public PMX_EntryElement[] elements;
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
+        }
+    }
+
+    public class PMXFormat
     {
         public bool Ready;
-        public Task LoadTask;
 
         public string Name;
         public string NameEN;
         public string Description;
         public string DescriptionEN;
 
-        List<Vertex> Vertices = new List<Vertex>();
-        List<int> TriangleIndexs = new List<int>();
-        public List<MMDTexture> Textures = new List<MMDTexture>();
-        public List<MMDMaterial> Materials = new List<MMDMaterial>();
-        public List<Bone> Bones = new List<Bone>();
-        public List<Morph> Morphs = new List<Morph>();
-        public List<MMDEntry> Entries = new List<MMDEntry>();
-        List<MMDRigidBody> RigidBodies = new List<MMDRigidBody>();
-        List<Joint> Joints = new List<Joint>();
+        public PMX_Vertex[] Vertices;
+        public int[] TriangleIndexs;
+        public List<PMX_Texture> Textures = new List<PMX_Texture>();
+        public List<PMX_Material> Materials = new List<PMX_Material>();
+        public List<PMX_Bone> Bones = new List<PMX_Bone>();
+        public List<PMX_Morph> Morphs = new List<PMX_Morph>();
+        public List<PMX_Entry> Entries = new List<PMX_Entry>();
+        public List<PMX_RigidBody> RigidBodies = new List<PMX_RigidBody>();
+        public List<PMX_Joint> Joints = new List<PMX_Joint>();
 
         public static PMXFormat Load(BinaryReader reader)
         {
@@ -38,8 +335,6 @@ namespace Coocoo3D.FileFormat
 
         public void Reload(BinaryReader reader)
         {
-            Vertices.Clear();
-            TriangleIndexs.Clear();
             Textures.Clear();
             Materials.Clear();
             Bones.Clear();
@@ -71,10 +366,10 @@ namespace Coocoo3D.FileFormat
             DescriptionEN = ReadString(reader, encoding);
 
             int countOfVertex = reader.ReadInt32();
-            Vertices.Capacity = countOfVertex;
+            Vertices = new PMX_Vertex[countOfVertex];
             for (int i = 0; i < countOfVertex; i++)
             {
-                Vertex vertex = new Vertex();
+                ref PMX_Vertex vertex = ref Vertices[i];
                 vertex.Coordinate = ReadVector3(reader);
                 vertex.Normal = ReadVector3(reader);
                 vertex.UvCoordinate = ReadVector2(reader);
@@ -87,36 +382,40 @@ namespace Coocoo3D.FileFormat
                     }
                 }
                 int skinningType = reader.ReadByte();
-                if (skinningType == (int)WeightDeformType.BDEF1)
+                if (skinningType == (int)PMX_BoneWeightDeformType.BDEF1)
                 {
-                    vertex.boneId[0] = ReadIndex(reader, boneIndexSize);
-                    vertex.weight[0] = 1;
+                    vertex.boneId0 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId1 = -1;
+                    vertex.boneId2 = -1;
+                    vertex.boneId3 = -1;
+                    vertex.Weights.X = 1;
                 }
-                else if (skinningType == (int)WeightDeformType.BDEF2)
+                else if (skinningType == (int)PMX_BoneWeightDeformType.BDEF2)
                 {
-                    vertex.boneId[0] = ReadIndex(reader, boneIndexSize);
-                    vertex.boneId[1] = ReadIndex(reader, boneIndexSize);
-                    vertex.weight[0] = reader.ReadSingle();
-                    vertex.weight[1] = 1.0f - vertex.weight[0];
+                    vertex.boneId0 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId1 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId2 = -1;
+                    vertex.boneId3 = -1;
+                    vertex.Weights.X = reader.ReadSingle();
+                    vertex.Weights.Y = 1.0f - vertex.Weights.X;
                 }
-                else if (skinningType == (int)WeightDeformType.BDEF4)
+                else if (skinningType == (int)PMX_BoneWeightDeformType.BDEF4)
                 {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        vertex.boneId[j] = ReadIndex(reader, boneIndexSize);
-                    }
-                    for (int j = 0; j < 4; j++)
-                    {
-                        vertex.weight[j] = reader.ReadSingle();
-                    }
+                    vertex.boneId0 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId1 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId2 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId3 = ReadIndex(reader, boneIndexSize);
+                    vertex.Weights = ReadVector4(reader);
                 }
-                else if (skinningType == (int)WeightDeformType.SDEF)
+                else if (skinningType == (int)PMX_BoneWeightDeformType.SDEF)
                 {
 
-                    vertex.boneId[0] = ReadIndex(reader, boneIndexSize);
-                    vertex.boneId[1] = ReadIndex(reader, boneIndexSize);
-                    vertex.weight[0] = reader.ReadSingle();
-                    vertex.weight[1] = 1.0f - vertex.weight[0];
+                    vertex.boneId0 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId1 = ReadIndex(reader, boneIndexSize);
+                    vertex.boneId2 = -1;
+                    vertex.boneId3 = -1;
+                    vertex.Weights.X = reader.ReadSingle();
+                    vertex.Weights.Y = 1.0f - vertex.Weights.X;
                     ReadVector3(reader);
                     ReadVector3(reader);
                     ReadVector3(reader);
@@ -126,21 +425,20 @@ namespace Coocoo3D.FileFormat
 
                 }
                 vertex.EdgeScale = reader.ReadSingle();
-                Vertices.Add(vertex);
             }
 
             int countOfTriangleIndex = reader.ReadInt32();
-            TriangleIndexs.Capacity = countOfTriangleIndex;
+            TriangleIndexs = new int[countOfTriangleIndex];
             for (int i = 0; i < countOfTriangleIndex; i++)
             {
-                TriangleIndexs.Add(ReadIndexUnsigned(reader, vertexIndexSize));
+                TriangleIndexs[i] = ReadUIndex(reader, vertexIndexSize);
             }
 
             int countOfTexture = reader.ReadInt32();
             Textures.Capacity = countOfTexture;
             for (int i = 0; i < countOfTexture; i++)
             {
-                MMDTexture texture = new MMDTexture();
+                PMX_Texture texture = new PMX_Texture();
                 texture.TexturePath = ReadString(reader, encoding);
                 Textures.Add(texture);
             }
@@ -150,19 +448,19 @@ namespace Coocoo3D.FileFormat
             Materials.Capacity = countOfMaterial;
             for (int i = 0; i < countOfMaterial; i++)
             {
-                MMDMaterial material = new MMDMaterial();
+                PMX_Material material = new PMX_Material();
                 material.Name = ReadString(reader, encoding);
                 material.NameEN = ReadString(reader, encoding);
                 material.DiffuseColor = ReadVector4(reader);
                 material.SpecularColor = ReadVector4(reader);
                 material.AmbientColor = ReadVector3(reader);
-                material.DrawFlags = (DrawFlags)reader.ReadByte();
+                material.DrawFlags = (PMX_DrawFlag)reader.ReadByte();
                 material.EdgeColor = ReadVector4(reader);
                 material.EdgeScale = reader.ReadSingle();
 
                 material.TextureIndex = ReadIndex(reader, textureIndexSize);
-                material.secondTextureIndex = ReadIndex(reader, textureIndexSize);
-                material.secondTextureType = reader.ReadByte();
+                material.SecondaryTextureIndex = ReadIndex(reader, textureIndexSize);
+                material.SecondaryTextureType = reader.ReadByte();
                 material.UseToon = reader.ReadByte() != 0;
                 if (material.UseToon) material.ToonIndex = reader.ReadByte();
                 else material.ToonIndex = ReadIndex(reader, textureIndexSize);
@@ -179,14 +477,14 @@ namespace Coocoo3D.FileFormat
             Bones.Capacity = countOfBone;
             for (int i = 0; i < countOfBone; i++)
             {
-                Bone bone = new Bone();
+                PMX_Bone bone = new PMX_Bone();
                 bone.Name = ReadString(reader, encoding);
                 bone.NameEN = ReadString(reader, encoding);
                 bone.Position = ReadVector3(reader);
                 bone.ParentIndex = ReadIndex(reader, boneIndexSize);
                 bone.TransformLevel = reader.ReadInt32();
-                bone.Flags = (BoneFlags)reader.ReadUInt16();
-                if (bone.Flags.HasFlag(BoneFlags.ChildUseId))
+                bone.Flags = (PMX_BoneFlag)reader.ReadUInt16();
+                if (bone.Flags.HasFlag(PMX_BoneFlag.ChildUseId))
                 {
                     bone.ChildId = ReadIndex(reader, boneIndexSize);
                 }
@@ -194,11 +492,11 @@ namespace Coocoo3D.FileFormat
                 {
                     bone.ChildOffset = ReadVector3(reader);
                 }
-                if (bone.Flags.HasFlag(BoneFlags.RotAxisFixed))
+                if (bone.Flags.HasFlag(PMX_BoneFlag.RotAxisFixed))
                 {
                     bone.RotAxisFixed = ReadVector3(reader);
                 }
-                if (bone.Flags.HasFlag(BoneFlags.AcquireRotate) | bone.Flags.HasFlag(BoneFlags.AcquireTranslate))
+                if (bone.Flags.HasFlag(PMX_BoneFlag.AcquireRotate) | bone.Flags.HasFlag(PMX_BoneFlag.AcquireTranslate))
                 {
                     bone.AppendBoneIndex = ReadIndex(reader, boneIndexSize);
                     bone.AppendBoneRatio = reader.ReadSingle();
@@ -207,7 +505,7 @@ namespace Coocoo3D.FileFormat
                 {
                     bone.AppendBoneIndex = -1;
                 }
-                if (bone.Flags.HasFlag(BoneFlags.UseLocalAxis))
+                if (bone.Flags.HasFlag(PMX_BoneFlag.UseLocalAxis))
                 {
                     bone.LocalAxisX = ReadVector3(reader);
                     bone.LocalAxisZ = ReadVector3(reader);
@@ -217,21 +515,21 @@ namespace Coocoo3D.FileFormat
                     bone.LocalAxisY = Vector3.Normalize(bone.LocalAxisY);
                     bone.LocalAxisZ = Vector3.Normalize(bone.LocalAxisZ);
                 }
-                if (bone.Flags.HasFlag(BoneFlags.ReceiveTransform))
+                if (bone.Flags.HasFlag(PMX_BoneFlag.ReceiveTransform))
                 {
                     bone.ExportKey = reader.ReadInt32();
                 }
-                if (bone.Flags.HasFlag(BoneFlags.HasIK))
+                if (bone.Flags.HasFlag(PMX_BoneFlag.HasIK))
                 {
-                    BoneIK boneIK = new BoneIK();
+                    PMX_BoneIK boneIK = new PMX_BoneIK();
                     boneIK.IKTargetIndex = ReadIndex(reader, boneIndexSize);
                     boneIK.CCDIterateLimit = reader.ReadInt32();
                     boneIK.CCDAngleLimit = reader.ReadSingle();
                     int countOfIKLinks = reader.ReadInt32();
-                    boneIK.IKLinks = new BoneIKLink[countOfIKLinks];
+                    boneIK.IKLinks = new PMX_BoneIKLink[countOfIKLinks];
                     for (int j = 0; j < countOfIKLinks; j++)
                     {
-                        BoneIKLink boneIKLink = new BoneIKLink();
+                        PMX_BoneIKLink boneIKLink = new PMX_BoneIKLink();
                         boneIKLink.LinkedIndex = ReadIndex(reader, boneIndexSize);
                         boneIKLink.HasLimit = reader.ReadByte() != 0;
                         if (boneIKLink.HasLimit)
@@ -250,67 +548,68 @@ namespace Coocoo3D.FileFormat
             Morphs.Capacity = countOfMorph;
             for (int i = 0; i < countOfMorph; i++)
             {
-                Morph morph = new Morph();
+                PMX_Morph morph = new PMX_Morph();
                 morph.Name = ReadString(reader, encoding);
                 morph.NameEN = ReadString(reader, encoding);
-                morph.Category = (MorphCategory)reader.ReadByte();
-                morph.Type = (MorphType)reader.ReadByte();
+                morph.Category = (PMX_MorphCategory)reader.ReadByte();
+                morph.Type = (PMX_MorphType)reader.ReadByte();
 
                 int countOfMorphData = reader.ReadInt32();
                 switch (morph.Type)
                 {
-                    case MorphType.Group:
-                        morph.SubMorphs = new MorphSubMorphStruct[countOfMorphData];
+                    case PMX_MorphType.Group:
+                        morph.SubMorphs = new PMX_MorphSubMorphDesc[countOfMorphData];
                         for (int j = 0; j < countOfMorphData; j++)
                         {
-                            MorphSubMorphStruct subMorph = new MorphSubMorphStruct();
+                            PMX_MorphSubMorphDesc subMorph = new PMX_MorphSubMorphDesc();
                             subMorph.GroupIndex = ReadIndex(reader, morphIndexSize);
                             subMorph.Rate = reader.ReadSingle();
                             morph.SubMorphs[j] = subMorph;
                         }
                         break;
-                    case MorphType.Vertex:
-                        morph.MorphVertexs = new MorphVertexStruct[countOfMorphData];
+                    case PMX_MorphType.Vertex:
+                        morph.MorphVertexs = new PMX_MorphVertexDesc[countOfMorphData];
                         for (int j = 0; j < countOfMorphData; j++)
                         {
-                            MorphVertexStruct vertexStruct = new MorphVertexStruct();
-                            vertexStruct.VertexIndex = ReadIndexUnsigned(reader, vertexIndexSize);
+                            PMX_MorphVertexDesc vertexStruct = new PMX_MorphVertexDesc();
+                            vertexStruct.VertexIndex = ReadUIndex(reader, vertexIndexSize);
                             vertexStruct.Offset = ReadVector3(reader);
                             morph.MorphVertexs[j] = vertexStruct;
                         }
+                        Array.Sort(morph.MorphVertexs, _morphVertexCmp);//optimize for cpu L1 cache
                         break;
-                    case MorphType.Bone:
-                        morph.MorphBones = new MorphBoneStruct[countOfMorphData];
+                    case PMX_MorphType.Bone:
+                        morph.MorphBones = new PMX_MorphBoneDesc[countOfMorphData];
                         for (int j = 0; j < countOfMorphData; j++)
                         {
-                            MorphBoneStruct morphBoneStruct = new MorphBoneStruct();
+                            PMX_MorphBoneDesc morphBoneStruct = new PMX_MorphBoneDesc();
                             morphBoneStruct.BoneIndex = ReadIndex(reader, boneIndexSize);
                             morphBoneStruct.Translation = ReadVector3(reader);
                             morphBoneStruct.Rotation = ReadQuaternion(reader);
                             morph.MorphBones[j] = morphBoneStruct;
                         }
                         break;
-                    case MorphType.UV:
-                    case MorphType.ExtUV1:
-                    case MorphType.ExtUV2:
-                    case MorphType.ExtUV3:
-                    case MorphType.ExtUV4:
-                        morph.MorphUVs = new MorphUVStruct[countOfMorphData];
+                    case PMX_MorphType.UV:
+                    case PMX_MorphType.ExtUV1:
+                    case PMX_MorphType.ExtUV2:
+                    case PMX_MorphType.ExtUV3:
+                    case PMX_MorphType.ExtUV4:
+                        morph.MorphUVs = new PMX_MorphUVDesc[countOfMorphData];
                         for (int j = 0; j < countOfMorphData; j++)
                         {
-                            MorphUVStruct morphUVStruct = new MorphUVStruct();
-                            morphUVStruct.VertexIndex = ReadIndexUnsigned(reader, vertexIndexSize);
+                            PMX_MorphUVDesc morphUVStruct = new PMX_MorphUVDesc();
+                            morphUVStruct.VertexIndex = ReadUIndex(reader, vertexIndexSize);
                             morphUVStruct.Offset = ReadVector4(reader);
                             morph.MorphUVs[j] = morphUVStruct;
                         }
                         break;
-                    case MorphType.Material:
-                        morph.MorphMaterials = new MorphMaterialStruct[countOfMaterial];
+                    case PMX_MorphType.Material:
+                        morph.MorphMaterials = new PMX_MorphMaterialDesc[countOfMaterial];
                         for (int j = 0; j < countOfMorphData; j++)
                         {
-                            MorphMaterialStruct morphMaterial = new MorphMaterialStruct();
+                            PMX_MorphMaterialDesc morphMaterial = new PMX_MorphMaterialDesc();
                             morphMaterial.MaterialIndex = ReadIndex(reader, materialIndexSize);
-                            morphMaterial.MorphMethon = (MorphMaterialMorphMethon)reader.ReadByte();
+                            morphMaterial.MorphMethon = (PMX_MorphMaterialMethon)reader.ReadByte();
                             morphMaterial.Diffuse = ReadVector4(reader);
                             morphMaterial.Specular = ReadVector4(reader);
                             morphMaterial.Ambient = ReadVector3(reader);
@@ -332,15 +631,15 @@ namespace Coocoo3D.FileFormat
             Entries.Capacity = countOfEntry;
             for (int i = 0; i < countOfEntry; i++)
             {
-                MMDEntry entry = new MMDEntry();
+                PMX_Entry entry = new PMX_Entry();
                 entry.Name = ReadString(reader, encoding);
                 entry.NameEN = ReadString(reader, encoding);
-                reader.ReadByte();//跳过一个字节
+                reader.ReadByte();//Unknow
                 int countOfElement = reader.ReadInt32();
-                entry.elements = new EntryElement[countOfElement];
+                entry.elements = new PMX_EntryElement[countOfElement];
                 for (int j = 0; j < countOfElement; j++)
                 {
-                    EntryElement element = new EntryElement();
+                    PMX_EntryElement element = new PMX_EntryElement();
                     element.Type = reader.ReadByte();
                     if (element.Type == 1)
                     {
@@ -359,13 +658,13 @@ namespace Coocoo3D.FileFormat
             RigidBodies.Capacity = countOfRigidBody;
             for (int i = 0; i < countOfRigidBody; i++)
             {
-                MMDRigidBody rigidBody = new MMDRigidBody();
+                PMX_RigidBody rigidBody = new PMX_RigidBody();
                 rigidBody.Name = ReadString(reader, encoding);
                 rigidBody.NameEN = ReadString(reader, encoding);
                 rigidBody.AssociatedBoneIndex = ReadIndex(reader, boneIndexSize);
                 rigidBody.CollisionGroup = reader.ReadByte();
                 rigidBody.CollisionMask = reader.ReadUInt16();
-                rigidBody.Shape = (RigidBodyShape)reader.ReadByte();
+                rigidBody.Shape = (PMX_RigidBodyShape)reader.ReadByte();
                 rigidBody.Dimemsions = ReadVector3(reader);
                 rigidBody.Position = ReadVector3(reader);
                 rigidBody.Rotation = ReadVector3(reader);
@@ -374,7 +673,7 @@ namespace Coocoo3D.FileFormat
                 rigidBody.RotateDamp = reader.ReadSingle();
                 rigidBody.Restitution = reader.ReadSingle();
                 rigidBody.Friction = reader.ReadSingle();
-                rigidBody.Type = (RigidBodyType)reader.ReadByte();
+                rigidBody.Type = (PMX_RigidBodyType)reader.ReadByte();
 
                 RigidBodies.Add(rigidBody);
             }
@@ -383,7 +682,7 @@ namespace Coocoo3D.FileFormat
             Joints.Capacity = countOfJoint;
             for (int i = 0; i < countOfJoint; i++)
             {
-                Joint joint = new Joint();
+                PMX_Joint joint = new PMX_Joint();
                 joint.Name = ReadString(reader, encoding);
                 joint.NameEN = ReadString(reader, encoding);
                 joint.Type = reader.ReadByte();
@@ -403,13 +702,9 @@ namespace Coocoo3D.FileFormat
             }
         }
 
-        enum WeightDeformType
+        private int _morphVertexCmp(PMX_MorphVertexDesc x, PMX_MorphVertexDesc y)
         {
-            BDEF1 = 0,
-            BDEF2 = 1,
-            BDEF4 = 2,
-            SDEF = 3,
-            QDEF = 4
+            return x.VertexIndex.CompareTo(y.VertexIndex);
         }
 
         private int ReadIndex(BinaryReader reader, int size)
@@ -418,7 +713,7 @@ namespace Coocoo3D.FileFormat
             if (size == 2) return reader.ReadInt16();
             return reader.ReadInt32();
         }
-        private int ReadIndexUnsigned(BinaryReader reader, int size)
+        private int ReadUIndex(BinaryReader reader, int size)
         {
             if (size == 1) return reader.ReadByte();
             if (size == 2) return reader.ReadUInt16();

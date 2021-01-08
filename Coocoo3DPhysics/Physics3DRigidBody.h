@@ -1,13 +1,12 @@
 #pragma once
-#include "PxPhysicsAPI.h"
+#include "UnionStructDefine.h"
 namespace Coocoo3DPhysics
 {
+	using namespace Windows::Foundation::Numerics;
 	public ref class Physics3DRigidBody sealed
 	{
 	public:
-		Windows::Foundation::Numerics::float3 GetPos();
-		Windows::Foundation::Numerics::quaternion GetRot();
 	internal:
-		physx::PxRigidDynamic* m_rigidBody;
+		byte m_rigidBodyData[MAX_UNION_RIGID_BODY_STRUCTURE_SIZE];
 	};
 }

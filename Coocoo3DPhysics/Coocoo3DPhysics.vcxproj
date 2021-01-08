@@ -42,7 +42,7 @@
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <AppContainerApplication>true</AppContainerApplication>
     <ApplicationType>Windows Store</ApplicationType>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.18362.0</WindowsTargetPlatformMinVersion>
     <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
   </PropertyGroup>
@@ -50,46 +50,46 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -155,7 +155,7 @@
       <AdditionalUsingDirectories>$(WindowsSDK_WindowsMetadata);$(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>28204</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>D:\source\PhysX-4.1\physx\include;D:\source\PhysX-4.1\physx\source\physxextensions\src;D:\source\PhysX-4.1\physx\..\pxshared\include;D:\source\PhysX-4.1\physx\source\foundation\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>PhysX-4.1\include;PhysX-4.1\source\physxextensions\src;PhysX-4.1\pxshared\include;PhysX-4.1\source\foundation\include;Bullet3Lib\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -186,7 +186,7 @@
       <AdditionalUsingDirectories>$(WindowsSDK_WindowsMetadata);$(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>28204</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>D:\source\PhysX-4.1\physx\include;D:\source\PhysX-4.1\physx\source\physxextensions\src;D:\source\PhysX-4.1\physx\..\pxshared\include;D:\source\PhysX-4.1\physx\source\foundation\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>PhysX-4.1\include;PhysX-4.1\source\physxextensions\src;PhysX-4.1\pxshared\include;PhysX-4.1\source\foundation\include;Bullet3Lib\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -217,7 +217,7 @@
       <AdditionalUsingDirectories>$(WindowsSDK_WindowsMetadata);$(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>28204</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>D:\source\PhysX-4.1\physx\include;D:\source\PhysX-4.1\physx\source\physxextensions\src;D:\source\PhysX-4.1\physx\..\pxshared\include;D:\source\PhysX-4.1\physx\source\foundation\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>PhysX-4.1\include;PhysX-4.1\source\physxextensions\src;PhysX-4.1\pxshared\include;PhysX-4.1\source\foundation\include;Bullet3Lib\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -248,12 +248,13 @@
       <AdditionalUsingDirectories>$(WindowsSDK_WindowsMetadata);$(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>28204</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>D:\source\PhysX-4.1\physx\include;D:\source\PhysX-4.1\physx\source\physxextensions\src;D:\source\PhysX-4.1\physx\..\pxshared\include;D:\source\PhysX-4.1\physx\source\foundation\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>PhysX-4.1\include;Bullet3Lib\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <SupportJustMyCode>true</SupportJustMyCode>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXExtensions_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysX_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXPvdSDK_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXVehicle_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXCharacterKinematic_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXCooking_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXCommon_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\debug\PhysXFoundation_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>PhysX-4.1\lib\PhysXExtensions_static_64.lib;PhysX-4.1\lib\PhysXPvdSDK_static_64.lib;Bullet3Lib\lib\BulletCollision.lib;Bullet3Lib\lib\BulletDynamics.lib;Bullet3Lib\lib\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -265,22 +266,40 @@
       <AdditionalUsingDirectories>$(WindowsSDK_WindowsMetadata);$(AdditionalUsingDirectories)</AdditionalUsingDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <DisableSpecificWarnings>28204</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>D:\source\PhysX-4.1\physx\include;D:\source\PhysX-4.1\physx\source\physxextensions\src;D:\source\PhysX-4.1\physx\..\pxshared\include;D:\source\PhysX-4.1\physx\source\foundation\include;$(ProjectDir);$(GeneratedFilesDir);$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>PhysX-4.1\include;Bullet3Lib\src;$(ProjectDir);$(GeneratedFilesDir);$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXExtensions_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysX_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXPvdSDK_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXVehicle_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXCharacterKinematic_static_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXCooking_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXCommon_64.lib;D:\source\PhysX-4.1\physx\bin\uwp.x86_64.vc141\release\PhysXFoundation_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>PhysX-4.1\lib\PhysXExtensions_static_64.lib;PhysX-4.1\lib\PhysXPvdSDK_static_64.lib;PhysX-4.1\lib\PhysXCommon_64.lib;PhysX-4.1\lib\PhysXFoundation_64.lib;Bullet3Lib\lib\BulletCollision.lib;Bullet3Lib\lib\BulletDynamics.lib;Bullet3Lib\lib\LinearMath.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BulletAPI.h" />
+    <ClInclude Include="Bullet\Bullet.h" />
+    <ClInclude Include="Bullet\BulletJoint.h" />
+    <ClInclude Include="Bullet\BulletRigidBody.h" />
+    <ClInclude Include="Bullet\BulletScene.h" />
+    <ClInclude Include="IPhysicsAPI.h" />
+    <ClInclude Include="MathUtility.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Physics3DJoint.h" />
     <ClInclude Include="Physics3D.h" />
-    <ClInclude Include="Physics3DMaterial.h" />
     <ClInclude Include="Physics3DRigidBody.h" />
     <ClInclude Include="Physics3DScene.h" />
+    <ClInclude Include="PhysXAPI.h" />
+    <ClInclude Include="PhysX\PhysX.h" />
+    <ClInclude Include="PhysX\PhysXJoint.h" />
+    <ClInclude Include="PhysX\PhysXRigidBody.h" />
+    <ClInclude Include="PhysX\PhysXScene.h" />
+    <ClInclude Include="UnionStructDefine.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BulletAPI.cpp" />
+    <ClCompile Include="Bullet\Bullet.cpp" />
+    <ClCompile Include="Bullet\BulletJoint.cpp" />
+    <ClCompile Include="Bullet\BulletRigidBody.cpp" />
+    <ClCompile Include="Bullet\BulletScene.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -291,10 +310,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Physics3DJoint.cpp" />
     <ClCompile Include="Physics3D.cpp" />
-    <ClCompile Include="Physics3DMaterial.cpp" />
     <ClCompile Include="Physics3DRigidBody.cpp" />
     <ClCompile Include="Physics3DScene.cpp" />
+    <ClCompile Include="PhysXAPI.cpp" />
+    <ClCompile Include="PhysX\PhysX.cpp" />
+    <ClCompile Include="PhysX\PhysXJoint.cpp" />
+    <ClCompile Include="PhysX\PhysXRigidBody.cpp" />
+    <ClCompile Include="PhysX\PhysXScene.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

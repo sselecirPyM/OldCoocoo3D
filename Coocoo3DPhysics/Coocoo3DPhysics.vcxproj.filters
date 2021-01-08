@@ -5,19 +5,80 @@
       <UniqueIdentifier>7bb872be-091a-4ed0-b8c1-01f0d7ca2748</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tga;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="PhysX">
+      <UniqueIdentifier>{2412e7ea-188d-4aa8-a97f-7b43588fc012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Bullet">
+      <UniqueIdentifier>{204f31ab-9845-4602-8fcb-d8bc9f8f4050}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Physics3D.cpp" />
     <ClCompile Include="Physics3DScene.cpp" />
     <ClCompile Include="Physics3DRigidBody.cpp" />
-    <ClCompile Include="Physics3DMaterial.cpp" />
+    <ClCompile Include="PhysX\PhysX.cpp">
+      <Filter>PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysX\PhysXScene.cpp">
+      <Filter>PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysX\PhysXRigidBody.cpp">
+      <Filter>PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysX\PhysXJoint.cpp">
+      <Filter>PhysX</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysXAPI.cpp" />
+    <ClCompile Include="Bullet\Bullet.cpp">
+      <Filter>Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\BulletScene.cpp">
+      <Filter>Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletAPI.cpp" />
+    <ClCompile Include="Bullet\BulletRigidBody.cpp">
+      <Filter>Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="Bullet\BulletJoint.cpp">
+      <Filter>Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="Physics3DJoint.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="Physics3D.h" />
     <ClInclude Include="Physics3DScene.h" />
     <ClInclude Include="Physics3DRigidBody.h" />
-    <ClInclude Include="Physics3DMaterial.h" />
+    <ClInclude Include="MathUtility.h" />
+    <ClInclude Include="PhysX\PhysX.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysX\PhysXScene.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="IPhysicsAPI.h" />
+    <ClInclude Include="PhysX\PhysXRigidBody.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysX\PhysXJoint.h">
+      <Filter>PhysX</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysXAPI.h" />
+    <ClInclude Include="UnionStructDefine.h" />
+    <ClInclude Include="Bullet\Bullet.h">
+      <Filter>Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\BulletScene.h">
+      <Filter>Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletAPI.h" />
+    <ClInclude Include="Bullet\BulletRigidBody.h">
+      <Filter>Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="Bullet\BulletJoint.h">
+      <Filter>Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics3DJoint.h" />
   </ItemGroup>
 </Project>

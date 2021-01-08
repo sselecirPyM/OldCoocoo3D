@@ -1,0 +1,353 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Error_Message_ImageError" xml:space="preserve">
+    <value>Read Image error {0}</value>
+  </data>
+  <data name="Error_Message_PMXError" xml:space="preserve">
+    <value>Read pmx error {0}</value>
+  </data>
+  <data name="Error_Message_VMDError" xml:space="preserve">
+    <value>Read vmd error {0}</value>
+  </data>
+  <data name="Message_Done" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Message_GPUNotSupportRayTracing" xml:space="preserve">
+    <value>Currently used GPU not support Ray Tracing.</value>
+  </data>
+  <data name="Message_GPUSupportRayTracing" xml:space="preserve">
+    <value>Currently used GPU support Ray Tracing.</value>
+  </data>
+  <data name="Message_ModelInfo" xml:space="preserve">
+    <value>Vertex count: {0}
+Triangle count: {1}
+Bone count: {2}</value>
+  </data>
+  <data name="Message_Operating" xml:space="preserve">
+    <value>Operating</value>
+  </data>
+  <data name="M_MenuBarItem_AboutThisSoftware.Text" xml:space="preserve">
+    <value>About this software</value>
+  </data>
+  <data name="M_MenuBarItem_BackgroundMusic.Text" xml:space="preserve">
+    <value>Background Music</value>
+  </data>
+  <data name="M_MenuBarItem_File.Title" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="M_MenuBarItem_Help.Title" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="M_MenuBarItem_Layout.Text" xml:space="preserve">
+    <value>Layout</value>
+  </data>
+  <data name="M_MenuBarItem_OpenFolder.Text" xml:space="preserve">
+    <value>Open Folder</value>
+  </data>
+  <data name="M_MenuBarItem_ShaderFileSample.Text" xml:space="preserve">
+    <value>Shader File Sample</value>
+  </data>
+  <data name="M_MenuBarItem_View.Title" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="Object_Name_Lighting" xml:space="preserve">
+    <value>Lighting</value>
+  </data>
+  <data name="Page_Common_Button_RefreshCache.Content" xml:space="preserve">
+    <value>Refresh Cache</value>
+  </data>
+  <data name="Page_Common_Button_RefreshModelCaches.Content" xml:space="preserve">
+    <value>Refresh Model Caches</value>
+  </data>
+  <data name="Page_Common_Button_RefreshModelCaches.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reload Models</value>
+  </data>
+  <data name="Page_Common_Button_RefreshShaderCaches.Content" xml:space="preserve">
+    <value>Refresh Shader Caches</value>
+  </data>
+  <data name="Page_Common_Button_RefreshShaderCaches.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reload Shaders</value>
+  </data>
+  <data name="Page_Common_Button_RefreshTextureCaches.Content" xml:space="preserve">
+    <value>Refresh Texture Caches</value>
+  </data>
+  <data name="Page_Common_Button_RefreshTextureCaches.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reload Textures</value>
+  </data>
+  <data name="Page_Common_Button_ResetPhysics.Content" xml:space="preserve">
+    <value>Reset Physics</value>
+  </data>
+  <data name="Page_Common_Button_Settings.Content" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Page_Common_ChechBox_AutoReloadModel.Content" xml:space="preserve">
+    <value>Auto reload model</value>
+  </data>
+  <data name="Page_Common_ChechBox_AutoReloadShader.Content" xml:space="preserve">
+    <value>Auto reload shader</value>
+  </data>
+  <data name="Page_Common_ChechBox_AutoReloadTexture.Content" xml:space="preserve">
+    <value>Auto reload texture</value>
+  </data>
+  <data name="Page_Common_ComboBox_RenderPipeline.Header" xml:space="preserve">
+    <value>Render Pipeline</value>
+  </data>
+  <data name="Page_Common_ComboBox_RenderQuality.Header" xml:space="preserve">
+    <value>Render Quality</value>
+  </data>
+  <data name="Page_Common_RenderPipeline_ComboBoxItem_Deferred.Content" xml:space="preserve">
+    <value>Deferred</value>
+  </data>
+  <data name="Page_Common_RenderPipeline_ComboBoxItem_Forward.Content" xml:space="preserve">
+    <value>Forward</value>
+  </data>
+  <data name="Page_Common_RenderPipeline_ComboBoxItem_RayTracing.Content" xml:space="preserve">
+    <value>Ray tracing</value>
+  </data>
+  <data name="Page_Common_Switch_AO.Header" xml:space="preserve">
+    <value>Ambient Occlusion (Raytracing Only)</value>
+  </data>
+  <data name="Page_Common_Switch_CameraMotionData.Header" xml:space="preserve">
+    <value>Camera Motion Data</value>
+  </data>
+  <data name="Page_Common_Switch_HighResolutionShadow.Header" xml:space="preserve">
+    <value>High Resolution Shadow</value>
+  </data>
+  <data name="Page_Common_Switch_MultiThreadRendering.Header" xml:space="preserve">
+    <value>Multi Thread Rendering</value>
+  </data>
+  <data name="Page_Common_Switch_SaveCPUPower.Header" xml:space="preserve">
+    <value>Save CPU Power</value>
+  </data>
+  <data name="Page_Common_Switch_Shadow.Header" xml:space="preserve">
+    <value>Shadow</value>
+  </data>
+  <data name="Page_Common_Switch_ViewerUI.Header" xml:space="preserve">
+    <value>Viewer UI</value>
+  </data>
+  <data name="Page_Common_Switch_VSync.Header" xml:space="preserve">
+    <value>Vsync</value>
+  </data>
+  <data name="Page_Common_Switch_Wireframe.Header" xml:space="preserve">
+    <value>Wireframe</value>
+  </data>
+  <data name="Page_Common_Switch_ZPrePass.Header" xml:space="preserve">
+    <value>Z-Prepass (Forward Only)</value>
+  </data>
+  <data name="Page_Common_TextBox_Distance.Header" xml:space="preserve">
+    <value>Distance</value>
+  </data>
+  <data name="Page_Common_TextBox_FPSLimit.Header" xml:space="preserve">
+    <value>FPS Limit</value>
+  </data>
+  <data name="Page_Common_TextBox_PlaySpeed.Header" xml:space="preserve">
+    <value>Play Speed</value>
+  </data>
+  <data name="Page_Common_Text_Camera.Text" xml:space="preserve">
+    <value>Camera</value>
+  </data>
+  <data name="Page_Common_Text_VMD.Text" xml:space="preserve">
+    <value>Drag VMD file and drop here to apply camera motion data.</value>
+  </data>
+  <data name="Page_Empty_Text_View.Text" xml:space="preserve">
+    <value>Select a object to view property.</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Bone.Header" xml:space="preserve">
+    <value>Bone</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Description.Header" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Materials.Header" xml:space="preserve">
+    <value>Materials</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Morph.Header" xml:space="preserve">
+    <value>Morph</value>
+  </data>
+  <data name="Page_Entity_Slider_Anisotropic.Header" xml:space="preserve">
+    <value>Anisotropic</value>
+  </data>
+  <data name="Page_Entity_Slider_Clearcoat.Header" xml:space="preserve">
+    <value>Clearcoat</value>
+  </data>
+  <data name="Page_Entity_Slider_ClearcoatGloss.Header" xml:space="preserve">
+    <value>Clearcoat Gloss</value>
+  </data>
+  <data name="Page_Entity_Slider_Emission.Header" xml:space="preserve">
+    <value>Emission</value>
+  </data>
+  <data name="Page_Entity_Slider_Metallic.Header" xml:space="preserve">
+    <value>Metallic</value>
+  </data>
+  <data name="Page_Entity_Slider_Roughness.Header" xml:space="preserve">
+    <value>Roughness</value>
+  </data>
+  <data name="Page_Entity_Slider_Sheen.Header" xml:space="preserve">
+    <value>Sheen</value>
+  </data>
+  <data name="Page_Entity_Slider_SheenTint.Header" xml:space="preserve">
+    <value>Sheen Tint</value>
+  </data>
+  <data name="Page_Entity_Slider_Specular.Header" xml:space="preserve">
+    <value>Specular</value>
+  </data>
+  <data name="Page_Entity_Slider_SpecularTint.Header" xml:space="preserve">
+    <value>Specular Tint</value>
+  </data>
+  <data name="Page_Entity_Slider_Subsurface.Header" xml:space="preserve">
+    <value>Subsurface</value>
+  </data>
+  <data name="Page_Entity_Switch_LockMotion.Header" xml:space="preserve">
+    <value>Lock Motion</value>
+  </data>
+  <data name="Page_Entity_Text_MaterialInfo.Text" xml:space="preserve">
+    <value>Material Infomation</value>
+  </data>
+  <data name="Page_Entity_Text_Others.Text" xml:space="preserve">
+    <value>Others</value>
+  </data>
+  <data name="Page_SkyBox_Button_Apply.Content" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="Page_SkyBox_TextBox_SkyBoxLightMultiple.Header" xml:space="preserve">
+    <value>Sky box light multiple</value>
+  </data>
+  <data name="Tab_Title_Common" xml:space="preserve">
+    <value>Common</value>
+  </data>
+  <data name="Tab_Title_Detail" xml:space="preserve">
+    <value>Detail</value>
+  </data>
+  <data name="Tab_Title_PostProcess" xml:space="preserve">
+    <value>Post process</value>
+  </data>
+  <data name="Tab_Title_Record" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="Tab_Title_Resources" xml:space="preserve">
+    <value>Resources</value>
+  </data>
+  <data name="Tab_Title_Scene" xml:space="preserve">
+    <value>Scene</value>
+  </data>
+  <data name="Tab_Title_SkyBox" xml:space="preserve">
+    <value>Sky Box</value>
+  </data>
+</root>

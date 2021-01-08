@@ -1,0 +1,353 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Error_Message_ImageError" xml:space="preserve">
+    <value>读取图片错误 {0}</value>
+  </data>
+  <data name="Error_Message_PMXError" xml:space="preserve">
+    <value>读取pmx错误 {0}</value>
+  </data>
+  <data name="Error_Message_VMDError" xml:space="preserve">
+    <value>读取vmd错误 {0}</value>
+  </data>
+  <data name="Message_Done" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="Message_GPUNotSupportRayTracing" xml:space="preserve">
+    <value>当前使用的显卡不支持光线追踪</value>
+  </data>
+  <data name="Message_GPUSupportRayTracing" xml:space="preserve">
+    <value>当前使用的显卡支持光线追踪</value>
+  </data>
+  <data name="Message_ModelInfo" xml:space="preserve">
+    <value>顶点数：{0}
+三角形数：{1}
+骨骼数：{2}</value>
+  </data>
+  <data name="Message_Operating" xml:space="preserve">
+    <value>正在处理</value>
+  </data>
+  <data name="M_MenuBarItem_AboutThisSoftware.Text" xml:space="preserve">
+    <value>关于软件</value>
+  </data>
+  <data name="M_MenuBarItem_BackgroundMusic.Text" xml:space="preserve">
+    <value>背景音乐</value>
+  </data>
+  <data name="M_MenuBarItem_File.Title" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="M_MenuBarItem_Help.Title" xml:space="preserve">
+    <value>帮助</value>
+  </data>
+  <data name="M_MenuBarItem_Layout.Text" xml:space="preserve">
+    <value>布局</value>
+  </data>
+  <data name="M_MenuBarItem_OpenFolder.Text" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="M_MenuBarItem_ShaderFileSample.Text" xml:space="preserve">
+    <value>示例着色器文件</value>
+  </data>
+  <data name="M_MenuBarItem_View.Title" xml:space="preserve">
+    <value>视图</value>
+  </data>
+  <data name="Object_Name_Lighting" xml:space="preserve">
+    <value>光源</value>
+  </data>
+  <data name="Page_Common_Button_RefreshCache.Content" xml:space="preserve">
+    <value>刷新缓存</value>
+  </data>
+  <data name="Page_Common_Button_RefreshModelCaches.Content" xml:space="preserve">
+    <value>刷新模型缓存</value>
+  </data>
+  <data name="Page_Common_Button_RefreshModelCaches.ToolTipService.ToolTip" xml:space="preserve">
+    <value>重新加载模型</value>
+  </data>
+  <data name="Page_Common_Button_RefreshShaderCaches.Content" xml:space="preserve">
+    <value>刷新着色器缓存</value>
+  </data>
+  <data name="Page_Common_Button_RefreshShaderCaches.ToolTipService.ToolTip" xml:space="preserve">
+    <value>重新加载着色器</value>
+  </data>
+  <data name="Page_Common_Button_RefreshTextureCaches.Content" xml:space="preserve">
+    <value>刷新纹理缓存</value>
+  </data>
+  <data name="Page_Common_Button_RefreshTextureCaches.ToolTipService.ToolTip" xml:space="preserve">
+    <value>重新加载纹理</value>
+  </data>
+  <data name="Page_Common_Button_ResetPhysics.Content" xml:space="preserve">
+    <value>重置物理</value>
+  </data>
+  <data name="Page_Common_Button_Settings.Content" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Page_Common_ChechBox_AutoReloadModel.Content" xml:space="preserve">
+    <value>自动重新加载模型</value>
+  </data>
+  <data name="Page_Common_ChechBox_AutoReloadShader.Content" xml:space="preserve">
+    <value>自动重新加载着色器</value>
+  </data>
+  <data name="Page_Common_ChechBox_AutoReloadTexture.Content" xml:space="preserve">
+    <value>自动重新加载纹理</value>
+  </data>
+  <data name="Page_Common_ComboBox_RenderPipeline.Header" xml:space="preserve">
+    <value>渲染管线</value>
+  </data>
+  <data name="Page_Common_ComboBox_RenderQuality.Header" xml:space="preserve">
+    <value>渲染质量</value>
+  </data>
+  <data name="Page_Common_RenderPipeline_ComboBoxItem_Deferred.Content" xml:space="preserve">
+    <value>延迟</value>
+  </data>
+  <data name="Page_Common_RenderPipeline_ComboBoxItem_Forward.Content" xml:space="preserve">
+    <value>前向</value>
+  </data>
+  <data name="Page_Common_RenderPipeline_ComboBoxItem_RayTracing.Content" xml:space="preserve">
+    <value>光线追踪</value>
+  </data>
+  <data name="Page_Common_Switch_AO.Header" xml:space="preserve">
+    <value>环境光遮蔽（仅光线追踪）</value>
+  </data>
+  <data name="Page_Common_Switch_CameraMotionData.Header" xml:space="preserve">
+    <value>镜头运动数据</value>
+  </data>
+  <data name="Page_Common_Switch_HighResolutionShadow.Header" xml:space="preserve">
+    <value>高分辨率阴影</value>
+  </data>
+  <data name="Page_Common_Switch_MultiThreadRendering.Header" xml:space="preserve">
+    <value>多线程渲染</value>
+  </data>
+  <data name="Page_Common_Switch_SaveCPUPower.Header" xml:space="preserve">
+    <value>节省CPU</value>
+  </data>
+  <data name="Page_Common_Switch_Shadow.Header" xml:space="preserve">
+    <value>阴影</value>
+  </data>
+  <data name="Page_Common_Switch_ViewerUI.Header" xml:space="preserve">
+    <value>视图UI</value>
+  </data>
+  <data name="Page_Common_Switch_VSync.Header" xml:space="preserve">
+    <value>垂直同步</value>
+  </data>
+  <data name="Page_Common_Switch_Wireframe.Header" xml:space="preserve">
+    <value>线框显示</value>
+  </data>
+  <data name="Page_Common_Switch_ZPrePass.Header" xml:space="preserve">
+    <value>Z-Prepass（仅Forward）</value>
+  </data>
+  <data name="Page_Common_TextBox_Distance.Header" xml:space="preserve">
+    <value>距离</value>
+  </data>
+  <data name="Page_Common_TextBox_FPSLimit.Header" xml:space="preserve">
+    <value>FPS限制</value>
+  </data>
+  <data name="Page_Common_TextBox_PlaySpeed.Header" xml:space="preserve">
+    <value>播放速度</value>
+  </data>
+  <data name="Page_Common_Text_Camera.Text" xml:space="preserve">
+    <value>摄像机</value>
+  </data>
+  <data name="Page_Common_Text_VMD.Text" xml:space="preserve">
+    <value>将VMD文件拖拽至此应用镜头数据</value>
+  </data>
+  <data name="Page_Empty_Text_View.Text" xml:space="preserve">
+    <value>选择一个物体以查看属性</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Bone.Header" xml:space="preserve">
+    <value>骨骼</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Description.Header" xml:space="preserve">
+    <value>描述</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Materials.Header" xml:space="preserve">
+    <value>材质</value>
+  </data>
+  <data name="Page_Entity_PivotItem_Morph.Header" xml:space="preserve">
+    <value>变形</value>
+  </data>
+  <data name="Page_Entity_Slider_Anisotropic.Header" xml:space="preserve">
+    <value>各向异性</value>
+  </data>
+  <data name="Page_Entity_Slider_Clearcoat.Header" xml:space="preserve">
+    <value>清漆</value>
+  </data>
+  <data name="Page_Entity_Slider_ClearcoatGloss.Header" xml:space="preserve">
+    <value>清漆光泽</value>
+  </data>
+  <data name="Page_Entity_Slider_Emission.Header" xml:space="preserve">
+    <value>自发光</value>
+  </data>
+  <data name="Page_Entity_Slider_Metallic.Header" xml:space="preserve">
+    <value>金属度</value>
+  </data>
+  <data name="Page_Entity_Slider_Roughness.Header" xml:space="preserve">
+    <value>粗糙度</value>
+  </data>
+  <data name="Page_Entity_Slider_Sheen.Header" xml:space="preserve">
+    <value>光辉</value>
+  </data>
+  <data name="Page_Entity_Slider_SheenTint.Header" xml:space="preserve">
+    <value>光辉染色</value>
+  </data>
+  <data name="Page_Entity_Slider_Specular.Header" xml:space="preserve">
+    <value>镜面反射</value>
+  </data>
+  <data name="Page_Entity_Slider_SpecularTint.Header" xml:space="preserve">
+    <value>镜面反射染色</value>
+  </data>
+  <data name="Page_Entity_Slider_Subsurface.Header" xml:space="preserve">
+    <value>次表面</value>
+  </data>
+  <data name="Page_Entity_Switch_LockMotion.Header" xml:space="preserve">
+    <value>锁定动作</value>
+  </data>
+  <data name="Page_Entity_Text_MaterialInfo.Text" xml:space="preserve">
+    <value>材质信息</value>
+  </data>
+  <data name="Page_Entity_Text_Others.Text" xml:space="preserve">
+    <value>其他</value>
+  </data>
+  <data name="Page_SkyBox_Button_Apply.Content" xml:space="preserve">
+    <value>应用</value>
+  </data>
+  <data name="Page_SkyBox_TextBox_SkyBoxLightMultiple.Header" xml:space="preserve">
+    <value>天空盒亮度倍数</value>
+  </data>
+  <data name="Tab_Title_Common" xml:space="preserve">
+    <value>通常</value>
+  </data>
+  <data name="Tab_Title_Detail" xml:space="preserve">
+    <value>细节</value>
+  </data>
+  <data name="Tab_Title_PostProcess" xml:space="preserve">
+    <value>后处理</value>
+  </data>
+  <data name="Tab_Title_Record" xml:space="preserve">
+    <value>录制</value>
+  </data>
+  <data name="Tab_Title_Resources" xml:space="preserve">
+    <value>资源</value>
+  </data>
+  <data name="Tab_Title_Scene" xml:space="preserve">
+    <value>场景</value>
+  </data>
+  <data name="Tab_Title_SkyBox" xml:space="preserve">
+    <value>天空盒</value>
+  </data>
+</root>

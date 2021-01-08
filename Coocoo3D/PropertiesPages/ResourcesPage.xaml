@@ -41,6 +41,7 @@
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Padding="20,0,0,0">
             <Button FontFamily="Segoe MDL2 Assets" Padding="0" Content="&#xE0A6;" Click="FolderBack_Click"/>
+            <Button FontFamily="Segoe MDL2 Assets" Padding="0" Content="&#xE117;" Click="FolderRefresh_Click"/>
             <TextBlock x:Name="vPath"/>
         </StackPanel>
 

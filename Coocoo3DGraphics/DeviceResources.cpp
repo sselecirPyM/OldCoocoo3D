@@ -3,7 +3,6 @@
 #include "DirectXHelper.h"
 #include <windows.ui.xaml.media.dxinterop.h>
 
-using namespace D2D1;
 using namespace DirectX;
 using namespace Microsoft::WRL;
 using namespace Windows::Foundation;
@@ -11,16 +10,7 @@ using namespace Windows::Graphics::Display;
 using namespace Windows::UI::Core;
 using namespace Windows::UI::Xaml::Controls;
 using namespace Platform;
-
-namespace DisplayMetrics
-{
-	// 用于定义“高分辨率”显示的默认阈值，如果该阈值
-	// 超出范围，并且 SupportHighResolutions 为 false，将缩放尺寸
-	// 50%。
-	static const float DpiThreshold = 192.0f;		// 200% 标准桌面显示。
-	static const float WidthThreshold = 8192.0f;	// 1080p 宽。
-	static const float HeightThreshold = 8192.0f;	// 1080p 高。
-};
+using namespace Coocoo3DGraphics;
 
 // 用于计算屏幕旋转的常量。
 namespace ScreenRotation
@@ -58,176 +48,275 @@ namespace ScreenRotation
 	);
 };
 
-// DeviceResources 的构造函数。
-Coocoo3DGraphics::DeviceResources::DeviceResources() :
-	m_screenViewport(),
-	m_d3dFeatureLevel(D3D_FEATURE_LEVEL_9_1),
-	m_d3dRenderTargetSize(),
-	m_outputSize(),
-	m_logicalSize(),
-	m_nativeOrientation(DisplayOrientations::None),
-	m_currentOrientation(DisplayOrientations::None),
-	m_dpi(-1.0f),
-	m_effectiveDpi(-1.0f),
-	m_compositionScaleX(1.0f),
-	m_compositionScaleY(1.0f),
-	m_deviceNotify(nullptr)
+UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
 {
-	CreateDeviceIndependentResources();
-	CreateDeviceResources();
-	CreateOtherResources();
+	switch (static_cast<int>(format))
+	{
+	case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+	case DXGI_FORMAT_R32G32B32A32_FLOAT:
+	case DXGI_FORMAT_R32G32B32A32_UINT:
+	case DXGI_FORMAT_R32G32B32A32_SINT:
+		return 128;
+
+	case DXGI_FORMAT_R32G32B32_TYPELESS:
+	case DXGI_FORMAT_R32G32B32_FLOAT:
+	case DXGI_FORMAT_R32G32B32_UINT:
+	case DXGI_FORMAT_R32G32B32_SINT:
+		return 96;
+
+	case DXGI_FORMAT_R16G16B16A16_TYPELESS:
+	case DXGI_FORMAT_R16G16B16A16_FLOAT:
+	case DXGI_FORMAT_R16G16B16A16_UNORM:
+	case DXGI_FORMAT_R16G16B16A16_UINT:
+	case DXGI_FORMAT_R16G16B16A16_SNORM:
+	case DXGI_FORMAT_R16G16B16A16_SINT:
+	case DXGI_FORMAT_R32G32_TYPELESS:
+	case DXGI_FORMAT_R32G32_FLOAT:
+	case DXGI_FORMAT_R32G32_UINT:
+	case DXGI_FORMAT_R32G32_SINT:
+	case DXGI_FORMAT_R32G8X24_TYPELESS:
+	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
+	case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+	case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
+	case DXGI_FORMAT_Y416:
+	case DXGI_FORMAT_Y210:
+	case DXGI_FORMAT_Y216:
+		return 64;
+
+	case DXGI_FORMAT_R10G10B10A2_TYPELESS:
+	case DXGI_FORMAT_R10G10B10A2_UNORM:
+	case DXGI_FORMAT_R10G10B10A2_UINT:
+	case DXGI_FORMAT_R11G11B10_FLOAT:
+	case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+	case DXGI_FORMAT_R8G8B8A8_UINT:
+	case DXGI_FORMAT_R8G8B8A8_SNORM:
+	case DXGI_FORMAT_R8G8B8A8_SINT:
+	case DXGI_FORMAT_R16G16_TYPELESS:
+	case DXGI_FORMAT_R16G16_FLOAT:
+	case DXGI_FORMAT_R16G16_UNORM:
+	case DXGI_FORMAT_R16G16_UINT:
+	case DXGI_FORMAT_R16G16_SNORM:
+	case DXGI_FORMAT_R16G16_SINT:
+	case DXGI_FORMAT_R32_TYPELESS:
+	case DXGI_FORMAT_D32_FLOAT:
+	case DXGI_FORMAT_R32_FLOAT:
+	case DXGI_FORMAT_R32_UINT:
+	case DXGI_FORMAT_R32_SINT:
+	case DXGI_FORMAT_R24G8_TYPELESS:
+	case DXGI_FORMAT_D24_UNORM_S8_UINT:
+	case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
+	case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
+	case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
+	case DXGI_FORMAT_R8G8_B8G8_UNORM:
+	case DXGI_FORMAT_G8R8_G8B8_UNORM:
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_B8G8R8X8_UNORM:
+	case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+	case DXGI_FORMAT_B8G8R8A8_TYPELESS:
+	case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+	case DXGI_FORMAT_B8G8R8X8_TYPELESS:
+	case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+	case DXGI_FORMAT_AYUV:
+	case DXGI_FORMAT_Y410:
+	case DXGI_FORMAT_YUY2:
+		return 32;
+
+	case DXGI_FORMAT_P010:
+	case DXGI_FORMAT_P016:
+		return 24;
+
+	case DXGI_FORMAT_R8G8_TYPELESS:
+	case DXGI_FORMAT_R8G8_UNORM:
+	case DXGI_FORMAT_R8G8_UINT:
+	case DXGI_FORMAT_R8G8_SNORM:
+	case DXGI_FORMAT_R8G8_SINT:
+	case DXGI_FORMAT_R16_TYPELESS:
+	case DXGI_FORMAT_R16_FLOAT:
+	case DXGI_FORMAT_D16_UNORM:
+	case DXGI_FORMAT_R16_UNORM:
+	case DXGI_FORMAT_R16_UINT:
+	case DXGI_FORMAT_R16_SNORM:
+	case DXGI_FORMAT_R16_SINT:
+	case DXGI_FORMAT_B5G6R5_UNORM:
+	case DXGI_FORMAT_B5G5R5A1_UNORM:
+	case DXGI_FORMAT_A8P8:
+	case DXGI_FORMAT_B4G4R4A4_UNORM:
+		return 16;
+
+	case DXGI_FORMAT_NV12:
+	case DXGI_FORMAT_420_OPAQUE:
+	case DXGI_FORMAT_NV11:
+		return 12;
+
+	case DXGI_FORMAT_R8_TYPELESS:
+	case DXGI_FORMAT_R8_UNORM:
+	case DXGI_FORMAT_R8_UINT:
+	case DXGI_FORMAT_R8_SNORM:
+	case DXGI_FORMAT_R8_SINT:
+	case DXGI_FORMAT_A8_UNORM:
+	case DXGI_FORMAT_AI44:
+	case DXGI_FORMAT_IA44:
+	case DXGI_FORMAT_P8:
+		return 8;
+
+	case DXGI_FORMAT_R1_UNORM:
+		return 1;
+
+	case DXGI_FORMAT_BC1_TYPELESS:
+	case DXGI_FORMAT_BC1_UNORM:
+	case DXGI_FORMAT_BC1_UNORM_SRGB:
+	case DXGI_FORMAT_BC4_TYPELESS:
+	case DXGI_FORMAT_BC4_UNORM:
+	case DXGI_FORMAT_BC4_SNORM:
+		return 4;
+
+	case DXGI_FORMAT_BC2_TYPELESS:
+	case DXGI_FORMAT_BC2_UNORM:
+	case DXGI_FORMAT_BC2_UNORM_SRGB:
+	case DXGI_FORMAT_BC3_TYPELESS:
+	case DXGI_FORMAT_BC3_UNORM:
+	case DXGI_FORMAT_BC3_UNORM_SRGB:
+	case DXGI_FORMAT_BC5_TYPELESS:
+	case DXGI_FORMAT_BC5_UNORM:
+	case DXGI_FORMAT_BC5_SNORM:
+	case DXGI_FORMAT_BC6H_TYPELESS:
+	case DXGI_FORMAT_BC6H_UF16:
+	case DXGI_FORMAT_BC6H_SF16:
+	case DXGI_FORMAT_BC7_TYPELESS:
+	case DXGI_FORMAT_BC7_UNORM:
+	case DXGI_FORMAT_BC7_UNORM_SRGB:
+		return 8;
+
+	default:
+		return 0;
+
+	}
 }
 
-// 配置不依赖于 Direct3D 设备的资源。
-void Coocoo3DGraphics::DeviceResources::CreateDeviceIndependentResources()
+
+inline bool IsDirectXRaytracingSupported(ID3D12Device* testDevice)
 {
-	// 初始化 Direct2D 资源。
-	D2D1_FACTORY_OPTIONS options;
-	ZeroMemory(&options, sizeof(D2D1_FACTORY_OPTIONS));
+	D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportData = {};
 
-#if defined(_DEBUG)
-	// 如果项目处于调试生成阶段，请通过 SDK 层启用 Direct2D 调试。
-	options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
-#endif
-
-	// 初始化 Direct2D 工厂。
-	DX::ThrowIfFailed(
-		D2D1CreateFactory(
-			D2D1_FACTORY_TYPE_SINGLE_THREADED,
-			__uuidof(ID2D1Factory3),
-			&options,
-			&m_d2dFactory
-		)
-	);
-
-	// 初始化 DirectWrite 工厂。
-	DX::ThrowIfFailed(
-		DWriteCreateFactory(
-			DWRITE_FACTORY_TYPE_SHARED,
-			__uuidof(IDWriteFactory3),
-			&m_dwriteFactory
-		)
-	);
-
-	// 初始化 Windows 图像处理组件(WIC)工厂。
-	DX::ThrowIfFailed(
-		CoCreateInstance(
-			CLSID_WICImagingFactory2,
-			nullptr,
-			CLSCTX_INPROC_SERVER,
-			IID_PPV_ARGS(&m_wicFactory)
-		)
-	);
+	return SUCCEEDED(testDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportData, sizeof(featureSupportData)))
+		&& featureSupportData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
 }
 
 // 配置 Direct3D 设备，并存储设备句柄和设备上下文。
-void Coocoo3DGraphics::DeviceResources::CreateDeviceResources()
+void DeviceResources::CreateDeviceResources()
 {
-	// 此标志为颜色通道排序与 API 默认设置不同的图面
-	// 添加支持。要与 Direct2D 兼容，必须满足此要求。
-	UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-
 #if defined(_DEBUG)
-	if (DX::SdkLayersAvailable())
+	// 如果项目处于调试生成阶段，请通过 SDK 层启用调试。
 	{
-		// 如果项目处于调试生成过程中，请通过带有此标志的 SDK 层启用调试。
-		creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+		ComPtr<ID3D12Debug> debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+		{
+			debugController->EnableDebugLayer();
+		}
 	}
 #endif
 
-	// 此数组定义此应用程序将支持的 DirectX 硬件功能级别组。
-	// 请注意，应保留顺序。
-	// 请不要忘记在应用程序的说明中声明其所需的
-	// 最低功能级别。除非另行说明，否则假定所有应用程序均支持 9.1。
-	D3D_FEATURE_LEVEL featureLevels[] =
-	{
-		D3D_FEATURE_LEVEL_12_1,
-		D3D_FEATURE_LEVEL_12_0,
-		D3D_FEATURE_LEVEL_11_1,
-		D3D_FEATURE_LEVEL_11_0,
-		D3D_FEATURE_LEVEL_10_1,
-		D3D_FEATURE_LEVEL_10_0,
-		D3D_FEATURE_LEVEL_9_3,
-		D3D_FEATURE_LEVEL_9_2,
-		D3D_FEATURE_LEVEL_9_1
-	};
+	DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory)));
 
-	// 创建 Direct3D 11 API 设备对象和对应的上下文。
-	ComPtr<ID3D11Device> device;
-	ComPtr<ID3D11DeviceContext> context;
+	ComPtr<IDXGIAdapter1> adapter;
+	GetHardwareAdapter(&adapter);
 
-	HRESULT hr = D3D11CreateDevice(
-		nullptr,					// 指定 nullptr 以使用默认适配器。
-		D3D_DRIVER_TYPE_HARDWARE,	// 创建使用硬件图形驱动程序的设备。
-		0,							// 应为 0，除非驱动程序是 D3D_DRIVER_TYPE_SOFTWARE。
-		creationFlags,				// 设置调试和 Direct2D 兼容性标志。
-		featureLevels,				// 此应用程序可以支持的功能级别的列表。
-		ARRAYSIZE(featureLevels),	// 上面的列表的大小。
-		D3D11_SDK_VERSION,			// 对于 Windows 应用商店应用，始终将此值设置为 D3D11_SDK_VERSION。
-		&device,					// 返回创建的 Direct3D 设备。
-		&m_d3dFeatureLevel,			// 返回所创建设备的功能级别。
-		&context					// 返回设备的即时上下文。
+	// 创建 Direct3D 12 API 设备对象
+	HRESULT hr = D3D12CreateDevice(
+		adapter.Get(),					// 硬件适配器。
+		D3D_FEATURE_LEVEL_11_0,			// 此应用可以支持的最低功能级别。
+		IID_PPV_ARGS(&m_d3dDevice)		// 返回创建的 Direct3D 设备。
 	);
 
+#if defined(_DEBUG)
 	if (FAILED(hr))
 	{
 		// 如果初始化失败，则回退到 WARP 设备。
 		// 有关 WARP 的详细信息，请参阅: 
 		// https://go.microsoft.com/fwlink/?LinkId=286690
+
+		ComPtr<IDXGIAdapter> warpAdapter;
+		DX::ThrowIfFailed(m_dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
+
+		hr = D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_d3dDevice));
+	}
+#endif
+
+	DX::ThrowIfFailed(hr);
+
+	m_isRayTracingSupport = IsDirectXRaytracingSupported(m_d3dDevice.Get());
+
+	m_d3dDevice->QueryInterface(IID_PPV_ARGS(&m_d3dDevice2));
+	m_d3dDevice->QueryInterface(IID_PPV_ARGS(&m_d3dDevice5));
+
+	// 创建命令队列。
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+	DX::ThrowIfFailed(m_d3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+	NAME_D3D12_OBJECT(m_commandQueue);
+
+	// 为呈现器目标视图和深度模具视图创建描述符堆。
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = 2048;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
+	NAME_D3D12_OBJECT(m_rtvHeap);
+	m_rtvHeapAllocCount = 3;
+	m_rtvDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.NumDescriptors = 2048;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+	NAME_D3D12_OBJECT(m_dsvHeap);
+	m_dsvHeapAllocCount = 0;
+
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = c_graphicsPipelineHeapMaxCount;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_cbvSrvUavHeap)));
+	NAME_D3D12_OBJECT(m_cbvSrvUavHeap);
+	m_cbvSrvUavHeapAllocCount = 0;
+
+	for (UINT n = 0; n < c_frameCount; n++)
+	{
 		DX::ThrowIfFailed(
-			D3D11CreateDevice(
-				nullptr,
-				D3D_DRIVER_TYPE_WARP, // 创建 WARP 设备而不是硬件设备。
-				0,
-				creationFlags,
-				featureLevels,
-				ARRAYSIZE(featureLevels),
-				D3D11_SDK_VERSION,
-				&device,
-				&m_d3dFeatureLevel,
-				&context
-			)
+			m_d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n]))
 		);
 	}
 
-	// 将指针存储到 Direct3D 11.3 API 设备和即时上下文中。
-	DX::ThrowIfFailed(
-		device.As(&m_d3dDevice)
-	);
+	// 创建同步对象。
+	DX::ThrowIfFailed(m_d3dDevice->CreateFence(m_currentFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+	m_currentFenceValue++;
 
-	DX::ThrowIfFailed(
-		context.As(&m_d3dContext)
-	);
-
-	// 创建 Direct2D 设备对象和对应的上下文。
-	ComPtr<IDXGIDevice3> dxgiDevice;
-	DX::ThrowIfFailed(
-		m_d3dDevice.As(&dxgiDevice)
-	);
-
-	DX::ThrowIfFailed(
-		m_d2dFactory->CreateDevice(dxgiDevice.Get(), &m_d2dDevice)
-	);
-
-	DX::ThrowIfFailed(
-		m_d2dDevice->CreateDeviceContext(
-			D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
-			&m_d2dContext
-		)
-	);
+	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (m_fenceEvent == nullptr)
+	{
+		DX::ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
 }
 
 // 每次更改窗口大小时需要重新创建这些资源。
-void Coocoo3DGraphics::DeviceResources::CreateWindowSizeDependentResources()
+void DeviceResources::CreateWindowSizeDependentResources()
 {
-	// 清除特定于上一窗口大小的上下文。
-	ID3D11RenderTargetView* nullViews[] = { nullptr };
-	m_d3dContext->OMSetRenderTargets(ARRAYSIZE(nullViews), nullViews, nullptr);
-	m_d3dRenderTargetView = nullptr;
-	m_d2dContext->SetTarget(nullptr);
-	m_d2dTargetBitmap = nullptr;
-	m_d3dDepthStencilView = nullptr;
-	m_d3dContext->Flush1(D3D11_CONTEXT_TYPE_ALL, nullptr);
+	// 让Present函数处理它
+	m_ResolutionChange = true;
+
+	// 等到以前的所有 GPU 工作完成。
+	WaitForGpu();
+
+	// 清除特定于先前窗口大小的内容。
+	for (UINT n = 0; n < c_frameCount; n++)
+	{
+		m_renderTargets[n] = nullptr;
+	}
 
 	UpdateRenderTargetSize();
 
@@ -240,24 +329,20 @@ void Coocoo3DGraphics::DeviceResources::CreateWindowSizeDependentResources()
 	m_d3dRenderTargetSize.Width = swapDimensions ? m_outputSize.Height : m_outputSize.Width;
 	m_d3dRenderTargetSize.Height = swapDimensions ? m_outputSize.Width : m_outputSize.Height;
 
+	UINT backBufferWidth = lround(m_d3dRenderTargetSize.Width);
+	UINT backBufferHeight = lround(m_d3dRenderTargetSize.Height);
+
 	if (m_swapChain != nullptr)
 	{
 		// 如果交换链已存在，请调整其大小。
-		HRESULT hr = m_swapChain->ResizeBuffers(
-			2, // 双缓冲交换链。
-			lround(m_d3dRenderTargetSize.Width),
-			lround(m_d3dRenderTargetSize.Height),
-			DXGI_FORMAT_B8G8R8A8_UNORM,
-			DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING
-		);
+		HRESULT hr = m_swapChain->ResizeBuffers(c_frameCount, backBufferWidth, backBufferHeight, m_backBufferFormat, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
 			// 如果出于任何原因移除了设备，将需要创建一个新的设备和交换链。
-			HandleDeviceLost();
+			m_deviceRemoved = true;
 
-			// 现在一切都已设置完毕。不要继续执行此方法。HandleDeviceLost 将重新呈现此方法 
-			// 并正确设置新设备。
+			// 请勿继续执行此方法。会销毁并重新创建 DeviceResources。
 			return;
 		}
 		else
@@ -269,105 +354,68 @@ void Coocoo3DGraphics::DeviceResources::CreateWindowSizeDependentResources()
 	{
 		// 否则，使用与现有 Direct3D 设备相同的适配器新建一个。
 		DXGI_SCALING scaling = DXGI_SCALING_STRETCH;
-		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = { 0 };
+		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 
-		swapChainDesc.Width = lround(m_d3dRenderTargetSize.Width);		// 匹配窗口的大小。
-		swapChainDesc.Height = lround(m_d3dRenderTargetSize.Height);
-		swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;				// 这是最常用的交换链格式。
+		swapChainDesc.Width = backBufferWidth;						// 匹配窗口的大小。
+		swapChainDesc.Height = backBufferHeight;
+		swapChainDesc.Format = m_backBufferFormat;
 		swapChainDesc.Stereo = false;
-		swapChainDesc.SampleDesc.Count = 1;								// 请不要使用多采样。
+		swapChainDesc.SampleDesc.Count = 1;							// 请不要使用多采样。
 		swapChainDesc.SampleDesc.Quality = 0;
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapChainDesc.BufferCount = 2;									// 使用双缓冲最大程度地减小延迟。
-		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;	// 所有 Windows 应用商店应用都必须使用 _FLIP_ SwapEffects。
+		swapChainDesc.BufferCount = c_frameCount;					// 使用三重缓冲最大程度地减小延迟。
+		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;	// 所有 Windows 通用应用都必须使用 _FLIP_ SwapEffects。
 		swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
 		swapChainDesc.Scaling = scaling;
 		swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
 
-		// 此序列获取用来创建上面的 Direct3D 设备的 DXGI 工厂。
-		ComPtr<IDXGIDevice3> dxgiDevice;
-		DX::ThrowIfFailed(
-			m_d3dDevice.As(&dxgiDevice)
-		);
-
-		ComPtr<IDXGIAdapter> dxgiAdapter;
-		DX::ThrowIfFailed(
-			dxgiDevice->GetAdapter(&dxgiAdapter)
-		);
-
-		ComPtr<IDXGIFactory4> dxgiFactory;
-		DX::ThrowIfFailed(
-			dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory))
-		);
-
-		//使用 XAML 互操作时，必须创建交换链进行复合。
 		ComPtr<IDXGISwapChain1> swapChain;
 		DX::ThrowIfFailed(
-			dxgiFactory->CreateSwapChainForComposition(
-				m_d3dDevice.Get(),
+			m_dxgiFactory->CreateSwapChainForComposition(
+				m_commandQueue.Get(),								// 交换链需要对 DirectX 12 中的命令队列的引用。
 				&swapChainDesc,
 				nullptr,
 				&swapChain
 			)
 		);
 
-		DX::ThrowIfFailed(
-			swapChain.As(&m_swapChain)
-		);
+		DX::ThrowIfFailed(swapChain.As(&m_swapChain));
 
 		// 将交换链与 SwapChainPanel 关联
 		// UI 更改将需要调度回 UI 线程
-		m_swapChainPanel->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
-		{
-			//获取 SwapChainPanel 的受支持的本机接口
-			ComPtr<ISwapChainPanelNative> panelNative;
-			DX::ThrowIfFailed(
-				reinterpret_cast<IUnknown*>(m_swapChainPanel)->QueryInterface(IID_PPV_ARGS(&panelNative))
-			);
+		m_window->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
+			{
+				//获取 SwapChainPanel 的受支持的本机接口
+				ComPtr<ISwapChainPanelNative> panelNative;
+				DX::ThrowIfFailed(
+					reinterpret_cast<IUnknown*>(m_window)->QueryInterface(IID_PPV_ARGS(&panelNative))
+				);
 
-			DX::ThrowIfFailed(
-				panelNative->SetSwapChain(m_swapChain.Get())
-			);
-		}, CallbackContext::Any));
-
-		// 确保 DXGI 不会一次对多个帧排队。这样既可以减小延迟，
-		// 又可以确保应用程序将只在每个 VSync 之后渲染，从而最大程度地降低功率消耗。
-		DX::ThrowIfFailed(
-			dxgiDevice->SetMaximumFrameLatency(1)
-		);
+				DX::ThrowIfFailed(
+					panelNative->SetSwapChain(m_swapChain.Get())
+				);
+			}, CallbackContext::Any));
 	}
 
-	// 为交换链设置正确方向，并生成 2D 和 3D 矩阵
+	// 为交换链设置正确方向，并生成
 	// 转换以渲染到旋转交换链。
-	// 请注意，2D 和 3D 转换的旋转角度不同。
-	// 这是由坐标空间的差异引起的。此外，
 	// 显式指定 3D 矩阵可以避免舍入误差。
 
 	switch (displayRotation)
 	{
 	case DXGI_MODE_ROTATION_IDENTITY:
-		m_orientationTransform2D = Matrix3x2F::Identity();
 		m_orientationTransform3D = ScreenRotation::Rotation0;
 		break;
 
 	case DXGI_MODE_ROTATION_ROTATE90:
-		m_orientationTransform2D =
-			Matrix3x2F::Rotation(90.0f) *
-			Matrix3x2F::Translation(m_logicalSize.Height, 0.0f);
 		m_orientationTransform3D = ScreenRotation::Rotation270;
 		break;
 
 	case DXGI_MODE_ROTATION_ROTATE180:
-		m_orientationTransform2D =
-			Matrix3x2F::Rotation(180.0f) *
-			Matrix3x2F::Translation(m_logicalSize.Width, m_logicalSize.Height);
 		m_orientationTransform3D = ScreenRotation::Rotation180;
 		break;
 
 	case DXGI_MODE_ROTATION_ROTATE270:
-		m_orientationTransform2D =
-			Matrix3x2F::Rotation(270.0f) *
-			Matrix3x2F::Translation(0.0f, m_logicalSize.Width);
 		m_orientationTransform3D = ScreenRotation::Rotation90;
 		break;
 
@@ -379,10 +427,12 @@ void Coocoo3DGraphics::DeviceResources::CreateWindowSizeDependentResources()
 		m_swapChain->SetRotation(displayRotation)
 	);
 
+
+
 	// 在交换链上设置反向缩放
 	DXGI_MATRIX_3X2_F inverseScale = { 0 };
-	inverseScale._11 = 1.0f / m_effectiveCompositionScaleX;
-	inverseScale._22 = 1.0f / m_effectiveCompositionScaleY;
+	inverseScale._11 = 1.0f / m_compositionScaleX;
+	inverseScale._22 = 1.0f / m_compositionScaleY;
 	ComPtr<IDXGISwapChain2> spSwapChain2;
 	DX::ThrowIfFailed(
 		m_swapChain.As<IDXGISwapChain2>(&spSwapChain2)
@@ -392,127 +442,34 @@ void Coocoo3DGraphics::DeviceResources::CreateWindowSizeDependentResources()
 		spSwapChain2->SetMatrixTransform(&inverseScale)
 	);
 
-	// 创建交换链后台缓冲区的渲染目标视图。
-	ComPtr<ID3D11Texture2D1> backBuffer;
-	DX::ThrowIfFailed(
-		m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))
-	);
+	// 创建交换链后台缓冲区的呈现目标视图。
+	{
+		m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptor(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
+		for (UINT n = 0; n < c_frameCount; n++)
+		{
+			DX::ThrowIfFailed(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
+			m_d3dDevice->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvDescriptor);
+			rtvDescriptor.Offset(m_rtvDescriptorSize);
 
-	DX::ThrowIfFailed(
-		m_d3dDevice->CreateRenderTargetView1(
-			backBuffer.Get(),
-			nullptr,
-			&m_d3dRenderTargetView
-		)
-	);
-
-	// 根据需要创建用于 3D 渲染的深度模具视图。
-	CD3D11_TEXTURE2D_DESC1 depthStencilDesc(
-		DXGI_FORMAT_D24_UNORM_S8_UINT,
-		lround(m_d3dRenderTargetSize.Width),
-		lround(m_d3dRenderTargetSize.Height),
-		1, // 此深度模具视图只有一个纹理。
-		1, // 使用单一 mipmap 级别。
-		D3D11_BIND_DEPTH_STENCIL
-	);
-
-	ComPtr<ID3D11Texture2D1> depthStencil;
-	DX::ThrowIfFailed(
-		m_d3dDevice->CreateTexture2D1(
-			&depthStencilDesc,
-			nullptr,
-			&depthStencil
-		)
-	);
-
-	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
-	DX::ThrowIfFailed(
-		m_d3dDevice->CreateDepthStencilView(
-			depthStencil.Get(),
-			&depthStencilViewDesc,
-			&m_d3dDepthStencilView
-		)
-	);
+			WCHAR name[25];
+			if (swprintf_s(name, L"m_renderTargets[%u]", n) > 0)
+			{
+				DX::SetName(m_renderTargets[n].Get(), name);
+			}
+		}
+	}
 
 	// 设置用于确定整个窗口的 3D 渲染视区。
-	m_screenViewport = CD3D11_VIEWPORT(
-		0.0f,
-		0.0f,
-		m_d3dRenderTargetSize.Width,
-		m_d3dRenderTargetSize.Height
-	);
-
-	m_d3dContext->RSSetViewports(1, &m_screenViewport);
-
-	// 创建与交换链后台缓冲区关联的 Direct2D 目标位图
-	// 并将其设置为当前目标。
-	D2D1_BITMAP_PROPERTIES1 bitmapProperties =
-		D2D1::BitmapProperties1(
-			D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
-			D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
-			m_dpi,
-			m_dpi
-		);
-
-	ComPtr<IDXGISurface2> dxgiBackBuffer;
-	DX::ThrowIfFailed(
-		m_swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiBackBuffer))
-	);
-
-	DX::ThrowIfFailed(
-		m_d2dContext->CreateBitmapFromDxgiSurface(
-			dxgiBackBuffer.Get(),
-			&bitmapProperties,
-			&m_d2dTargetBitmap
-		)
-	);
-
-	m_d2dContext->SetTarget(m_d2dTargetBitmap.Get());
-	m_d2dContext->SetDpi(m_effectiveDpi, m_effectiveDpi);
-
-	// 建议将灰度文本抗锯齿用于所有 Windows 应用商店应用。
-	m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
-}
-
-//其他资源
-void Coocoo3DGraphics::DeviceResources::CreateOtherResources()
-{
-	auto desc = D3D11_RASTERIZER_DESC();
-	desc.FillMode = D3D11_FILL_SOLID;
-	desc.CullMode = D3D11_CULL_BACK;
-	desc.FrontCounterClockwise = FALSE;
-	desc.DepthBias = D3D11_DEFAULT_DEPTH_BIAS;
-	desc.DepthBiasClamp = D3D11_DEFAULT_DEPTH_BIAS_CLAMP;
-	desc.SlopeScaledDepthBias = D3D11_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-	desc.DepthClipEnable = TRUE;
-	desc.ScissorEnable = FALSE;
-	desc.MultisampleEnable = FALSE;
-	desc.AntialiasedLineEnable = FALSE;
-
-	desc.CullMode = D3D11_CULL_NONE;
-	m_d3dDevice->CreateRasterizerState(&desc, &m_RasterizerStateCullNone);
-	desc.CullMode = D3D11_CULL_FRONT;
-	m_d3dDevice->CreateRasterizerState(&desc, &m_RasterizerStateCullFront);
-	desc.CullMode = D3D11_CULL_BACK;
-	m_d3dDevice->CreateRasterizerState(&desc, &m_RasterizerStateCullBack);
+	m_screenViewport = { 0.0f, 0.0f, m_d3dRenderTargetSize.Width, m_d3dRenderTargetSize.Height, 0.0f, 1.0f };
 }
 
 // 确定呈现器目标的尺寸及其是否将缩小。
-void Coocoo3DGraphics::DeviceResources::UpdateRenderTargetSize()
+void DeviceResources::UpdateRenderTargetSize()
 {
 	m_effectiveDpi = m_dpi;
-	m_effectiveCompositionScaleX = m_compositionScaleX;
-	m_effectiveCompositionScaleY = m_compositionScaleY;
 
-	// 为了延长高分辨率设备上的电池使用时间，请呈现到较小的呈现器目标
-	// 并允许 GPU 在显示输出时缩放输出。
-	if (m_dpi > DisplayMetrics::DpiThreshold)
-	{
-		float width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_dpi);
-		float height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_dpi);
-	}
-
-	// 计算必要的呈现器目标大小(以像素为单位)。
+	// 计算必要的呈现目标大小(以像素为单位)。
 	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_effectiveDpi);
 	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_effectiveDpi);
 
@@ -521,25 +478,44 @@ void Coocoo3DGraphics::DeviceResources::UpdateRenderTargetSize()
 	m_outputSize.Height = max(m_outputSize.Height, 1);
 }
 
-// 创建(或重新创建) XAML 控件时调用此方法。
-void Coocoo3DGraphics::DeviceResources::SetSwapChainPanel(SwapChainPanel^ panel)
+DeviceResources::DeviceResources() :
+	m_frameIndex(0),
+	m_executeIndex(0),
+	m_screenViewport(),
+	m_rtvDescriptorSize(0),
+	m_fenceEvent(0),
+	m_backBufferFormat(DXGI_FORMAT_B8G8R8A8_UNORM),
+	m_fenceValues{},
+	m_d3dRenderTargetSize(),
+	m_outputSize(),
+	m_logicalSize(),
+	m_nativeOrientation(DisplayOrientations::None),
+	m_currentOrientation(DisplayOrientations::None),
+	m_dpi(-1.0f),
+	m_effectiveDpi(-1.0f),
+	m_deviceRemoved(false)
+{
+	CreateDeviceResources();
+}
+
+// 当创建(或重新创建) CoreWindow 时调用此方法。
+void DeviceResources::SetSwapChainPanel(SwapChainPanel^ window)
 {
 	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
-	m_swapChainPanel = panel;
-	m_logicalSize = Windows::Foundation::Size(static_cast<float>(panel->ActualWidth), static_cast<float>(panel->ActualHeight));
+	m_window = window;
+	m_logicalSize = Windows::Foundation::Size(window->Width, window->Height);
 	m_nativeOrientation = currentDisplayInformation->NativeOrientation;
 	m_currentOrientation = currentDisplayInformation->CurrentOrientation;
-	m_compositionScaleX = panel->CompositionScaleX;
-	m_compositionScaleY = panel->CompositionScaleY;
+	m_compositionScaleX = window->CompositionScaleX;
+	m_compositionScaleY = window->CompositionScaleY;
 	m_dpi = currentDisplayInformation->LogicalDpi;
-	m_d2dContext->SetDpi(m_dpi, m_dpi);
 
 	CreateWindowSizeDependentResources();
 }
 
 // 在 SizeChanged 事件的事件处理程序中调用此方法。
-void Coocoo3DGraphics::DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
+void DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
 {
 	if (m_logicalSize != logicalSize)
 	{
@@ -549,18 +525,21 @@ void Coocoo3DGraphics::DeviceResources::SetLogicalSize(Windows::Foundation::Size
 }
 
 // 在 DpiChanged 事件的事件处理程序中调用此方法。
-void Coocoo3DGraphics::DeviceResources::SetDpi(float dpi)
+void DeviceResources::SetDpi(float dpi)
 {
 	if (dpi != m_dpi)
 	{
 		m_dpi = dpi;
-		m_d2dContext->SetDpi(m_dpi, m_dpi);
+
+		// 显示 DPI 更改时，窗口的逻辑大小(以 Dip 为单位)也将更改并且需要更新。
+		m_logicalSize = Windows::Foundation::Size(m_window->Width, m_window->Height);
+
 		CreateWindowSizeDependentResources();
 	}
 }
 
 // 在 OrientationChanged 事件的事件处理程序中调用此方法。
-void Coocoo3DGraphics::DeviceResources::SetCurrentOrientation(DisplayOrientations currentOrientation)
+void DeviceResources::SetCurrentOrientation(DisplayOrientations currentOrientation)
 {
 	if (m_currentOrientation != currentOrientation)
 	{
@@ -569,51 +548,34 @@ void Coocoo3DGraphics::DeviceResources::SetCurrentOrientation(DisplayOrientation
 	}
 }
 
-//在 CompositionScaleChanged 事件的事件处理程序中调用此方法
-void Coocoo3DGraphics::DeviceResources::SetCompositionScale(float compositionScaleX, float compositionScaleY)
-{
-	if (m_compositionScaleX != compositionScaleX ||
-		m_compositionScaleY != compositionScaleY)
-	{
-		m_compositionScaleX = compositionScaleX;
-		m_compositionScaleY = compositionScaleY;
-		CreateWindowSizeDependentResources();
-	}
-}
-
 // 在 DisplayContentsInvalidated 事件的事件处理程序中调用此方法。
-void Coocoo3DGraphics::DeviceResources::ValidateDevice()
+void DeviceResources::ValidateDevice()
 {
 	// 如果默认适配器更改，D3D 设备将不再有效，因为该设备
 	// 已创建或该设备已移除。
 
-	// 首先，获取自设备创建以来的默认适配器信息。
+	// 首先在创建设备时，从中获取默认适配器的 LUID。
 
-	ComPtr<IDXGIDevice3> dxgiDevice;
-	DX::ThrowIfFailed(m_d3dDevice.As(&dxgiDevice));
+	DXGI_ADAPTER_DESC previousDesc;
+	{
+		ComPtr<IDXGIAdapter1> previousDefaultAdapter;
+		DX::ThrowIfFailed(m_dxgiFactory->EnumAdapters1(0, &previousDefaultAdapter));
 
-	ComPtr<IDXGIAdapter> deviceAdapter;
-	DX::ThrowIfFailed(dxgiDevice->GetAdapter(&deviceAdapter));
-
-	ComPtr<IDXGIFactory2> deviceFactory;
-	DX::ThrowIfFailed(deviceAdapter->GetParent(IID_PPV_ARGS(&deviceFactory)));
-
-	ComPtr<IDXGIAdapter1> previousDefaultAdapter;
-	DX::ThrowIfFailed(deviceFactory->EnumAdapters1(0, &previousDefaultAdapter));
-
-	DXGI_ADAPTER_DESC1 previousDesc;
-	DX::ThrowIfFailed(previousDefaultAdapter->GetDesc1(&previousDesc));
+		DX::ThrowIfFailed(previousDefaultAdapter->GetDesc(&previousDesc));
+	}
 
 	// 接下来，获取当前默认适配器的信息。
 
-	ComPtr<IDXGIFactory4> currentFactory;
-	DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&currentFactory)));
+	DXGI_ADAPTER_DESC currentDesc;
+	{
+		ComPtr<IDXGIFactory4> currentDxgiFactory;
+		DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&currentDxgiFactory)));
 
-	ComPtr<IDXGIAdapter1> currentDefaultAdapter;
-	DX::ThrowIfFailed(currentFactory->EnumAdapters1(0, &currentDefaultAdapter));
+		ComPtr<IDXGIAdapter1> currentDefaultAdapter;
+		DX::ThrowIfFailed(currentDxgiFactory->EnumAdapters1(0, &currentDefaultAdapter));
 
-	DXGI_ADAPTER_DESC1 currentDesc;
-	DX::ThrowIfFailed(currentDefaultAdapter->GetDesc1(&currentDesc));
+		DX::ThrowIfFailed(currentDefaultAdapter->GetDesc(&currentDesc));
+	}
 
 	// 如果适配器 LUID 不匹配，或者该设备报告它已被移除，
 	// 则必须创建新的 D3D 设备。
@@ -622,115 +584,113 @@ void Coocoo3DGraphics::DeviceResources::ValidateDevice()
 		previousDesc.AdapterLuid.HighPart != currentDesc.AdapterLuid.HighPart ||
 		FAILED(m_d3dDevice->GetDeviceRemovedReason()))
 	{
-		// 发布对与旧设备相关的资源的引用。
-		dxgiDevice = nullptr;
-		deviceAdapter = nullptr;
-		deviceFactory = nullptr;
-		previousDefaultAdapter = nullptr;
-
-		// 创建新设备和交换链。
-		HandleDeviceLost();
+		m_deviceRemoved = true;
 	}
 }
 
-// 重新创建所有设备资源并将其设置回当前状态。
-void Coocoo3DGraphics::DeviceResources::HandleDeviceLost()
-{
-	m_swapChain = nullptr;
-
-	if (m_deviceNotify != nullptr)
-	{
-		m_deviceNotify->OnDeviceLost();
-	}
-
-	CreateDeviceResources();
-	CreateOtherResources();
-	m_d2dContext->SetDpi(m_dpi, m_dpi);
-	CreateWindowSizeDependentResources();
-
-	if (m_deviceNotify != nullptr)
-	{
-		m_deviceNotify->OnDeviceRestored();
-	}
-}
-
-// 注册我们的 DeviceNotify 以便在设备丢失和创建时收到通知。
-void Coocoo3DGraphics::DeviceResources::RegisterDeviceNotify(Coocoo3DGraphics::IDeviceNotify* deviceNotify)
-{
-	m_deviceNotify = deviceNotify;
-}
-
-// 在应用程序挂起时调用此方法。它可提示驱动程序该应用程序
-// 正在进入空闲状态，可以回收临时缓冲区以供其他应用程序使用。
-void Coocoo3DGraphics::DeviceResources::Trim()
-{
-	ComPtr<IDXGIDevice3> dxgiDevice;
-	m_d3dDevice.As(&dxgiDevice);
-
-	dxgiDevice->Trim();
-}
-
-// 将交换链的内容显示到屏幕上。
-void Coocoo3DGraphics::DeviceResources::Present()
+void DeviceResources::Present(bool vsync)
 {
 	// 第一个参数指示 DXGI 进行阻止直到 VSync，这使应用程序
-	// 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
-	// 从不会在屏幕上显示的帧。
-	DXGI_PRESENT_PARAMETERS parameters = { 0 };
-	HRESULT hr = m_swapChain->Present1(0, DXGI_PRESENT_ALLOW_TEARING, &parameters);
-
-	// 放弃呈现目标的内容。
-	// 这是仅在完全覆盖现有内容时
-	//已覆盖。如果使用脏矩形或滚动矩形，则应修改此调用。
-	m_d3dContext->DiscardView1(m_d3dRenderTargetView.Get(), nullptr, 0);
-
-	// 放弃深度模具的内容。
-	m_d3dContext->DiscardView1(m_d3dDepthStencilView.Get(), nullptr, 0);
+// 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
+// 从不会在屏幕上显示的帧。
+	HRESULT hr;
+	if (vsync)
+	{
+		if (m_ResolutionChange)
+		{
+			hr = m_swapChain->Present(1, 0);
+			m_ResolutionChange = false;
+		}
+		else
+		{
+			hr = m_swapChain->Present(1, 0);
+		}
+	}
+	else
+	{
+		if (m_ResolutionChange)
+		{
+			hr = m_swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
+			m_ResolutionChange = false;
+		}
+		else
+		{
+			hr = m_swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
+		}
+	}
 
 	// 如果通过断开连接或升级驱动程序移除了设备，则必须
 	// 必须重新创建所有设备资源。
 	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 	{
-		HandleDeviceLost();
+		m_deviceRemoved = true;
 	}
 	else
 	{
 		DX::ThrowIfFailed(hr);
+
+		DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
+
+		// 提高帧索引。
+		m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+		m_executeIndex = (m_executeIndex < (c_frameCount - 1)) ? (m_executeIndex + 1) : 0;
+
+		// 检查下一帧是否准备好启动。
+		if (m_fence->GetCompletedValue() < m_fenceValues[m_executeIndex])
+		{
+			DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_executeIndex], m_fenceEvent));
+			WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+		}
+
+		// 为下一帧设置围栏值。
+		m_currentFenceValue++;
+		m_fenceValues[m_executeIndex] = m_currentFenceValue;
 	}
 }
 
-// 将交换链的内容显示到屏幕上。
-void Coocoo3DGraphics::DeviceResources::Present(bool useVsync)
+// 等待挂起的 GPU 工作完成。
+void DeviceResources::WaitForGpu()
 {
-	// 第一个参数指示 DXGI 进行阻止直到 VSync，这使应用程序
-	// 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
-	// 从不会在屏幕上显示的帧。
-	DXGI_PRESENT_PARAMETERS parameters = { 0 };
-	HRESULT hr = m_swapChain->Present1(useVsync ? 1 : 0, useVsync ? 0 : DXGI_PRESENT_ALLOW_TEARING, &parameters);
+	// 在队列中安排信号命令。
+	DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
 
-	// 放弃呈现目标的内容。
-	// 这是仅在完全覆盖现有内容时
-	//已覆盖。如果使用脏矩形或滚动矩形，则应修改此调用。
-	m_d3dContext->DiscardView1(m_d3dRenderTargetView.Get(), nullptr, 0);
+	// 等待跨越围栏。
+	DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, m_fenceEvent));
+	WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
 
-	// 放弃深度模具的内容。
-	m_d3dContext->DiscardView1(m_d3dDepthStencilView.Get(), nullptr, 0);
+	// 对当前帧递增围栏值。
+	m_currentFenceValue++;
+	m_fenceValues[m_executeIndex] = m_currentFenceValue;
+}
 
-	// 如果通过断开连接或升级驱动程序移除了设备，则必须
-	// 必须重新创建所有设备资源。
-	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
-	{
-		HandleDeviceLost();
-	}
-	else
-	{
-		DX::ThrowIfFailed(hr);
-	}
+bool DeviceResources::IsRayTracingSupport()
+{
+	return m_isRayTracingSupport;
+}
+
+DxgiFormat DeviceResources::GetBackBufferFormat1()
+{
+	return DxgiFormat(m_backBufferFormat);
+}
+
+UINT DeviceResources::BitsPerPixel(DxgiFormat format)
+{
+	return BitsPerPixel((DXGI_FORMAT)format);
+}
+
+Platform::String^ DeviceResources::GetDeviceDescription()
+{
+	return ref new Platform::String(m_deviceDescription);
+}
+
+UINT64 DeviceResources::GetDeviceVideoMemory()
+{
+	return m_deviceVideoMem;
 }
 
 // 此方法确定以下两个元素之间的旋转方式: 显示设备的本机方向和
 // 当前显示方向。
-DXGI_MODE_ROTATION Coocoo3DGraphics::DeviceResources::ComputeDisplayRotation()
+DXGI_MODE_ROTATION DeviceResources::ComputeDisplayRotation()
 {
 	DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
 
@@ -781,4 +741,35 @@ DXGI_MODE_ROTATION Coocoo3DGraphics::DeviceResources::ComputeDisplayRotation()
 		break;
 	}
 	return rotation;
+}
+
+// 此方法获取支持 Direct3D 12 的第一个可用硬件适配器。
+// 如果找不到此类适配器，则 *ppAdapter 将设置为 nullptr。
+void DeviceResources::GetHardwareAdapter(IDXGIAdapter1** ppAdapter)
+{
+	ComPtr<IDXGIAdapter1> adapter;
+	*ppAdapter = nullptr;
+
+	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter); adapterIndex++)
+	{
+		DXGI_ADAPTER_DESC1 desc;
+		adapter->GetDesc1(&desc);
+
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		{
+			// 不要选择基本呈现驱动程序适配器。
+			continue;
+		}
+
+		// 检查适配器是否支持 Direct3D 12，但不要创建
+		// 仍为实际设备。
+		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			memcpy(m_deviceDescription, desc.Description, sizeof(desc.Description));
+			m_deviceVideoMem = desc.DedicatedVideoMemory;
+			break;
+		}
+	}
+
+	*ppAdapter = adapter.Detach();
 }

@@ -49,40 +49,54 @@ namespace Coocoo3D.PropertiesPages
 
         private void Remove_Click(object sender, RoutedEventArgs e)
         {
-            if (viewSceneObjects.SelectedItem != null)
+            var selectedItems = viewSceneObjects.SelectedItems;
+            while (0 < selectedItems.Count)
             {
-                UI.UISharedCode.RemoveSceneObject(appBody, appBody.CurrentScene, (ISceneObject)viewSceneObjects.SelectedItem);
+                UI.UISharedCode.RemoveSceneObject(appBody, appBody.CurrentScene, (ISceneObject)selectedItems[0]);
             }
         }
 
         private void ViewSceneObjects_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             IList<object> selectedItem = (sender as ListView).SelectedItems;
-            appBody.SelectedEntities.Clear();
-            appBody.SelectedLighting.Clear();
-            for (int i = 0; i < selectedItem.Count; i++)
+            lock (appBody.selectedObjcetLock)
             {
-                if (selectedItem[i] is MMD3DEntity entity)
-                    appBody.SelectedEntities.Add(entity);
-                else if (selectedItem[i] is Lighting lighting)
-                    appBody.SelectedLighting.Add(lighting);
-            }
-            if (selectedItem.Count == 1)
-            {
-                if (appBody.SelectedEntities.Count == 1)
+                appBody.SelectedEntities.Clear();
+                appBody.SelectedLighting.Clear();
+                for (int i = 0; i < selectedItem.Count; i++)
                 {
-                    appBody.ShowDetailPage(typeof(EntityPropertiesPage), appBody);
+                    if (selectedItem[i] is MMD3DEntity entity)
+                        appBody.SelectedEntities.Add(entity);
+                    else if (selectedItem[i] is Lighting lighting)
+                        appBody.SelectedLighting.Add(lighting);
+
                 }
-                else if (appBody.SelectedLighting.Count == 1)
+                if (selectedItem.Count == 1)
                 {
-                    appBody.ShowDetailPage(typeof(LightingPropertiesPage), appBody);
+                    if (appBody.SelectedEntities.Count == 1)
+                    {
+                        appBody.ShowDetailPage(typeof(EntityPropertiesPage), appBody);
+                    }
+                    else if (appBody.SelectedLighting.Count == 1)
+                    {
+                        appBody.ShowDetailPage(typeof(LightingPropertiesPage), appBody);
+                    }
+                }
+                else
+                {
+                    appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
                 }
             }
-            else
+            appBody.RequireRender();
+        }
+
+        private void ViewSceneObjects_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+        {
+            if (args.DropResult == Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move)
             {
-                appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
+                appBody.CurrentScene.SortObjects();
+                appBody.RequireRender();
             }
-            appBody.RenderFrame();
         }
     }
     public class SceneObjectTemplateSelector : DataTemplateSelector

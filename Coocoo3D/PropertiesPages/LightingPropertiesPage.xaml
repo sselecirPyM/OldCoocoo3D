@@ -24,6 +24,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -31,14 +32,23 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.ColumnSpan="3" Text="光照"/>
-                        <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="X" Value="{x:Bind VRX,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="Y" Value="{x:Bind VRY,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="Z" Value="{x:Bind VRZ,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="2" Grid.Column="0" Header="R" Value="{x:Bind VCR,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="2" Grid.Column="1" Header="G" Value="{x:Bind VCG,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="2" Grid.Column="2" Header="B" Value="{x:Bind VCB,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="3" Grid.Column="0" Header="A" Value="{x:Bind VCA,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="X" Value="{x:Bind VPX,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="Y" Value="{x:Bind VPY,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="Z" Value="{x:Bind VPZ,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="2" Grid.Column="0" Header="X" Value="{x:Bind VRX,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="2" Grid.Column="1" Header="Y" Value="{x:Bind VRY,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="2" Grid.Column="2" Header="Z" Value="{x:Bind VRZ,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="3" Grid.Column="0" Header="R" Value="{x:Bind VCR,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="3" Grid.Column="1" Header="G" Value="{x:Bind VCG,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="3" Grid.Column="2" Header="B" Value="{x:Bind VCB,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="4" Grid.Column="0" Header="A" Value="{x:Bind VCA,Mode=TwoWay}" AcceptsExpression="True"/>
+                        <mu:NumberBox Grid.Row="4" Grid.Column="1" Header="Range" Value="{x:Bind VRange,Mode=TwoWay}" AcceptsExpression="True"/>
                     </Grid>
+                    <mu:RadioButtons>
+                        <RadioButton x:Name="radio1" Content="平行光" Tag="directional" Checked="RadioButton_Checked"/>
+                        <RadioButton x:Name="radio2" Content="点光" Tag="point" Checked="RadioButton_Checked"/>
+                    </mu:RadioButtons>
+                    <Button Content="Random Position" Click="RandomPositionButton_Click"/>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

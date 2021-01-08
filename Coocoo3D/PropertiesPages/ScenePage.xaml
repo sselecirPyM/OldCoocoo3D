@@ -28,7 +28,9 @@
                   SelectionChanged="ViewSceneObjects_SelectionChanged"
                   AllowDrop="True"
                   CanReorderItems="True"
-                  ItemTemplateSelector="{StaticResource templateSelector}">
+                  CanDragItems="True"
+                  ItemTemplateSelector="{StaticResource templateSelector}"
+                  DragItemsCompleted="ViewSceneObjects_DragItemsCompleted">
         </ListView>
         <StackPanel Grid.Row="1" Orientation="Horizontal">
             <StackPanel.Resources>

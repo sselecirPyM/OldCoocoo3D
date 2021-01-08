@@ -1,0 +1,44 @@
+﻿<Page
+    x:Class="Coocoo3D.PropertiesPages.PostProcessPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Coocoo3D.PropertiesPages"
+    xmlns:mu="using:Microsoft.UI.Xaml.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <ScrollViewer Padding="10 0 25 0">
+            <StackPanel Spacing="1">
+                <mu:NumberBox Header="Gamma校正" Value="{x:Bind VGammaCorrection,Mode=TwoWay}"/>
+                <StackPanel BorderThickness="2" BorderBrush="LightPink">
+                    <mu:NumberBox Header="高亮阈值" Value="{x:Bind VThreshold1,Mode=TwoWay}"/>
+                    <mu:NumberBox Header="过渡范围" Value="{x:Bind VTransition1,Mode=TwoWay}"/>
+                    <Slider Header="饱和度" Value="{x:Bind VSaturation1,Mode=TwoWay}" Minimum="0" Maximum="2" StepFrequency="0.01"/>
+                </StackPanel>
+                <StackPanel BorderThickness="2" BorderBrush="LightGreen">
+                    <mu:NumberBox Header="中阈值" Value="{x:Bind VThreshold2,Mode=TwoWay}"/>
+                    <mu:NumberBox Header="过渡范围" Value="{x:Bind VTransition2,Mode=TwoWay}"/>
+                    <Slider Header="饱和度" Value="{x:Bind VSaturation2,Mode=TwoWay}" Minimum="0" Maximum="2" StepFrequency="0.01"/>
+                </StackPanel>
+                <StackPanel BorderThickness="2" BorderBrush="LightBlue">
+                    <Slider Header="饱和度" Value="{x:Bind VSaturation3,Mode=TwoWay}" Minimum="0" Maximum="2" StepFrequency="0.01"/>
+                </StackPanel>
+                <TextBlock Text="镜头图案"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Width="100" Height="100" BorderThickness="1" BorderBrush="Gray">
+                        <Image x:Name="_img0" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="0" Source="ms-appx:///Assets/Textures/UI_0.png"/>
+                    </Border>
+                    <Button Content="应用" Grid.Column="1" Click="Button_Click"/>
+                </Grid>
+                <Slider Header="镜头图案强度" Value="{x:Bind VBackgroundFactory,Mode=TwoWay}" Minimum="0" Maximum="1" StepFrequency="0.01"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

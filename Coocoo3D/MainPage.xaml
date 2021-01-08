@@ -122,34 +122,42 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <MenuBar>
-            <MenuBarItem Title="文件">
-                <MenuFlyoutItem Text="打开文件夹" Click="OpenFolder_Click"/>
-                <MenuFlyoutItem Text="背景音乐" Click="OpenMedia_Click"/>
+            <MenuBarItem x:Uid="M_MenuBarItem_File">
+                <MenuFlyoutItem x:Uid="M_MenuBarItem_OpenFolder" Click="OpenFolder_Click"/>
+                <MenuFlyoutItem x:Uid="M_MenuBarItem_BackgroundMusic" Click="OpenMedia_Click"/>
             </MenuBarItem>
-            <MenuBarItem Title="帮助">
-                <MenuFlyoutItem Text="关于软件" Click="About_Click"/>
+            <MenuBarItem x:Uid="M_MenuBarItem_View">
+                <MenuFlyoutSubItem x:Uid="M_MenuBarItem_Layout">
+                    <muxc:RadioMenuFlyoutItem Text="1" GroupName="G1" Click="RadioMenuFlyoutItem1_Click"/>
+                    <muxc:RadioMenuFlyoutItem Text="2" GroupName="G1" IsChecked="True" Click="RadioMenuFlyoutItem2_Click"/>
+                    <muxc:RadioMenuFlyoutItem Text="3" GroupName="G1" Click="RadioMenuFlyoutItem3_Click"/>
+                </MenuFlyoutSubItem>
+            </MenuBarItem>
+            <MenuBarItem x:Uid="M_MenuBarItem_Help">
+                <MenuFlyoutItem x:Uid="M_MenuBarItem_AboutThisSoftware" Click="About_Click"/>
+                <MenuFlyoutItem x:Uid="M_MenuBarItem_ShaderFileSample" Click="SampleShader_Click"/>
             </MenuBarItem>
         </MenuBar>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="360" x:Name="x1"/>
             </Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="180"/>
+                    <RowDefinition Height="270" x:Name="x2"/>
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="240"/>
+                        <ColumnDefinition Width="360" x:Name="x3"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <muxc:TabView x:Name="tabViewL1"
                               CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
                     </muxc:TabView>
                     <MediaElement x:Name="mediaElement" Grid.Column="1" AutoPlay="False"/>
-                    <controls:WorldViewer x:Name="worldViewer" Grid.Column="1"/>
+                    <controls:WorldViewer x:Name="worldViewer" Grid.Column="1" Loaded="worldViewer_Loaded"/>
                 </Grid>
                 <muxc:TabView Grid.Row="1" x:Name="tabViewB1"
                               CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
@@ -161,49 +169,30 @@
                                     <Setter Property="Padding" Value="1"/>
                                 </Style>
                             </StackPanel.Resources>
-                            <Button ToolTipService.ToolTip="打开文件夹"
-                            Content="&#xED25;"
-                            Click="OpenFolder_Click"/>
-                            <Button ToolTipService.ToolTip="背景音乐"
-                            Content="&#xE8D6;"
-                            Click="OpenMedia_Click"
+                            <Button ToolTipService.ToolTip="打开文件夹" Content="&#xED25;" Click="OpenFolder_Click"/>
+                            <Button ToolTipService.ToolTip="背景音乐" Content="&#xE8D6;" Click="OpenMedia_Click"
                             Margin="0 0 30 0"/>
-                            <Button ToolTipService.ToolTip="播放"
-                            Content="&#xE102;"
-                            Click="Play_Click"/>
-                            <Button ToolTipService.ToolTip="暂停"
-                            Content="&#xE103;"
-                            Click="Pause_Click"/>
-                            <Button ToolTipService.ToolTip="停止"
-                            Content="&#xE71A;"
-                            Click="Stop_Click"/>
-                            <Button ToolTipService.ToolTip="快退"
-                        Content="&#xEB9E;"
-                        Click="Rewind_Click"/>
-                            <Button ToolTipService.ToolTip="快进"
-                        Content="&#xEB9D;"
-                        Click="FastForward_Click"/>
-                            <Button ToolTipService.ToolTip="跳到最前"
-                        Content="&#xE100;"
-                        Click="Front_Click"/>
-                            <Button ToolTipService.ToolTip="跳到最后"
-                            Content="&#xE101;"
-                            Click="Rear_Click"
+                            <Button ToolTipService.ToolTip="播放" Content="&#xE102;" Click="Play_Click"/>
+                            <Button ToolTipService.ToolTip="暂停" Content="&#xE103;" Click="Pause_Click"/>
+                            <Button ToolTipService.ToolTip="停止" Content="&#xE71A;" Click="Stop_Click"/>
+                            <Button ToolTipService.ToolTip="快退" Content="&#xEB9E;" Click="Rewind_Click"/>
+                            <Button ToolTipService.ToolTip="快进" Content="&#xEB9D;" Click="FastForward_Click"/>
+                            <Button ToolTipService.ToolTip="跳到最前" Content="&#xE100;" Click="Front_Click"/>
+                            <Button ToolTipService.ToolTip="跳到最后" Content="&#xE101;" Click="Rear_Click"/>
+                            <Button ToolTipService.ToolTip="录制图片序列" Content="&#xE1F5;" Click="Record_Click"
                             Margin="0 0 30 0"/>
                         </StackPanel>
                     </muxc:TabView.TabStripFooter>
                 </muxc:TabView>
             </Grid>
-            <Grid Grid.Column="1" Width="240">
+            <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
                     <RowDefinition Height="2*"/>
-                    <RowDefinition Height="3*"/>
                 </Grid.RowDefinitions>
-                <muxc:TabView x:Name="tabViewR1"
-                              CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
+                <muxc:TabView x:Name="tabViewR1" CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
                 </muxc:TabView>
-                <muxc:TabView x:Name="tabViewR2" Grid.Row="1"
-                              CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
+                <muxc:TabView x:Name="tabViewR2" Grid.Row="1" CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
                 </muxc:TabView>
             </Grid>
         </Grid>

@@ -73,29 +73,48 @@ namespace Coocoo3D.PropertiesPages
             }
             else if (grid.DataContext is StorageFile file && !HaveLoadTask)
             {
+                var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
                 if (file.FileType.Equals(".pmx", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    await appBody.WaitForResourcesLoadedAsync();
-                    await UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, viewFolderStack.Last());
+                    try
+                    {
+                        await UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, viewFolderStack.Last());
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_PMXError"), exception));
+                        await dialog.ShowAsync();
+                    }
                 }
                 else if (file.FileType.Equals(".vmd", StringComparison.CurrentCultureIgnoreCase))
                 {
                     HaveLoadTask = true;
-                    BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
-                    VMDFormat motionSet = VMDFormat.Load(reader);
-                    lock (appBody.deviceResources)
+                    try
                     {
-                        foreach (var entity in appBody.SelectedEntities)
+                        BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
+                        VMDFormat motionSet = VMDFormat.Load(reader);
+                        lock (appBody.deviceResources)
                         {
-                            entity.motionComponent.Reload(motionSet);
+                            foreach (var entity in appBody.SelectedEntities)
+                            {
+                                entity.motionComponent.Reload(motionSet);
+                            }
                         }
                     }
-                    appBody.RenderFrame(true);
+                    catch (Exception exception)
+                    {
+                        MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
+                        await dialog.ShowAsync();
+                        HaveLoadTask = false;
+                        return;
+                    }
+                    appBody.GameDriverContext.RequireResetPhysics = true;
+                    appBody.RequireRender(true);
                     HaveLoadTask = false;
                 }
-                else if (file.FileType.Equals(".ccshader", StringComparison.CurrentCultureIgnoreCase))
+                else if (file.FileType.Equals(".hlsl", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    await UI.UISharedCode.LoadShaderForEntities(appBody, file, viewFolderStack.Last(),new List<Present.MMD3DEntity>( appBody.SelectedEntities));
+                    UI.UISharedCode.LoadShaderForEntities1(appBody, file, viewFolderStack.Last(), new List<Present.MMD3DEntity>(appBody.SelectedEntities));
                 }
             }
         }
@@ -108,17 +127,40 @@ namespace Coocoo3D.PropertiesPages
                 await SetFolder();
             }
         }
+        private async void FolderRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            if (viewFolderStack.Count > 0)
+            {
+                await SetFolder();
+            }
+        }
         async Task SetFolder()
         {
-            viewResource.ItemsSource = await viewFolderStack.Last().GetItemsAsync();
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(viewFolderStack[0].Name);
-            for (int i = 1; i < viewFolderStack.Count; i++)
+            try
             {
-                stringBuilder.Append('/');
-                stringBuilder.Append(viewFolderStack[i].Name);
+                viewResource.ItemsSource = await viewFolderStack.Last().GetItemsAsync();
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(viewFolderStack[0].Name);
+                for (int i = 1; i < viewFolderStack.Count; i++)
+                {
+                    stringBuilder.Append('/');
+                    stringBuilder.Append(viewFolderStack[i].Name);
+                }
+                vPath.Text = stringBuilder.ToString();
             }
-            vPath.Text = stringBuilder.ToString();
+            catch
+            {
+                if (viewFolderStack.Count > 0)
+                {
+                    viewFolderStack.RemoveAt(viewFolderStack.Count - 1);
+                    await SetFolder();
+                }
+                else
+                {
+                    viewResource.ItemsSource = null;
+                    vPath.Text = "";
+                }
+            }
         }
 
         private void ViewResource_DragItemsStarting(object sender, DragItemsStartingEventArgs e)

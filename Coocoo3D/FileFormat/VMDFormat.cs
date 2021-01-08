@@ -24,6 +24,7 @@ namespace Coocoo3D.FileFormat
             var uName = reader.ReadBytes(20);
             var jpEncoding = CodePagesEncodingProvider.Instance.GetEncoding("shift_jis");
             Name = jpEncoding.GetString(uName);
+            var stream = reader.BaseStream;
 
             int numOfBone = reader.ReadInt32();
             for (int i = 0; i < numOfBone; i++)
@@ -51,6 +52,8 @@ namespace Coocoo3D.FileFormat
 
                 keyFrames.Add(keyFrame);
             }
+            if (stream.Length - stream.Position == 0)
+                goto endlabel;
 
             int numOfMorph = reader.ReadInt32();
             for (int i = 0; i < numOfMorph; i++)
@@ -73,26 +76,55 @@ namespace Coocoo3D.FileFormat
 
                 keyFrames.Add(keyFrame);
             }
+            if (stream.Length - stream.Position == 0)
+                goto endlabel;
 
             int numOfCam = reader.ReadInt32();
             for (int i = 0; i < numOfCam; i++)
             {
                 CameraKeyFrame keyFrame = new CameraKeyFrame();
                 keyFrame.Frame = reader.ReadInt32();
-                keyFrame.focalLength = reader.ReadSingle();
+                keyFrame.distance = reader.ReadSingle();
                 keyFrame.position = ReadVector3(reader);
                 keyFrame.rotation = ReadVector3(reader);
-                keyFrame.Interpolator = reader.ReadBytes(24);
+                keyFrame.mxInterpolator = ReadCameraInterpolator(reader);
+                keyFrame.myInterpolator = ReadCameraInterpolator(reader);
+                keyFrame.mzInterpolator = ReadCameraInterpolator(reader);
+                keyFrame.rInterpolator = ReadCameraInterpolator(reader);
+                keyFrame.dInterpolator = ReadCameraInterpolator(reader);
+                keyFrame.fInterpolator = ReadCameraInterpolator(reader);
                 keyFrame.FOV = reader.ReadInt32();
                 keyFrame.orthographic = reader.ReadByte() != 0;
 
                 CameraKeyFrames.Add(keyFrame);
             }
+            if (stream.Length - stream.Position == 0)
+                goto endlabel;
 
+            int numOfLight = reader.ReadInt32();
+            for (int i = 0; i < numOfLight; i++)
+            {
+                LightKeyFrame lightKeyFrame = new LightKeyFrame();
+                lightKeyFrame.Frame = reader.ReadInt32();
+                lightKeyFrame.Color = ReadVector3(reader);
+                lightKeyFrame.Position = ReadVector3(reader);
+
+                LightKeyFrames.Add(lightKeyFrame);
+            }
+            if (stream.Length - stream.Position == 0)
+                goto endlabel;
+
+        endlabel:
             foreach (var keyframes in BoneKeyFrameSet.Values)
             {
                 keyframes.Sort();
             }
+            foreach (var keyframes in MorphKeyFrameSet.Values)
+            {
+                keyframes.Sort();
+            }
+            CameraKeyFrames.Sort();
+            LightKeyFrames.Sort();
         }
 
         public void SaveToFile(BinaryWriter writer)
@@ -154,27 +186,34 @@ namespace Coocoo3D.FileFormat
             foreach (var keyframe in CameraKeyFrames)
             {
                 writer.Write(keyframe.Frame);
-                writer.Write(keyframe.focalLength);
+                writer.Write(keyframe.distance);
                 WriteVector3(writer, keyframe.position);
                 WriteVector3(writer, keyframe.rotation);
-                writer.Write(keyframe.Interpolator);
+                WriteCameraInterpolator(writer, keyframe.mxInterpolator);
+                WriteCameraInterpolator(writer, keyframe.myInterpolator);
+                WriteCameraInterpolator(writer, keyframe.mzInterpolator);
+                WriteCameraInterpolator(writer, keyframe.rInterpolator);
+                WriteCameraInterpolator(writer, keyframe.dInterpolator);
+                WriteCameraInterpolator(writer, keyframe.fInterpolator);
                 writer.Write(keyframe.FOV);
                 writer.Write(Convert.ToByte(keyframe.orthographic));
             }
 
-        }
-
-        public VMDFormat GetCopy()
-        {
-            VMDFormat vmd = new VMDFormat();
-
-            return vmd;
+            int numOfLight = LightKeyFrames.Count;
+            writer.Write(numOfLight);
+            foreach (var keyframe in LightKeyFrames)
+            {
+                writer.Write(keyframe.Frame);
+                WriteVector3(writer, keyframe.Color);
+                WriteVector3(writer, keyframe.Position);
+            }
         }
         public byte[] headerChars;
         public string Name;
         public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, List<BoneKeyFrame>>();
         public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, List<MorphKeyFrame>>();
         public List<CameraKeyFrame> CameraKeyFrames { get; set; } = new List<CameraKeyFrame>();
+        public List<LightKeyFrame> LightKeyFrames { get; set; } = new List<LightKeyFrame>();
 
         private Interpolator ReadBoneInterpolator(BinaryReader reader)
         {
@@ -184,6 +223,17 @@ namespace Coocoo3D.FileFormat
             x.ay = (((reader.ReadInt32() & 0xFF) ^ 0x80) - 0x80) * c_is;
             x.bx = (((reader.ReadInt32() & 0xFF) ^ 0x80) - 0x80) * c_is;
             x.by = (((reader.ReadInt32() & 0xFF) ^ 0x80) - 0x80) * c_is;
+            return x;
+        }
+        private Interpolator ReadCameraInterpolator(BinaryReader reader)
+        {
+            const float c_is = 1.0f / 127.0f;
+            var x = new Interpolator();
+            uint a = reader.ReadUInt32();
+            x.ax = (((a & 0xFF) ^ 0x80) - 0x80) * c_is;
+            x.bx = ((((a & 0xFF00) >> 8) ^ 0x80) - 0x80) * c_is;
+            x.ay = ((((a & 0xFF0000) >> 16) ^ 0x80) - 0x80) * c_is;
+            x.by = ((((a & 0xFF000000) >> 24) ^ 0x80) - 0x80) * c_is;
             return x;
         }
         private Vector3 ReadVector3(BinaryReader reader)
@@ -209,6 +259,13 @@ namespace Coocoo3D.FileFormat
             writer.Write((((int)Math.Round(interpolator.ay * 127) + 0x80) ^ 0x80) & 0xFF);
             writer.Write((((int)Math.Round(interpolator.bx * 127) + 0x80) ^ 0x80) & 0xFF);
             writer.Write((((int)Math.Round(interpolator.by * 127) + 0x80) ^ 0x80) & 0xFF);
+        }
+        private void WriteCameraInterpolator(BinaryWriter writer, Interpolator interpolator)
+        {
+            writer.Write((((byte)Math.Round(interpolator.ax * 127) + 0x80) ^ 0x80) & 0xFF);
+            writer.Write((((byte)Math.Round(interpolator.bx * 127) + 0x80) ^ 0x80) & 0xFF);
+            writer.Write((((byte)Math.Round(interpolator.ay * 127) + 0x80) ^ 0x80) & 0xFF);
+            writer.Write((((byte)Math.Round(interpolator.by * 127) + 0x80) ^ 0x80) & 0xFF);
         }
         private void WriteVector3(BinaryWriter writer, Vector3 vector3)
         {

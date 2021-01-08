@@ -15,14 +15,13 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Coocoo3D.Core;
-
-// https://go.microsoft.com/fwlink/?LinkId=234238 上介绍了“空白页”项模板
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
+using Coocoo3D.FileFormat;
+using Windows.UI.Popups;
 
 namespace Coocoo3D.PropertiesPages
 {
-    /// <summary>
-    /// 可用于自身或导航至 Frame 内部的空白页。
-    /// </summary>
     public sealed partial class CommonPage : Page, INotifyPropertyChanged
     {
         public CommonPage()
@@ -33,10 +32,10 @@ namespace Coocoo3D.PropertiesPages
         public event PropertyChangedEventHandler PropertyChanged;
         Coocoo3DMain appBody;
 
-
+        uint[] comboBox1Values = new uint[6];
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            base.OnNavigatedFrom(e);
+            base.OnNavigatedTo(e);
             if (e.Parameter is Coocoo3DMain _appBody)
             {
                 appBody = _appBody;
@@ -45,10 +44,27 @@ namespace Coocoo3D.PropertiesPages
                 _cacheRot = appBody.camera.Angle;
                 _cacheFOV = appBody.camera.Fov;
                 _cacheDistance = appBody.camera.Distance;
+                _cachePlaySpeed = appBody.GameDriverContext.PlaySpeed;
+                var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+                string raytracingSupportMsg;
+                if (appBody.deviceResources.IsRayTracingSupport())
+                {
+                    raytracingSupportMsg = resourceLoader.GetString("Message_GPUSupportRayTracing");
+                }
+                else
+                {
+                    raytracingSupportMsg = resourceLoader.GetString("Message_GPUNotSupportRayTracing");
+                }
+                VRayTracingSupport.Text = string.Format("{0}\n{1}", appBody.deviceResources.GetDeviceDescription(), raytracingSupportMsg);
+                for (int i = 0; i < comboBox1Values.Length; i++)
+                {
+                    comboBox1Values[i] = (uint)i;
+                }
+                vQuality.ItemsSource = comboBox1Values;
             }
             else
             {
-                Frame.Navigate(typeof(ErrorPropertiesPage), "显示属性错误");
+                Frame.Navigate(typeof(ErrorPropertiesPage), "error");
             }
         }
 
@@ -61,6 +77,11 @@ namespace Coocoo3D.PropertiesPages
         PropertyChangedEventArgs eaVRZ = new PropertyChangedEventArgs("VRZ");
         PropertyChangedEventArgs eaVFOV = new PropertyChangedEventArgs("VFOV");
         PropertyChangedEventArgs eaVD = new PropertyChangedEventArgs("VD");
+        PropertyChangedEventArgs eaVCameraMotionOn = new PropertyChangedEventArgs("VCameraMotionOn");
+        PropertyChangedEventArgs eaVPlaySpeed = new PropertyChangedEventArgs("VPlaySpeed");
+        //long[] txs = new long[8];
+        int prevRenderCount = 0;
+        int prevVirtualRenderCount = 0;
         private void FrameUpdated(object sender, EventArgs e)
         {
             if (_cachePos != appBody.camera.LookAtPoint)
@@ -87,15 +108,41 @@ namespace Coocoo3D.PropertiesPages
                 _cacheDistance = appBody.camera.Distance;
                 PropertyChanged?.Invoke(this, eaVD);
             }
+            if (_cacheCameraMotionOn != appBody.camera.CameraMotionOn)
+            {
+                _cacheCameraMotionOn = appBody.camera.CameraMotionOn;
+                PropertyChanged?.Invoke(this, eaVCameraMotionOn);
+            }
+            if (_cachePlaySpeed != appBody.GameDriverContext.PlaySpeed)
+            {
+                _cachePlaySpeed = appBody.GameDriverContext.PlaySpeed;
+                PropertyChanged?.Invoke(this, eaVPlaySpeed);
+            }
             DateTime Now = DateTime.Now;
             if (Now - PrevUpdateTime > TimeSpan.FromSeconds(1))
             {
-                ViewFrameRate.Text = string.Format("帧率：{0}", (TimeSpan.FromSeconds(1) / (Now - PrevUpdateTime) * (appBody.RenderCount - prevRenderCount)).ToString(".0"));
+                int capRenderCount = appBody.CompletedRenderCount;
+                int capVRenderCount = appBody.VirtualRenderCount;
+                if (capVRenderCount - prevVirtualRenderCount > 0)
+                {
+                    ViewFrameRate.Text = string.Format("Virtual FPS: {0}", (TimeSpan.FromSeconds(1) / (Now - PrevUpdateTime) * (capVRenderCount - prevVirtualRenderCount)).ToString(".0"));
+                }
+                else
+                {
+                    ViewFrameRate.Text = string.Format("FPS: {0}", (TimeSpan.FromSeconds(1) / (Now - PrevUpdateTime) * (capRenderCount - prevRenderCount)).ToString(".0"));
+                }
+
                 PrevUpdateTime = Now;
-                prevRenderCount = appBody.RenderCount;
+                prevRenderCount = capRenderCount;
+                prevVirtualRenderCount = capVRenderCount;
             }
+            //Array.Copy(appBody.StopwatchTimes, txs, appBody.StopwatchTimes.Length);
+            //showt1.Text = txs[0].ToString();
+            //showt2.Text = txs[1].ToString();
+            //showt3.Text = txs[2].ToString();
+            //showt4.Text = txs[3].ToString();
+            //showt5.Text = txs[4].ToString();
         }
-        int prevRenderCount = 0;
         DateTime PrevUpdateTime = DateTime.Now;
 
         public float VPX
@@ -155,29 +202,38 @@ namespace Coocoo3D.PropertiesPages
             {
                 _cacheFOV = value * MathF.PI / 180.0f;
                 appBody.camera.Fov = value * MathF.PI / 180.0f;
-                appBody.RenderFrame();
+                appBody.RequireRender();
             }
         }
         float _cacheFOV;
         public float VD
         {
-            get => _cacheDistance; set
+            get => -_cacheDistance; set
             {
-                _cacheDistance = value;
-                appBody.camera.Distance = value;
-                appBody.RenderFrame();
+                _cacheDistance = -value;
+                appBody.camera.Distance = -value;
+                appBody.RequireRender();
             }
         }
         float _cacheDistance;
         void UpdatePositionFromUI()
         {
             appBody.camera.LookAtPoint = _cachePos;
-            appBody.RenderFrame();
+            appBody.RequireRender();
         }
         void UpdateRotationFromUI()
         {
             appBody.camera.Angle = _cacheRot;
-            appBody.RenderFrame();
+            appBody.RequireRender();
+        }
+        float _cachePlaySpeed;
+        public float VPlaySpeed
+        {
+            get => _cachePlaySpeed; set
+            {
+                _cachePlaySpeed = value;
+                appBody.GameDriverContext.PlaySpeed = value;
+            }
         }
 
         public bool VViewBone
@@ -193,32 +249,218 @@ namespace Coocoo3D.PropertiesPages
             }
         }
 
-        public bool VHighResolutionShadow
+        public bool VViewerUI
         {
-            get
-            {
-                return appBody.settings.HighResolutionShadow;
-            }
+            get => appBody.settings.ViewerUI;
             set
             {
-                appBody.settings.HighResolutionShadow = value;
-                if (value == true)
-                {
-                    lock (appBody.deviceResources)
-                    {
-                        appBody.defaultResources.DepthStencil0.ReloadAsDepthStencil(appBody.deviceResources, 8192, 8192);
-                    }
-                }
-                else
-                {
-                    lock (appBody.deviceResources)
-                    {
-                        appBody.defaultResources.DepthStencil0.ReloadAsDepthStencil(appBody.deviceResources, 4096, 4096);
-                    }
-                }
+                appBody.settings.ViewerUI = value;
                 appBody.RequireRender();
             }
         }
+
+        public float VSetFps
+        {
+            get => appBody.Fps; set
+            {
+                appBody.Fps = Math.Max(value, 1);
+                appBody.GameDriverContext.FrameInterval = TimeSpan.FromSeconds(1 / appBody.Fps);
+            }
+        }
+
+        public bool VSaveCpuPower
+        {
+            get => appBody.performaceSettings.SaveCpuPower;
+            set => appBody.performaceSettings.SaveCpuPower = value;
+        }
+
+        public bool VMultiThreadRendering
+        {
+            get => appBody.performaceSettings.MultiThreadRendering;
+            set => appBody.performaceSettings.MultiThreadRendering = value;
+        }
+
+        public bool VHighResolutionShadow
+        {
+            get => appBody.performaceSettings.HighResolutionShadow;
+            set
+            {
+                appBody.performaceSettings.HighResolutionShadow = value;
+                appBody.GameDriverContext.RequireInterruptRender = true;
+                appBody.RequireRender();
+            }
+        }
+
+        public bool VVSync
+        {
+            get => appBody.performaceSettings.VSync;
+            set => appBody.performaceSettings.VSync = value;
+        }
+
+        public bool VZPrepass
+        {
+            get => appBody.settings.ZPrepass; set
+            {
+                appBody.settings.ZPrepass = value;
+                appBody.RequireRender();
+            }
+        }
+
+        public bool VWireframe
+        {
+            get => appBody.settings.Wireframe; set
+            {
+                appBody.settings.Wireframe = value;
+                appBody.RequireRender();
+            }
+        }
+        public bool VEnableAO
+        {
+            get => appBody.inShaderSettings.EnableAO; set
+            {
+                appBody.inShaderSettings.EnableAO = value;
+                appBody.RequireRender();
+            }
+        }
+        public bool VEnableShadow
+        {
+            get => appBody.inShaderSettings.EnableShadow; set
+            {
+                appBody.inShaderSettings.EnableShadow = value;
+                appBody.RequireRender();
+            }
+        }
+        public bool VCameraMotionOn
+        {
+            get => appBody.camera.CameraMotionOn; set
+            {
+                appBody.camera.CameraMotionOn = value;
+                appBody.RequireRender();
+            }
+        }
+        public bool VAutoReloadShader
+        {
+            get => appBody.performaceSettings.AutoReloadShaders;
+            set => appBody.performaceSettings.AutoReloadShaders = value;
+        }
+        public bool VAutoReloadTexture
+        {
+            get => appBody.performaceSettings.AutoReloadTextures;
+            set => appBody.performaceSettings.AutoReloadTextures = value;
+        }
+        public bool VAutoReloadModel
+        {
+            get => appBody.performaceSettings.AutoReloadModels;
+            set => appBody.performaceSettings.AutoReloadModels = value;
+        }
+
+        bool _cacheCameraMotionOn;
         #endregion
+
+        private void VRenderPipeline_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (appBody == null) return;
+            int selectedIndex = (sender as ComboBox).SelectedIndex;
+            if (!appBody.deviceResources.IsRayTracingSupport() && selectedIndex >= 2)
+            {
+                (sender as ComboBox).SelectedIndex = 0;
+            }
+            else
+            {
+                appBody.SwitchToRenderPipeline(selectedIndex);
+            }
+            appBody.RequireRender();
+        }
+
+        private void VQuality_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            appBody.inShaderSettings.Quality = (uint)(sender as ComboBox).SelectedValue;
+            appBody.RequireRender();
+        }
+
+        private void VRenderStyle_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (appBody == null) return;
+            appBody.settings.RenderStyle = (uint)(sender as ComboBox).SelectedIndex;
+            appBody.RequireRender();
+        }
+
+        private void PhysicsReset_Click(object sender, RoutedEventArgs e)
+        {
+            appBody.GameDriverContext.RequireResetPhysics = true;
+            appBody.RequireRender(true);
+        }
+
+        //private void NewFun_Click(object sender, RoutedEventArgs e)
+        //{
+        //    appBody.UseNewFun = !appBody.UseNewFun;
+        //}
+
+        private bool StrEq(string a, string b)
+        {
+            return a.Equals(b, StringComparison.CurrentCultureIgnoreCase);
+        }
+        private bool IsMotionExtName(string extName)
+        {
+            return StrEq(".vmd", extName);
+        }
+        private void Page_DragOver(object sender, DragEventArgs e)
+        {
+            Image image = sender as Image;
+            if (e.DataView.Properties.TryGetValue("ExtName", out object object1))
+            {
+                string extName = object1 as string;
+                if (extName != null && IsMotionExtName(extName))
+                {
+                    e.AcceptedOperation = DataPackageOperation.Copy;
+                }
+            }
+        }
+
+        private async void Page_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.DataView.Properties.TryGetValue("ExtName", out object object1)) return;
+            string extName = object1 as string;
+            if (extName != null)
+            {
+                e.DataView.Properties.TryGetValue("File", out object object2);
+                StorageFile storageFile = object2 as StorageFile;
+                e.DataView.Properties.TryGetValue("Folder", out object object3);
+                StorageFolder storageFolder = object3 as StorageFolder;
+
+                var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+                if (StrEq(".vmd", extName))
+                {
+                    try
+                    {
+                        VMDFormat motionFile = new VMDFormat();
+                        motionFile.Reload(new BinaryReader(await storageFile.OpenStreamForReadAsync()));
+                        appBody.camera.cameraMotion.cameraKeyFrames = motionFile.CameraKeyFrames;
+                        vCameraMotionOn.IsEnabled = true;
+                        appBody.camera.CameraMotionOn = true;
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
+                        await dialog.ShowAsync();
+                    }
+                }
+            }
+        }
+
+        private void ReloadTextures_Click(object sender, RoutedEventArgs e)
+        {
+            appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
+        }
+
+        private void ReloadShaders_Click(object sender, RoutedEventArgs e)
+        {
+            appBody.mainCaches.ReloadShaders(appBody.ProcessingList, appBody.RPAssetsManager, appBody.RequireRender);
+        }
+
+        private void ReloadModels_Click(object sender, RoutedEventArgs e)
+        {
+            appBody.GameDriverContext.ReqireReloadModel();
+        }
     }
 }
