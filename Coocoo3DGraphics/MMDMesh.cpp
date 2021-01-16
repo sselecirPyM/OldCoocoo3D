@@ -142,8 +142,7 @@ void MMDMesh::ReloadCubeWire()
 
 void MMDMesh::ReleaseUploadHeapResource()
 {
-	m_vertexBufferUpload.Reset();
-	m_indexBufferUpload.Reset();
+	m_bufferUpload.Reset();
 }
 
 void MMDMesh::CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics::float3>^ Target, const Platform::Array<byte>^ source)

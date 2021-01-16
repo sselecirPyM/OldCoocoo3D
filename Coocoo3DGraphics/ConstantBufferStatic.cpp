@@ -36,17 +36,14 @@ void ConstantBufferStatic::Initialize(DeviceResources^ deviceResources, int size
 		nullptr,
 		IID_PPV_ARGS(&m_constantBuffer)));
 	NAME_D3D12_OBJECT(m_constantBuffer);
-	for (int i = 0; i < c_frameCount; i++)
-	{
-		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(/*c_frameCount **/ Size),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&m_constantBufferUploads[i])));
-		NAME_D3D12_OBJECT(m_constantBufferUploads[i]);
-	}
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(c_frameCount * Size),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&m_constantBufferUploads2)));
+	NAME_D3D12_OBJECT(m_constantBufferUploads2);
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS ConstantBufferStatic::GetCurrentVirtualAddress()

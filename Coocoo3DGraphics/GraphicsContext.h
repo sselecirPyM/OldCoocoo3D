@@ -83,6 +83,7 @@ namespace Coocoo3DGraphics
 		void SetComputeSRVT(TextureCube^ texture, int index);
 		void SetComputeSRVT(RenderTexture2D^ texture, int index);
 		void SetComputeSRVT(RenderTextureCube^ texture, int index);
+		void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
 		void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);

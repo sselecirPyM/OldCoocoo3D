@@ -12,7 +12,7 @@ namespace Coocoo3DGraphics
 	internal:
 		void Initialize(DeviceResources^ deviceResources, int size);
 		D3D12_GPU_VIRTUAL_ADDRESS GetCurrentVirtualAddress();
-		Microsoft::WRL::ComPtr<ID3D12Resource>				m_constantBufferUploads[c_frameCount];
+		Microsoft::WRL::ComPtr<ID3D12Resource>				m_constantBufferUploads2;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_constantBuffer;
 		int lastUpdateIndex = 0;
 	};

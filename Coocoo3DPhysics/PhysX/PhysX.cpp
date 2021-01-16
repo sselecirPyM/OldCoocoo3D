@@ -36,9 +36,11 @@ void PhysX::InitScene(void* _scene)
 	PxSceneDesc sceneDesc(physics->getTolerancesScale());
 	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
 	sceneDesc.cpuDispatcher = m_dispatcher;
-	//sceneDesc.filterShader = PxDefaultSimulationFilterShader;
-	sceneDesc.filterShader = FilterShader1;
+	sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+	//sceneDesc.filterShader = FilterShader1;
 	scene->m_scene = physics->createScene(sceneDesc);
+	scene->m_scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LOCAL_FRAMES, 1.0f);
+	scene->m_scene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, 1.0f);
 
 	PxPvdSceneClient* pvdClient = scene->m_scene->getScenePvdClient();
 	if (pvdClient)
@@ -135,7 +137,7 @@ void PhysX::SceneAddJoint(void* _scene, void* _joint, float3 position, quaternio
 	j->setMotion(PxD6Axis::eX, PxD6Motion::eLIMITED);
 	j->setMotion(PxD6Axis::eY, PxD6Motion::eLIMITED);
 	j->setMotion(PxD6Axis::eZ, PxD6Motion::eLIMITED);
-
+	j->setConstraintFlag(PxConstraintFlag::eVISUALIZATION,true);
 	PxJointLinearLimitPair limitPair1(PositionMinimum.x, PositionMaximum.x, PxSpring(PositionSpring.x, 0.0f));
 	PxJointLinearLimitPair limitPair2(PositionMinimum.y, PositionMaximum.y, PxSpring(PositionSpring.y, 0.0f));
 	PxJointLinearLimitPair limitPair3(PositionMinimum.z, PositionMaximum.z, PxSpring(PositionSpring.z, 0.0f));
@@ -156,6 +158,11 @@ void PhysX::SceneAddJoint(void* _scene, void* _joint, float3 position, quaternio
 
 void PhysX::SceneResetRigidBody(void* _scene, void* _rigidBody, float3 position, quaternion rotation)
 {
+	auto scene = reinterpret_cast<PhysXScene*>(_scene);
+	auto r1 = reinterpret_cast<PhysXRigidBody*>(_rigidBody);
+	r1->m_rigidBody->setGlobalPose(Util::GetPxTransform(position,rotation));
+	r1->m_rigidBody->setLinearVelocity(PxVec3());
+	r1->m_rigidBody->setAngularVelocity(PxVec3());
 }
 
 void PhysX::SceneSimulate(void* _scene, double time)

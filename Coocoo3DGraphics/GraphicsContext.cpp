@@ -125,8 +125,13 @@ inline void UpdateCBStaticResource(ConstantBufferStatic^ buffer, ID3D12GraphicsC
 	bufferData.pData = (byte*)data + dataOffset;
 	bufferData.RowPitch = sizeInByte;
 	bufferData.SlicePitch = sizeInByte;
+	CD3DX12_RANGE readRange(0, 0);
+	void* mapped = nullptr;
+	buffer->m_constantBufferUploads2->Map(0, &readRange, &mapped);
+	memcpy((byte*)mapped +buffer->Size* lastUpdateIndex, (byte*)data + dataOffset, sizeInByte);
+	buffer->m_constantBufferUploads2->Unmap(0, &readRange);
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_constantBuffer.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
-	UpdateSubresources(commandList, buffer->m_constantBuffer.Get(), buffer->m_constantBufferUploads[lastUpdateIndex].Get(), 0, 0, 1, &bufferData);
+	commandList->CopyBufferRegion(buffer->m_constantBuffer.Get(), 0, buffer->m_constantBufferUploads2.Get(), buffer->Size * lastUpdateIndex, sizeInByte);
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_constantBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
@@ -386,6 +391,25 @@ void GraphicsContext::SetComputeSRVT(RenderTextureCube^ texture, int index)
 	}
 }
 
+void GraphicsContext::SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index)
+{
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	if (texture != nullptr)
+	{
+		if (texture->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
+			m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->m_texture.Get(), texture->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
+		texture->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_srvRefIndex + face + 2, incrementSize);
+		m_commandList->SetComputeRootDescriptorTable(index, gpuHandle);
+	}
+	else
+	{
+		throw ref new Platform::NotImplementedException();
+	}
+}
+
 void GraphicsContext::SetComputeSRVR(TwinBuffer^ buffer, int bufIndex, int index)
 {
 	if (buffer->m_prevResourceState[bufIndex] != D3D12_RESOURCE_STATE_GENERIC_READ)
@@ -553,9 +577,24 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 
 	CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
+	CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_verticeData->Length);
+	CD3DX12_RESOURCE_DESC indexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_indexCount * mesh->c_indexStride);
+	CD3DX12_RESOURCE_DESC uploaderBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_verticeData->Length + mesh->m_indexCount * mesh->c_indexStride);
+
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&uploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&uploaderBufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&mesh->m_bufferUpload)));
+	NAME_D3D12_OBJECT(mesh->m_bufferUpload);
+	UINT offset = 0;
+	D3D12_RANGE readRange = CD3DX12_RANGE(0, 0);
+	void* mapped = nullptr;
+	DX::ThrowIfFailed(mesh->m_bufferUpload->Map(0, &readRange, &mapped));
 	if (mesh->m_verticeData->Length > 0)
 	{
-		CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_verticeData->Length);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -565,27 +604,14 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 			IID_PPV_ARGS(&mesh->m_vertexBuffer)));
 		NAME_D3D12_OBJECT(mesh->m_vertexBuffer);
 
-		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&vertexBufferDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&mesh->m_vertexBufferUpload)));
-		NAME_D3D12_OBJECT(mesh->m_vertexBufferUpload);
-
-		D3D12_SUBRESOURCE_DATA vertexData = {};
-		vertexData.pData = mesh->m_verticeData->begin();
-		vertexData.RowPitch = mesh->m_verticeData->Length;
-		vertexData.SlicePitch = vertexData.RowPitch;
-
-		UpdateSubresources(m_commandList.Get(), mesh->m_vertexBuffer.Get(), mesh->m_vertexBufferUpload.Get(), 0, 0, 1, &vertexData);
+		memcpy(static_cast<byte*>(mapped) + offset, mesh->m_verticeData->begin(), mesh->m_verticeData->Length);
+		m_commandList->CopyBufferRegion(mesh->m_vertexBuffer.Get(), 0, mesh->m_bufferUpload.Get(), offset, mesh->m_verticeData->Length);
+		offset += mesh->m_verticeData->Length;
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mesh->m_vertexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 	}
 	if (mesh->m_indexCount > 0)
 	{
-		CD3DX12_RESOURCE_DESC indexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_indexCount * mesh->c_indexStride);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -595,23 +621,13 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 			IID_PPV_ARGS(&mesh->m_indexBuffer)));
 		NAME_D3D12_OBJECT(mesh->m_indexBuffer);
 
-		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&indexBufferDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&mesh->m_indexBufferUpload)));
-		NAME_D3D12_OBJECT(mesh->m_indexBufferUpload);
+		memcpy(static_cast<byte*>(mapped) + offset, mesh->m_indexData->GetBufferPointer(), mesh->m_indexData->GetBufferSize());
+		m_commandList->CopyBufferRegion(mesh->m_indexBuffer.Get(), 0, mesh->m_bufferUpload.Get(), offset, mesh->m_indexData->GetBufferSize());
+		offset += mesh->m_indexData->GetBufferSize();
 
-		D3D12_SUBRESOURCE_DATA indexData = {};
-		indexData.pData = mesh->m_indexData->GetBufferPointer();
-		indexData.RowPitch = mesh->m_indexCount * mesh->c_indexStride;
-		indexData.SlicePitch = indexData.RowPitch;
-
-		UpdateSubresources(m_commandList.Get(), mesh->m_indexBuffer.Get(), mesh->m_indexBufferUpload.Get(), 0, 0, 1, &indexData);
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mesh->m_indexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
 	}
+	mesh->m_bufferUpload->Unmap(0, &readRange);
 
 	// 创建顶点/索引缓冲区视图。
 	if (mesh->m_verticeData->Length > 0)

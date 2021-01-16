@@ -74,8 +74,7 @@ namespace Coocoo3DGraphics
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_indexBuffer;
 		D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferUpload;
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_indexBufferUpload;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_bufferUpload;
 	};
 }
 
