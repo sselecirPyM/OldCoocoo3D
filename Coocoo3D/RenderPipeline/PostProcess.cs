@@ -30,7 +30,7 @@ namespace Coocoo3D.RenderPipeline
             BackgroundFactory = 1.0f,
         };
         public InnerStruct prevData;
-        ConstantBufferStatic postProcessDataBuffer = new ConstantBufferStatic();
+        SBuffer postProcessDataBuffer = new SBuffer();
 
         public PostProcess()
         {

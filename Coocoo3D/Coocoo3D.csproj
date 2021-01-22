@@ -193,8 +193,8 @@
     <Compile Include="RenderPipeline\RenderPipelineContext.cs" />
     <Compile Include="RenderPipeline\RPAssetsManager.cs" />
     <Compile Include="RenderPipeline\WidgetRenderer.cs" />
-    <Compile Include="RenderPipeline\Wrap\ConstantBufferGroup.cs" />
-    <Compile Include="RenderPipeline\Wrap\ConstantBufferStaticGroup.cs" />
+    <Compile Include="RenderPipeline\Wrap\CBufferGroup.cs" />
+    <Compile Include="RenderPipeline\Wrap\SBufferGroup.cs" />
     <Compile Include="ResourceWarp\MeshAppendUploadPack.cs" />
     <Compile Include="ResourceWarp\ModelPack.cs" />
     <Compile Include="ResourceWarp\ShaderPack.cs" />

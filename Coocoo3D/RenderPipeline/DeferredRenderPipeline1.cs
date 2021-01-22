@@ -1,5 +1,6 @@
 ﻿using Coocoo3D.Components;
 using Coocoo3D.Present;
+using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
@@ -16,7 +17,6 @@ namespace Coocoo3D.RenderPipeline
         const int c_materialDataSize = 256;
         const int c_presentDataSize = 512;
         const int c_lightingDataSize = 512;
-        const int c_lightCameraCount = 2;
         #region forward
         public const int c_offsetMaterialData = 0;
         public const int c_offsetLightingData = c_offsetMaterialData + c_materialDataSize;
@@ -28,19 +28,15 @@ namespace Coocoo3D.RenderPipeline
 
         public void Reload(DeviceResources deviceResources)
         {
+            lightingBuffers.Reload(256, 65536);
             Ready = true;
         }
 
-        public List<ConstantBuffer> lightingBuffers = new List<ConstantBuffer>();
+        public CBufferGroup lightingBuffers = new CBufferGroup();
 
         private void DesireLightingBuffers(DeviceResources deviceResources, int count)
         {
-            while (lightingBuffers.Count < count)
-            {
-                ConstantBuffer constantBuffer = new ConstantBuffer();
-                constantBuffer.Reload(deviceResources, c_lightingDataSize);
-                lightingBuffers.Add(constantBuffer);
-            }
+            lightingBuffers.SetSlienceCount(deviceResources, count);
         }
 
         struct _Counters
@@ -77,7 +73,7 @@ namespace Coocoo3D.RenderPipeline
                 countMaterials += Entities[i].rendererComponent.Materials.Count;
             }
             context.DesireMaterialBuffers(countMaterials);
-            DesireLightingBuffers(context.deviceResources, lightings.Count);
+            DesireLightingBuffers(context.deviceResources, lightings.Count * 2);
             var camera = context.dynamicContextRead.cameras[0];
             IntPtr pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0);
             #region forward lighting
@@ -162,8 +158,11 @@ namespace Coocoo3D.RenderPipeline
                     Marshal.StructureToPtr(_struct1.x2, pBufferData + 256, true);
                 }
                 Marshal.StructureToPtr(_struct1, pBufferData, true);
-                graphicsContext.UpdateResource(lightingBuffers[i], context.bigBuffer, c_lightingDataSize, 0);
+                lightingBuffers.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, i * 2);
+                lightingBuffers.UpdateSlience(graphicsContext, context.bigBuffer, 256, 256, i * 2 + 1);
             }
+            if (lightings.Count > 0)
+                lightingBuffers.UpdateSlienceComplete(graphicsContext);
         }
 
         public override void RenderCamera(RenderPipelineContext context)
@@ -178,14 +177,14 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRootSignature(context.RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             PObject mmdSkinning = context.RPAssetsManager.PObjectMMDSkinning;
-            void EntitySkinning(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer)
+            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
                 var POSkinning = PObjectStatusSelect(rendererComponent.POSkinning, mmdSkinning, mmdSkinning, mmdSkinning);
 
-                graphicsContext.SetPObjectStreamOut(POSkinning);
+                graphicsContext.SetPObject(POSkinning,0);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
@@ -202,7 +201,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRTVDSV(context.ScreenSizeRenderTextures, context.ScreenSizeDSVs[0], Vector4.Zero, true, true);
             graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
-            void _RenderEntity(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+            void _RenderEntity(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
                 //var PODraw = PObjectStatusSelect(rendererComponent.PODraw, context.RPAssetsManager.PObjectMMDLoading, currentDrawPObject, context.RPAssetsManager.PObjectMMDError);
                 var PODraw = context.RPAssetsManager.PObjectDeferredRenderGBuffer; ;
@@ -266,11 +265,11 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetPObject(context.RPAssetsManager.PObjectMMDShadowDepth, CullMode.none);
                     graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
-                    void _RenderEntityShadow(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, int bufferOffset, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+                    void _RenderEntityShadow(MMDRendererComponent rendererComponent, CBufferGroup cameraPresentData, int presentDataIndex, CBuffer entityBoneDataBuffer, ref _Counters counter)
                     {
                         var Materials = rendererComponent.Materials;
                         graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
-                        graphicsContext.SetCBVR(cameraPresentData, bufferOffset, 1, 2);
+                        cameraPresentData.SetCBVR(graphicsContext, presentDataIndex, 2);
                         graphicsContext.SetMeshIndex(rendererComponent.mesh);
 
                         //List<Texture2D> texs = rendererComponent.textures;
@@ -296,17 +295,18 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                     _Counters counterShadow0 = new _Counters();
                     for (int j = 0; j < Entities.Count; j++)
-                        _RenderEntityShadow(Entities[j].rendererComponent, lightingBuffers[i], 0, context.CBs_Bone[j], ref counterShadow0);
+                        _RenderEntityShadow(Entities[j].rendererComponent, lightingBuffers, i * 2, context.CBs_Bone[j], ref counterShadow0);
 
                     graphicsContext.SetDSV(context.ShadowMapCube, 1, true);
                     _Counters counterShadow1 = new _Counters();
                     for (int j = 0; j < Entities.Count; j++)
-                        _RenderEntityShadow(Entities[j].rendererComponent, lightingBuffers[i], 1, context.CBs_Bone[j], ref counterShadow1);
+                        _RenderEntityShadow(Entities[j].rendererComponent, lightingBuffers, i * 2 + 1, context.CBs_Bone[j], ref counterShadow1);
 
 
                     graphicsContext.SetPObject(context.RPAssetsManager.PObjectDeferredRenderDirectLight, CullMode.back);
                     graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, false);
-                    graphicsContext.SetCBVR(lightingBuffers[i], 1);
+                    //graphicsContext.SetCBVR(lightingBuffers[i], 1);
+                    lightingBuffers.SetCBVR(graphicsContext, i*2, 1);
                     graphicsContext.SetCBVR(context.CameraDataBuffers[cameraIndex], 2);
                     graphicsContext.SetSRVT(context.ScreenSizeRenderTextures[0], 3);
                     graphicsContext.SetSRVT(context.ScreenSizeRenderTextures[1], 4);
@@ -320,7 +320,8 @@ namespace Coocoo3D.RenderPipeline
                 {
                     graphicsContext.SetPObject(context.RPAssetsManager.PObjectDeferredRenderPointLight, CullMode.back);
                     graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, false);
-                    graphicsContext.SetCBVR(lightingBuffers[i], 1);
+                    //graphicsContext.SetCBVR(lightingBuffers[i], 1);
+                    lightingBuffers.SetCBVR(graphicsContext, i*2, 1);
                     graphicsContext.SetCBVR(context.CameraDataBuffers[cameraIndex], 2);
                     graphicsContext.SetSRVT(context.ScreenSizeRenderTextures[0], 3);
                     graphicsContext.SetSRVT(context.ScreenSizeRenderTextures[1], 4);
@@ -337,7 +338,7 @@ namespace Coocoo3D.RenderPipeline
 
             if (HasMainLight && inShaderSettings.EnableShadow)
             {
-                void _RenderEntityShadow(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, int bufferOffset, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+                void _RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, int bufferOffset, CBuffer entityBoneDataBuffer, ref _Counters counter)
                 {
                     var Materials = rendererComponent.Materials;
                     graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
@@ -383,7 +384,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.BRDFLut, 8);
 
             graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, false, false);
-            void _RenderEntity2(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+            void _RenderEntity2(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
                 var PODraw = PObjectStatusSelect(rendererComponent.PODraw, context.RPAssetsManager.PObjectMMDLoading, context.RPAssetsManager.PObjectMMDTransparent, context.RPAssetsManager.PObjectMMDError);
                 var Materials = rendererComponent.Materials;

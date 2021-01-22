@@ -12,18 +12,16 @@ namespace Coocoo3D.RenderPipeline
     public class WidgetRenderer : RenderPipeline
     {
         const int c_bufferSize = 256;
+        const int c_bufferSize1 = 4096;
         const int c_bgBufferSize = 16640;
-        public ConstantBuffer[] constantBuffers = new ConstantBuffer[8];
-        public ConstantBuffer[] bgConstantBuffers = new ConstantBuffer[4];
+        const int c_bgBufferSize1 = 65536;
+        public CBuffer constantBuffer = new CBuffer();
+        public CBuffer[] bgConstantBuffers = new CBuffer[4];
         public WidgetRenderer()
         {
-            for (int i = 0; i < constantBuffers.Length; i++)
-            {
-                constantBuffers[i] = new ConstantBuffer();
-            }
             for (int i = 0; i < bgConstantBuffers.Length; i++)
             {
-                bgConstantBuffers[i] = new ConstantBuffer();
+                bgConstantBuffers[i] = new CBuffer();
             }
         }
         ~WidgetRenderer()
@@ -31,10 +29,7 @@ namespace Coocoo3D.RenderPipeline
         }
         public void Reload(DeviceResources deviceResources)
         {
-            for (int i = 0; i < constantBuffers.Length; i++)
-            {
-                constantBuffers[i].Reload(deviceResources, c_bufferSize);
-            }
+            constantBuffer.Reload(deviceResources, c_bufferSize1);
             for (int i = 0; i < bgConstantBuffers.Length; i++)
             {
                 bgConstantBuffers[i].Reload(deviceResources, c_bgBufferSize);
@@ -114,7 +109,7 @@ namespace Coocoo3D.RenderPipeline
             });
             #endregion
 
-            graphicsContext.UpdateResource(constantBuffers[0], context.bigBuffer, c_bufferSize, 0);
+            graphicsContext.UpdateResource(constantBuffer, context.bigBuffer, c_bufferSize, 0);
 
             var cam = context.dynamicContextRead.cameras[0];
 
@@ -157,7 +152,7 @@ namespace Coocoo3D.RenderPipeline
             if (!context.dynamicContextRead.settings.ViewerUI) return;
             var graphicsContext = context.graphicsContext;
             graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI1, CullMode.none);
-            graphicsContext.SetCBVR(constantBuffers[0], 0);
+            graphicsContext.SetCBVR(constantBuffer, 0);
             graphicsContext.SetSRVT(context.UI1Texture, 1);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, allocated, 0);

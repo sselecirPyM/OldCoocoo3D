@@ -8,9 +8,6 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{648577c8-7196-4326-974b-052e169d2d03}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Device">
-      <UniqueIdentifier>{a1c8a5ff-8cd3-451b-a51e-986d9f3a0482}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Utility">
       <UniqueIdentifier>{ece6b498-c945-4ae4-8551-a6ddc34e9dee}</UniqueIdentifier>
     </Filter>
@@ -38,27 +35,16 @@
     <Filter Include="Shaders\BRDF">
       <UniqueIdentifier>{557263b2-fe8d-401e-84ec-177365b89a57}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Interoperation">
+      <UniqueIdentifier>{cf430e3c-c911-418c-8196-d93058ecfc82}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="MMDMesh.cpp" />
     <ClCompile Include="Texture2D.cpp" />
-    <ClCompile Include="ConstantBuffer.cpp" />
-    <ClCompile Include="DeviceResources.cpp">
-      <Filter>Device</Filter>
-    </ClCompile>
-    <ClCompile Include="GraphicsContext.cpp">
-      <Filter>Device</Filter>
-    </ClCompile>
     <ClCompile Include="RenderTexture2D.cpp" />
-    <ClCompile Include="GraphicsSignature.cpp">
-      <Filter>Device</Filter>
-    </ClCompile>
     <ClCompile Include="RayTracingScene.cpp" />
-    <ClCompile Include="ConstantBufferStatic.cpp" />
-    <ClCompile Include="WICFactory.cpp">
-      <Filter>Device</Filter>
-    </ClCompile>
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="RenderTextureCube.cpp" />
     <ClCompile Include="ReadBackTexture2D.cpp" />
@@ -148,37 +134,28 @@
     <ClCompile Include="MeshBuffer.cpp" />
     <ClCompile Include="Uploader.cpp" />
     <ClCompile Include="MMDMeshAppend.cpp" />
+    <ClCompile Include="DeviceResources.cpp" />
+    <ClCompile Include="GraphicsContext.cpp" />
+    <ClCompile Include="GraphicsSignature.cpp" />
+    <ClCompile Include="WICFactory.cpp" />
+    <ClCompile Include="CBuffer.cpp" />
+    <ClCompile Include="SBuffer.cpp" />
+    <ClCompile Include="Interoperation\InteroperationTypes.cpp">
+      <Filter>Interoperation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="MMDMesh.h" />
     <ClInclude Include="Texture2D.h" />
-    <ClInclude Include="ConstantBuffer.h" />
-    <ClInclude Include="DeviceResources.h">
-      <Filter>Device</Filter>
-    </ClInclude>
-    <ClInclude Include="GraphicsContext.h">
-      <Filter>Device</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXHelper.h">
-      <Filter>Device</Filter>
-    </ClInclude>
     <ClInclude Include="RenderTexture2D.h" />
     <ClInclude Include="d3dx12.h">
       <Filter>Utility</Filter>
     </ClInclude>
-    <ClInclude Include="GraphicsSignature.h">
-      <Filter>Device</Filter>
-    </ClInclude>
-    <ClInclude Include="GraphicsObjectStatus.h" />
     <ClInclude Include="RayTracing\DirectXRaytracingHelper.h">
       <Filter>RayTracing</Filter>
     </ClInclude>
     <ClInclude Include="RayTracingScene.h" />
-    <ClInclude Include="ConstantBufferStatic.h" />
-    <ClInclude Include="WICFactory.h">
-      <Filter>Device</Filter>
-    </ClInclude>
     <ClInclude Include="TextureCube.h" />
     <ClInclude Include="RenderTextureCube.h" />
     <ClInclude Include="ITexture.h" />
@@ -233,6 +210,16 @@
     <ClInclude Include="MeshBuffer.h" />
     <ClInclude Include="Uploader.h" />
     <ClInclude Include="MMDMeshAppend.h" />
+    <ClInclude Include="DeviceResources.h" />
+    <ClInclude Include="DirectXHelper.h" />
+    <ClInclude Include="GraphicsContext.h" />
+    <ClInclude Include="GraphicsSignature.h" />
+    <ClInclude Include="WICFactory.h" />
+    <ClInclude Include="CBuffer.h" />
+    <ClInclude Include="SBuffer.h" />
+    <ClInclude Include="Interoperation\InteroperationTypes.h">
+      <Filter>Interoperation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\VSParticleStandard.hlsl">

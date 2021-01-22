@@ -1,5 +1,5 @@
 #pragma once
-#include "GraphicsObjectStatus.h"
+#include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
 	public ref class Texture2D sealed

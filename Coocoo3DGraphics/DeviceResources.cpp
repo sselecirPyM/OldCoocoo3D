@@ -287,9 +287,7 @@ void DeviceResources::CreateDeviceResources()
 
 	for (UINT n = 0; n < c_frameCount; n++)
 	{
-		DX::ThrowIfFailed(
-			m_d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n]))
-		);
+		DX::ThrowIfFailed(m_d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
 	}
 
 	// 创建同步对象。
@@ -376,8 +374,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
 				&swapChainDesc,
 				nullptr,
 				&swapChain
-			)
-		);
+		));
 
 		DX::ThrowIfFailed(swapChain.As(&m_swapChain));
 
@@ -387,13 +384,9 @@ void DeviceResources::CreateWindowSizeDependentResources()
 			{
 				//获取 SwapChainPanel 的受支持的本机接口
 				ComPtr<ISwapChainPanelNative> panelNative;
-				DX::ThrowIfFailed(
-					reinterpret_cast<IUnknown*>(m_window)->QueryInterface(IID_PPV_ARGS(&panelNative))
-				);
+				DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_window)->QueryInterface(IID_PPV_ARGS(&panelNative)));
 
-				DX::ThrowIfFailed(
-					panelNative->SetSwapChain(m_swapChain.Get())
-				);
+				DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
 			}, CallbackContext::Any));
 	}
 
@@ -423,9 +416,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
 		throw ref new FailureException();
 	}
 
-	DX::ThrowIfFailed(
-		m_swapChain->SetRotation(displayRotation)
-	);
+	DX::ThrowIfFailed(m_swapChain->SetRotation(displayRotation));
 
 
 
@@ -434,13 +425,9 @@ void DeviceResources::CreateWindowSizeDependentResources()
 	inverseScale._11 = 1.0f / m_compositionScaleX;
 	inverseScale._22 = 1.0f / m_compositionScaleY;
 	ComPtr<IDXGISwapChain2> spSwapChain2;
-	DX::ThrowIfFailed(
-		m_swapChain.As<IDXGISwapChain2>(&spSwapChain2)
-	);
+	DX::ThrowIfFailed(m_swapChain.As<IDXGISwapChain2>(&spSwapChain2));
 
-	DX::ThrowIfFailed(
-		spSwapChain2->SetMatrixTransform(&inverseScale)
-	);
+	DX::ThrowIfFailed(spSwapChain2->SetMatrixTransform(&inverseScale));
 
 	// 创建交换链后台缓冲区的呈现目标视图。
 	{

@@ -1,6 +1,6 @@
 #pragma once
 #include "ITexture.h"
-#include "DeviceResources.h"
+#include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
 	public ref class RenderTexture2D sealed :public IRenderTexture
@@ -24,6 +24,5 @@ namespace Coocoo3DGraphics
 		DXGI_FORMAT m_uavFormat;
 		D3D12_RESOURCE_FLAGS m_resourceFlags;
 		D3D12_RESOURCE_STATES prevResourceState;
-
 	};
 }

@@ -1,28 +1,28 @@
 #include "pch.h"
-#include "ConstantBufferStatic.h"
+#include "SBuffer.h"
 #include "DirectXHelper.h"
 using namespace Coocoo3DGraphics;
 using namespace Microsoft::WRL;
 
-ConstantBufferStatic^ ConstantBufferStatic::Load(DeviceResources^ deviceResources, int size)
+SBuffer^ SBuffer::Load(DeviceResources^ deviceResources, int size)
 {
-	ConstantBufferStatic^ constBuffer = ref new ConstantBufferStatic();
+	SBuffer^ constBuffer = ref new SBuffer();
 	constBuffer->Initialize(deviceResources, size);
 	return constBuffer;
 }
 
-void ConstantBufferStatic::Reload(DeviceResources^ deviceResources, int size)
+void SBuffer::Reload(DeviceResources^ deviceResources, int size)
 {
 	Initialize(deviceResources, size);
 }
 
-void ConstantBufferStatic::Unload()
+void SBuffer::Unload()
 {
 
 	lastUpdateIndex = 0;
 }
 
-void ConstantBufferStatic::Initialize(DeviceResources^ deviceResources, int size)
+void SBuffer::Initialize(DeviceResources^ deviceResources, int size)
 {
 	Size = (size + 255) & ~255;
 
@@ -46,7 +46,7 @@ void ConstantBufferStatic::Initialize(DeviceResources^ deviceResources, int size
 	NAME_D3D12_OBJECT(m_constantBufferUploads2);
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS ConstantBufferStatic::GetCurrentVirtualAddress()
+D3D12_GPU_VIRTUAL_ADDRESS SBuffer::GetCurrentVirtualAddress()
 {
 	return m_constantBuffer->GetGPUVirtualAddress();
 }

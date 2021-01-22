@@ -115,10 +115,10 @@ namespace Coocoo3D.RenderPipeline
         public const int c_maxCameraPerRender = 2;
         public const int c_presentDataSize = 512;
         public const int c_lightingBufferSize = 1024;
-        public ConstantBuffer[] CameraDataBuffers = new ConstantBuffer[c_maxCameraPerRender];
-        public ConstantBuffer LightCameraDataBuffer = new ConstantBuffer();
+        public CBuffer[] CameraDataBuffers = new CBuffer[c_maxCameraPerRender];
+        public CBuffer LightCameraDataBuffer = new CBuffer();
         public const int c_materialDataSize = 768;
-        public ConstantBufferGroup MaterialBufferGroup = new ConstantBufferGroup();
+        public CBufferGroup MaterialBufferGroup = new CBufferGroup();
         public void DesireMaterialBuffers(int count)
         {
             MaterialBufferGroup.SetSlienceCount(deviceResources, count);
@@ -162,7 +162,7 @@ namespace Coocoo3D.RenderPipeline
         public RenderPipelineDynamicContext dynamicContextRead = new RenderPipelineDynamicContext();
         public RenderPipelineDynamicContext dynamicContextWrite = new RenderPipelineDynamicContext();
 
-        public List<ConstantBuffer> CBs_Bone = new List<ConstantBuffer>();
+        public List<CBuffer> CBs_Bone = new List<CBuffer>();
 
         public DxgiFormat middleFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
@@ -199,7 +199,7 @@ namespace Coocoo3D.RenderPipeline
             }
             for (int i = 0; i < CameraDataBuffers.Length; i++)
             {
-                CameraDataBuffers[i] = new ConstantBuffer();
+                CameraDataBuffers[i] = new CBuffer();
             }
             MaterialBufferGroup.Reload(768, 768 * 84);
         }
@@ -236,7 +236,7 @@ namespace Coocoo3D.RenderPipeline
             int count = dynamicContextRead.entities.Count;
             while (CBs_Bone.Count < count)
             {
-                ConstantBuffer constantBuffer = new ConstantBuffer();
+                CBuffer constantBuffer = new CBuffer();
                 constantBuffer.Reload(deviceResources, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }

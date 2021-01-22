@@ -232,6 +232,9 @@ void PhysX::SceneRemoveRigidBody(void* _scene, void* _rigidBody)
 {
 	auto rigidBody = reinterpret_cast<PhysXRigidBody*>(_rigidBody);
 	rigidBody->m_rigidBody->release();
+	rigidBody->m_material->release();
+	rigidBody->m_rigidBody = nullptr;
+	rigidBody->m_material = nullptr;
 }
 
 void PhysX::SceneRemoveJoint(void* _scene, void* _joint)

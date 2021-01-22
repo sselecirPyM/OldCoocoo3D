@@ -1,6 +1,6 @@
 #pragma once
 #include "DeviceResources.h"
-#include "GraphicsObjectStatus.h"
+#include "Interoperation/InteroperationTypes.h"
 #include "GraphicsSignature.h"
 #include "ShaderMacro.h"
 namespace Coocoo3DGraphics

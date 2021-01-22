@@ -1,28 +1,28 @@
 #include "pch.h"
-#include "ConstantBuffer.h"
+#include "CBuffer.h"
 #include "DirectXHelper.h"
 using namespace Coocoo3DGraphics;
 using namespace Microsoft::WRL;
 
-ConstantBuffer ^ ConstantBuffer::Load(DeviceResources^ deviceResources, int size)
+CBuffer ^ CBuffer::Load(DeviceResources^ deviceResources, int size)
 {
-	ConstantBuffer^ constBuffer = ref new ConstantBuffer();
+	CBuffer^ constBuffer = ref new CBuffer();
 	constBuffer->Initialize(deviceResources, size);
 	return constBuffer;
 }
 
-void ConstantBuffer::Reload(DeviceResources ^ deviceResources, int size)
+void CBuffer::Reload(DeviceResources ^ deviceResources, int size)
 {
 	Initialize(deviceResources, size);
 }
 
-void ConstantBuffer::Unload()
+void CBuffer::Unload()
 {
 	m_constantBuffer.Reset();
 	lastUpdateIndex = 0;
 }
 
-void ConstantBuffer::Initialize(DeviceResources ^ deviceResources, int size)
+void CBuffer::Initialize(DeviceResources ^ deviceResources, int size)
 {
 	Size = (size + 255) & ~255;
 	//D3D11_BUFFER_DESC bufferDesc1 = CD3D11_BUFFER_DESC(size, D3D11_BIND_CONSTANT_BUFFER);
@@ -48,7 +48,7 @@ void ConstantBuffer::Initialize(DeviceResources ^ deviceResources, int size)
 	ZeroMemory(m_mappedConstantBuffer, Coocoo3DGraphics::c_frameCount * Size);
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS ConstantBuffer::GetCurrentVirtualAddress()
+D3D12_GPU_VIRTUAL_ADDRESS CBuffer::GetCurrentVirtualAddress()
 {
 	return m_constantBuffer->GetGPUVirtualAddress() + Size * lastUpdateIndex;
 }

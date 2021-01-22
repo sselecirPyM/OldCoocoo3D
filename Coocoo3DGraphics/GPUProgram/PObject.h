@@ -4,7 +4,7 @@
 #include "PixelShader.h"
 #include "GeometryShader.h"
 #include "GraphicsSignature.h"
-#include "GraphicsObjectStatus.h"
+#include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
 	public enum struct CullMode

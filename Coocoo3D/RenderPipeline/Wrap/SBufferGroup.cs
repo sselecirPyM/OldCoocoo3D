@@ -1,19 +1,19 @@
-﻿using System;
+﻿using Coocoo3DGraphics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Coocoo3DGraphics;
 
 namespace Coocoo3D.RenderPipeline.Wrap
 {
-    public class ConstantBufferGroup
+    public class SBufferGroup
     {
         public int slienceSize;
         public int bufferSize;
         public int sliencesPerBuffer;
         public int sizeD256;
-        public List<ConstantBuffer> constantBuffers = new List<ConstantBuffer>();
+        public List<SBuffer> constantBuffers = new List<SBuffer>();
 
         byte[] tempBuffer;
         int lastUpdateBufferIndex = 0;
@@ -31,7 +31,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
             int slience1 = (count + sliencesPerBuffer - 1) / sliencesPerBuffer;
             while (constantBuffers.Count < slience1)
             {
-                ConstantBuffer buffer1 = new ConstantBuffer();
+                SBuffer buffer1 = new SBuffer();
                 buffer1.Reload(deviceResources, bufferSize);
                 constantBuffers.Add(buffer1);
             }

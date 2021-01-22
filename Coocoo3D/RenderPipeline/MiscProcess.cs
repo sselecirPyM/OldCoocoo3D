@@ -51,13 +51,13 @@ namespace Coocoo3D.RenderPipeline
         GraphicsSignature rootSignature = new GraphicsSignature();
         public bool Ready = false;
         public const int c_maxIteration = 32;
-        public ConstantBuffer constantBuffers = new ConstantBuffer();
+        public CBuffer constantBuffers = new CBuffer();
         XYZData _XyzData;
-        public byte[] cpuBuffer1 = new byte[c_bufferSize];
+        public byte[] bigBuffer = new byte[c_bufferSize];
         public GCHandle handle1;
         public MiscProcess()
         {
-            handle1 = GCHandle.Alloc(cpuBuffer1);
+            handle1 = GCHandle.Alloc(bigBuffer);
         }
         ~MiscProcess()
         {
@@ -91,7 +91,7 @@ namespace Coocoo3D.RenderPipeline
                 var texture0 = context.miscProcessPairs[i].source;
                 var texture1 = context.miscProcessPairs[i].IrradianceMap;
                 var texture2 = context.miscProcessPairs[i].EnvMap;
-                IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(cpuBuffer1, 0);
+                IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
                 _XyzData.x1 = (int)texture1.m_width;
                 _XyzData.y1 = (int)texture1.m_height;
                 _XyzData.x2 = (int)texture2.m_width;
@@ -105,7 +105,7 @@ namespace Coocoo3D.RenderPipeline
 
                     Marshal.StructureToPtr(_XyzData, ptr1 + j * c_splitSize, true);
                 }
-                graphicsContext.UpdateResource(constantBuffers, cpuBuffer1, c_bufferSize, 0);
+                graphicsContext.UpdateResource(constantBuffers, bigBuffer, c_bufferSize, 0);
 
                 graphicsContext.SetRootSignatureCompute(rootSignature);
                 graphicsContext.SetComputeCBVR(constantBuffers, 0);

@@ -268,8 +268,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ConstantBuffer.h" />
-    <ClInclude Include="ConstantBufferStatic.h" />
+    <ClInclude Include="CBuffer.h" />
+    <ClInclude Include="Interoperation\InteroperationTypes.h" />
+    <ClInclude Include="SBuffer.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DeviceResources.h" />
     <ClInclude Include="DirectXHelper.h" />
@@ -288,7 +289,6 @@
     <ClInclude Include="GPUProgram\ShaderMacro.h" />
     <ClInclude Include="GPUProgram\VertexShader.h" />
     <ClInclude Include="GraphicsContext.h" />
-    <ClInclude Include="GraphicsObjectStatus.h" />
     <ClInclude Include="GraphicsSignature.h" />
     <ClInclude Include="ITexture.h" />
     <ClInclude Include="MeshBuffer.h" />
@@ -309,8 +309,9 @@
     <ClInclude Include="WICFactory.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ConstantBuffer.cpp" />
-    <ClCompile Include="ConstantBufferStatic.cpp" />
+    <ClCompile Include="CBuffer.cpp" />
+    <ClCompile Include="Interoperation\InteroperationTypes.cpp" />
+    <ClCompile Include="SBuffer.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="DirectXTex\BC.cpp" />
     <ClCompile Include="DirectXTex\BC4BC5.cpp" />

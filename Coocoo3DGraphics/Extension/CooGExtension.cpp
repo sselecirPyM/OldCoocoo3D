@@ -35,7 +35,7 @@ void CooGExtension::SetSRVTexture2(GraphicsContext^ context, Texture2D^ tex1, Te
 
 }
 
-void CooGExtension::SetCBVBuffer3(GraphicsContext^ context, ConstantBuffer^ buffer1, ConstantBuffer^ buffer2, ConstantBuffer^ buffer3, int startSlot)
+void CooGExtension::SetCBVBuffer3(GraphicsContext^ context, CBuffer^ buffer1, CBuffer^ buffer2, CBuffer^ buffer3, int startSlot)
 {
 	context->m_commandList->SetGraphicsRootConstantBufferView(startSlot, buffer1->GetCurrentVirtualAddress());
 	context->m_commandList->SetGraphicsRootConstantBufferView(startSlot + 1, buffer2->GetCurrentVirtualAddress());

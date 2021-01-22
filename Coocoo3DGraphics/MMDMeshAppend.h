@@ -15,5 +15,6 @@ namespace Coocoo3DGraphics
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferPosViews[c_bufferCount];
 		int lastUpdateIndexs[c_bufferCount] = {};
 		int m_posCount;
+		int m_bufferSize;
 	};
 }

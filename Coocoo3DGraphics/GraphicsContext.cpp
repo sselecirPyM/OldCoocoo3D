@@ -3,40 +3,6 @@
 #include "GraphicsContext.h"
 using namespace Coocoo3DGraphics;
 
-struct wicToDxgiFormat
-{
-	DXGI_FORMAT dxgiFormat;
-	WICPixelFormatGUID fallbackWicFormat;
-};
-struct GUIDComparer
-{
-	bool operator()(const GUID& Left, const GUID& Right) const
-	{
-		return memcmp(&Left, &Right, sizeof(GUID)) < 0;
-	}
-};
-
-const std::map<GUID, wicToDxgiFormat, GUIDComparer>wicFormatInfo =
-{
-	{GUID_WICPixelFormat128bppRGBAFloat,{DXGI_FORMAT_R32G32B32A32_FLOAT,0}},
-	{GUID_WICPixelFormat32bppPRGBA,{DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,0}},
-	{GUID_WICPixelFormat32bppRGBA,{DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,0}},
-	{GUID_WICPixelFormat32bppBGRA,{DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,0}},
-	{GUID_WICPixelFormat32bppBGR,{DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,0}},
-	{GUID_WICPixelFormat16bppBGR565,{DXGI_FORMAT_B5G6R5_UNORM,0}},
-	{GUID_WICPixelFormat24bppBGR,{DXGI_FORMAT_UNKNOWN,GUID_WICPixelFormat32bppRGBA}},
-	{GUID_WICPixelFormat8bppIndexed,{DXGI_FORMAT_UNKNOWN,GUID_WICPixelFormat32bppRGBA}},
-};
-const std::map<DXGI_FORMAT, UINT>dxgiFormatBytesPerPixel =
-{
-	{DXGI_FORMAT_R32G32B32A32_FLOAT,16},
-	{DXGI_FORMAT_R8G8B8A8_UNORM,4},
-	{DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,4},
-	{DXGI_FORMAT_B8G8R8A8_UNORM,4},
-	{DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,4},
-	{DXGI_FORMAT_B5G6R5_UNORM,2},
-};
-
 inline void DX12UAVResourceBarrier(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, D3D12_RESOURCE_STATES& stateRef)
 {
 	if (stateRef != D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
@@ -94,75 +60,67 @@ void GraphicsContext::SetPObject(PObject^ pObject, int index)
 	m_commandList->SetPipelineState(pObject->m_pipelineState[index].Get());
 }
 
-void GraphicsContext::SetPObjectStreamOut(PObject^ pObject)
-{
-	m_commandList->SetPipelineState(pObject->m_pipelineState[PObject::c_indexPipelineStateSkinning].Get());
-}
-
 void GraphicsContext::SetPObject(ComputePO^ pObject)
 {
 	m_commandList->SetPipelineState(pObject->m_pipelineState.Get());
 }
 
-void GraphicsContext::UpdateResource(ConstantBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
 {
 	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
 	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->Size, data->begin() + dataOffset, sizeInByte);
 }
 
-void GraphicsContext::UpdateResource(ConstantBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
 {
 	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
 	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->Size, data->begin() + dataOffset, sizeInByte);
 }
 
-inline void UpdateCBStaticResource(ConstantBufferStatic^ buffer, ID3D12GraphicsCommandList* commandList, void* data, UINT sizeInByte, int dataOffset)
+inline void UpdateCBStaticResource(SBuffer^ buffer, ID3D12GraphicsCommandList* commandList, void* data, UINT sizeInByte, int dataOffset)
 {
 	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
 	int lastUpdateIndex = buffer->lastUpdateIndex;
 
-	D3D12_SUBRESOURCE_DATA bufferData = {};
-	bufferData.pData = (byte*)data + dataOffset;
-	bufferData.RowPitch = sizeInByte;
-	bufferData.SlicePitch = sizeInByte;
 	CD3DX12_RANGE readRange(0, 0);
 	void* mapped = nullptr;
 	buffer->m_constantBufferUploads2->Map(0, &readRange, &mapped);
-	memcpy((byte*)mapped +buffer->Size* lastUpdateIndex, (byte*)data + dataOffset, sizeInByte);
-	buffer->m_constantBufferUploads2->Unmap(0, &readRange);
+	memcpy((byte*)mapped + buffer->Size * lastUpdateIndex, (byte*)data + dataOffset, sizeInByte);
+	buffer->m_constantBufferUploads2->Unmap(0, nullptr);
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_constantBuffer.Get(), D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
 	commandList->CopyBufferRegion(buffer->m_constantBuffer.Get(), 0, buffer->m_constantBufferUploads2.Get(), buffer->Size * lastUpdateIndex, sizeInByte);
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_constantBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
-void GraphicsContext::UpdateResource(ConstantBufferStatic^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResource(SBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
 {
 	UpdateCBStaticResource(buffer, m_commandList.Get(), data->begin(), sizeInByte, dataOffset);
 }
 
-void GraphicsContext::UpdateResource(ConstantBufferStatic^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResource(SBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
 {
 	UpdateCBStaticResource(buffer, m_commandList.Get(), data->begin(), sizeInByte, dataOffset);
 }
 
-void GraphicsContext::UpdateResourceRegion(ConstantBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
 {
 	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->Size + bufferDataOffset, data->begin() + dataOffset, sizeInByte);
 }
 
-void GraphicsContext::UpdateResourceRegion(ConstantBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
 {
 	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->Size + bufferDataOffset, data->begin() + dataOffset, sizeInByte);
 }
 
 inline void _UpdateVerticesPos(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, ID3D12Resource* uploaderResource, void* dataBegin, UINT dataLength)
 {
-	D3D12_SUBRESOURCE_DATA vertexData = {};
-	vertexData.pData = dataBegin;
-	vertexData.RowPitch = dataLength;
-	vertexData.SlicePitch = vertexData.RowPitch;
+	CD3DX12_RANGE range(0, 0);
+	void* pMapped = nullptr;
+	DX::ThrowIfFailed(uploaderResource->Map(0, &range, &pMapped));
+	memcpy(pMapped, dataBegin, dataLength);
+	uploaderResource->Unmap(0, nullptr);
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST));
-	UpdateSubresources(commandList, resource, uploaderResource, 0, 0, 1, &vertexData);
+	commandList->CopyBufferRegion(resource, 0, uploaderResource, 0, dataLength);
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
@@ -284,22 +242,22 @@ void GraphicsContext::SetSRVTArray(RenderTextureCube^ texture, int index)
 	}
 }
 
-void GraphicsContext::SetCBVR(ConstantBuffer^ buffer, int index)
+void GraphicsContext::SetCBVR(CBuffer^ buffer, int index)
 {
 	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
 }
 
-void GraphicsContext::SetCBVR(ConstantBufferStatic^ buffer, int index)
+void GraphicsContext::SetCBVR(SBuffer^ buffer, int index)
 {
 	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
 }
 
-void GraphicsContext::SetCBVR(ConstantBuffer^ buffer, int offset256, int size256, int index)
+void GraphicsContext::SetCBVR(CBuffer^ buffer, int offset256, int size256, int index)
 {
 	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
 }
 
-void GraphicsContext::SetCBVR(ConstantBufferStatic^ buffer, int offset256, int size256, int index)
+void GraphicsContext::SetCBVR(SBuffer^ buffer, int offset256, int size256, int index)
 {
 	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
 }
@@ -431,22 +389,22 @@ void GraphicsContext::SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int 
 	m_commandList->SetComputeRootShaderResourceView(index, mesh->m_indexBuffer->GetGPUVirtualAddress() + startLocation * sizeof(UINT));
 }
 
-void GraphicsContext::SetComputeCBVR(ConstantBuffer^ buffer, int index)
+void GraphicsContext::SetComputeCBVR(CBuffer^ buffer, int index)
 {
 	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
 }
 
-void GraphicsContext::SetComputeCBVR(ConstantBufferStatic^ buffer, int index)
+void GraphicsContext::SetComputeCBVR(SBuffer^ buffer, int index)
 {
 	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
 }
 
-void GraphicsContext::SetComputeCBVR(ConstantBuffer^ buffer, int offset256, int size256, int index)
+void GraphicsContext::SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index)
 {
 	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
 }
 
-void GraphicsContext::SetComputeCBVR(ConstantBufferStatic^ buffer, int offset256, int size256, int index)
+void GraphicsContext::SetComputeCBVR(SBuffer^ buffer, int offset256, int size256, int index)
 {
 	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
 }
@@ -627,7 +585,7 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 
 		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mesh->m_indexBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_INDEX_BUFFER));
 	}
-	mesh->m_bufferUpload->Unmap(0, &readRange);
+	mesh->m_bufferUpload->Unmap(0, nullptr);
 
 	// 创建顶点/索引缓冲区视图。
 	if (mesh->m_verticeData->Length > 0)
@@ -647,7 +605,7 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte>^ data)
 {
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
-	CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->c_vertexStride * mesh->m_posCount);
+	CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_bufferSize);
 	CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
 	for (int i = 0; i < mesh->c_bufferCount; i++)
@@ -661,6 +619,7 @@ void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte
 			IID_PPV_ARGS(&mesh->m_vertexBufferPos[i])));
 		NAME_D3D12_OBJECT(mesh->m_vertexBufferPos[i]);
 	}
+	CD3DX12_RESOURCE_DESC uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_bufferSize * c_frameCount);
 	for (int i = 0; i < mesh->c_bufferCount; i++)
 	{
 		for (int j = 0; j < c_frameCount; j++)
@@ -668,7 +627,7 @@ void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte
 			DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 				&uploadHeapProperties,
 				D3D12_HEAP_FLAG_NONE,
-				&vertexBufferDesc,
+				&uploadBufferDesc,
 				D3D12_RESOURCE_STATE_GENERIC_READ,
 				nullptr,
 				IID_PPV_ARGS(&mesh->m_vertexBufferPosUpload[i][j])));
@@ -1208,7 +1167,7 @@ void GraphicsContext::BuildBottomAccelerationStructures(RayTracingScene^ rayTrac
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(asStruct.Get()));
 }
 
-void GraphicsContext::BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, ConstantBufferStatic^ mat)
+void GraphicsContext::BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, SBuffer^ mat, int offset256)
 {
 	BuildBottomAccelerationStructures(rayTracingAccelerationStructure, mesh, indexBuffer, vertexBegin, indexBegin, indexCount);
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
@@ -1216,7 +1175,7 @@ void GraphicsContext::BuildBASAndParam(RayTracingScene^ rayTracingAccelerationSt
 	void* pBase = (byte*)rayTracingAccelerationStructure->pArgumentCache + (RayTracingScene::c_argumentCacheStride * rayTracingAccelerationStructure->m_instanceDescs.size());
 
 	CooRayTracingParamLocal1 params = {};
-	params.cbv3 = mat->GetCurrentVirtualAddress();
+	params.cbv3 = mat->GetCurrentVirtualAddress() + 256 * offset256;
 	params.srv0_1 = mesh->m_buffer.Get()->GetGPUVirtualAddress() + mesh->c_vbvStride * vertexBegin;
 	params.srv1_1 = indexBuffer->m_indexBuffer->GetGPUVirtualAddress() + indexBegin * sizeof(UINT);
 	params.srv2_1 = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), diff->m_heapRefIndex, incrementSize);
@@ -1258,9 +1217,9 @@ void GraphicsContext::BuildTopAccelerationStructures(RayTracingScene^ rayTracing
 		IID_PPV_ARGS(&rayTracingAccelerationStructure->m_topLevelAccelerationStructure[lastUpdateIndex])));
 	NAME_D3D12_OBJECT(rayTracingAccelerationStructure->m_topLevelAccelerationStructure[lastUpdateIndex]);
 	rayTracingAccelerationStructure->m_topLevelAccelerationStructureSize[lastUpdateIndex] = topLevelPrebuildInfo.ResultDataMaxSizeInBytes;
-
+	CD3DX12_RANGE readRange(0, 0);
 	void* pMappedData;
-	rayTracingAccelerationStructure->instanceDescs[lastUpdateIndex]->Map(0, nullptr, &pMappedData);
+	rayTracingAccelerationStructure->instanceDescs[lastUpdateIndex]->Map(0, &readRange, &pMappedData);
 	memcpy(pMappedData, rayTracingAccelerationStructure->m_instanceDescs.data(), rayTracingAccelerationStructure->m_instanceDescs.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
 	rayTracingAccelerationStructure->instanceDescs[lastUpdateIndex]->Unmap(0, nullptr);
 

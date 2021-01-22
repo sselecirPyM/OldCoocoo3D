@@ -26,7 +26,7 @@ void Bullet::InitScene(void* _scene)
 	btRigidBody::btRigidBodyConstructionInfo btInfo(0, myMotionState, groundShape, btVector3(0, 0, 0));
 	btInfo.m_friction = 0.25f;
 	btRigidBody* body = new btRigidBody(btInfo);
-	body->setCollisionFlags(body->getCollisionFlags() || btCollisionObject::CF_KINEMATIC_OBJECT);
+	body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 	body->setActivationState(DISABLE_DEACTIVATION);
 
 	//add the body to the dynamics world

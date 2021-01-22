@@ -146,16 +146,16 @@ namespace Coocoo3D.RenderPipeline
 
             graphicsContext.SetRootSignature(context.RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
-            void EntitySkinning(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer)
+            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
                 var POSkinning = rendererComponent.POSkinning;
                 if (POSkinning != null && POSkinning.Status == GraphicsObjectStatus.loaded)
-                    graphicsContext.SetPObjectStreamOut(POSkinning);
+                    graphicsContext.SetPObject(POSkinning,0);
                 else
-                    graphicsContext.SetPObjectStreamOut(currentSkinningPObject);
+                    graphicsContext.SetPObject(currentSkinningPObject,0);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
@@ -167,7 +167,7 @@ namespace Coocoo3D.RenderPipeline
 
 
             graphicsContext.SetRootSignatureCompute(context.RPAssetsManager.rootSignatureCompute);
-            void ParticleCompute(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+            void ParticleCompute(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
                 if (rendererComponent.ParticleCompute == null || rendererComponent.meshParticleBuffer == null || rendererComponent.ParticleCompute.Status != GraphicsObjectStatus.loaded)
                 {
@@ -188,7 +188,7 @@ namespace Coocoo3D.RenderPipeline
                 ParticleCompute(Entities[i].rendererComponent, context.CameraDataBuffers[0], context.CBs_Bone[i], ref counterParticle);
             if (HasMainLight && inShaderSettings.EnableShadow)
             {
-                void _RenderEntityShadow(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, int bufferOffset, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+                void _RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, int bufferOffset, CBuffer entityBoneDataBuffer, ref _Counters counter)
                 {
                     var Materials = rendererComponent.Materials;
                     graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
@@ -248,7 +248,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.EnvironmentMap, 6);
             graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
-            void ZPass(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+            void ZPass(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
@@ -280,7 +280,7 @@ namespace Coocoo3D.RenderPipeline
                 for (int i = 0; i < Entities.Count; i++)
                     ZPass(Entities[i].rendererComponent, context.CameraDataBuffers[cameraIndex], context.CBs_Bone[i], ref counter1);
 
-            void _RenderEntity(MMDRendererComponent rendererComponent, ConstantBuffer cameraPresentData, ConstantBuffer entityBoneDataBuffer, ref _Counters counter)
+            void _RenderEntity(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
                 var PODraw = PObjectStatusSelect(rendererComponent.PODraw, context.RPAssetsManager.PObjectMMDLoading, currentDrawPObject, context.RPAssetsManager.PObjectMMDError);
                 var Materials = rendererComponent.Materials;

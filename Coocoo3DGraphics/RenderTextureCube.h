@@ -1,6 +1,6 @@
 #pragma once
 #include "ITexture.h"
-#include "DeviceResources.h"
+#include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
 	public ref class RenderTextureCube sealed :public IRenderTexture

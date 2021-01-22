@@ -108,7 +108,7 @@ namespace Coocoo3D.ResourceWarp
             if (haveVS || haveGS)
             {
                 POSkinning.ReloadSkinning(
-                    haveVS ? vs0 : RPAssetsManager.VSMMDSkinning2,
+                    haveVS ? vs0 : RPAssetsManager.VSAssets["VSMMDSkinning2.cso"],
                     haveGS ? gs0 : null);
                 processingList.UL(POSkinning, 1);
             }

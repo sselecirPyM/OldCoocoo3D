@@ -274,7 +274,7 @@ namespace Coocoo3D.FileFormat
                         EdgeSize = mmdMat.EdgeScale,
                         EdgeColor = mmdMat.EdgeColor,
                         AmbientColor = new Vector3(MathF.Pow(mmdMat.AmbientColor.X, 2.2f), MathF.Pow(mmdMat.AmbientColor.Y, 2.2f), MathF.Pow(mmdMat.AmbientColor.Z, 2.2f)),
-                        Roughness = 0.5f,
+                        Roughness = 1.0f,
                         Specular = 0.5f,
                     },
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
