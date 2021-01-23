@@ -12,42 +12,6 @@ using namespace Windows::UI::Xaml::Controls;
 using namespace Platform;
 using namespace Coocoo3DGraphics;
 
-// 用于计算屏幕旋转的常量。
-namespace ScreenRotation
-{
-	// 0 度 Z 旋转
-	static const XMFLOAT4X4 Rotation0(
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
-
-	// 90 度 Z 旋转
-	static const XMFLOAT4X4 Rotation90(
-		0.0f, 1.0f, 0.0f, 0.0f,
-		-1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
-
-	// 180 度 Z 旋转
-	static const XMFLOAT4X4 Rotation180(
-		-1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, -1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
-
-	// 270 度 Z 旋转
-	static const XMFLOAT4X4 Rotation270(
-		0.0f, -1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
-};
-
 UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
 {
 	switch (static_cast<int>(format))
@@ -221,7 +185,26 @@ void DeviceResources::CreateDeviceResources()
 	DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory)));
 
 	ComPtr<IDXGIAdapter1> adapter;
-	GetHardwareAdapter(&adapter);
+	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter); adapterIndex++)
+	{
+		DXGI_ADAPTER_DESC1 desc;
+		adapter->GetDesc1(&desc);
+
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		{
+			// 不要选择基本呈现驱动程序适配器。
+			continue;
+		}
+
+		// 检查适配器是否支持 Direct3D 12，但不要创建
+		// 仍为实际设备。
+		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			memcpy(m_deviceDescription, desc.Description, sizeof(desc.Description));
+			m_deviceVideoMem = desc.DedicatedVideoMemory;
+			break;
+		}
+	}
 
 	// 创建 Direct3D 12 API 设备对象
 	HRESULT hr = D3D12CreateDevice(
@@ -247,8 +230,6 @@ void DeviceResources::CreateDeviceResources()
 	DX::ThrowIfFailed(hr);
 
 	m_isRayTracingSupport = IsDirectXRaytracingSupported(m_d3dDevice.Get());
-
-	m_d3dDevice->QueryInterface(IID_PPV_ARGS(&m_d3dDevice2));
 	m_d3dDevice->QueryInterface(IID_PPV_ARGS(&m_d3dDevice5));
 
 	// 创建命令队列。
@@ -318,14 +299,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
 	UpdateRenderTargetSize();
 
-	// 交换链的宽度和高度必须基于窗口的
-	// 面向本机的宽度和高度。如果窗口不在本机
-	// 方向，则必须使尺寸反转。
-	DXGI_MODE_ROTATION displayRotation = ComputeDisplayRotation();
-
-	bool swapDimensions = displayRotation == DXGI_MODE_ROTATION_ROTATE90 || displayRotation == DXGI_MODE_ROTATION_ROTATE270;
-	m_d3dRenderTargetSize.Width = swapDimensions ? m_outputSize.Height : m_outputSize.Width;
-	m_d3dRenderTargetSize.Height = swapDimensions ? m_outputSize.Width : m_outputSize.Height;
+	m_d3dRenderTargetSize.Width =  m_outputSize.Width;
+	m_d3dRenderTargetSize.Height =  m_outputSize.Height;
 
 	UINT backBufferWidth = lround(m_d3dRenderTargetSize.Width);
 	UINT backBufferHeight = lround(m_d3dRenderTargetSize.Height);
@@ -389,35 +364,6 @@ void DeviceResources::CreateWindowSizeDependentResources()
 				DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
 			}, CallbackContext::Any));
 	}
-
-	// 为交换链设置正确方向，并生成
-	// 转换以渲染到旋转交换链。
-	// 显式指定 3D 矩阵可以避免舍入误差。
-
-	switch (displayRotation)
-	{
-	case DXGI_MODE_ROTATION_IDENTITY:
-		m_orientationTransform3D = ScreenRotation::Rotation0;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE90:
-		m_orientationTransform3D = ScreenRotation::Rotation270;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE180:
-		m_orientationTransform3D = ScreenRotation::Rotation180;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE270:
-		m_orientationTransform3D = ScreenRotation::Rotation90;
-		break;
-
-	default:
-		throw ref new FailureException();
-	}
-
-	DX::ThrowIfFailed(m_swapChain->SetRotation(displayRotation));
-
 
 
 	// 在交换链上设置反向缩放
@@ -521,16 +467,6 @@ void DeviceResources::SetDpi(float dpi)
 		// 显示 DPI 更改时，窗口的逻辑大小(以 Dip 为单位)也将更改并且需要更新。
 		m_logicalSize = Windows::Foundation::Size(m_window->Width, m_window->Height);
 
-		CreateWindowSizeDependentResources();
-	}
-}
-
-// 在 OrientationChanged 事件的事件处理程序中调用此方法。
-void DeviceResources::SetCurrentOrientation(DisplayOrientations currentOrientation)
-{
-	if (m_currentOrientation != currentOrientation)
-	{
-		m_currentOrientation = currentOrientation;
 		CreateWindowSizeDependentResources();
 	}
 }
@@ -675,88 +611,67 @@ UINT64 DeviceResources::GetDeviceVideoMemory()
 	return m_deviceVideoMem;
 }
 
-// 此方法确定以下两个元素之间的旋转方式: 显示设备的本机方向和
-// 当前显示方向。
-DXGI_MODE_ROTATION DeviceResources::ComputeDisplayRotation()
+void DeviceResources::InitializeCBuffer(CBuffer^ cBuffer, int size)
 {
-	DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
+	cBuffer->m_size = (size + 255) & ~255;
 
-	// 注意: NativeOrientation 只能为 "Landscape" 或 "Portrait"，即使
-	// DisplayOrientations 枚举具有其他值。
-	switch (m_nativeOrientation)
-	{
-	case DisplayOrientations::Landscape:
-		switch (m_currentOrientation)
-		{
-		case DisplayOrientations::Landscape:
-			rotation = DXGI_MODE_ROTATION_IDENTITY;
-			break;
+	auto d3dDevice = GetD3DDevice();
+	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
+	CD3DX12_RESOURCE_DESC constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(c_frameCount * cBuffer->m_size);
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&uploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&constantBufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&cBuffer->m_constantBuffer)));
 
-		case DisplayOrientations::Portrait:
-			rotation = DXGI_MODE_ROTATION_ROTATE270;
-			break;
+	NAME_D3D12_OBJECT(cBuffer->m_constantBuffer);
 
-		case DisplayOrientations::LandscapeFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE180;
-			break;
-
-		case DisplayOrientations::PortraitFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE90;
-			break;
-		}
-		break;
-
-	case DisplayOrientations::Portrait:
-		switch (m_currentOrientation)
-		{
-		case DisplayOrientations::Landscape:
-			rotation = DXGI_MODE_ROTATION_ROTATE90;
-			break;
-
-		case DisplayOrientations::Portrait:
-			rotation = DXGI_MODE_ROTATION_IDENTITY;
-			break;
-
-		case DisplayOrientations::LandscapeFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE270;
-			break;
-
-		case DisplayOrientations::PortraitFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE180;
-			break;
-		}
-		break;
-	}
-	return rotation;
+	// 映射常量缓冲区。
+	CD3DX12_RANGE readRange(0, 0);		// 我们不打算从 CPU 上的此资源中进行读取。
+	DX::ThrowIfFailed(cBuffer->m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&cBuffer->m_mappedConstantBuffer)));
+	ZeroMemory(cBuffer->m_mappedConstantBuffer, c_frameCount * cBuffer->m_size);
 }
 
-// 此方法获取支持 Direct3D 12 的第一个可用硬件适配器。
-// 如果找不到此类适配器，则 *ppAdapter 将设置为 nullptr。
-void DeviceResources::GetHardwareAdapter(IDXGIAdapter1** ppAdapter)
+void DeviceResources::InitializeSBuffer(SBuffer^ sBuffer, int size)
 {
-	ComPtr<IDXGIAdapter1> adapter;
-	*ppAdapter = nullptr;
+	sBuffer->m_size = (size + 255) & ~255;
 
-	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter); adapterIndex++)
-	{
-		DXGI_ADAPTER_DESC1 desc;
-		adapter->GetDesc1(&desc);
+	auto d3dDevice = GetD3DDevice();
+	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(sBuffer->m_size),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&sBuffer->m_constantBuffer)));
+	NAME_D3D12_OBJECT(sBuffer->m_constantBuffer);
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&uploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(c_frameCount * sBuffer->m_size),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&sBuffer->m_constantBufferUploads)));
+	NAME_D3D12_OBJECT(sBuffer->m_constantBufferUploads);
+}
 
-		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-		{
-			// 不要选择基本呈现驱动程序适配器。
-			continue;
-		}
+void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCount)
+{
+	meshBuffer->m_size = vertexCount;
+	auto d3dDevice = GetD3DDevice();
+	CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(meshBuffer->m_size * meshBuffer->c_vbvStride + meshBuffer->c_vbvOffset, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&defaultHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&vertexBufferDesc,
+		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+		nullptr,
+		IID_PPV_ARGS(&meshBuffer->m_buffer)));
+	NAME_D3D12_OBJECT(meshBuffer->m_buffer);
 
-		// 检查适配器是否支持 Direct3D 12，但不要创建
-		// 仍为实际设备。
-		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
-		{
-			memcpy(m_deviceDescription, desc.Description, sizeof(desc.Description));
-			m_deviceVideoMem = desc.DedicatedVideoMemory;
-			break;
-		}
-	}
-
-	*ppAdapter = adapter.Detach();
+	meshBuffer->m_prevState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 }

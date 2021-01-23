@@ -39,7 +39,6 @@ namespace Coocoo3D.Core
 
 
         public Camera camera = new Camera();
-        //public WidgetRenderer widgetRenderer = new WidgetRenderer();
         public GameDriver GameDriver;
         public GeneralGameDriver _GeneralGameDriver = new GeneralGameDriver();
         public RecorderGameDriver _RecorderGameDriver = new RecorderGameDriver();
@@ -110,7 +109,7 @@ namespace Coocoo3D.Core
                 deferredRenderPipeline1.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
                 widgetRenderer.Reload(deviceResources);
-                RPContext.SkinningMeshBuffer.Reload(deviceResources, 0);
+                deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, 0);
                 if (deviceResources.IsRayTracingSupport())
                     rayTracingRenderPipeline1.Reload(deviceResources);
 
@@ -156,30 +155,12 @@ namespace Coocoo3D.Core
         RenderPipeline.RenderPipeline _currentRenderPipeline;
 
         public bool UseNewFun;
-        Task[] poolTasks1;
         private void UpdateEntities(float playTime)
         {
             int threshold = 1;
             if (Entities.Count > threshold)
             {
-                if (poolTasks1 != null && poolTasks1.Length == Entities.Count - threshold)
-                {
-                    for (int i = 0; i < Entities.Count - threshold; i++)
-                    {
-                        poolTasks1[i] = null;
-                    }
-                }
-                else
-                    poolTasks1 = new Task[Entities.Count - threshold];
-
-                for (int i = threshold; i < Entities.Count; i++)
-                {
-                    MMD3DEntity entity = Entities[i];
-                    poolTasks1[i - threshold] = Task.Run(() => entity.SetMotionTime(playTime));
-                }
-                for (int i = 0; i < threshold; i++)
-                    Entities[i].SetMotionTime(playTime);
-                Task.WaitAll(poolTasks1);
+                Parallel.ForEach(Entities, (MMD3DEntity e) => { e.SetMotionTime(playTime); });
             }
             else for (int i = 0; i < Entities.Count; i++)
                 {
@@ -347,7 +328,7 @@ namespace Coocoo3D.Core
                     _processingList.Clear();
                     if (SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
                     {
-                        RPContext.SkinningMeshBuffer.Reload(deviceResources, SceneObjectVertexCount);
+                        deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, SceneObjectVertexCount);
                         RPContext.SkinningMeshBufferSize = SceneObjectVertexCount;
                         RPContext.LightCacheBuffer.Initialize(deviceResources, SceneObjectVertexCount * 16);
                     }
@@ -358,11 +339,12 @@ namespace Coocoo3D.Core
                     VirtualRenderCount++;
                     return true;
                 }
+                #endregion
 
                 GraphicsContext.BeginAlloctor(deviceResources);
 
                 miscProcessContext.MoveToAnother(_miscProcessContext);
-                miscProcess.Process(RPContext.graphicsContext1, _miscProcessContext);
+                miscProcess.Process(RPContext, _miscProcessContext);
 
                 if (swapChainReady)
                 {
@@ -379,7 +361,6 @@ namespace Coocoo3D.Core
                         widgetRenderer.PrepareRenderData(RPContext);
                         RPContext.UpdateGPUResource();
                     }
-                    #endregion
 
                     void _RenderFunction()
                     {

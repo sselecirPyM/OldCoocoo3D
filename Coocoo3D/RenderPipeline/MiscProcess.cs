@@ -53,16 +53,6 @@ namespace Coocoo3D.RenderPipeline
         public const int c_maxIteration = 32;
         public CBuffer constantBuffers = new CBuffer();
         XYZData _XyzData;
-        public byte[] bigBuffer = new byte[c_bufferSize];
-        public GCHandle handle1;
-        public MiscProcess()
-        {
-            handle1 = GCHandle.Alloc(bigBuffer);
-        }
-        ~MiscProcess()
-        {
-            handle1.Free();
-        }
         public async Task ReloadAssets(DeviceResources deviceResources)
         {
             rootSignature.ReloadCompute(deviceResources, new GraphicSignatureDesc[]
@@ -72,18 +62,20 @@ namespace Coocoo3D.RenderPipeline
                 GraphicSignatureDesc.SRVTable,
                 GraphicSignatureDesc.UAVTable,
             });
-            constantBuffers.Reload(deviceResources, c_bufferSize);
-            IrradianceMap0.Reload(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso"));
-            EnvironmentMap0.Reload(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso"));
-            ClearIrradianceMap.Reload(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso"));
+            deviceResources.InitializeCBuffer(constantBuffers, c_bufferSize);
+            IrradianceMap0.Initialize(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso"));
+            EnvironmentMap0.Initialize(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso"));
+            ClearIrradianceMap.Initialize(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso"));
 
             Ready = true;
         }
 
-        public void Process(GraphicsContext graphicsContext, MiscProcessContext context)
+        public void Process(RenderPipelineContext rp, MiscProcessContext context)
         {
-            if (!Ready) return;
             if (context.miscProcessPairs.Count == 0) return;
+            if (!Ready) return;
+            ref byte[] bigBuffer = ref rp.bigBuffer;
+            GraphicsContext graphicsContext = rp.graphicsContext1;
             graphicsContext.BeginCommand();
             graphicsContext.SetDescriptorHeapDefault();
             for (int i = 0; i < context.miscProcessPairs.Count; i++)
@@ -126,8 +118,6 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.Dispatch((int)(texture2.m_width + 7) / 8 / pow2a, (int)(texture2.m_height + 7) / 8 / pow2a, 6);
                     pow2a *= 2;
                 }
-                //graphicsContext.ClearTextureRTV(texture1);
-                //graphicsContext.ClearTextureRTV(texture2);
                 graphicsContext.SetPObject(IrradianceMap0);
 
                 pow2a = 1;

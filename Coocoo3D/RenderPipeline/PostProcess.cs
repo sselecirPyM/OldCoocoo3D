@@ -14,9 +14,6 @@ namespace Coocoo3D.RenderPipeline
     {
         public const int c_postProcessDataSize = 256;
 
-        byte[] rcDataUploadBuffer = new byte[c_postProcessDataSize];
-        public GCHandle gch_rcDataUploadBuffer;
-
         public InnerStruct innerStruct = new InnerStruct
         {
             GammaCorrection = 2.2f,
@@ -29,32 +26,22 @@ namespace Coocoo3D.RenderPipeline
             Saturation3 = 1.0f,
             BackgroundFactory = 1.0f,
         };
-        public InnerStruct prevData;
-        SBuffer postProcessDataBuffer = new SBuffer();
+        CBuffer postProcessDataBuffer = new CBuffer();
 
         public PostProcess()
         {
-            gch_rcDataUploadBuffer = GCHandle.Alloc(rcDataUploadBuffer);
-        }
-        ~PostProcess()
-        {
-            gch_rcDataUploadBuffer.Free();
         }
 
         public void Reload(DeviceResources deviceResources)
         {
-            postProcessDataBuffer.Reload(deviceResources, c_postProcessDataSize);
+            deviceResources.InitializeCBuffer(postProcessDataBuffer, c_postProcessDataSize);
             Ready = true;
         }
 
         public override void PrepareRenderData(RenderPipelineContext context)
         {
-            if (!innerStruct.Equals(prevData))
-            {
-                Marshal.StructureToPtr(innerStruct, Marshal.UnsafeAddrOfPinnedArrayElement(rcDataUploadBuffer, 0), true);
-                context.graphicsContext.UpdateResource(postProcessDataBuffer, rcDataUploadBuffer, c_postProcessDataSize, 0);
-                prevData = innerStruct;
-            }
+            Marshal.StructureToPtr(innerStruct, Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0), true);
+            context.graphicsContext.UpdateResource(postProcessDataBuffer, context.bigBuffer, c_postProcessDataSize, 0);
         }
 
         public override void RenderCamera(RenderPipelineContext context)
@@ -66,7 +53,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.outputRTV, 1);
             graphicsContext.SetSRVT(context.postProcessBackground, 2);
             graphicsContext.SetMesh(context.ndcQuadMesh);
-            graphicsContext.SetPObject(context.RPAssetsManager.PObjectPostProcess, CullMode.back);
+            graphicsContext.SetPObject(context.RPAssetsManager.PObjectPostProcess, ECullMode.back);
             graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
         }
 

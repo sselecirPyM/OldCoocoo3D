@@ -1,6 +1,6 @@
 #pragma once
+#include "GraphicsConstance.h"
 #include "WICFactory.h"
-#include "DeviceResources.h"
 namespace Coocoo3DGraphics
 {
 	using namespace Windows::Storage::Streams;

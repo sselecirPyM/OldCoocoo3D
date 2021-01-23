@@ -1,8 +1,11 @@
 ﻿#pragma once
 #include "Interoperation/InteroperationTypes.h"
+#include "GraphicsConstance.h"
+#include "CBuffer.h"
+#include "SBuffer.h"
+#include "MeshBuffer.h"
 namespace Coocoo3DGraphics
 {
-	static const UINT c_frameCount = 3;		// 使用三重缓冲。
 	static const UINT c_graphicsPipelineHeapMaxCount = 65536;
 
 	// 控制所有 DirectX 设备资源。
@@ -18,7 +21,6 @@ namespace Coocoo3DGraphics
 		Windows::Foundation::Size	GetOutputSize() { return m_outputSize; }
 		// 呈现器目标的大小，以 dip 为单位。
 		Windows::Foundation::Size	GetLogicalSize() { return m_logicalSize; }
-		void SetCurrentOrientation(Windows::Graphics::Display::DisplayOrientations currentOrientation);
 		void SetDpi(float dpi);
 		float GetDpi() { return m_effectiveDpi; }
 		void ValidateDevice();
@@ -29,12 +31,15 @@ namespace Coocoo3DGraphics
 		static UINT BitsPerPixel(DxgiFormat format);
 		Platform::String^ GetDeviceDescription();
 		UINT64 GetDeviceVideoMemory();
+
+		void InitializeCBuffer(CBuffer^ cBuffer, int size);
+		void InitializeSBuffer(SBuffer^ sBuffer, int size);
+		void InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCount);
 	internal:
 		bool						IsDeviceRemoved() const { return m_deviceRemoved; }
 
 		// D3D 访问器。
-		ID3D12Device*				GetD3DDevice() const { return m_d3dDevice.Get(); }
-		ID3D12Device2*				GetD3DDevice2() const { return m_d3dDevice2.Get(); }
+		ID3D12Device2*				GetD3DDevice() const { return m_d3dDevice.Get(); }
 		ID3D12Device5*				GetD3DDevice5() const { return m_d3dDevice5.Get(); }
 		IDXGISwapChain3*			GetSwapChain() const { return m_swapChain.Get(); }
 		ID3D12Resource*				GetRenderTarget() const { return m_renderTargets[m_frameIndex].Get(); }
@@ -42,7 +47,6 @@ namespace Coocoo3DGraphics
 		ID3D12CommandAllocator*		GetCommandAllocator() const { return m_commandAllocators[m_executeIndex].Get(); }
 		DXGI_FORMAT					GetBackBufferFormat() const { return m_backBufferFormat; }
 		D3D12_VIEWPORT				GetScreenViewport() const { return m_screenViewport; }
-		DirectX::XMFLOAT4X4			GetOrientationTransform3D() const { return m_orientationTransform3D; }
 		UINT						GetCurrentFrameIndex() const { return m_frameIndex; }
 		UINT						GetCurrentExecuteIndex() const { return m_executeIndex; }
 
@@ -65,13 +69,10 @@ namespace Coocoo3DGraphics
 	private:
 		void CreateWindowSizeDependentResources();
 		void UpdateRenderTargetSize();
-		DXGI_MODE_ROTATION ComputeDisplayRotation();
-		void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
 
 
 		// Direct3D 对象。
-		Microsoft::WRL::ComPtr<ID3D12Device>			m_d3dDevice;
-		Microsoft::WRL::ComPtr<ID3D12Device2>			m_d3dDevice2;
+		Microsoft::WRL::ComPtr<ID3D12Device2>			m_d3dDevice;
 		Microsoft::WRL::ComPtr<ID3D12Device5>			m_d3dDevice5;
 		Microsoft::WRL::ComPtr<IDXGIFactory4>			m_dxgiFactory;
 		Microsoft::WRL::ComPtr<IDXGISwapChain3>			m_swapChain;
@@ -109,9 +110,6 @@ namespace Coocoo3DGraphics
 
 		// 这是将向应用传回的 DPI。它考虑了应用是否支持高分辨率屏幕。
 		float											m_effectiveDpi;
-
-		// 用于显示方向的转换。
-		DirectX::XMFLOAT4X4								m_orientationTransform3D;
 
 		bool											m_ResolutionChange = false;
 	};

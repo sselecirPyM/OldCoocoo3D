@@ -55,9 +55,9 @@ namespace Coocoo3D.RenderPipeline
         {
             for (int i = 0; i < c_maxCameraPerRender; i++)
             {
-                CameraDataBuffers[i].Reload(deviceResources, c_presentDataSize);
+                deviceResources.InitializeSBuffer(CameraDataBuffers[i], c_presentDataSize);
             }
-            LightCameraDataBuffer.Reload(deviceResources, c_lightCameraDataSize);
+            deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightCameraDataSize);
         }
 
         #region graphics assets
@@ -105,7 +105,7 @@ namespace Coocoo3D.RenderPipeline
             HasMainLight = false;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
-                lightCameraMatrix = Matrix4x4.Transpose(lightings[0].GetLightingMatrix(256, camera.LookAtPoint - camera.Pos, camera.Distance));
+                lightCameraMatrix = Matrix4x4.Transpose(lightings[0].GetLightingMatrix(256, camera.LookAtPoint, camera.Distance));
                 Marshal.StructureToPtr(lightCameraMatrix, pBufferData, true);
                 graphicsContext.UpdateResource(LightCameraDataBuffer, context.bigBuffer, c_lightCameraDataSize, 0);
                 HasMainLight = true;
@@ -133,7 +133,7 @@ namespace Coocoo3D.RenderPipeline
                 int lightCount1 = 0;
                 for (int j = 0; j < lightings1.Count; j++)
                 {
-                    Marshal.StructureToPtr(lightings1[j].GetPositionOrDirection(camera.Pos), pBufferData1, true);
+                    Marshal.StructureToPtr(lightings1[j].GetPositionOrDirection(), pBufferData1, true);
                     Marshal.StructureToPtr((uint)lightings1[j].LightingType, pBufferData1 + 12, true);
                     Marshal.StructureToPtr(lightings1[j].Color, pBufferData1 + 16, true);
                     lightCount1++;
@@ -234,7 +234,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetCBVR(cameraPresentData, 2);
 
                     graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    graphicsContext.SetPObject(context.RPAssetsManager.PObjectMMDShadowDepth, CullMode.none);
+                    graphicsContext.SetPObject(context.RPAssetsManager.PObjectMMDShadowDepth, ECullMode.none);
 
                     //List<Texture2D> texs = rendererComponent.textures;
                     //int countIndexLocal = 0;
@@ -322,7 +322,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetSRVT(context.SkyBox, 6);
                 graphicsContext.SetSRVT(context.IrradianceMap, 7);
                 graphicsContext.SetSRVT(context.BRDFLut, 8);
-                graphicsContext.SetPObject(context.RPAssetsManager.PObjectSkyBox, CullMode.back);
+                graphicsContext.SetPObject(context.RPAssetsManager.PObjectSkyBox, ECullMode.back);
                 graphicsContext.SetMesh(context.ndcQuadMesh);
                 graphicsContext.DrawIndexed(context.ndcQuadMesh.m_indexCount, 0, 0);
                 #endregion

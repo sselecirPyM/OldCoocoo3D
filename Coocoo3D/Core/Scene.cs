@@ -8,19 +8,15 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.Core
 {
-    //场景类有助于用户在两个场景间复制数据，而不是有助于销毁物体。
     public class Scene
     {
-        //unsafe
-        public List<MMD3DEntity> Entities = new List<MMD3DEntity>();
-        //unsafe
-        public List<Lighting> Lightings = new List<Lighting>();
         public ObservableCollection<ISceneObject> sceneObjects = new ObservableCollection<ISceneObject>();
-
+        public List<MMD3DEntity> Entities = new List<MMD3DEntity>();
         public List<MMD3DEntity> EntityLoadList = new List<MMD3DEntity>();
-        public List<Lighting> LightingLoadList = new List<Lighting>();
         public List<MMD3DEntity> EntityRemoveList = new List<MMD3DEntity>();
         public List<MMD3DEntity> EntityRefreshList = new List<MMD3DEntity>();
+        public List<Lighting> Lightings = new List<Lighting>();
+        public List<Lighting> LightingLoadList = new List<Lighting>();
         public List<Lighting> LightingRemoveList = new List<Lighting>();
 
         public void AddSceneObject(MMD3DEntity entity)

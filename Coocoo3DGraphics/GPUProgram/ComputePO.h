@@ -11,10 +11,10 @@ namespace Coocoo3DGraphics
 	public:
 		property GraphicsObjectStatus Status;
 		//使用Upload上传GPU
-		bool CompileReload1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro);
-		void Reload(DeviceResources^ deviceResources,GraphicsSignature^ rootSignature, IBuffer^ data);
+		bool CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro);
+		void Initialize(DeviceResources^ deviceResources,GraphicsSignature^ rootSignature, IBuffer^ data);
 		bool Upload(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature);
-		void Reload(IBuffer^ data);
+		void Initialize(IBuffer^ data);
 	internal:
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_pipelineState;
 		Microsoft::WRL::ComPtr<ID3DBlob> byteCode;

@@ -93,21 +93,21 @@ namespace Coocoo3D.ResourceWarp
             ComputePO cs1 = CSParticle;
 
 
-            bool haveVS = vs0.CompileReload1(datas, "VS", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveGS = gs0.CompileReload1(datas, "GS", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveVS1 = vs1.CompileReload1(datas, "VS1", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveGS1 = gs1.CompileReload1(datas, "GS1", ShaderMacro.DEFINE_COO_SURFACE);
-            bool havePS1 = ps1.CompileReload1(datas, "PS1", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveVS = vs0.CompileInitialize1(datas, "VS", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveGS = gs0.CompileInitialize1(datas, "GS", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveVS1 = vs1.CompileInitialize1(datas, "VS1", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveGS1 = gs1.CompileInitialize1(datas, "GS1", ShaderMacro.DEFINE_COO_SURFACE);
+            bool havePS1 = ps1.CompileInitialize1(datas, "PS1", ShaderMacro.DEFINE_COO_SURFACE);
 
-            bool haveVSParticle = vs2.CompileReload1(datas, "VSParticle", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveGSParticle = gs2.CompileReload1(datas, "GSParticle", ShaderMacro.DEFINE_COO_SURFACE);
-            bool havePSParticle = ps2.CompileReload1(datas, "PSParticle", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveVSParticle = vs2.CompileInitialize1(datas, "VSParticle", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveGSParticle = gs2.CompileInitialize1(datas, "GSParticle", ShaderMacro.DEFINE_COO_SURFACE);
+            bool havePSParticle = ps2.CompileInitialize1(datas, "PSParticle", ShaderMacro.DEFINE_COO_SURFACE);
 
 
-            bool haveCS1 = cs1.CompileReload1(datas, "CSParticle", ShaderMacro.DEFINE_COO_PARTICLE);
+            bool haveCS1 = cs1.CompileInitialize1(datas, "CSParticle", ShaderMacro.DEFINE_COO_PARTICLE);
             if (haveVS || haveGS)
             {
-                POSkinning.ReloadSkinning(
+                POSkinning.InitializeSkinning(
                     haveVS ? vs0 : RPAssetsManager.VSAssets["VSMMDSkinning2.cso"],
                     haveGS ? gs0 : null);
                 processingList.UL(POSkinning, 1);
@@ -116,7 +116,7 @@ namespace Coocoo3D.ResourceWarp
                 POSkinning.Status = GraphicsObjectStatus.unload;
             if (haveVS1 || haveGS1 || havePS1)
             {
-                PODraw.ReloadDrawing(BlendState.alpha,
+                PODraw.InitializeDrawing(EBlendState.alpha,
                     haveVS1 ? vs1 : RPAssetsManager.VSMMDTransform,
                     haveGS1 ? gs1 : null,
                     havePS1 ? ps1 : RPAssetsManager.PSMMD, RPAssetsManager.outputFormat, RPAssetsManager.depthFormat);
@@ -126,7 +126,7 @@ namespace Coocoo3D.ResourceWarp
                 PODraw.Status = GraphicsObjectStatus.unload;
             if (haveVSParticle || haveGSParticle || havePSParticle)
             {
-                POParticleDraw.ReloadDrawing(BlendState.alpha,
+                POParticleDraw.InitializeDrawing(EBlendState.alpha,
                     haveVSParticle ? vs2 : RPAssetsManager.VSMMDTransform,
                     haveGSParticle ? gs2 : null,
                     havePSParticle ? ps2 : RPAssetsManager.PSMMD, RPAssetsManager.outputFormat,RPAssetsManager.depthFormat);

@@ -87,9 +87,9 @@ namespace Coocoo3D.Present
             }
             return vpMatrix;
         }
-        public Vector3 GetPositionOrDirection(Vector3 pos1)
+        public Vector3 GetPositionOrDirection()
         {
-            Vector3 result = LightingType == LightingType.Directional ? Vector3.Transform(-Vector3.UnitZ, Rotation) : Position - pos1;
+            Vector3 result = LightingType == LightingType.Directional ? Vector3.Transform(-Vector3.UnitZ, Rotation) : Position;
             return result;
         }
     }

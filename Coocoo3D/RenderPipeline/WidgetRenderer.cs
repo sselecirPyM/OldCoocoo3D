@@ -29,10 +29,10 @@ namespace Coocoo3D.RenderPipeline
         }
         public void Reload(DeviceResources deviceResources)
         {
-            constantBuffer.Reload(deviceResources, c_bufferSize1);
+            deviceResources.InitializeCBuffer(constantBuffer, c_bufferSize1);
             for (int i = 0; i < bgConstantBuffers.Length; i++)
             {
-                bgConstantBuffers[i].Reload(deviceResources, c_bgBufferSize);
+                deviceResources.InitializeCBuffer(bgConstantBuffers[i], c_bgBufferSize);
             }
         }
 
@@ -139,7 +139,7 @@ namespace Coocoo3D.RenderPipeline
             for (int i = 0; i < selectedLight.Count; i++)
             {
                 Marshal.StructureToPtr(Matrix4x4.Transpose(cam.vpMatrix), pData, true);
-                Marshal.StructureToPtr(selectedLight[i].Position - cam.Pos, pData + i * 16 + 128, true);
+                Marshal.StructureToPtr(selectedLight[i].Position, pData + i * 16 + 128, true);
                 Marshal.StructureToPtr(selectedLight[i].Range, pData + i * 16 + 140, true);
                 if (i >= 1024) break;
             }
@@ -151,7 +151,7 @@ namespace Coocoo3D.RenderPipeline
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
             var graphicsContext = context.graphicsContext;
-            graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI1, CullMode.none);
+            graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI1, ECullMode.none);
             graphicsContext.SetCBVR(constantBuffer, 0);
             graphicsContext.SetSRVT(context.UI1Texture, 1);
             graphicsContext.SetMesh(context.ndcQuadMesh);
@@ -161,7 +161,7 @@ namespace Coocoo3D.RenderPipeline
             if (selectedEntity != null)
             {
                 graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 2);
-                graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI2, CullMode.none);
+                graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI2, ECullMode.none);
                 graphicsContext.SetCBVR(bgConstantBuffers[0], 0);
                 graphicsContext.SetCBVR(context.CBs_Bone[indexOfSelectedEntity], 3);
                 graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, selectedEntity.boneComponent.bones.Count, 0);
@@ -170,7 +170,7 @@ namespace Coocoo3D.RenderPipeline
             if (selectedLight.Count > 0)
             {
                 graphicsContext.SetMesh(context.cubeWireMesh);
-                graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUILight, CullMode.none, true);
+                graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUILight, ECullMode.none, true);
                 graphicsContext.SetCBVR(bgConstantBuffers[1], 0);
                 graphicsContext.DrawIndexedInstanced(context.cubeWireMeshIndexCount, 0, 0, selectedLight.Count, 0);
             }

@@ -4,7 +4,7 @@
 #include "TextUtil.h"
 using namespace Coocoo3DGraphics;
 
-bool ComputePO::CompileReload1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro)
+bool ComputePO::CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro)
 {
 	Microsoft::WRL::ComPtr<IBufferByteAccess> bufferByteAccess;
 	reinterpret_cast<IInspectable*>(file1)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
@@ -38,7 +38,7 @@ bool ComputePO::CompileReload1(IBuffer^ file1, Platform::String^ entryPoint, Sha
 		return true;
 }
 
-void ComputePO::Reload(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature, IBuffer^ data)
+void ComputePO::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature, IBuffer^ data)
 {
 	Microsoft::WRL::ComPtr<IBufferByteAccess> bufferByteAccess;
 	reinterpret_cast<IInspectable*>(data)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
@@ -66,7 +66,7 @@ bool ComputePO::Upload(DeviceResources^ deviceResources, GraphicsSignature^ root
 	return true;
 }
 
-void ComputePO::Reload(IBuffer^ data)
+void ComputePO::Initialize(IBuffer^ data)
 {
 	Microsoft::WRL::ComPtr<IBufferByteAccess> bufferByteAccess;
 	reinterpret_cast<IInspectable*>(data)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));

@@ -51,13 +51,13 @@ inline D3D12_BLEND_DESC BlendDescAdd()
 	blendDescAlpha.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	return blendDescAlpha;
 }
-inline D3D12_BLEND_DESC BlendDescSelect(BlendState blendState)
+inline D3D12_BLEND_DESC BlendDescSelect(EBlendState blendState)
 {
-	if (blendState == BlendState::none)
+	if (blendState == EBlendState::none)
 		return CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	else if (blendState == BlendState::alpha)
+	else if (blendState == EBlendState::alpha)
 		return BlendDescAlpha();
-	else if (blendState == BlendState::add)
+	else if (blendState == EBlendState::add)
 		return BlendDescAdd();
 	return D3D12_BLEND_DESC{};
 }
@@ -66,12 +66,12 @@ inline const D3D12_INPUT_LAYOUT_DESC& inputLayoutSelect()
 	return D3D12_INPUT_LAYOUT_DESC{ inputLayoutSkinned,_countof(inputLayoutSkinned) };
 }
 
-void PObject::Reload(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, eInputLayout type, BlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat)
+void PObject::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, EInputLayout type, EBlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat)
 {
-	Reload(deviceResources, graphicsSignature, type, blendState, vertexShader, geometryShader, pixelShader, rtvFormat, depthFormat, D3D12PrimitiveTopologyType::TRIANGLE);
+	Initialize(deviceResources, graphicsSignature, type, blendState, vertexShader, geometryShader, pixelShader, rtvFormat, depthFormat, ED3D12PrimitiveTopologyType::TRIANGLE);
 }
 
-void PObject::Reload(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, eInputLayout type, BlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat, D3D12PrimitiveTopologyType primitiveTopologyType)
+void PObject::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, EInputLayout type, EBlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat, ED3D12PrimitiveTopologyType primitiveTopologyType)
 {
 	Unload();
 	m_vertexShader = vertexShader;
@@ -81,11 +81,11 @@ void PObject::Reload(DeviceResources^ deviceResources, GraphicsSignature^ graphi
 	m_primitiveTopologyType = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)primitiveTopologyType;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
-	if (type == eInputLayout::mmd)
+	if (type == EInputLayout::mmd)
 		state.InputLayout = { inputLayoutMMD, _countof(inputLayoutMMD) };
-	else if (type == eInputLayout::postProcess)
+	else if (type == EInputLayout::postProcess)
 		state.InputLayout = { inputLayoutPosOnly, _countof(inputLayoutPosOnly) };
-	else if (type == eInputLayout::skinned)
+	else if (type == EInputLayout::skinned)
 		state.InputLayout = { inputLayoutSkinned, _countof(inputLayoutSkinned) };
 	state.pRootSignature = graphicsSignature->m_rootSignature.Get();
 	state.VS = CD3DX12_SHADER_BYTECODE(vertexShader->byteCode.Get());
@@ -119,7 +119,7 @@ void PObject::Reload(DeviceResources^ deviceResources, GraphicsSignature^ graphi
 	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[5])));
 }
 
-void PObject::ReloadDepthOnly(VertexShader^ vs, PixelShader^ ps, int depthOffset, DxgiFormat depthFormat)
+void PObject::InitializeDepthOnly(VertexShader^ vs, PixelShader^ ps, int depthOffset, DxgiFormat depthFormat)
 {
 	ClearState();
 	m_vertexShader = vs;
@@ -129,29 +129,29 @@ void PObject::ReloadDepthOnly(VertexShader^ vs, PixelShader^ ps, int depthOffset
 	m_depthBias = depthOffset;
 	m_isDepthOnly = true;
 	m_depthFormat = (DXGI_FORMAT)depthFormat;
-	m_blendState = BlendState::none;
+	m_blendState = EBlendState::none;
 	m_renderTargetCount = 0;
 	m_primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 }
 
-void PObject::ReloadSkinning(VertexShader^ vs, GeometryShader^ gs)
+void PObject::InitializeSkinning(VertexShader^ vs, GeometryShader^ gs)
 {
 	ClearState();
 	m_vertexShader = vs;
 	m_geometryShader = gs;
 	m_pixelShader = nullptr;
 	m_renderTargetFormat = DXGI_FORMAT_UNKNOWN;
-	m_blendState = BlendState::none;
+	m_blendState = EBlendState::none;
 	m_useStreamOutput = true;
 	m_primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
 }
 
-void PObject::ReloadDrawing(BlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat)
+void PObject::InitializeDrawing(EBlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat)
 {
-	ReloadDrawing(blendState, vs, gs, ps, rtvFormat, depthFormat, 1);
+	InitializeDrawing(blendState, vs, gs, ps, rtvFormat, depthFormat, 1);
 }
 
-void PObject::ReloadDrawing(BlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat, int renderTargetCount)
+void PObject::InitializeDrawing(EBlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat, int renderTargetCount)
 {
 	ClearState();
 	m_vertexShader = vs;
@@ -197,7 +197,7 @@ bool PObject::Upload(DeviceResources^ deviceResources, GraphicsSignature^ graphi
 		pipelineStateStream.STREAMOUT = { declarations ,_countof(declarations),bufferStrides,_countof(bufferStrides),0 };
 		pipelineStateStream.PRIMITIVETOPOLOGY = m_primitiveTopologyType;
 		D3D12_PIPELINE_STATE_STREAM_DESC state2 = { sizeof(pipelineStateStream),&pipelineStateStream };
-		if (FAILED(deviceResources->GetD3DDevice2()->CreatePipelineState(&state2, IID_PPV_ARGS(&m_pipelineState[c_indexPipelineStateSkinning]))))
+		if (FAILED(deviceResources->GetD3DDevice()->CreatePipelineState(&state2, IID_PPV_ARGS(&m_pipelineState[c_indexPipelineStateSkinning]))))
 		{
 			Status = GraphicsObjectStatus::error;
 			return false;

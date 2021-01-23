@@ -16,7 +16,7 @@
 #include "TwinBuffer.h"
 #include "MeshBuffer.h"
 #include "Uploader.h"
-#include <MMDMeshAppend.h>
+#include "MMDMeshAppend.h"
 namespace Coocoo3DGraphics
 {
 	public enum struct D3D12ResourceStates
@@ -47,16 +47,14 @@ namespace Coocoo3DGraphics
 		_VIDEO_ENCODE_READ = 0x200000,
 		_VIDEO_ENCODE_WRITE = 0x800000
 	};
-	//是D3D的C# 接口
-	//为了简化C++代码的编写。
 	public ref class GraphicsContext sealed
 	{
 	public:
 		static GraphicsContext^ Load(DeviceResources^ deviceResources);
 		void Reload(DeviceResources^ deviceResources);
 		void ClearTextureRTV(RenderTextureCube^ texture);
-		void SetPObject(PObject^ pObject, CullMode cullMode);
-		void SetPObject(PObject^ pObject, CullMode cullMode, bool wireframe);
+		void SetPObject(PObject^ pObject, ECullMode cullMode);
+		void SetPObject(PObject^ pObject, ECullMode cullMode, bool wireframe);
 		void SetPObject(PObject^ pObject, int index);
 		void SetPObject(ComputePO^ pObject);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);

@@ -15,7 +15,7 @@ namespace Coocoo3D.RenderPipeline
             wpMatrix = Matrix4x4.Transpose(camera.vpMatrix);
             Matrix4x4.Invert(camera.vpMatrix, out pwMatrix);
             pwMatrix = Matrix4x4.Transpose(pwMatrix);
-            CameraPosition = Vector3.Zero;
+            CameraPosition = camera.Pos;
             AspectRatio = camera.AspectRatio;
         }
 

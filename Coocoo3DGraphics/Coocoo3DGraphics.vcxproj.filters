@@ -143,6 +143,9 @@
     <ClCompile Include="Interoperation\InteroperationTypes.cpp">
       <Filter>Interoperation</Filter>
     </ClCompile>
+    <ClCompile Include="GPUProgram\PSODesc.cpp">
+      <Filter>GPUProgram</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -220,6 +223,10 @@
     <ClInclude Include="Interoperation\InteroperationTypes.h">
       <Filter>Interoperation</Filter>
     </ClInclude>
+    <ClInclude Include="GPUProgram\PSODesc.h">
+      <Filter>GPUProgram</Filter>
+    </ClInclude>
+    <ClInclude Include="GraphicsConstance.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\VSParticleStandard.hlsl">
@@ -234,13 +241,7 @@
     <FxCompile Include="Shaders\GSUIStandard.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PSMMDError.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\PSMMD.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSMMDLoading.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\GSTest.hlsl">
@@ -254,9 +255,6 @@
     </FxCompile>
     <FxCompile Include="RayTracing\Raytracing.hlsl">
       <Filter>RayTracing</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VSMMDSkinning2.hlsl">
-      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VSMMDTransform.hlsl">
       <Filter>Shaders</Filter>
@@ -325,6 +323,15 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PSMMDTransparent.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PSError.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PSLoading.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\VSMMDSkinning.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

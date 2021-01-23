@@ -1,5 +1,4 @@
 #pragma once
-#include "DeviceResources.h"
 namespace Coocoo3DGraphics
 {
 	public enum struct PrimitiveTopology

@@ -269,6 +269,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CBuffer.h" />
+    <ClInclude Include="GPUProgram\PSODesc.h" />
+    <ClInclude Include="GraphicsConstance.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h" />
     <ClInclude Include="SBuffer.h" />
     <ClInclude Include="d3dx12.h" />
@@ -310,6 +312,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CBuffer.cpp" />
+    <ClCompile Include="GPUProgram\PSODesc.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp" />
     <ClCompile Include="SBuffer.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
@@ -617,7 +620,7 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\PSMMDLoading.hlsl">
+    <FxCompile Include="Shaders\PSLoading.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
@@ -671,7 +674,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Geometry</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\PSMMDError.hlsl">
+    <FxCompile Include="Shaders\PSError.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Pixel</ShaderType>
@@ -869,7 +872,7 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\VSMMDSkinning2.hlsl">
+    <FxCompile Include="Shaders\VSMMDSkinning.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>

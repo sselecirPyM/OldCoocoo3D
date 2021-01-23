@@ -237,7 +237,7 @@ namespace Coocoo3D.RenderPipeline
             while (CBs_Bone.Count < count)
             {
                 CBuffer constantBuffer = new CBuffer();
-                constantBuffer.Reload(deviceResources, c_entityDataBufferSize);
+                deviceResources.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }
             _Data1 data1 = new _Data1();
@@ -249,7 +249,7 @@ namespace Coocoo3D.RenderPipeline
                 data1.vertexCount = rendererComponent.meshVertexCount;
                 data1.indexCount = rendererComponent.meshIndexCount;
                 IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
-                Matrix4x4 world = Matrix4x4.CreateFromQuaternion(entity.Rotation) * Matrix4x4.CreateTranslation(entity.Position - camPos);
+                Matrix4x4 world = Matrix4x4.CreateFromQuaternion(entity.Rotation) * Matrix4x4.CreateTranslation(entity.Position);
                 Marshal.StructureToPtr(Matrix4x4.Transpose(world), ptr1, true);
                 Marshal.StructureToPtr(rendererComponent.amountAB, ptr1 + 64, true);
                 Marshal.StructureToPtr(rendererComponent.meshVertexCount, ptr1 + 68, true);
@@ -328,9 +328,9 @@ namespace Coocoo3D.RenderPipeline
         {
             for (int i = 0; i < CameraDataBuffers.Length; i++)
             {
-                CameraDataBuffers[i].Reload(deviceResources, c_presentDataSize);
+                deviceResources.InitializeCBuffer(CameraDataBuffers[i], c_presentDataSize);
             }
-            LightCameraDataBuffer.Reload(deviceResources, c_lightingBufferSize);
+            deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
 
             HighResolutionShadowNow = true;
             ChangeShadowMapsQuality(processingList, false);

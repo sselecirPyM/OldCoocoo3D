@@ -32,7 +32,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
             while (constantBuffers.Count < slience1)
             {
                 CBuffer buffer1 = new CBuffer();
-                buffer1.Reload(deviceResources, bufferSize);
+                deviceResources.InitializeCBuffer(buffer1, bufferSize);
                 constantBuffers.Add(buffer1);
             }
         }

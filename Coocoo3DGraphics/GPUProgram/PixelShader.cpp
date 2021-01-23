@@ -4,7 +4,7 @@
 #include "TextUtil.h"
 using namespace Coocoo3DGraphics;
 
-bool PixelShader::CompileReload1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro)
+bool PixelShader::CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro)
 {
 	Microsoft::WRL::ComPtr<IBufferByteAccess> bufferByteAccess;
 	reinterpret_cast<IInspectable*>(file1)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
@@ -38,7 +38,7 @@ bool PixelShader::CompileReload1(IBuffer^ file1, Platform::String^ entryPoint, S
 		return true;
 }
 
-void PixelShader::Reload(IBuffer^ data)
+void PixelShader::Initialize(IBuffer^ data)
 {
 	Microsoft::WRL::ComPtr<IBufferByteAccess> bufferByteAccess;
 	reinterpret_cast<IInspectable*>(data)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
