@@ -90,7 +90,7 @@ namespace Coocoo3D.FileFormat
             entity.ComponentReady = false;
             var modelResource = modelPack.pmx;
             entity.morphStateComponent.Reload(modelResource);
-            entity.boneComponent.Reload(modelResource);
+            entity.boneComponent.Initialize(modelResource);
 
             entity.rendererComponent.Reload(modelPack);
             processingList.AddObject(new MeshAppendUploadPack(entity.rendererComponent.meshAppend, entity.rendererComponent.meshPosData));

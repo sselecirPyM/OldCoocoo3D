@@ -16,9 +16,6 @@ namespace Coocoo3D.Components
     {
         public const int c_boneMatricesCount = 1020;
         public Matrix4x4[] boneMatricesData = new Matrix4x4[c_boneMatricesCount];
-        public Matrix4x4[] boneMatricesData1 = new Matrix4x4[c_boneMatricesCount];
-        GCHandle gch_boneMatricesData;
-        GCHandle gch_boneMatricesData1;
 
         public List<BoneEntity> bones = new List<BoneEntity>();
         public List<BoneKeyFrame> cachedBoneKeyFrames = new List<BoneKeyFrame>();
@@ -36,30 +33,15 @@ namespace Coocoo3D.Components
         public List<int> AppendNeedUpdateMatIndexs = new List<int>();
         public List<int> PhysicsNeedUpdateMatIndexs = new List<int>();
 
-        public MMDBoneComponent()
-        {
-            gch_boneMatricesData = GCHandle.Alloc(boneMatricesData);
-            gch_boneMatricesData1 = GCHandle.Alloc(boneMatricesData1);
-        }
-        ~MMDBoneComponent()
-        {
-            gch_boneMatricesData.Free();
-            gch_boneMatricesData1.Free();
-        }
-
         public void ComputeMatricesData()
         {
             for (int i = 0; i < bones.Count; i++)
-            {
                 bones[i].GetTransformMatrixG(bones);
-            }
         }
         public void WriteMatriticesData()
         {
             for (int i = 0; i < bones.Count; i++)
-            {
                 boneMatricesData[i] = Matrix4x4.Transpose(bones[i].GeneratedTransform);
-            }
         }
         public void SetPose(MMDMotionComponent motionComponent, MMDMorphStateComponent morphStateComponent, float time)
         {
@@ -95,7 +77,6 @@ namespace Coocoo3D.Components
                 IK(i, bones);
             }
             UpdateAppendBones();
-
         }
 
         public void SetPose2(MMDMorphStateComponent morphStateComponent)
@@ -163,17 +144,16 @@ namespace Coocoo3D.Components
             UpdateMatrices(AppendNeedUpdateMatIndexs);
         }
 
-        void IK(int index, List<BoneEntity> bones)
+        void IK(int boneIndex, List<BoneEntity> bones)
         {
-            int ikTargetIndex = bones[index].IKTargetIndex;
+            int ikTargetIndex = bones[boneIndex].IKTargetIndex;
             if (ikTargetIndex == -1) return;
-            var entity = bones[index];
+            var entity = bones[boneIndex];
             var entitySource = bones[ikTargetIndex];
 
             entity.GetPosRot2(out var posTarget, out var rot0);
 
 
-            var ax = IKNeedUpdateIndexs[index];
             int h1 = entity.CCDIterateLimit / 2;
             Vector3 posSource = entitySource.GetPos2();
             if ((posTarget - posSource).LengthSquared() < 1e-8f) return;
@@ -183,7 +163,8 @@ namespace Coocoo3D.Components
                 for (int j = 0; j < entity.boneIKLinks.Length; j++)
                 {
                     posSource = entitySource.GetPos2();
-                    BoneEntity itEntity = bones[entity.boneIKLinks[j].LinkedIndex];
+                    ref var IKLINK = ref entity.boneIKLinks[j];
+                    BoneEntity itEntity = bones[IKLINK.LinkedIndex];
 
                     itEntity.GetPosRot2(out var itPosition, out var itRot);
 
@@ -195,9 +176,8 @@ namespace Coocoo3D.Components
                     Matrix4x4 matXi = Matrix4x4.Transpose(itEntity.GeneratedTransform);
                     Vector3 ikRotateAxis = SafeNormalize(Vector3.TransformNormal(Vector3.Cross(targetDirection, ikDirection), matXi));
 
-                    var itl = entity.boneIKLinks[j];
                     if (axis_lim)
-                        switch (itl.FixTypes)
+                        switch (IKLINK.FixTypes)
                         {
                             case AxisFixType.FixX:
                                 ikRotateAxis.X = ikRotateAxis.X >= 0 ? 1 : -1;
@@ -215,48 +195,48 @@ namespace Coocoo3D.Components
                                 ikRotateAxis.Y = 0;
                                 break;
                         }
+                    //重命名函数以缩短函数名
+                    Quaternion QAxisAngle(Vector3 axis, float angle) => Quaternion.CreateFromAxisAngle(axis, angle);
 
-                    float ikAngle = Math.Min((float)Math.Acos(dotV), entity.CCDAngleLimit * (i + 1));
+                    itEntity.rotation = Quaternion.Normalize(itEntity.rotation * QAxisAngle(ikRotateAxis, -Math.Min((float)Math.Acos(dotV), entity.CCDAngleLimit * (i + 1))));
 
-                    itEntity.rotation = Quaternion.Normalize(itEntity.rotation * Quaternion.CreateFromAxisAngle(ikRotateAxis, -ikAngle));
-
-                    if (itl.HasLimit)
+                    if (IKLINK.HasLimit)
                     {
                         Vector3 angle = Vector3.Zero;
-                        switch (entity.boneIKLinks[j].TransformOrder)
+                        switch (IKLINK.TransformOrder)
                         {
                             case IKTransformOrder.Zxy:
                                 {
                                     angle = QuaternionToZxy(itEntity.rotation);
                                     Vector3 cachedE = angle;
-                                    angle = LimitAngle(angle, axis_lim, itl.LimitMin, itl.LimitMax);
+                                    angle = LimitAngle(angle, axis_lim, IKLINK.LimitMin, IKLINK.LimitMax);
                                     if (cachedE != angle)
-                                        itEntity.rotation = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, angle.Z) * Quaternion.CreateFromAxisAngle(Vector3.UnitX, angle.X) * Quaternion.CreateFromAxisAngle(Vector3.UnitY, angle.Y));
+                                        itEntity.rotation = Quaternion.Normalize(QAxisAngle(Vector3.UnitZ, angle.Z) * QAxisAngle(Vector3.UnitX, angle.X) * QAxisAngle(Vector3.UnitY, angle.Y));
                                     break;
                                 }
                             case IKTransformOrder.Xyz:
                                 {
                                     angle = QuaternionToXyz(itEntity.rotation);
                                     Vector3 cachedE = angle;
-                                    angle = LimitAngle(angle, axis_lim, itl.LimitMin, itl.LimitMax);
+                                    angle = LimitAngle(angle, axis_lim, IKLINK.LimitMin, IKLINK.LimitMax);
                                     if (cachedE != angle)
-                                        itEntity.rotation = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.UnitX, angle.X) * Quaternion.CreateFromAxisAngle(Vector3.UnitY, angle.Y) * Quaternion.CreateFromAxisAngle(Vector3.UnitZ, angle.Z));
+                                        itEntity.rotation = Quaternion.Normalize(QAxisAngle(Vector3.UnitX, angle.X) * QAxisAngle(Vector3.UnitY, angle.Y) * QAxisAngle(Vector3.UnitZ, angle.Z));
                                     break;
                                 }
                             case IKTransformOrder.Yzx:
                                 {
                                     angle = QuaternionToYzx(itEntity.rotation);
                                     Vector3 cachedE = angle;
-                                    angle = LimitAngle(angle, axis_lim, itl.LimitMin, itl.LimitMax);
+                                    angle = LimitAngle(angle, axis_lim, IKLINK.LimitMin, IKLINK.LimitMax);
                                     if (cachedE != angle)
-                                        itEntity.rotation = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.UnitY, angle.Y) * Quaternion.CreateFromAxisAngle(Vector3.UnitZ, angle.Z) * Quaternion.CreateFromAxisAngle(Vector3.UnitX, angle.X));
+                                        itEntity.rotation = Quaternion.Normalize(QAxisAngle(Vector3.UnitY, angle.Y) * QAxisAngle(Vector3.UnitZ, angle.Z) * QAxisAngle(Vector3.UnitX, angle.X));
                                     break;
                                 }
                             default:
                                 throw new NotImplementedException();
                         }
                     }
-                    UpdateMatrices(ax[j]);
+                    UpdateMatrices(IKNeedUpdateIndexs[boneIndex][j]);
                 }
                 posSource = entitySource.GetPos2();
                 if ((posTarget - posSource).LengthSquared() < 1e-8f) return;
@@ -281,7 +261,7 @@ namespace Coocoo3D.Components
         public void BakeSequenceProcessMatrixsIndex()
         {
             IKNeedUpdateIndexs = new Dictionary<int, List<List<int>>>();
-            bool[] testArray = new bool[bones.Count];
+            bool[] bonesTest = new bool[bones.Count];
 
             for (int i = 0; i < bones.Count; i++)
             {
@@ -295,17 +275,15 @@ namespace Coocoo3D.Components
                     {
                         List<int> bx = new List<int>();
 
-                        Array.Clear(testArray, 0, bones.Count);
-                        testArray[entity.boneIKLinks[j].LinkedIndex] = true;
+                        Array.Clear(bonesTest, 0, bones.Count);
+                        bonesTest[entity.boneIKLinks[j].LinkedIndex] = true;
                         for (int k = 0; k < bones.Count; k++)
                         {
                             if (bones[k].ParentIndex != -1)
                             {
-                                testArray[k] |= testArray[bones[k].ParentIndex];
-                                if (testArray[k])
-                                {
+                                bonesTest[k] |= bonesTest[bones[k].ParentIndex];
+                                if (bonesTest[k])
                                     bx.Add(k);
-                                }
                             }
                         }
                         ax.Add(bx);
@@ -313,20 +291,20 @@ namespace Coocoo3D.Components
                     IKNeedUpdateIndexs[i] = ax;
                 }
             }
-            Array.Clear(testArray, 0, bones.Count);
+            Array.Clear(bonesTest, 0, bones.Count);
             AppendNeedUpdateMatIndexs.Clear();
             for (int i = 0; i < bones.Count; i++)
             {
                 var bone = bones[i];
                 if (bones[i].ParentIndex != -1)
-                    testArray[i] |= testArray[bones[i].ParentIndex];
-                testArray[i] |= bone.IsAppendTranslation || bone.IsAppendRotation;
-                if (testArray[i])
+                    bonesTest[i] |= bonesTest[bones[i].ParentIndex];
+                bonesTest[i] |= bone.IsAppendTranslation || bone.IsAppendRotation;
+                if (bonesTest[i])
                 {
                     AppendNeedUpdateMatIndexs.Add(i);
                 }
             }
-            Array.Clear(testArray, 0, bones.Count);
+            Array.Clear(bonesTest, 0, bones.Count);
             PhysicsNeedUpdateMatIndexs.Clear();
             for (int i = 0; i < bones.Count; i++)
             {
@@ -334,9 +312,9 @@ namespace Coocoo3D.Components
                 if (bones[i].ParentIndex == -1)
                     continue;
                 var parent = bones[bones[i].ParentIndex];
-                testArray[i] |= testArray[bones[i].ParentIndex];
-                testArray[i] |= parent.IsPhysicsFreeBone;
-                if (testArray[i])
+                bonesTest[i] |= bonesTest[bones[i].ParentIndex];
+                bonesTest[i] |= parent.IsPhysicsFreeBone;
+                if (bonesTest[i])
                 {
                     PhysicsNeedUpdateMatIndexs.Add(i);
                 }
@@ -346,16 +324,12 @@ namespace Coocoo3D.Components
         void UpdateAllMatrix()
         {
             for (int i = 0; i < bones.Count; i++)
-            {
                 bones[i].GetTransformMatrixG(bones);
-            }
         }
         void UpdateMatrices(List<int> indexs)
         {
             for (int i = 0; i < indexs.Count; i++)
-            {
                 bones[indexs[i]].GetTransformMatrixG(bones);
-            }
         }
         public void TransformToNew(Physics3DScene physics3DScene, Vector3 position, Quaternion rotation)
         {
@@ -404,7 +378,7 @@ namespace Coocoo3D.Components
             physics3DJoints.Clear();
         }
 
-        #region helpers
+        #region helper functions
         static Vector3 QuaternionToXyz(Quaternion quaternion)
         {
             double ii = quaternion.X * quaternion.X;
@@ -828,11 +802,11 @@ namespace Coocoo3D.FileFormat
         public static MMDBoneComponent LoadBoneComponent(PMXFormat source)
         {
             MMDBoneComponent boneComponent = new MMDBoneComponent();
-            boneComponent.Reload(source);
+            boneComponent.Initialize(source);
             return boneComponent;
         }
 
-        public static void Reload(this MMDBoneComponent boneComponent, PMXFormat modelResource)
+        public static void Initialize(this MMDBoneComponent boneComponent, PMXFormat modelResource)
         {
             boneComponent.bones.Clear();
             boneComponent.cachedBoneKeyFrames.Clear();
@@ -880,17 +854,17 @@ namespace Coocoo3D.FileFormat
                         if (ikLink.HasLimit)
                         {
                             if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                                Math.Abs(ikLink.LimitMax.X) < epsilon
-                                && Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                                Math.Abs(ikLink.LimitMax.Y) < epsilon
-                                && Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                                Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                                Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                                Math.Abs(ikLink.LimitMax.Y) < epsilon &&
+                                Math.Abs(ikLink.LimitMin.Z) < epsilon &&
                                 Math.Abs(ikLink.LimitMax.Z) < epsilon)
                             {
                                 ikLink.FixTypes = AxisFixType.FixAll;
                             }
                             else if (Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                                     Math.Abs(ikLink.LimitMax.Y) < epsilon
-                                     && Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.Y) < epsilon &&
+                                     Math.Abs(ikLink.LimitMin.Z) < epsilon &&
                                      Math.Abs(ikLink.LimitMax.Z) < epsilon)
                             {
                                 ikLink.FixTypes = AxisFixType.FixX;
@@ -903,8 +877,8 @@ namespace Coocoo3D.FileFormat
                                 ikLink.FixTypes = AxisFixType.FixY;
                             }
                             else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                                     Math.Abs(ikLink.LimitMin.X) < epsilon
-                                     && Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                                     Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                                     Math.Abs(ikLink.LimitMin.Y) < epsilon &&
                                      Math.Abs(ikLink.LimitMax.Y) < epsilon)
                             {
                                 ikLink.FixTypes = AxisFixType.FixZ;
@@ -949,9 +923,7 @@ namespace Coocoo3D.FileFormat
             boneComponent.jointDescs.Clear();
             var joints = modelResource.Joints;
             for (int i = 0; i < joints.Count; i++)
-            {
                 boneComponent.jointDescs.Add(GetJointDesc(joints[i]));
-            }
 
             int morphCount = modelResource.Morphs.Count;
         }

@@ -91,48 +91,37 @@ namespace Coocoo3D.RenderPipeline
             await RegPSAssets("PSLoading.cso");
             await RegPSAssets("PSError.cso");
         }
-        public void ChangeRenderTargetFormat(DeviceResources deviceResources, ProcessingList uploadProcess, DxgiFormat outputFormat, DxgiFormat middleFormat, DxgiFormat swapChainFormat, DxgiFormat depthFormat)
+        public void ChangeRenderTargetFormat(DeviceResources deviceResources, ProcessingList uploadProcess, DxgiFormat outputFormat, DxgiFormat gBufferFormat, DxgiFormat swapChainFormat, DxgiFormat depthFormat)
         {
             Ready = false;
             this.outputFormat = outputFormat;
-            this.middleFormat = middleFormat;
+            this.middleFormat = gBufferFormat;
             this.depthFormat = depthFormat;
 
             PObjectMMDSkinning.InitializeSkinning(VSAssets["VSMMDSkinning.cso"], null);
             uploadProcess.UL(PObjectMMDSkinning, 1);
 
-            PObjectMMD.InitializeDrawing(EBlendState.alpha, VSMMDTransform, null, PSMMD, outputFormat, depthFormat);
-            PObjectMMDTransparent.InitializeDrawing(EBlendState.alpha, VSMMDTransform, null, PSMMDTransparent, outputFormat, depthFormat);
-            PObjectMMD_DisneyBrdf.InitializeDrawing(EBlendState.alpha, VSMMDTransform, null, PSMMD_DisneyBrdf, outputFormat, depthFormat);
-            PObjectMMD_Toon1.InitializeDrawing(EBlendState.alpha, VSMMDTransform, null, PSMMD_Toon1, outputFormat, depthFormat);
-            PObjectMMDLoading.InitializeDrawing(EBlendState.alpha, VSMMDTransform, null, PSAssets["PSLoading.cso"], outputFormat, depthFormat);
-            PObjectMMDError.InitializeDrawing(EBlendState.alpha, VSMMDTransform, null, PSAssets["PSError.cso"], outputFormat, depthFormat);
-            uploadProcess.UL(PObjectMMD, 0);
-            uploadProcess.UL(PObjectMMDTransparent, 0);
-            uploadProcess.UL(PObjectMMD_DisneyBrdf, 0);
-            uploadProcess.UL(PObjectMMD_Toon1, 0);
-            uploadProcess.UL(PObjectMMDLoading, 0);
-            uploadProcess.UL(PObjectMMDError, 0);
+            PObjectMMD.Initialize(VSMMDTransform, null, PSMMD);
+            PObjectMMD_DisneyBrdf.Initialize(VSMMDTransform, null, PSMMD_DisneyBrdf);
+            PObjectMMD_Toon1.Initialize(VSMMDTransform, null, PSMMD_Toon1);
 
-            PObjectDeferredRenderGBuffer.InitializeDrawing(EBlendState.none, VSMMDTransform, null, PSAssets["PSDeferredRenderGBuffer.cso"], middleFormat, depthFormat, 3);
-            PObjectDeferredRenderIBL.InitializeDrawing(EBlendState.add,VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderIBL.cso"], outputFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectDeferredRenderDirectLight.InitializeDrawing(EBlendState.add, VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderDirectLight.cso"], outputFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectDeferredRenderPointLight.InitializeDrawing(EBlendState.add, VSAssets["VSDeferredRenderPointLight.cso"], null, PSAssets["PSDeferredRenderPointLight.cso"], outputFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            uploadProcess.UL(PObjectDeferredRenderGBuffer, 0);
-            uploadProcess.UL(PObjectDeferredRenderIBL, 0);
-            uploadProcess.UL(PObjectDeferredRenderDirectLight, 0);
-            uploadProcess.UL(PObjectDeferredRenderPointLight, 0);
+            PObjectMMDTransparent.Initialize(VSMMDTransform, null, PSMMDTransparent);
+            PObjectMMDLoading.Initialize(VSMMDTransform, null, PSAssets["PSLoading.cso"]);
+            PObjectMMDError.Initialize(VSMMDTransform, null, PSAssets["PSError.cso"]);
 
-            PObjectMMDShadowDepth.InitializeDepthOnly(VSMMDTransform, null, 2500, depthFormat);
-            PObjectMMDDepth.InitializeDepthOnly(VSMMDTransform, PSMMDAlphaClip1, 0, depthFormat);
-            uploadProcess.UL(PObjectMMDShadowDepth, 0);
-            uploadProcess.UL(PObjectMMDDepth, 0);
+            PObjectDeferredRenderGBuffer.Initialize(VSMMDTransform, null, PSAssets["PSDeferredRenderGBuffer.cso"]);
+            PObjectDeferredRenderIBL.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderIBL.cso"]);
+            PObjectDeferredRenderDirectLight.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderDirectLight.cso"]);
+            PObjectDeferredRenderPointLight.Initialize(VSAssets["VSDeferredRenderPointLight.cso"], null, PSAssets["PSDeferredRenderPointLight.cso"]);
 
+            //PObjectMMDShadowDepth.InitializeDepthOnly(VSMMDTransform, null, 2500, depthFormat);
+            PObjectMMDShadowDepth.Initialize(VSMMDTransform,null, null);
+            PObjectMMDDepth.Initialize(VSMMDTransform, null, PSMMDAlphaClip1);
 
             PObjectSkyBox.Initialize(deviceResources, rootSignature, EInputLayout.postProcess, EBlendState.none, VSAssets["VSSkyBox.cso"], null, PSAssets["PSSkyBox.cso"], outputFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectPostProcess.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.none,VSAssets["VSPostProcess.cso"], null, PSAssets["PSPostProcess.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
+            PObjectPostProcess.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.none, VSAssets["VSPostProcess.cso"], null, PSAssets["PSPostProcess.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
             PObjectWidgetUI1.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha, VSAssets["VSWidgetUI1.cso"], null, PSAssets["PSWidgetUI1.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectWidgetUI2.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha,VSAssets["VSWidgetUI2.cso"], null, PSAssets["PSWidgetUI2.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
+            PObjectWidgetUI2.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha, VSAssets["VSWidgetUI2.cso"], null, PSAssets["PSWidgetUI2.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
             PObjectWidgetUILight.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha, VSAssets["VSWidgetUILight.cso"], null, PSAssets["PSWidgetUILight.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN, ED3D12PrimitiveTopologyType.LINE);
             Ready = true;
         }

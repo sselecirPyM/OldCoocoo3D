@@ -57,6 +57,7 @@ namespace Coocoo3DGraphics
 		void SetPObject(PObject^ pObject, ECullMode cullMode, bool wireframe);
 		void SetPObject(PObject^ pObject, int index);
 		void SetPObject(ComputePO^ pObject);
+		void SetPObject1(PObject^ pObject, int variantIndex);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResource(SBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);

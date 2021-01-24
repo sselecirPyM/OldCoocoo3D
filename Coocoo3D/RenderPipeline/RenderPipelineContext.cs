@@ -164,7 +164,7 @@ namespace Coocoo3D.RenderPipeline
 
         public List<CBuffer> CBs_Bone = new List<CBuffer>();
 
-        public DxgiFormat middleFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
+        public DxgiFormat gBufferFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
         public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -284,7 +284,7 @@ namespace Coocoo3D.RenderPipeline
             processingList.UnsafeAdd(outputRTV);
             for (int i = 0; i < ScreenSizeRenderTextures.Length; i++)
             {
-                ScreenSizeRenderTextures[i].ReloadAsRTVUAV(x, y, middleFormat);
+                ScreenSizeRenderTextures[i].ReloadAsRTVUAV(x, y, gBufferFormat);
                 processingList.UnsafeAdd(ScreenSizeRenderTextures[i]);
             }
             for (int i = 0; i < ScreenSizeDSVs.Length; i++)

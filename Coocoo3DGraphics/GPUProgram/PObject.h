@@ -14,14 +14,11 @@ namespace Coocoo3DGraphics
 		void Initialize(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, EInputLayout type, EBlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat);
 		void Initialize(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, EInputLayout type, EBlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat, ED3D12PrimitiveTopologyType primitiveTopologyType);
 		//使用Upload上传GPU
-		void InitializeDepthOnly(VertexShader^ vs, PixelShader^ ps, int depthOffset, DxgiFormat depthFormat);
-		//使用Upload上传GPU
 		void InitializeSkinning(VertexShader^ vs, GeometryShader^ gs);
-		//使用Upload上传GPU
-		void InitializeDrawing(EBlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat);
-		void InitializeDrawing(EBlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat, int renderTargetCount);
+		void Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps);
 		bool Upload(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature);
 		void Unload();
+		int GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc);
 	internal:
 		VertexShader^ m_vertexShader;
 		PixelShader^ m_pixelShader;
@@ -38,6 +35,7 @@ namespace Coocoo3DGraphics
 		int m_renderTargetCount;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pipelineState[6];
 		std::vector<Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_pipelineStates;
+		std::vector<PSODesc> m_psoDescs;
 
 		inline void ClearState()
 		{

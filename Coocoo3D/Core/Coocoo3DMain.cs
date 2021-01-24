@@ -113,7 +113,7 @@ namespace Coocoo3D.Core
                 if (deviceResources.IsRayTracingSupport())
                     rayTracingRenderPipeline1.Reload(deviceResources);
 
-                RPAssetsManager.ChangeRenderTargetFormat(deviceResources, ProcessingList, RPContext.outputFormat, RPContext.middleFormat, RPContext.swapChainFormat, RPContext.depthFormat);
+                RPAssetsManager.ChangeRenderTargetFormat(deviceResources, ProcessingList, RPContext.outputFormat, RPContext.gBufferFormat, RPContext.swapChainFormat, RPContext.depthFormat);
 
                 await miscProcess.ReloadAssets(deviceResources);
                 if (deviceResources.IsRayTracingSupport())

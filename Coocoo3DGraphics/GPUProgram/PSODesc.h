@@ -4,9 +4,9 @@ namespace Coocoo3DGraphics
 {
 	public enum struct ECullMode
 	{
-		back = 0,
-		none = 1,
-		front = 2,
+		none = 0,
+		front = 1,
+		back = 2,
 	};
 	public enum struct EBlendState
 	{
@@ -33,10 +33,13 @@ namespace Coocoo3DGraphics
 	{
 		EInputLayout inputLayout;
 		EBlendState blendState;
+		ECullMode cullMode;
+		ED3D12PrimitiveTopologyType ptt;
 		DxgiFormat rtvFormat;
 		DxgiFormat dsvFormat;
 		int renderTargetCount;
 		int depthBias;
+		bool wireFrame;
 		bool streamOutput;
 	};
 }

@@ -116,21 +116,21 @@ namespace Coocoo3D.ResourceWarp
                 POSkinning.Status = GraphicsObjectStatus.unload;
             if (haveVS1 || haveGS1 || havePS1)
             {
-                PODraw.InitializeDrawing(EBlendState.alpha,
+                PODraw.Initialize(
                     haveVS1 ? vs1 : RPAssetsManager.VSMMDTransform,
                     haveGS1 ? gs1 : null,
-                    havePS1 ? ps1 : RPAssetsManager.PSMMD, RPAssetsManager.outputFormat, RPAssetsManager.depthFormat);
-                processingList.UL(PODraw, 0);
+                    havePS1 ? ps1 : RPAssetsManager.PSMMD);
+                //processingList.UL(PODraw, 0);
             }
             else
                 PODraw.Status = GraphicsObjectStatus.unload;
             if (haveVSParticle || haveGSParticle || havePSParticle)
             {
-                POParticleDraw.InitializeDrawing(EBlendState.alpha,
+                POParticleDraw.Initialize(
                     haveVSParticle ? vs2 : RPAssetsManager.VSMMDTransform,
                     haveGSParticle ? gs2 : null,
-                    havePSParticle ? ps2 : RPAssetsManager.PSMMD, RPAssetsManager.outputFormat,RPAssetsManager.depthFormat);
-                processingList.UL(POParticleDraw, 0);
+                    havePSParticle ? ps2 : RPAssetsManager.PSMMD);
+                //processingList.UL(POParticleDraw, 0);
             }
             else
                 POParticleDraw.Status = GraphicsObjectStatus.unload;

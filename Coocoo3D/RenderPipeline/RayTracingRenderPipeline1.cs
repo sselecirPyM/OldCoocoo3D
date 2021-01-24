@@ -166,6 +166,7 @@ namespace Coocoo3D.RenderPipeline
         public override void RenderCamera(RenderPipelineContext context)
         {
             var graphicsContext = context.graphicsContext;
+            var RPAssetsManager = context.RPAssetsManager;
 
             RayTracingScene.NextASIndex(renderMatCount);
             RayTracingScene.NextSTIndex();
@@ -234,7 +235,19 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetCBVR(cameraPresentData, 2);
 
                     graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    graphicsContext.SetPObject(context.RPAssetsManager.PObjectMMDShadowDepth, ECullMode.none);
+                    PSODesc desc;
+                    desc.blendState = EBlendState.none;
+                    desc.cullMode = ECullMode.none;
+                    desc.depthBias = 2500;
+                    desc.dsvFormat = context.depthFormat;
+                    desc.inputLayout = EInputLayout.skinned;
+                    desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+                    desc.rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
+                    desc.renderTargetCount = 0;
+                    desc.streamOutput = false;
+                    desc.wireFrame = false;
+                    int variant = RPAssetsManager.PObjectMMDShadowDepth.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignature, desc);
+                    graphicsContext.SetPObject1(RPAssetsManager.PObjectMMDShadowDepth, variant);
 
                     //List<Texture2D> texs = rendererComponent.textures;
                     //int countIndexLocal = 0;

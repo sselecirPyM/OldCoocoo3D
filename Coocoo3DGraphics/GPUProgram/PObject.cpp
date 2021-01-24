@@ -104,34 +104,19 @@ void PObject::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ gr
 	state.RTVFormats[0] = (DXGI_FORMAT)rtvFormat;
 	state.SampleDesc.Count = 1;
 
-	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[0])));
 	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[1])));
+	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[0])));
 	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[1])));
+	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[2])));
 
-	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[3])));
 	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[4])));
+	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[3])));
 	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_FRONT, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[4])));
+	state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 	DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&m_pipelineState[5])));
-}
-
-void PObject::InitializeDepthOnly(VertexShader^ vs, PixelShader^ ps, int depthOffset, DxgiFormat depthFormat)
-{
-	ClearState();
-	m_vertexShader = vs;
-	m_geometryShader = nullptr;
-	m_pixelShader = ps;
-	m_renderTargetFormat = DXGI_FORMAT_UNKNOWN;
-	m_depthBias = depthOffset;
-	m_isDepthOnly = true;
-	m_depthFormat = (DXGI_FORMAT)depthFormat;
-	m_blendState = EBlendState::none;
-	m_renderTargetCount = 0;
-	m_primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 }
 
 void PObject::InitializeSkinning(VertexShader^ vs, GeometryShader^ gs)
@@ -146,22 +131,13 @@ void PObject::InitializeSkinning(VertexShader^ vs, GeometryShader^ gs)
 	m_primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
 }
 
-void PObject::InitializeDrawing(EBlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat)
-{
-	InitializeDrawing(blendState, vs, gs, ps, rtvFormat, depthFormat, 1);
-}
-
-void PObject::InitializeDrawing(EBlendState blendState, VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps, DxgiFormat rtvFormat, DxgiFormat depthFormat, int renderTargetCount)
+void PObject::Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps)
 {
 	ClearState();
 	m_vertexShader = vs;
 	m_geometryShader = gs;
 	m_pixelShader = ps;
-	m_renderTargetFormat = (DXGI_FORMAT)rtvFormat;
-	m_depthFormat = (DXGI_FORMAT)depthFormat;
-	m_blendState = blendState;
-	m_renderTargetCount = renderTargetCount;
-	m_primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	Status = GraphicsObjectStatus::loaded;
 }
 
 bool PObject::Upload(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature)
@@ -232,35 +208,35 @@ bool PObject::Upload(DeviceResources^ deviceResources, GraphicsSignature^ graphi
 			{
 				state.RTVFormats[i] = m_renderTargetFormat;
 			}
-			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-			_PipelineState(0)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(1)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(2)
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(0);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(1);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(2);
 
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(3)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(4)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_FRONT, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(5)
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(3);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_FRONT, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(4);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, false, 0, 0.0f, 0.0f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(5);
 		}
 		else
 		{
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(0);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(1);
 			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_BACK, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(0)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_NONE, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(1)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(2)
+			_PipelineState(2);
 
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(3)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(4)
-				state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_FRONT, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
-			_PipelineState(5)
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_NONE, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(3);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_FRONT, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(4);
+			state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_FILL_MODE_WIREFRAME, D3D12_CULL_MODE_BACK, false, m_depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+			_PipelineState(5);
 		}
 
 		Status = GraphicsObjectStatus::loaded;
@@ -276,5 +252,55 @@ void PObject::Unload()
 	{
 		m_pipelineState[i].Reset();
 	}
+}
+
+int PObject::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc)
+{
+	int index = -1;
+	for (int i = 0; i < m_psoDescs.size(); i++)
+	{
+		if (memcmp(&m_psoDescs[i], &psoDesc, sizeof(PSODesc)) == 0)
+		{
+			index = i;
+		}
+	}
+	if (index == -1)
+	{
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
+		state.InputLayout = { inputLayoutSkinned, _countof(inputLayoutSkinned) };
+		state.pRootSignature = graphicsSignature->m_rootSignature.Get();
+		if (m_vertexShader != nullptr)
+			state.VS = CD3DX12_SHADER_BYTECODE(m_vertexShader->byteCode.Get());
+		if (m_geometryShader != nullptr)
+			state.GS = CD3DX12_SHADER_BYTECODE(m_geometryShader->byteCode.Get());
+		if (m_pixelShader != nullptr)
+			state.PS = CD3DX12_SHADER_BYTECODE(m_pixelShader->byteCode.Get());
+		state.BlendState = BlendDescSelect(psoDesc.blendState);
+		if ((DXGI_FORMAT)psoDesc.dsvFormat != DXGI_FORMAT_UNKNOWN)
+		{
+			state.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+			state.DSVFormat = (DXGI_FORMAT)psoDesc.dsvFormat;
+		}
+		state.SampleMask = UINT_MAX;
+		state.PrimitiveTopologyType = (D3D12_PRIMITIVE_TOPOLOGY_TYPE)psoDesc.ptt;
+		state.SampleDesc.Count = 1;
+
+		state.NumRenderTargets = psoDesc.renderTargetCount;
+		for (int i = 0; i < psoDesc.renderTargetCount; i++)
+		{
+			state.RTVFormats[i] = (DXGI_FORMAT)psoDesc.rtvFormat;
+		}
+		state.RasterizerState = CD3DX12_RASTERIZER_DESC(psoDesc.wireFrame ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID, (D3D12_CULL_MODE)((int)psoDesc.cullMode + 1), false, psoDesc.depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
+		if (FAILED(deviceResources->GetD3DDevice()->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState))))
+		{
+			return -1;
+		}
+		m_psoDescs.push_back(psoDesc);
+		m_pipelineStates.push_back(pipelineState);
+		return (int)m_psoDescs.size() - 1;
+	}
+	return index;
 }
 

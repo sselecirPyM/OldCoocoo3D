@@ -65,6 +65,11 @@ void GraphicsContext::SetPObject(ComputePO^ pObject)
 	m_commandList->SetPipelineState(pObject->m_pipelineState.Get());
 }
 
+void GraphicsContext::SetPObject1(PObject^ pObject, int variantIndex)
+{
+	m_commandList->SetPipelineState(pObject->m_pipelineStates[variantIndex].Get());
+}
+
 void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
 {
 	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
