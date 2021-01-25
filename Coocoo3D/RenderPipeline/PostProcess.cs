@@ -47,13 +47,26 @@ namespace Coocoo3D.RenderPipeline
         public override void RenderCamera(RenderPipelineContext context)
         {
             var graphicsContext = context.graphicsContext;
-            graphicsContext.SetRootSignature(context.RPAssetsManager.rootSignaturePostProcess);
+            var rsPostProcess = context.RPAssetsManager.rootSignaturePostProcess;
+            graphicsContext.SetRootSignature(rsPostProcess);
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, context.ScreenSizeDSVs[1], true, true);
             graphicsContext.SetCBVR(postProcessDataBuffer, 0);
             graphicsContext.SetSRVT(context.outputRTV, 1);
             graphicsContext.SetSRVT(context.postProcessBackground, 2);
             graphicsContext.SetMesh(context.ndcQuadMesh);
-            graphicsContext.SetPObject(context.RPAssetsManager.PObjectPostProcess, ECullMode.back);
+            PSODesc desc;
+            desc.blendState = EBlendState.none;
+            desc.cullMode = ECullMode.back;
+            desc.depthBias = 0;
+            desc.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
+            desc.inputLayout = EInputLayout.postProcess;
+            desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+            desc.rtvFormat = context.swapChainFormat;
+            desc.renderTargetCount = 1;
+            desc.streamOutput = false;
+            desc.wireFrame = false;
+
+            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PObjectPostProcess);
             graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
         }
 

@@ -164,6 +164,35 @@ namespace Coocoo3D.RenderPipeline
 
         public List<CBuffer> CBs_Bone = new List<CBuffer>();
 
+
+        public PSODesc SkinningDesc = new PSODesc
+        {
+            blendState = EBlendState.none,
+            cullMode = ECullMode.back,
+            depthBias = 0,
+            dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
+            inputLayout = EInputLayout.mmd,
+            ptt = ED3D12PrimitiveTopologyType.POINT,
+            rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
+            renderTargetCount = 0,
+            streamOutput = true,
+            wireFrame = false,
+        };
+
+        public PSODesc shadowDesc = new PSODesc()
+        {
+            blendState = EBlendState.none,
+            cullMode = ECullMode.none,
+            depthBias = 2500,
+            dsvFormat = DxgiFormat.DXGI_FORMAT_D24_UNORM_S8_UINT,//
+            inputLayout = EInputLayout.skinned,
+            ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
+            rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
+            renderTargetCount = 0,
+            streamOutput = false,
+            wireFrame = false,
+        };
+
         public DxgiFormat gBufferFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -209,6 +238,7 @@ namespace Coocoo3D.RenderPipeline
         }
         public void Reload()
         {
+            shadowDesc.dsvFormat = depthFormat;
             graphicsContext.Reload(deviceResources);
             graphicsContext1.Reload(deviceResources);
         }

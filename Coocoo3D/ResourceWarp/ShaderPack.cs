@@ -10,6 +10,13 @@ using Windows.Storage;
 
 namespace Coocoo3D.ResourceWarp
 {
+    public class ShaderWarp1
+    {
+        public PObject pipelineState;
+        public VertexShader vs;
+        public GeometryShader gs;
+        public PixelShader ps;
+    }
     public class RPShaderPack
     {
         public VertexShader VS = new VertexShader();
@@ -107,30 +114,19 @@ namespace Coocoo3D.ResourceWarp
             bool haveCS1 = cs1.CompileInitialize1(datas, "CSParticle", ShaderMacro.DEFINE_COO_PARTICLE);
             if (haveVS || haveGS)
             {
-                POSkinning.InitializeSkinning(
-                    haveVS ? vs0 : RPAssetsManager.VSAssets["VSMMDSkinning2.cso"],
-                    haveGS ? gs0 : null);
-                processingList.UL(POSkinning, 1);
+                processingList.UL(new ShaderWarp1() { pipelineState = POSkinning, vs = haveVS ? vs0 : RPAssetsManager.VSAssets["VSMMDSkinning2.cso"], gs = haveGS ? gs0 : null, ps = null });
             }
             else
                 POSkinning.Status = GraphicsObjectStatus.unload;
             if (haveVS1 || haveGS1 || havePS1)
             {
-                PODraw.Initialize(
-                    haveVS1 ? vs1 : RPAssetsManager.VSMMDTransform,
-                    haveGS1 ? gs1 : null,
-                    havePS1 ? ps1 : RPAssetsManager.PSMMD);
-                //processingList.UL(PODraw, 0);
+                processingList.UL(new ShaderWarp1() { pipelineState = PODraw, vs = haveVS1 ? vs1 : RPAssetsManager.VSMMDTransform, gs = haveGS1 ? gs1 : null, ps = havePS1 ? ps1 : RPAssetsManager.PSMMD });
             }
             else
                 PODraw.Status = GraphicsObjectStatus.unload;
             if (haveVSParticle || haveGSParticle || havePSParticle)
             {
-                POParticleDraw.Initialize(
-                    haveVSParticle ? vs2 : RPAssetsManager.VSMMDTransform,
-                    haveGSParticle ? gs2 : null,
-                    havePSParticle ? ps2 : RPAssetsManager.PSMMD);
-                //processingList.UL(POParticleDraw, 0);
+                processingList.UL(new ShaderWarp1() { pipelineState = POParticleDraw, vs = haveVSParticle ? vs2 : RPAssetsManager.VSMMDTransform, gs = haveGSParticle ? gs2 : null, ps = havePSParticle ? ps2 : RPAssetsManager.PSMMD });
             }
             else
                 POParticleDraw.Status = GraphicsObjectStatus.unload;

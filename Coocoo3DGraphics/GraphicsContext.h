@@ -53,9 +53,6 @@ namespace Coocoo3DGraphics
 		static GraphicsContext^ Load(DeviceResources^ deviceResources);
 		void Reload(DeviceResources^ deviceResources);
 		void ClearTextureRTV(RenderTextureCube^ texture);
-		void SetPObject(PObject^ pObject, ECullMode cullMode);
-		void SetPObject(PObject^ pObject, ECullMode cullMode, bool wireframe);
-		void SetPObject(PObject^ pObject, int index);
 		void SetPObject(ComputePO^ pObject);
 		void SetPObject1(PObject^ pObject, int variantIndex);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);

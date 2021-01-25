@@ -132,32 +132,31 @@ namespace Coocoo3D.RenderPipeline
             var graphicsContext = context.graphicsContext;
             ref var settings = ref context.dynamicContextRead.settings;
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
-            Texture2D textureLoading = context.TextureLoading;
-            Texture2D textureError = context.TextureError;
-            var RPAssetsManager = context.RPAssetsManager;
+            Texture2D texLoading = context.TextureLoading;
+            Texture2D texError = context.TextureError;
+            var rpAssets = context.RPAssetsManager;
+            var RSBase = rpAssets.rootSignature;
+            var deviceResources = context.deviceResources;
 
-            PObject currentDrawPObject;
-            PObject currentSkinningPObject;
-            currentSkinningPObject = RPAssetsManager.PObjectMMDSkinning;
+            PObject drawPO;
+            PObject skinningPO;
+            skinningPO = rpAssets.PObjectMMDSkinning;
             if (settings.RenderStyle == 1)
-                currentDrawPObject = RPAssetsManager.PObjectMMD_Toon1;
+                drawPO = rpAssets.PObjectMMD_Toon1;
             else if (inShaderSettings.Quality == 0)
-                currentDrawPObject = RPAssetsManager.PObjectMMD;
+                drawPO = rpAssets.PObjectMMD;
             else
-                currentDrawPObject = RPAssetsManager.PObjectMMD_DisneyBrdf;
+                drawPO = rpAssets.PObjectMMD_DisneyBrdf;
 
-            graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
+            graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = rendererComponent.POSkinning;
-                if (POSkinning != null && POSkinning.Status == GraphicsObjectStatus.loaded)
-                    graphicsContext.SetPObject(POSkinning, 0);
-                else
-                    graphicsContext.SetPObject(currentSkinningPObject, 0);
+                var POSkinning = PObjectStatusSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.POSkinning, skinningPO, skinningPO, skinningPO);
+                SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning,ref context.SkinningDesc, POSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
@@ -168,7 +167,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSOMeshNone();
 
 
-            graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
+            graphicsContext.SetRootSignatureCompute(rpAssets.rootSignatureCompute);
             void ParticleCompute(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
                 if (rendererComponent.ParticleCompute == null || rendererComponent.meshParticleBuffer == null || rendererComponent.ParticleCompute.Status != GraphicsObjectStatus.loaded)
@@ -181,6 +180,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetComputeCBVR(cameraPresentData, 2);
                 graphicsContext.SetComputeUAVR(context.SkinningMeshBuffer, counter.vertex, 4);
                 graphicsContext.SetComputeUAVR(rendererComponent.meshParticleBuffer, 0, 5);
+                rendererComponent.ParticleCompute.Verify(deviceResources, rpAssets.rootSignatureCompute);
                 graphicsContext.SetPObject(rendererComponent.ParticleCompute);
                 graphicsContext.Dispatch((rendererComponent.meshVertexCount + 63) / 64, 1, 1);
                 counter.vertex += rendererComponent.meshVertexCount;
@@ -218,21 +218,8 @@ namespace Coocoo3D.RenderPipeline
                 }
 
                 graphicsContext.SetMesh(context.SkinningMeshBuffer);
-                graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
-                PSODesc desc;
-                desc.blendState = EBlendState.none;
-                desc.cullMode = ECullMode.none;
-                desc.depthBias = 2500;
-                desc.dsvFormat = context.depthFormat;
-                desc.inputLayout = EInputLayout.skinned;
-                desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                desc.rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
-                desc.renderTargetCount = 0;
-                desc.streamOutput = false;
-                desc.wireFrame = false;
-                int variant = RPAssetsManager.PObjectMMDShadowDepth.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignature, desc);
-                graphicsContext.SetPObject1(RPAssetsManager.PObjectMMDShadowDepth, variant);
-
+                graphicsContext.SetRootSignature(RSBase);
+                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref context.shadowDesc, rpAssets.PObjectMMDShadowDepth);
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 _Counters counterShadow0 = new _Counters();
                 var LightCameraDataBuffers = context.LightCameraDataBuffer;
@@ -247,7 +234,7 @@ namespace Coocoo3D.RenderPipeline
 
             int cameraIndex = 0;
 
-            graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
+            graphicsContext.SetRootSignature(RSBase);
             graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, false, true);
             graphicsContext.SetCBVR(context.CameraDataBuffers[cameraIndex], 2);
             graphicsContext.SetSRVTArray(context.ShadowMapCube, 5);
@@ -255,7 +242,19 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.IrradianceMap, 7);
             graphicsContext.SetSRVT(context.BRDFLut, 8);
             #region Render Sky box
-            graphicsContext.SetPObject(RPAssetsManager.PObjectSkyBox, ECullMode.back);
+
+            PSODesc descSkyBox;
+            descSkyBox.blendState = EBlendState.none;
+            descSkyBox.cullMode = ECullMode.back;
+            descSkyBox.depthBias = 0;
+            descSkyBox.dsvFormat = context.depthFormat;
+            descSkyBox.inputLayout = EInputLayout.postProcess;
+            descSkyBox.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+            descSkyBox.rtvFormat = context.outputFormat;
+            descSkyBox.renderTargetCount = 1;
+            descSkyBox.streamOutput = false;
+            descSkyBox.wireFrame = false;
+            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref descSkyBox, rpAssets.PObjectSkyBox);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
             #endregion
@@ -265,7 +264,19 @@ namespace Coocoo3D.RenderPipeline
 
             void _RenderEntity(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
-                var PODraw = PObjectStatusSelect(rendererComponent.PODraw, RPAssetsManager.PObjectMMDLoading, currentDrawPObject, RPAssetsManager.PObjectMMDError);
+                PSODesc desc;
+                desc.blendState = EBlendState.alpha;
+                desc.cullMode = ECullMode.back;
+                desc.depthBias = 0;
+                desc.dsvFormat = context.depthFormat;
+                desc.inputLayout = EInputLayout.skinned;
+                desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+                desc.rtvFormat = context.outputFormat;
+                desc.renderTargetCount = 1;
+                desc.streamOutput = false;
+                desc.wireFrame = context.dynamicContextRead.settings.Wireframe;
+
+                var PODraw = PObjectStatusSelect(deviceResources, RSBase, ref desc, rendererComponent.PODraw, rpAssets.PObjectMMDLoading, drawPO, rpAssets.PObjectMMDError);
                 var Materials = rendererComponent.Materials;
                 List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);
@@ -288,24 +299,20 @@ namespace Coocoo3D.RenderPipeline
                         tex2 = texs[Materials[i].toonIndex];
                     context.MaterialBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
 
-                    //graphicsContext.SetSRVT(TextureStatusSelect(tex1, textureLoading, textureError, textureError), 3);
-                    //graphicsContext.SetSRVT(TextureStatusSelect(tex2, textureLoading, textureError, textureError), 4);
-                    CooGExtension.SetSRVTexture2(graphicsContext, tex1, tex2, 3, textureLoading, textureError);
+                    graphicsContext.SetSRVT(TextureStatusSelect(tex1, texLoading, texError, texError), 3);
+                    graphicsContext.SetSRVT(TextureStatusSelect(tex2, texLoading, texError, texError), 4);
+                    //CooGExtension.SetSRVTexture2(graphicsContext, tex1, tex2, 3, textureLoading, textureError);
 
 
-                    PSODesc desc;
-                    desc.blendState = EBlendState.alpha;
                     desc.cullMode = Materials[i].DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
-                    desc.depthBias = 0;
-                    desc.dsvFormat = context.depthFormat;
-                    desc.inputLayout = EInputLayout.skinned;
-                    desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                    desc.rtvFormat = context.outputFormat;
-                    desc.renderTargetCount = 1;
-                    desc.streamOutput = false;
-                    desc.wireFrame = context.dynamicContextRead.settings.Wireframe;
-                    int variant = PODraw.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignature, desc);
-                    graphicsContext.SetPObject1(PODraw, variant);
+                    int variant = PODraw.GetVariantIndex(deviceResources, RSBase, desc);
+                    if (variant != -1)
+                        graphicsContext.SetPObject1(PODraw, variant);
+                    else
+                    {
+                        variant = rpAssets.PObjectMMDError.GetVariantIndex(deviceResources, RSBase, desc);
+                        graphicsContext.SetPObject1(rpAssets.PObjectMMDError, variant);
+                    }
 
                     graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
                     counter.material++;

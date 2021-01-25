@@ -28,7 +28,7 @@ bool ComputePO::CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint,
 		"cs_5_0",
 		0,
 		0,
-		&byteCode,
+		&m_byteCode,
 		nullptr
 	);
 	CooFreeMStr(entryPointStr);
@@ -36,6 +36,7 @@ bool ComputePO::CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint,
 		return false;
 	else
 		return true;
+	Status = GraphicsObjectStatus::loaded;
 }
 
 void ComputePO::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature, IBuffer^ data)
@@ -45,18 +46,21 @@ void ComputePO::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ 
 	byte* pData = nullptr;
 	DX::ThrowIfFailed(bufferByteAccess->Buffer(&pData));
 
-	D3DCreateBlob(data->Length, &byteCode);
-	memcpy(byteCode->GetBufferPointer(), pData, data->Length);
+	D3DCreateBlob(data->Length, &m_byteCode);
+	memcpy(m_byteCode->GetBufferPointer(), pData, data->Length);
 	D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
-	desc.CS.pShaderBytecode = byteCode->GetBufferPointer();
-	desc.CS.BytecodeLength = byteCode->GetBufferSize();
+	desc.CS.pShaderBytecode = m_byteCode->GetBufferPointer();
+	desc.CS.BytecodeLength = m_byteCode->GetBufferSize();
 	desc.pRootSignature = rootSignature->m_rootSignature.Get();
 	DX::ThrowIfFailed(deviceResources->GetD3DDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pipelineState)));
 }
 
-bool ComputePO::Upload(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature)
+bool ComputePO::Verify(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature)
 {
-	Microsoft::WRL::ComPtr<ID3DBlob> blob = byteCode;//·ÀÖ¹±»ÊÍ·Å
+	if (!m_byteCode) { Status = GraphicsObjectStatus::error; return false; }
+	if (!m_byteCode->GetBufferSize()) { Status = GraphicsObjectStatus::error; return false; }
+	if (m_pipelineState)return true;
+	Microsoft::WRL::ComPtr<ID3DBlob> blob = m_byteCode;
 	D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
 	desc.CS.pShaderBytecode = blob->GetBufferPointer();
 	desc.CS.BytecodeLength = blob->GetBufferSize();
@@ -73,6 +77,7 @@ void ComputePO::Initialize(IBuffer^ data)
 	byte* pData = nullptr;
 	DX::ThrowIfFailed(bufferByteAccess->Buffer(&pData));
 
-	D3DCreateBlob(data->Length, &byteCode);
-	memcpy(byteCode->GetBufferPointer(), pData, data->Length);
+	D3DCreateBlob(data->Length, &m_byteCode);
+	memcpy(m_byteCode->GetBufferPointer(), pData, data->Length);
+	Status = GraphicsObjectStatus::loaded;
 }

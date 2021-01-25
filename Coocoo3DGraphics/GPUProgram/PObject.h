@@ -11,12 +11,8 @@ namespace Coocoo3DGraphics
 	{
 	public:
 		property GraphicsObjectStatus Status;
-		void Initialize(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, EInputLayout type, EBlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat);
-		void Initialize(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, EInputLayout type, EBlendState blendState, VertexShader^ vertexShader, GeometryShader^ geometryShader, PixelShader^ pixelShader, DxgiFormat rtvFormat, DxgiFormat depthFormat, ED3D12PrimitiveTopologyType primitiveTopologyType);
-		//使用Upload上传GPU
-		void InitializeSkinning(VertexShader^ vs, GeometryShader^ gs);
+
 		void Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps);
-		bool Upload(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature);
 		void Unload();
 		int GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc);
 	internal:
@@ -25,15 +21,6 @@ namespace Coocoo3DGraphics
 		GeometryShader^ m_geometryShader;
 		static const UINT c_indexPipelineStateSkinning = 0;
 
-		bool m_useStreamOutput;
-		bool m_isDepthOnly;
-		DXGI_FORMAT m_renderTargetFormat;
-		DXGI_FORMAT m_depthFormat;
-		EBlendState m_blendState;
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE m_primitiveTopologyType;
-		int m_depthBias;
-		int m_renderTargetCount;
-		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pipelineState[6];
 		std::vector<Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_pipelineStates;
 		std::vector<PSODesc> m_psoDescs;
 
@@ -42,13 +29,8 @@ namespace Coocoo3DGraphics
 			m_vertexShader = nullptr;
 			m_pixelShader = nullptr;
 			m_geometryShader = nullptr;
-			m_renderTargetFormat = DXGI_FORMAT_UNKNOWN;
-			m_depthFormat = DXGI_FORMAT_UNKNOWN;
-			m_useStreamOutput = false;
-			m_blendState = EBlendState::none;
-			m_depthBias = 0;
-			m_renderTargetCount = 0;
-			m_primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+			m_pipelineStates.clear();
+			m_psoDescs.clear();
 		}
 	};
 }

@@ -24,9 +24,6 @@ namespace Coocoo3D.RenderPipeline
                 bgConstantBuffers[i] = new CBuffer();
             }
         }
-        ~WidgetRenderer()
-        {
-        }
         public void Reload(DeviceResources deviceResources)
         {
             deviceResources.InitializeCBuffer(constantBuffer, c_bufferSize1);
@@ -151,27 +148,45 @@ namespace Coocoo3D.RenderPipeline
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
             var graphicsContext = context.graphicsContext;
-            graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI1, ECullMode.none);
+            var rpAssets = context.RPAssetsManager;
+            var rsPP = rpAssets.rootSignaturePostProcess;
             graphicsContext.SetCBVR(constantBuffer, 0);
             graphicsContext.SetSRVT(context.UI1Texture, 1);
             graphicsContext.SetMesh(context.ndcQuadMesh);
+
+            PSODesc desc;
+            desc.blendState = EBlendState.alpha;
+            desc.cullMode = ECullMode.none;
+            desc.depthBias = 0;
+            desc.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
+            desc.inputLayout = EInputLayout.postProcess;
+            desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+            desc.rtvFormat = context.swapChainFormat;
+            desc.renderTargetCount = 1;
+            desc.streamOutput = false;
+            desc.wireFrame = false;
+            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP,ref desc, rpAssets.PObjectWidgetUI1);
             graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, allocated, 0);
 
             var selectedEntity = context.dynamicContextRead.selectedEntity;
             if (selectedEntity != null)
             {
+                desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
                 graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 2);
-                graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUI2, ECullMode.none);
                 graphicsContext.SetCBVR(bgConstantBuffers[0], 0);
                 graphicsContext.SetCBVR(context.CBs_Bone[indexOfSelectedEntity], 3);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUI2);
+
                 graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, selectedEntity.boneComponent.bones.Count, 0);
             }
             var selectedLight = context.dynamicContextRead.selectedLightings;
             if (selectedLight.Count > 0)
             {
+                desc.ptt = ED3D12PrimitiveTopologyType.LINE;
                 graphicsContext.SetMesh(context.cubeWireMesh);
-                graphicsContext.SetPObject(context.RPAssetsManager.PObjectWidgetUILight, ECullMode.none, true);
                 graphicsContext.SetCBVR(bgConstantBuffers[1], 0);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUILight);
+
                 graphicsContext.DrawIndexedInstanced(context.cubeWireMeshIndexCount, 0, 0, selectedLight.Count, 0);
             }
         }

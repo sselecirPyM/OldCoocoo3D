@@ -43,23 +43,6 @@ void GraphicsContext::ClearTextureRTV(RenderTextureCube^ texture)
 	}
 }
 
-void GraphicsContext::SetPObject(PObject^ pObject, ECullMode cullMode)
-{
-	int a = (int)cullMode;
-	m_commandList->SetPipelineState(pObject->m_pipelineState[a].Get());
-}
-
-void GraphicsContext::SetPObject(PObject^ pObject, ECullMode cullMode, bool wireframe)
-{
-	int a = (int)cullMode + (wireframe ? 3 : 0);
-	m_commandList->SetPipelineState(pObject->m_pipelineState[a].Get());
-}
-
-void GraphicsContext::SetPObject(PObject^ pObject, int index)
-{
-	m_commandList->SetPipelineState(pObject->m_pipelineState[index].Get());
-}
-
 void GraphicsContext::SetPObject(ComputePO^ pObject)
 {
 	m_commandList->SetPipelineState(pObject->m_pipelineState.Get());

@@ -102,9 +102,10 @@ namespace Coocoo3D.Core
             _currentRenderPipeline = forwardRenderPipeline1;
             RPContext.LoadTask = Task.Run(async () =>
             {
-                await RPAssetsManager.ReloadAssets();
+                await RPAssetsManager.LoadAssets();
                 await RPContext.ReloadDefalutResources(ProcessingList, miscProcessContext);
-                RPAssetsManager.Reload(deviceResources);
+                RPAssetsManager.InitializeRootSignature(deviceResources);
+                RPAssetsManager.InitializePipelineState();
                 forwardRenderPipeline1.Reload(deviceResources);
                 deferredRenderPipeline1.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
@@ -113,7 +114,6 @@ namespace Coocoo3D.Core
                 if (deviceResources.IsRayTracingSupport())
                     rayTracingRenderPipeline1.Reload(deviceResources);
 
-                RPAssetsManager.ChangeRenderTargetFormat(deviceResources, ProcessingList, RPContext.outputFormat, RPContext.gBufferFormat, RPContext.swapChainFormat, RPContext.depthFormat);
 
                 await miscProcess.ReloadAssets(deviceResources);
                 if (deviceResources.IsRayTracingSupport())
@@ -324,7 +324,6 @@ namespace Coocoo3D.Core
                     }
 
                     _processingList._DealStep2(graphicsContext, deviceResources);
-                    RPAssetsManager._DealStep3(deviceResources, _processingList);
                     _processingList.Clear();
                     if (SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
                     {

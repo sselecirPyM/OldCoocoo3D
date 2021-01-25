@@ -29,7 +29,7 @@ namespace Coocoo3D.RenderPipeline
         public List<StaticBuffer> staticBufferList = new List<StaticBuffer>();
         public List<ReadBackTexture2D> readBackTextureList = new List<ReadBackTexture2D>();
         public List<TwinBuffer> twinBufferList = new List<TwinBuffer>();
-        public List<PObject>[] pobjectLists = new List<PObject>[] { new List<PObject>(), new List<PObject>(), new List<PObject>(), };
+        public List<ShaderWarp1> pobjectList = new List<ShaderWarp1>();
         public List<ComputePO>[] computePObjectLists = new List<ComputePO>[] { new List<ComputePO>(), };
 
         public void AddObject(MMDMesh mesh)
@@ -89,11 +89,11 @@ namespace Coocoo3D.RenderPipeline
             }
         }
         /// <summary>添加到上传列表</summary>
-        public void UL(PObject pObject, int slot)
+        public void UL(ShaderWarp1 pObject)
         {
-            lock (pobjectLists[slot])
+            lock (pobjectList)
             {
-                pobjectLists[slot].Add(pObject);
+                pobjectList.Add(pObject);
             }
         }
         public void UL(ComputePO pObject, int slot)
@@ -114,8 +114,7 @@ namespace Coocoo3D.RenderPipeline
             Move1(readBackTextureList, another.readBackTextureList);
             Move1(staticBufferList, another.staticBufferList);
             Move1(twinBufferList, another.twinBufferList);
-            for (int i = 0; i < pobjectLists.Length; i++)
-                Move1(pobjectLists[i], another.pobjectLists[i]);
+            Move1(pobjectList, another.pobjectList);
             for (int i = 0; i < computePObjectLists.Length; i++)
                 Move1(computePObjectLists[i], another.computePObjectLists[i]);
         }
@@ -130,17 +129,15 @@ namespace Coocoo3D.RenderPipeline
             readBackTextureList.Clear();
             staticBufferList.Clear();
             twinBufferList.Clear();
-            for (int i = 0; i < pobjectLists.Length; i++)
-                pobjectLists[i].Clear();
+            pobjectList.Clear();
             for (int i = 0; i < computePObjectLists.Length; i++)
                 computePObjectLists[i].Clear();
         }
 
         public bool IsEmpty()
         {
-            for (int i = 0; i < pobjectLists.Length; i++)
-                if (pobjectLists[i].Count == 0)
-                    return false;
+            if (pobjectList.Count == 0)
+                return false;
             for (int i = 0; i < computePObjectLists.Length; i++)
                 if (computePObjectLists[i].Count == 0)
                     return false;
@@ -184,6 +181,8 @@ namespace Coocoo3D.RenderPipeline
         }
         public void _DealStep2(GraphicsContext graphicsContext, DeviceResources deviceResources)
         {
+            for (int i = 0; i < pobjectList.Count; i++)
+                pobjectList[i].pipelineState.Initialize(pobjectList[i].vs, pobjectList[i].gs, pobjectList[i].ps);
             for (int i = 0; i < MMDMeshLoadList.Count; i++)
                 MMDMeshLoadList[i].ReleaseUploadHeapResource();
             for (int i = 0; i < staticBufferList.Count; i++)

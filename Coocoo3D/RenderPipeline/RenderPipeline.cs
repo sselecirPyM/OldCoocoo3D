@@ -32,17 +32,28 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected PObject PObjectStatusSelect(PObject pObject, PObject loading, PObject unload, PObject error)
+        protected PObject PObjectStatusSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject, PObject loading, PObject unload, PObject error)
         {
             if (pObject == null) return unload;
             if (pObject.Status == GraphicsObjectStatus.unload)
                 return unload;
             else if (pObject.Status == GraphicsObjectStatus.loaded)
-                return pObject;
+            {
+                if (pObject.GetVariantIndex(deviceResources, graphicsSignature, desc) != -1)
+                    return pObject;
+                else
+                    return error;
+            }
             else if (pObject.Status == GraphicsObjectStatus.loading)
                 return loading;
             else
                 return error;
+        }
+
+        protected void SetPipelineStateVariant(DeviceResources deviceResources,GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject)
+        {
+            int variant = pObject.GetVariantIndex(deviceResources, graphicsSignature, desc);
+            graphicsContext.SetPObject1(pObject, variant);
         }
 
         protected async Task ReloadPixelShader(PixelShader pixelShader, string uri)

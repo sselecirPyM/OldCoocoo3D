@@ -173,7 +173,7 @@ namespace Coocoo3D.RenderPipeline
 
 
             var entities = context.dynamicContextRead.entities;
-            graphicsContext.SetRootSignature(context.RPAssetsManager.rootSignatureSkinning);
+            graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
 
 
@@ -183,11 +183,9 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 //graphicsContext.SetCBVR(entityDataBuffer, 1);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = rendererComponent.POSkinning;
-                if (POSkinning != null && POSkinning.Status == GraphicsObjectStatus.loaded)
-                    graphicsContext.SetPObject(POSkinning, 0);
-                else
-                    graphicsContext.SetPObject(context.RPAssetsManager.PObjectMMDSkinning, 0);
+                var POSkinning = PObjectStatusSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.POSkinning, RPAssetsManager.PObjectMMDSkinning, RPAssetsManager.PObjectMMDSkinning, RPAssetsManager.PObjectMMDSkinning);
+                int variant3 = POSkinning.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignatureSkinning, context.SkinningDesc);
+                graphicsContext.SetPObject1(POSkinning, variant3);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
@@ -197,7 +195,7 @@ namespace Coocoo3D.RenderPipeline
                 EntitySkinning(entities[i].rendererComponent, CameraDataBuffers[0], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
-            graphicsContext.SetRootSignatureCompute(context.RPAssetsManager.rootSignatureCompute);
+            graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
 
             void ParticleCompute(MMDRendererComponent rendererComponent, SBuffer cameraPresentData, CBuffer entityBoneDataBuffer, CBuffer entityDataBuffer, ref _Counters counter)
             {
@@ -221,34 +219,21 @@ namespace Coocoo3D.RenderPipeline
 
             if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
             {
-                graphicsContext.SetRootSignature(context.RPAssetsManager.rootSignature);
+                graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
                 void RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, ref _Counters counter)
                 {
-                    Texture2D textureLoading = context.TextureLoading;
-                    Texture2D textureError = context.TextureError;
+                    Texture2D texLoading = context.TextureLoading;
+                    Texture2D texError = context.TextureError;
                     var Materials = rendererComponent.Materials;
                     //graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                     //graphicsContext.SetCBVR(entityDataBuffer, 1);
                     graphicsContext.SetCBVR(cameraPresentData, 2);
 
                     graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    PSODesc desc;
-                    desc.blendState = EBlendState.none;
-                    desc.cullMode = ECullMode.none;
-                    desc.depthBias = 2500;
-                    desc.dsvFormat = context.depthFormat;
-                    desc.inputLayout = EInputLayout.skinned;
-                    desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                    desc.rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
-                    desc.renderTargetCount = 0;
-                    desc.streamOutput = false;
-                    desc.wireFrame = false;
-                    int variant = RPAssetsManager.PObjectMMDShadowDepth.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignature, desc);
-                    graphicsContext.SetPObject1(RPAssetsManager.PObjectMMDShadowDepth, variant);
-
+                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature,ref context.shadowDesc, RPAssetsManager.PObjectMMDShadowDepth);
                     //List<Texture2D> texs = rendererComponent.textures;
                     //int countIndexLocal = 0;
                     //for (int i = 0; i < Materials.Count; i++)
@@ -279,8 +264,8 @@ namespace Coocoo3D.RenderPipeline
             {
                 void BuildEntityBAS1(MMDRendererComponent rendererComponent, ref _Counters counter)
                 {
-                    Texture2D textureLoading = context.TextureLoading;
-                    Texture2D textureError = context.TextureError;
+                    Texture2D texLoading = context.TextureLoading;
+                    Texture2D texError = context.TextureError;
 
                     var Materials = rendererComponent.Materials;
                     List<Texture2D> texs = rendererComponent.textures;
@@ -291,7 +276,7 @@ namespace Coocoo3D.RenderPipeline
                         Texture2D tex1 = null;
                         if (Materials[i].texIndex != -1)
                             tex1 = texs[Materials[i].texIndex];
-                        tex1 = TextureStatusSelect(tex1, textureLoading, textureError, textureError);
+                        tex1 = TextureStatusSelect(tex1, texLoading, texError, texError);
 
                         graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, Materials[i].indexCount, tex1,
                             materialBuffers1.constantBuffers[counter.material / materialBuffers1.sliencesPerBuffer], (counter.material % materialBuffers1.sliencesPerBuffer)*2);
@@ -329,14 +314,26 @@ namespace Coocoo3D.RenderPipeline
             {
                 #region Render Sky box
                 int cameraIndex = 0;
-                graphicsContext.SetRootSignature(context.RPAssetsManager.rootSignature);
+                graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
                 graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, true, true);
                 graphicsContext.SetCBVR(CameraDataBuffers[cameraIndex], 2);
                 graphicsContext.SetSRVT(context.SkyBox, 6);
                 graphicsContext.SetSRVT(context.IrradianceMap, 7);
                 graphicsContext.SetSRVT(context.BRDFLut, 8);
-                graphicsContext.SetPObject(context.RPAssetsManager.PObjectSkyBox, ECullMode.back);
                 graphicsContext.SetMesh(context.ndcQuadMesh);
+                PSODesc descSkyBox;
+                descSkyBox.blendState = EBlendState.none;
+                descSkyBox.cullMode = ECullMode.back;
+                descSkyBox.depthBias = 0;
+                descSkyBox.dsvFormat = context.depthFormat;
+                descSkyBox.inputLayout = EInputLayout.postProcess;
+                descSkyBox.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+                descSkyBox.rtvFormat = context.outputFormat;
+                descSkyBox.renderTargetCount = 1;
+                descSkyBox.streamOutput = false;
+                descSkyBox.wireFrame = false;
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref descSkyBox, RPAssetsManager.PObjectSkyBox);
+
                 graphicsContext.DrawIndexed(context.ndcQuadMesh.m_indexCount, 0, 0);
                 #endregion
             }

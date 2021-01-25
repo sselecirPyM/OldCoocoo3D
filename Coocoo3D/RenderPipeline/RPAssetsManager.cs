@@ -47,18 +47,15 @@ namespace Coocoo3D.RenderPipeline
         public PObject PObjectWidgetUI1 = new PObject();
         public PObject PObjectWidgetUI2 = new PObject();
         public PObject PObjectWidgetUILight = new PObject();
-        public DxgiFormat outputFormat;
-        public DxgiFormat middleFormat;
-        public DxgiFormat depthFormat;
         public bool Ready;
-        public void Reload(DeviceResources deviceResources)
+        public void InitializeRootSignature(DeviceResources deviceResources)
         {
             rootSignature.ReloadMMD(deviceResources);
             rootSignatureSkinning.ReloadSkinning(deviceResources);
             rootSignaturePostProcess.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.CBV });
             rootSignatureCompute.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRV, GSD.UAV, GSD.UAV });
         }
-        public async Task ReloadAssets()
+        public async Task LoadAssets()
         {
             await ReloadVertexShader(VSMMDTransform, "ms-appx:///Coocoo3DGraphics/VSMMDTransform.cso");
             await ReloadPixelShader(PSMMD, "ms-appx:///Coocoo3DGraphics/PSMMD.cso");
@@ -91,15 +88,11 @@ namespace Coocoo3D.RenderPipeline
             await RegPSAssets("PSLoading.cso");
             await RegPSAssets("PSError.cso");
         }
-        public void ChangeRenderTargetFormat(DeviceResources deviceResources, ProcessingList uploadProcess, DxgiFormat outputFormat, DxgiFormat gBufferFormat, DxgiFormat swapChainFormat, DxgiFormat depthFormat)
+        public void InitializePipelineState()
         {
             Ready = false;
-            this.outputFormat = outputFormat;
-            this.middleFormat = gBufferFormat;
-            this.depthFormat = depthFormat;
 
-            PObjectMMDSkinning.InitializeSkinning(VSAssets["VSMMDSkinning.cso"], null);
-            uploadProcess.UL(PObjectMMDSkinning, 1);
+            PObjectMMDSkinning.Initialize(VSAssets["VSMMDSkinning.cso"], null,null);
 
             PObjectMMD.Initialize(VSMMDTransform, null, PSMMD);
             PObjectMMD_DisneyBrdf.Initialize(VSMMDTransform, null, PSMMD_DisneyBrdf);
@@ -114,15 +107,14 @@ namespace Coocoo3D.RenderPipeline
             PObjectDeferredRenderDirectLight.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderDirectLight.cso"]);
             PObjectDeferredRenderPointLight.Initialize(VSAssets["VSDeferredRenderPointLight.cso"], null, PSAssets["PSDeferredRenderPointLight.cso"]);
 
-            //PObjectMMDShadowDepth.InitializeDepthOnly(VSMMDTransform, null, 2500, depthFormat);
             PObjectMMDShadowDepth.Initialize(VSMMDTransform,null, null);
             PObjectMMDDepth.Initialize(VSMMDTransform, null, PSMMDAlphaClip1);
 
-            PObjectSkyBox.Initialize(deviceResources, rootSignature, EInputLayout.postProcess, EBlendState.none, VSAssets["VSSkyBox.cso"], null, PSAssets["PSSkyBox.cso"], outputFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectPostProcess.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.none, VSAssets["VSPostProcess.cso"], null, PSAssets["PSPostProcess.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectWidgetUI1.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha, VSAssets["VSWidgetUI1.cso"], null, PSAssets["PSWidgetUI1.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectWidgetUI2.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha, VSAssets["VSWidgetUI2.cso"], null, PSAssets["PSWidgetUI2.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN);
-            PObjectWidgetUILight.Initialize(deviceResources, rootSignaturePostProcess, EInputLayout.postProcess, EBlendState.alpha, VSAssets["VSWidgetUILight.cso"], null, PSAssets["PSWidgetUILight.cso"], swapChainFormat, DxgiFormat.DXGI_FORMAT_UNKNOWN, ED3D12PrimitiveTopologyType.LINE);
+            PObjectSkyBox.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSSkyBox.cso"]);
+            PObjectPostProcess.Initialize(VSAssets["VSPostProcess.cso"], null, PSAssets["PSPostProcess.cso"]);
+            PObjectWidgetUI1.Initialize(VSAssets["VSWidgetUI1.cso"], null, PSAssets["PSWidgetUI1.cso"]);
+            PObjectWidgetUI2.Initialize(VSAssets["VSWidgetUI2.cso"], null, PSAssets["PSWidgetUI2.cso"]);
+            PObjectWidgetUILight.Initialize(VSAssets["VSWidgetUILight.cso"], null, PSAssets["PSWidgetUILight.cso"]);
             Ready = true;
         }
         protected async Task ReloadVertexShader(VertexShader vertexShader, string uri)
@@ -163,25 +155,6 @@ namespace Coocoo3D.RenderPipeline
         }
 
         #region UploadProceess
-        public void _DealStep3(DeviceResources deviceResources, ProcessingList uploadProcess)
-        {
-            foreach (var a in uploadProcess.pobjectLists[0])
-            {
-                a.Upload(deviceResources, rootSignature);
-            }
-            foreach (var a in uploadProcess.pobjectLists[1])
-            {
-                a.Upload(deviceResources, rootSignatureSkinning);
-            }
-            foreach (var a in uploadProcess.pobjectLists[2])
-            {
-                a.Upload(deviceResources, rootSignaturePostProcess);
-            }
-            foreach (var a in uploadProcess.computePObjectLists[0])
-            {
-                a.Upload(deviceResources, rootSignatureCompute);
-            }
-        }
         #endregion
     }
 }
