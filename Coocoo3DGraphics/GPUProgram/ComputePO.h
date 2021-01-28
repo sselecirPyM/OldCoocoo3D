@@ -10,7 +10,7 @@ namespace Coocoo3DGraphics
 	{
 	public:
 		property GraphicsObjectStatus Status;
-		bool CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro);
+		bool CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, const Platform::Array<MacroEntry^>^ macros);
 		void Initialize(DeviceResources^ deviceResources,GraphicsSignature^ rootSignature, IBuffer^ data);
 		bool Verify(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature);
 		void Initialize(IBuffer^ data);

@@ -93,13 +93,10 @@ namespace Coocoo3D.PropertiesPages
                     {
                         BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
                         VMDFormat motionSet = VMDFormat.Load(reader);
-                        lock (appBody.deviceResources)
-                        {
                             foreach (var entity in appBody.SelectedEntities)
                             {
                                 entity.motionComponent.Reload(motionSet);
                             }
-                        }
                     }
                     catch (Exception exception)
                     {

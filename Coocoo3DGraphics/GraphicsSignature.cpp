@@ -4,29 +4,34 @@
 
 using namespace Coocoo3DGraphics;
 #define SizeOfInUint32(obj) ((sizeof(obj) - 1) / sizeof(UINT32) + 1)
-
+inline D3D12_STATIC_SAMPLER_DESC _StaticSamplerDesc()
+{
+	D3D12_STATIC_SAMPLER_DESC staticSamplerDesc = {};
+	staticSamplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	staticSamplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	staticSamplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+	staticSamplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+	staticSamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+	staticSamplerDesc.MipLODBias = 0;
+	staticSamplerDesc.MaxAnisotropy = 0;
+	staticSamplerDesc.MinLOD = 0;
+	staticSamplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
+	staticSamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	staticSamplerDesc.RegisterSpace = 0;
+	return staticSamplerDesc;
+}
 #define STATIC_SAMPLER_CODE_FRAG \
-	D3D12_STATIC_SAMPLER_DESC staticSamplerDesc = {};\
-	staticSamplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;\
-	staticSamplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;\
-	staticSamplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;\
-	staticSamplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;\
-	staticSamplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;\
-	staticSamplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;\
-	staticSamplerDesc.MipLODBias = 0;\
-	staticSamplerDesc.MaxAnisotropy = 0;\
-	staticSamplerDesc.MinLOD = 0;\
-	staticSamplerDesc.MaxLOD = D3D12_FLOAT32_MAX;\
-	staticSamplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;\
-	staticSamplerDesc.RegisterSpace = 0;\
-	D3D12_STATIC_SAMPLER_DESC staticSamplerDescs[3] = { staticSamplerDesc,staticSamplerDesc,staticSamplerDesc };\
+	D3D12_STATIC_SAMPLER_DESC staticSamplerDescs[4] = { _StaticSamplerDesc(),_StaticSamplerDesc(),_StaticSamplerDesc(),_StaticSamplerDesc() };\
 	staticSamplerDescs[0].ShaderRegister = 0;\
 	staticSamplerDescs[1].ShaderRegister = 1;\
 	staticSamplerDescs[1].MaxAnisotropy = 16;\
 	staticSamplerDescs[1].Filter = D3D12_FILTER_ANISOTROPIC;\
 	staticSamplerDescs[2].ShaderRegister = 2;\
 	staticSamplerDescs[2].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;\
-	staticSamplerDescs[2].Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR
+	staticSamplerDescs[2].Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;\
+	staticSamplerDescs[3].ShaderRegister = 3;\
+	staticSamplerDescs[3].Filter = D3D12_FILTER_MIN_MAG_MIP_POINT
 
 void GraphicsSignature::ReloadMMD(DeviceResources^ deviceResources)
 {

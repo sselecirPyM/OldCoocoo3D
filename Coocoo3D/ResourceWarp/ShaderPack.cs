@@ -100,18 +100,18 @@ namespace Coocoo3D.ResourceWarp
             ComputePO cs1 = CSParticle;
 
 
-            bool haveVS = vs0.CompileInitialize1(datas, "VS", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveGS = gs0.CompileInitialize1(datas, "GS", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveVS1 = vs1.CompileInitialize1(datas, "VS1", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveGS1 = gs1.CompileInitialize1(datas, "GS1", ShaderMacro.DEFINE_COO_SURFACE);
-            bool havePS1 = ps1.CompileInitialize1(datas, "PS1", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveVS = vs0.CompileInitialize1(datas, "VS", macroEntryVS);
+            bool haveGS = gs0.CompileInitialize1(datas, "GS", macroEntryGS);
+            bool haveVS1 = vs1.CompileInitialize1(datas, "VS1", macroEntryVS);
+            bool haveGS1 = gs1.CompileInitialize1(datas, "GS1", macroEntryGS);
+            bool havePS1 = ps1.CompileInitialize1(datas, "PS1", macroEntryPS);
 
-            bool haveVSParticle = vs2.CompileInitialize1(datas, "VSParticle", ShaderMacro.DEFINE_COO_SURFACE);
-            bool haveGSParticle = gs2.CompileInitialize1(datas, "GSParticle", ShaderMacro.DEFINE_COO_SURFACE);
-            bool havePSParticle = ps2.CompileInitialize1(datas, "PSParticle", ShaderMacro.DEFINE_COO_SURFACE);
+            bool haveVSParticle = vs2.CompileInitialize1(datas, "VSParticle", macroEntryVS);
+            bool haveGSParticle = gs2.CompileInitialize1(datas, "GSParticle", macroEntryGS);
+            bool havePSParticle = ps2.CompileInitialize1(datas, "PSParticle", macroEntryPS);
 
 
-            bool haveCS1 = cs1.CompileInitialize1(datas, "CSParticle", ShaderMacro.DEFINE_COO_PARTICLE);
+            bool haveCS1 = cs1.CompileInitialize1(datas, "CSParticle", macroEntryCS1);
             if (haveVS || haveGS)
             {
                 processingList.UL(new ShaderWarp1() { pipelineState = POSkinning, vs = haveVS ? vs0 : RPAssetsManager.VSAssets["VSMMDSkinning2.cso"], gs = haveGS ? gs0 : null, ps = null });
@@ -138,6 +138,10 @@ namespace Coocoo3D.ResourceWarp
             Status = GraphicsObjectStatus.loaded;
             return true;
         }
+        static MacroEntry[] macroEntryVS = new MacroEntry[] { new MacroEntry("COO_SURFACE","1") };
+        static MacroEntry[] macroEntryGS = new MacroEntry[] { new MacroEntry("COO_SURFACE","1") };
+        static MacroEntry[] macroEntryPS = new MacroEntry[] { new MacroEntry("COO_SURFACE","1") };
+        static MacroEntry[] macroEntryCS1 = new MacroEntry[] { new MacroEntry("COO_PARTICLE", "1") };
     }
 
 }

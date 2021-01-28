@@ -44,13 +44,12 @@
                         <Button.Flyout>
                             <Flyout Placement="RightEdgeAlignedTop">
                                 <StackPanel>
-                                    <!--<ToggleSwitch Header="显示选中物体骨骼" IsOn="{x:Bind VViewBone,Mode=TwoWay}"/>-->
                                     <ToggleSwitch x:Uid="Page_Common_Switch_ViewerUI" Header="Viewer UI" IsOn="{x:Bind VViewerUI,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_SaveCPUPower" IsOn="{x:Bind VSaveCpuPower,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_MultiThreadRendering" IsOn="{x:Bind VMultiThreadRendering,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_HighResolutionShadow" IsOn="{x:Bind VHighResolutionShadow,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_VSync" Header="VSync" IsOn="{x:Bind VVSync,Mode=TwoWay}"/>
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_ZPrePass" IsOn="{x:Bind VZPrepass,Mode=TwoWay}"/>
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_ZPrePass" IsOn="{x:Bind VZPrepass,Mode=TwoWay}"/>-->
                                     <ToggleSwitch x:Uid="Page_Common_Switch_Wireframe" IsOn="{x:Bind VWireframe,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_AO" IsOn="{x:Bind VEnableAO,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_Shadow" IsOn="{x:Bind VEnableShadow,Mode=TwoWay}"/>

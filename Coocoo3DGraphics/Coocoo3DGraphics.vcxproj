@@ -313,6 +313,7 @@
   <ItemGroup>
     <ClCompile Include="CBuffer.cpp" />
     <ClCompile Include="GPUProgram\PSODesc.cpp" />
+    <ClCompile Include="GPUProgram\ShaderMacro.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp" />
     <ClCompile Include="SBuffer.cpp" />
     <ClCompile Include="DeviceResources.cpp" />

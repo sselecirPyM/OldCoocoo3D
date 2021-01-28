@@ -4,39 +4,48 @@
 #include "TextUtil.h"
 using namespace Coocoo3DGraphics;
 
-bool ComputePO::CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, ShaderMacro macro)
+bool ComputePO::CompileInitialize1(IBuffer^ file1, Platform::String^ entryPoint, const Platform::Array<MacroEntry^>^ macros)
 {
 	Microsoft::WRL::ComPtr<IBufferByteAccess> bufferByteAccess;
 	reinterpret_cast<IInspectable*>(file1)->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
 	byte* sourceCode = nullptr;
 	if (FAILED(bufferByteAccess->Buffer(&sourceCode)))return false;
-
-	const D3D_SHADER_MACRO* macros = nullptr;
-	if (macro == ShaderMacro::DEFINE_COO_SURFACE)macros = MACROS_DEFINE_COO_SURFACE;
-	else if (macro == ShaderMacro::DEFINE_COO_PARTICLE)macros = MACROS_DEFINE_COO_PARTICLE;
+	std::vector<std::string>  macroStrings;
+	std::vector<D3D_SHADER_MACRO> macros1;
+	macros1.reserve(macros->Length + 1);
+	macroStrings.reserve(macros->Length * 2);
+	for (int i = 0; i < macros->Length; i++)
+	{
+		D3D_SHADER_MACRO macro_ = {};
+		macroStrings.push_back(UnicodeToUTF8(macros[i]->Name->Begin()));
+		macro_.Name = macroStrings[macroStrings.size() - 1].c_str();
+		macroStrings.push_back(UnicodeToUTF8(macros[i]->Value->Begin()));
+		macro_.Definition = macroStrings[macroStrings.size() - 1].c_str();
+		macros1.push_back(macro_);
+	}
+	macros1.push_back(D3D_SHADER_MACRO());
 
 
 	int bomOffset = CooBomTest(sourceCode);
-	char* entryPointStr = CooGetMStr(entryPoint->Begin());
+	std::string entryPoint1 = UnicodeToUTF8(std::wstring(entryPoint->Begin()));
 	HRESULT hr = D3DCompile(
 		sourceCode + bomOffset,
 		file1->Length - bomOffset,
 		nullptr,
-		macros,
+		macros1.data(),
 		D3D_COMPILE_STANDARD_FILE_INCLUDE,
-		entryPointStr,
+		entryPoint1.c_str(),
 		"cs_5_0",
 		0,
 		0,
 		&m_byteCode,
 		nullptr
 	);
-	CooFreeMStr(entryPointStr);
+	Status = GraphicsObjectStatus::loaded;
 	if (FAILED(hr))
 		return false;
 	else
 		return true;
-	Status = GraphicsObjectStatus::loaded;
 }
 
 void ComputePO::Initialize(DeviceResources^ deviceResources, GraphicsSignature^ rootSignature, IBuffer^ data)

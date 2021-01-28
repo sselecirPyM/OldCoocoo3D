@@ -146,6 +146,9 @@
     <ClCompile Include="GPUProgram\PSODesc.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
+    <ClCompile Include="GPUProgram\ShaderMacro.cpp">
+      <Filter>GPUProgram</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

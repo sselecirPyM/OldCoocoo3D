@@ -144,7 +144,6 @@ int PObject::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature
 		}
 		state.RasterizerState = CD3DX12_RASTERIZER_DESC(psoDesc.wireFrame ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID, (D3D12_CULL_MODE)((int)psoDesc.cullMode + 1), false, psoDesc.depthBias, 0.0f, 1.5f, true, false, false, 0, D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF);
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState;
-		DX::ThrowIfFailed(deviceResources->GetD3DDevice()->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
 		if (FAILED(deviceResources->GetD3DDevice()->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState))))
 		{
 			Status = GraphicsObjectStatus::error;

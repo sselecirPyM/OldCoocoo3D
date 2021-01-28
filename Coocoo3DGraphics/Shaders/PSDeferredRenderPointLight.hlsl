@@ -20,6 +20,7 @@ Texture2D texture1 :register(t1);
 
 Texture2D gbufferDepth : register (t3);
 SamplerState s0 : register(s0);
+SamplerState s3 : register(s3);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 float3 NormalDecode(float2 enc)
 {
@@ -41,10 +42,10 @@ float4 main(PSIn input) : SV_TARGET
 	pos2 /= pos2.w;
 	float2 uv = pos2.xy * 0.5 + 0.5;
 	uv.y = 1 - uv.y;
-	float4 buffer0Color = texture0.Sample(s0, uv);
-	float depth1 = gbufferDepth.SampleLevel(s0, uv, 0).r;
+	float4 buffer0Color = texture0.Sample(s3, uv);
+	float depth1 = gbufferDepth.SampleLevel(s3, uv, 0).r;
 	clip(0.999 - depth1);
-	float4 buffer1Color = texture1.Sample(s0, uv);
+	float4 buffer1Color = texture1.Sample(s3, uv);
 
 	float3 albedo = buffer0Color.rgb;
 	float metallic = buffer0Color.a;

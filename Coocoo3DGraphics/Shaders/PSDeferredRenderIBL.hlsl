@@ -11,6 +11,7 @@ TextureCube EnvCube : register (t3);
 TextureCube IrradianceCube : register (t4);
 Texture2D BRDFLut : register(t5);
 SamplerState s0 : register(s0);
+SamplerState s3 : register(s3);
 float3 NormalDecode(float2 enc)
 {
 	float4 nn = float4(enc * 2, 0, 0) + float4(-1, -1, 1, -1);
@@ -32,9 +33,9 @@ float4 main(PSIn input) : SV_TARGET
 	float2 uv = input.uv * 0.5 + 0.5;
 	uv.y = 1 - uv.y;
 
-	float depth1 = gbufferDepth.SampleLevel(s0, uv, 0).r;
-	float4 buffer0Color = texture0.Sample(s0, uv);
-	float4 buffer1Color = texture1.Sample(s0, uv);
+	float depth1 = gbufferDepth.SampleLevel(s3, uv, 0).r;
+	float4 buffer0Color = texture0.Sample(s3, uv);
+	float4 buffer1Color = texture1.Sample(s3, uv);
 
 	if (depth1 != 1.0)
 	{

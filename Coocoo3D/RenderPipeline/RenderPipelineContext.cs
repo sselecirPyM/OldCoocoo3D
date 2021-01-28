@@ -112,10 +112,9 @@ namespace Coocoo3D.RenderPipeline
         public byte[] bigBuffer = new byte[65536];
         GCHandle _bigBufferHandle;
 
-        public const int c_maxCameraPerRender = 2;
-        public const int c_presentDataSize = 512;
+        public const int c_presentDataSize = 256;
         public const int c_lightingBufferSize = 1024;
-        public CBuffer[] CameraDataBuffers = new CBuffer[c_maxCameraPerRender];
+        public CBuffer CameraDataBuffers = new CBuffer();
         public CBuffer LightCameraDataBuffer = new CBuffer();
         public const int c_materialDataSize = 768;
         public CBufferGroup MaterialBufferGroup = new CBufferGroup();
@@ -225,10 +224,6 @@ namespace Coocoo3D.RenderPipeline
             for (int i = 0; i < ScreenSizeDSVs.Length; i++)
             {
                 ScreenSizeDSVs[i] = new RenderTexture2D();
-            }
-            for (int i = 0; i < CameraDataBuffers.Length; i++)
-            {
-                CameraDataBuffers[i] = new CBuffer();
             }
             MaterialBufferGroup.Reload(768, 768 * 84);
         }
@@ -356,10 +351,7 @@ namespace Coocoo3D.RenderPipeline
         public Task LoadTask;
         public async Task ReloadDefalutResources(ProcessingList processingList, MiscProcessContext miscProcessContext)
         {
-            for (int i = 0; i < CameraDataBuffers.Length; i++)
-            {
-                deviceResources.InitializeCBuffer(CameraDataBuffers[i], c_presentDataSize);
-            }
+                deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
             deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
 
             HighResolutionShadowNow = true;

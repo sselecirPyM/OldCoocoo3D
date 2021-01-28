@@ -66,3 +66,31 @@ namespace DX
 // 为 ComPtr<T> 命名 helper 函数。
 // 将变量名称指定为对象名称。
 #define NAME_D3D12_OBJECT(x) DX::SetName(x.Get(), L#x)
+
+
+inline std::string UnicodeToUTF8(const std::wstring& wstr)
+{
+	std::string ret;
+	try {
+		std::wstring_convert< std::codecvt_utf8<wchar_t> > wcv;
+		ret = wcv.to_bytes(wstr);
+	}
+	catch (const std::exception& e)
+	{
+
+	}
+	return ret;
+}
+inline std::wstring UTF8ToUnicode(const std::string& str)
+{
+	std::wstring ret;
+	try {
+		std::wstring_convert< std::codecvt_utf8<wchar_t> > wcv;
+		ret = wcv.from_bytes(str);
+	}
+	catch (const std::exception& e)
+	{
+
+	}
+	return ret;
+}

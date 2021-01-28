@@ -192,201 +192,192 @@ namespace Coocoo3D.Core
             {
                 return false;
             }
-            lock (deviceResources)
+            #region Render Preparing
+
+            bool needUpdateEntities = RPContext.gameDriverContext.NeedUpdateEntities;
+            RPContext.gameDriverContext.NeedUpdateEntities = false;
+
+            RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings, inShaderSettings);
+            RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
+            if (RPContext.gameDriverContext.Playing || needUpdateEntities)
+                RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
+            else
+                RPContext.dynamicContextWrite.DeltaTime = 0;
+
+
+            CurrentScene.DealProcessList(physics3DScene);
+            lock (CurrentScene)
             {
-                #region Render Preparing
+                RPContext.dynamicContextWrite.entities.AddRange(CurrentScene.Entities);
+                for (int i = 0; i < CurrentScene.Lightings.Count; i++)
+                    RPContext.dynamicContextWrite.lightings.Add(CurrentScene.Lightings[i].GetLightingData());
+            }
+            RPContext.dynamicContextWrite.selectedEntity = SelectedEntities.FirstOrDefault();
 
-                bool needUpdateEntities = RPContext.gameDriverContext.NeedUpdateEntities;
-                RPContext.gameDriverContext.NeedUpdateEntities = false;
+            lock (selectedObjcetLock)
+            {
+                for (int i = 0; i < SelectedLighting.Count; i++)
+                    RPContext.dynamicContextWrite.selectedLightings.Add(SelectedLighting[i].GetLightingData());
+            }
 
-                RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings, inShaderSettings);
-                RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
-                if (RPContext.gameDriverContext.Playing || needUpdateEntities)
-                    RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
-                else
-                    RPContext.dynamicContextWrite.DeltaTime = 0;
-
-
-                CurrentScene.DealProcessList(physics3DScene);
-                lock (CurrentScene)
+            var entities = RPContext.dynamicContextWrite.entities;
+            for (int i = 0; i < entities.Count; i++)
+            {
+                var entity = entities[i];
+                if (entity.NeedTransform)
                 {
-                    RPContext.dynamicContextWrite.entities.AddRange(CurrentScene.Entities);
-                    for (int i = 0; i < CurrentScene.Lightings.Count; i++)
-                    {
-                        RPContext.dynamicContextWrite.lightings.Add(CurrentScene.Lightings[i].GetLightingData());
-                    }
-                }
-                RPContext.dynamicContextWrite.selectedEntity = SelectedEntities.FirstOrDefault();
+                    entity.NeedTransform = false;
+                    entity.Position = entity.PositionNextFrame;
+                    entity.Rotation = entity.RotationNextFrame;
+                    entity.boneComponent.TransformToNew(physics3DScene, entity.Position, entity.Rotation);
 
-                lock (selectedObjcetLock)
-                {
-                    for (int i = 0; i < SelectedLighting.Count; i++)
-                    {
-                        RPContext.dynamicContextWrite.selectedLightings.Add(SelectedLighting[i].GetLightingData());
-                    }
+                    RPContext.gameDriverContext.RequireResetPhysics = true;
                 }
+            }
+            if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
+            camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
+            RPContext.dynamicContextWrite.cameras.Add(camera.GetCameraData());
+            RPContext.dynamicContextWrite.Preprocess();
 
-                var entities = RPContext.dynamicContextWrite.entities;
+
+
+            void _ResetPhysics()
+            {
                 for (int i = 0; i < entities.Count; i++)
                 {
-                    var entity = entities[i];
-                    if (entity.NeedTransform)
-                    {
-                        entity.NeedTransform = false;
-                        entity.Position = entity.PositionNextFrame;
-                        entity.Rotation = entity.RotationNextFrame;
-                        entity.boneComponent.TransformToNew(physics3DScene, entity.Position, entity.Rotation);
-
-                        RPContext.gameDriverContext.RequireResetPhysics = true;
-                    }
+                    entities[i].boneComponent.ResetPhysics(physics3DScene);
                 }
-                if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
-                camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
-                RPContext.dynamicContextWrite.cameras.Add(camera.GetCameraData());
-                RPContext.dynamicContextWrite.Preprocess();
+                physics3DScene.Simulate(1 / 60.0);
+                physics3DScene.FetchResults();
+            }
 
+            double t1 = RPContext.gameDriverContext.DeltaTime;
+            void _BoneUpdate()
+            {
+                UpdateEntities((float)RPContext.gameDriverContext.PlayTime);
 
-
-                void _ResetPhysics()
-                {
-                    for (int i = 0; i < entities.Count; i++)
-                    {
-                        entities[i].boneComponent.ResetPhysics(physics3DScene);
-                    }
-                    physics3DScene.Simulate(1 / 60.0);
-                    physics3DScene.FetchResults();
-                }
-
-                double t1 = RPContext.gameDriverContext.DeltaTime;
-                void _BoneUpdate()
-                {
-                    UpdateEntities((float)RPContext.gameDriverContext.PlayTime);
-
-                    for (int i = 0; i < entities.Count; i++)
-                    {
-                        entities[i].boneComponent.SetPhysicsPose(physics3DScene);
-                    }
-                    physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
-
-                    physics3DScene.FetchResults();
-                    for (int i = 0; i < entities.Count; i++)
-                    {
-                        entities[i].boneComponent.SetPoseAfterPhysics(physics3DScene);
-                    }
-                }
-                if (RPContext.gameDriverContext.RequireResetPhysics)
-                {
-                    RPContext.gameDriverContext.RequireResetPhysics = false;
-                    _ResetPhysics();
-                    _BoneUpdate();
-                    _ResetPhysics();
-                }
-                if (RPContext.gameDriverContext.Playing || needUpdateEntities)
-                {
-                    _BoneUpdate();
-                }
                 for (int i = 0; i < entities.Count; i++)
                 {
-                    entities[i].boneComponent.WriteMatriticesData();
+                    entities[i].boneComponent.SetPhysicsPose(physics3DScene);
+                }
+                physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
+
+                physics3DScene.FetchResults();
+                for (int i = 0; i < entities.Count; i++)
+                {
+                    entities[i].boneComponent.SetPoseAfterPhysics(physics3DScene);
+                }
+            }
+            if (RPContext.gameDriverContext.RequireResetPhysics)
+            {
+                RPContext.gameDriverContext.RequireResetPhysics = false;
+                _ResetPhysics();
+                _BoneUpdate();
+                _ResetPhysics();
+            }
+            if (RPContext.gameDriverContext.Playing || needUpdateEntities)
+            {
+                _BoneUpdate();
+            }
+            for (int i = 0; i < entities.Count; i++)
+            {
+                entities[i].boneComponent.WriteMatriticesData();
+            }
+
+            if (RenderTask1 != null && RenderTask1.Status != TaskStatus.RanToCompletion) RenderTask1.Wait();
+            #region Render preparing
+            var temp1 = RPContext.dynamicContextWrite;
+            RPContext.dynamicContextWrite = RPContext.dynamicContextRead;
+            RPContext.dynamicContextRead = temp1;
+
+            ProcessingList.MoveToAnother(_processingList);
+            int SceneObjectVertexCount = RPContext.dynamicContextRead.GetSceneObjectVertexCount();
+            if (!_processingList.IsEmpty() || RPContext.gameDriverContext.RequireInterruptRender || SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
+            {
+                RPContext.gameDriverContext.RequireInterruptRender = false;
+                deviceResources.WaitForGpu();
+                if (RPContext.gameDriverContext.NeedReloadModel)
+                {
+                    RPContext.gameDriverContext.NeedReloadModel = false;
+                    ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
+                }
+                RPContext.ChangeShadowMapsQuality(_processingList, performaceSettings.HighResolutionShadow);
+                GraphicsContext.BeginAlloctor(deviceResources);
+                graphicsContext.BeginCommand();
+                _processingList._DealStep1(graphicsContext);
+                graphicsContext.EndCommand();
+                graphicsContext.Execute();
+                deviceResources.WaitForGpu();
+                if (RPContext.gameDriverContext.RequireResize)
+                {
+                    RPContext.gameDriverContext.RequireResize = false;
+                    deviceResources.SetLogicalSize(RPContext.gameDriverContext.NewSize);
+                    RPContext.ReloadTextureSizeResources(_processingList);
                 }
 
-                if (RenderTask1 != null && RenderTask1.Status != TaskStatus.RanToCompletion) RenderTask1.Wait();
-                #region Render preparing
-                var temp1 = RPContext.dynamicContextWrite;
-                RPContext.dynamicContextWrite = RPContext.dynamicContextRead;
-                RPContext.dynamicContextRead = temp1;
-
-
-                ProcessingList.MoveToAnother(_processingList);
-                int SceneObjectVertexCount = RPContext.dynamicContextRead.GetSceneObjectVertexCount();
-                if (!_processingList.IsEmpty() || RPContext.gameDriverContext.RequireInterruptRender || SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
+                _processingList._DealStep2(graphicsContext, deviceResources);
+                _processingList.Clear();
+                if (SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
                 {
-                    RPContext.gameDriverContext.RequireInterruptRender = false;
-                    deviceResources.WaitForGpu();
-                    if (RPContext.gameDriverContext.NeedReloadModel)
-                    {
-                        RPContext.gameDriverContext.NeedReloadModel = false;
-                        ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
-                    }
-                    RPContext.ChangeShadowMapsQuality(_processingList, performaceSettings.HighResolutionShadow);
-                    GraphicsContext.BeginAlloctor(deviceResources);
-                    graphicsContext.BeginCommand();
-                    _processingList._DealStep1(graphicsContext);
+                    deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, SceneObjectVertexCount);
+                    RPContext.SkinningMeshBufferSize = SceneObjectVertexCount;
+                    RPContext.LightCacheBuffer.Initialize(deviceResources, SceneObjectVertexCount * 16);
+                }
+            }
+            #endregion
+            if (!RPContext.dynamicContextRead.EnableDisplay)
+            {
+                VirtualRenderCount++;
+                return true;
+            }
+            #endregion
+
+            GraphicsContext.BeginAlloctor(deviceResources);
+
+            miscProcessContext.MoveToAnother(_miscProcessContext);
+            miscProcess.Process(RPContext, _miscProcessContext);
+
+            if (swapChainReady)
+            {
+                graphicsContext.BeginCommand();
+                graphicsContext.SetDescriptorHeapDefault();
+
+                var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
+
+                bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready;
+                if (thisFrameReady)
+                {
+                    currentRenderPipeline.PrepareRenderData(RPContext);
+                    postProcess.PrepareRenderData(RPContext);
+                    widgetRenderer.PrepareRenderData(RPContext);
+                    RPContext.UpdateGPUResource();
+                }
+
+                void _RenderFunction()
+                {
+                    graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._PRESENT, D3D12ResourceStates._RENDER_TARGET);
+                    currentRenderPipeline.RenderCamera(RPContext);
+                    postProcess.RenderCamera(RPContext);
+                    GameDriver.AfterRender(RPContext);
+                    widgetRenderer.RenderCamera(RPContext);
+                    graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._RENDER_TARGET, D3D12ResourceStates._PRESENT);
                     graphicsContext.EndCommand();
                     graphicsContext.Execute();
-                    deviceResources.WaitForGpu();
-                    if (RPContext.gameDriverContext.RequireResize)
-                    {
-                        RPContext.gameDriverContext.RequireResize = false;
-                        deviceResources.SetLogicalSize(RPContext.gameDriverContext.NewSize);
-
-                        RPContext.ReloadTextureSizeResources(_processingList);
-                    }
-
-                    _processingList._DealStep2(graphicsContext, deviceResources);
-                    _processingList.Clear();
-                    if (SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
-                    {
-                        deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, SceneObjectVertexCount);
-                        RPContext.SkinningMeshBufferSize = SceneObjectVertexCount;
-                        RPContext.LightCacheBuffer.Initialize(deviceResources, SceneObjectVertexCount * 16);
-                    }
+                    deviceResources.Present(performaceSettings.VSync);
+                    CompletedRenderCount++;
                 }
-                #endregion
-                if (!RPContext.dynamicContextRead.EnableDisplay)
+                if (thisFrameReady)
                 {
-                    VirtualRenderCount++;
-                    return true;
-                }
-                #endregion
-
-                GraphicsContext.BeginAlloctor(deviceResources);
-
-                miscProcessContext.MoveToAnother(_miscProcessContext);
-                miscProcess.Process(RPContext, _miscProcessContext);
-
-                if (swapChainReady)
-                {
-                    graphicsContext.BeginCommand();
-                    graphicsContext.SetDescriptorHeapDefault();
-
-                    var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
-
-                    bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready;
-                    if (thisFrameReady)
-                    {
-                        currentRenderPipeline.PrepareRenderData(RPContext);
-                        postProcess.PrepareRenderData(RPContext);
-                        widgetRenderer.PrepareRenderData(RPContext);
-                        RPContext.UpdateGPUResource();
-                    }
-
-                    void _RenderFunction()
-                    {
-                        graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._PRESENT, D3D12ResourceStates._RENDER_TARGET);
-                        currentRenderPipeline.RenderCamera(RPContext);
-                        postProcess.RenderCamera(RPContext);
-                        GameDriver.AfterRender(RPContext);
-                        widgetRenderer.RenderCamera(RPContext);
-                        graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._RENDER_TARGET, D3D12ResourceStates._PRESENT);
-                        graphicsContext.EndCommand();
-                        graphicsContext.Execute();
-                        deviceResources.Present(performaceSettings.VSync);
-                        CompletedRenderCount++;
-                    }
-                    if (thisFrameReady)
-                    {
-                        if (performaceSettings.MultiThreadRendering)
-                            RenderTask1 = Task.Run(_RenderFunction);
-                        else
-                            _RenderFunction();
-                    }
+                    if (performaceSettings.MultiThreadRendering)
+                        RenderTask1 = Task.Run(_RenderFunction);
                     else
-                    {
-                        graphicsContext.EndCommand();
-                        graphicsContext.Execute();
-                        deviceResources.Present(performaceSettings.VSync);
-                    }
+                        _RenderFunction();
+                }
+                else
+                {
+                    graphicsContext.EndCommand();
+                    graphicsContext.Execute();
+                    deviceResources.Present(performaceSettings.VSync);
                 }
             }
             return true;
@@ -450,5 +441,6 @@ namespace Coocoo3D.Core
         public uint RenderStyle;
         public bool ViewerUI;
         public bool Wireframe;
+        public float SkyBoxLightMultiple;
     }
 }
