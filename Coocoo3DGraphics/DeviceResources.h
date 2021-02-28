@@ -7,7 +7,11 @@
 namespace Coocoo3DGraphics
 {
 	static const UINT c_graphicsPipelineHeapMaxCount = 65536;
-
+	struct d3d12RecycleResource
+	{
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_recycleResource;
+		UINT64 m_removeFrame;
+	};
 	// 控制所有 DirectX 设备资源。
 	public ref class DeviceResources sealed
 	{
@@ -66,6 +70,11 @@ namespace Coocoo3DGraphics
 
 		WCHAR m_deviceDescription[128];
 		UINT64 m_deviceVideoMem;
+
+		UINT64											m_fenceValues[c_frameCount];
+		UINT64											m_currentFenceValue;
+
+		std::vector<d3d12RecycleResource> m_recycleList;
 	private:
 		void CreateWindowSizeDependentResources();
 		void UpdateRenderTargetSize();
@@ -88,14 +97,12 @@ namespace Coocoo3DGraphics
 
 		// CPU/GPU 同步。
 		Microsoft::WRL::ComPtr<ID3D12Fence>				m_fence;
-		UINT64											m_fenceValues[c_frameCount];
 		HANDLE											m_fenceEvent;
-		UINT64											m_currentFenceValue;
 		UINT											m_frameIndex;
 		UINT											m_executeIndex;
 
 		// 对窗口的缓存引用。
-		Windows::UI::Xaml::Controls::SwapChainPanel^	m_window;
+		Windows::UI::Xaml::Controls::SwapChainPanel^	m_swapChainPanel;
 
 		// 缓存的设备属性。
 		Windows::Foundation::Size						m_d3dRenderTargetSize;
@@ -110,7 +117,5 @@ namespace Coocoo3DGraphics
 
 		// 这是将向应用传回的 DPI。它考虑了应用是否支持高分辨率屏幕。
 		float											m_effectiveDpi;
-
-		bool											m_ResolutionChange = false;
 	};
 }

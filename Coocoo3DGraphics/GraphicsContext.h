@@ -12,7 +12,6 @@
 #include "GPUProgram/ComputePO.h"
 #include "GPUProgram/PObject.h"
 #include "ReadBackTexture2D.h"
-#include "StaticBuffer.h"
 #include "TwinBuffer.h"
 #include "MeshBuffer.h"
 #include "Uploader.h"
@@ -62,7 +61,6 @@ namespace Coocoo3DGraphics
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
-		void SetSRVR(StaticBuffer^ buffer, int index);
 		void SetSRVT(Texture2D^ texture, int index);
 		void SetSRVT(TextureCube^ texture, int index);
 		void SetSRVT(RenderTexture2D^ texture, int index);
@@ -101,7 +99,6 @@ namespace Coocoo3DGraphics
 		void UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte>^ data);
 		void UploadTexture(TextureCube^ texture, Uploader^ uploader);
 		void UploadTexture(Texture2D^ texture, Uploader^ uploader);
-		void UploadBuffer1(StaticBuffer^ buffer);
 		void UpdateRenderTexture(IRenderTexture^ texture);
 		void UpdateReadBackTexture(ReadBackTexture2D^ texture);
 		void Copy(TextureCube^ source, RenderTextureCube^ dest);
@@ -132,7 +129,6 @@ namespace Coocoo3DGraphics
 		void BeginEvent();
 		void EndEvent();
 		void Execute();
-		void ExecuteAndWait();
 	internal:
 		DeviceResources^ m_deviceResources;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>	m_commandList;

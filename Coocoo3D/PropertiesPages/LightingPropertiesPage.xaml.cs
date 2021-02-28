@@ -37,23 +37,32 @@ namespace Coocoo3D.PropertiesPages
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedFrom(e);
-            if (e.Parameter is Coocoo3DMain _appBody)
+            //if (e.Parameter is Coocoo3DMain _appBody)
+            //{
+            //    appBody = _appBody;
+            //    lighting = _appBody.SelectedLighting[0];
+            //    appBody.FrameUpdated += FrameUpdated;
+            //    _cachePos = lighting.Position;
+            //    _cacheRot = QuaternionToEularYXZ(lighting.Rotation) / MathF.PI * 180;
+            //    _cacheRotQ = lighting.Rotation;
+            //    _cachedRange = lighting.lightingComponent.Range;
+            //    if (lighting.lightingComponent.LightingType == LightingType.Directional)
+            //        radio1.IsChecked = true;
+            //    else if (lighting.lightingComponent.LightingType == LightingType.Point)
+            //        radio2.IsChecked = true;
+            //}
+            //else
+            //{
+            //    Frame.Navigate(typeof(ErrorPropertiesPage), "显示属性错误");
+            //}
+        }
+
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            base.OnNavigatedFrom(e);
+            if (appBody != null)
             {
-                appBody = _appBody;
-                lighting = _appBody.SelectedLighting[0];
-                appBody.FrameUpdated += FrameUpdated;
-                _cachePos = lighting.Position;
-                _cacheRot = QuaternionToEularYXZ(lighting.Rotation) / MathF.PI * 180;
-                _cacheRotQ = lighting.Rotation;
-                _cachedRange = lighting.Range;
-                if (lighting.LightingType == LightingType.Directional)
-                    radio1.IsChecked = true;
-                else if (lighting.LightingType == LightingType.Point)
-                    radio2.IsChecked = true;
-            }
-            else
-            {
-                Frame.Navigate(typeof(ErrorPropertiesPage), "显示属性错误");
+                appBody.FrameUpdated -= FrameUpdated;
             }
         }
 
@@ -87,17 +96,17 @@ namespace Coocoo3D.PropertiesPages
                 PropertyChanged?.Invoke(this, eaVRY);
                 PropertyChanged?.Invoke(this, eaVRZ);
             }
-            if (_cacheColor != lighting.Color)
+            if (_cacheColor != lighting.lightingComponent.Color)
             {
-                _cacheColor = lighting.Color;
+                _cacheColor = lighting.lightingComponent.Color;
                 PropertyChanged?.Invoke(this, eaVCR);
                 PropertyChanged?.Invoke(this, eaVCG);
                 PropertyChanged?.Invoke(this, eaVCB);
                 PropertyChanged?.Invoke(this, eaVCA);
             }
-            if (_cachedRange != lighting.Range)
+            if (_cachedRange != lighting.lightingComponent.Range)
             {
-                _cachedRange = lighting.Range;
+                _cachedRange = lighting.lightingComponent.Range;
                 PropertyChanged?.Invoke(this, eaVRange);
             }
         }
@@ -131,24 +140,33 @@ namespace Coocoo3D.PropertiesPages
         {
             get => _cacheRot.X; set
             {
-                _cacheRot.X = value;
-                UpdateRotationFromUI();
+                if (_cacheRot.X != value)
+                {
+                    _cacheRot.X = value;
+                    UpdateRotationFromUI();
+                }
             }
         }
         public float VRY
         {
             get => _cacheRot.Y; set
             {
-                _cacheRot.Y = value;
-                UpdateRotationFromUI();
+                if (_cacheRot.Y != value)
+                {
+                    _cacheRot.Y = value;
+                    UpdateRotationFromUI();
+                }
             }
         }
         public float VRZ
         {
             get => _cacheRot.Z; set
             {
-                _cacheRot.Z = value;
-                UpdateRotationFromUI();
+                if (_cacheRot.Z != value)
+                {
+                    _cacheRot.Z = value;
+                    UpdateRotationFromUI();
+                }
             }
         }
         Vector3 _cachePos;
@@ -223,7 +241,7 @@ namespace Coocoo3D.PropertiesPages
         {
             get => _cachedRange; set
             {
-                lighting.Range = value;
+                lighting.lightingComponent.Range = value;
                 _cachedRange = value;
                 appBody.RequireRender();
             }
@@ -233,17 +251,8 @@ namespace Coocoo3D.PropertiesPages
 
         void UpdateColorFromUI()
         {
-            lighting.Color = _cacheColor;
+            lighting.lightingComponent.Color = _cacheColor;
             appBody.RequireRender();
-        }
-
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            base.OnNavigatedFrom(e);
-            if (appBody != null)
-            {
-                appBody.FrameUpdated -= FrameUpdated;
-            }
         }
 
         PropertyChangedEventArgs eaName = new PropertyChangedEventArgs("Name");
@@ -258,11 +267,11 @@ namespace Coocoo3D.PropertiesPages
             RadioButton radioButton = sender as RadioButton;
             if ((string)radioButton.Tag == "directional")
             {
-                lighting.LightingType = LightingType.Directional;
+                lighting.lightingComponent.LightingType = LightingType.Directional;
             }
             else if ((string)radioButton.Tag == "point")
             {
-                lighting.LightingType = LightingType.Point;
+                lighting.lightingComponent.LightingType = LightingType.Point;
             }
             appBody.RequireRender();
         }

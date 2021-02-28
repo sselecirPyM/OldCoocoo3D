@@ -120,11 +120,6 @@ void GraphicsContext::UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Arr
 	_UpdateVerticesPos(m_commandList.Get(), mesh->m_vertexBufferPos[index].Get(), mesh->m_vertexBufferPosUpload[index].Get(), verticeData->begin(), verticeData->Length * 12, mesh->lastUpdateIndexs[index] * mesh->m_bufferSize);
 }
 
-void GraphicsContext::SetSRVR(StaticBuffer^ buffer, int index)
-{
-	m_commandList->SetGraphicsRootShaderResourceView(index, buffer->m_buffer->GetGPUVirtualAddress());
-}
-
 void GraphicsContext::SetSRVT(Texture2D^ texture, int index)
 {
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
@@ -133,6 +128,7 @@ void GraphicsContext::SetSRVT(Texture2D^ texture, int index)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_heapRefIndex, incrementSize);
 		m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
+		texture->m_lastRefFrame = m_deviceResources->m_currentFenceValue;
 	}
 	else
 	{
@@ -278,6 +274,7 @@ void GraphicsContext::SetComputeSRVT(Texture2D^ texture, int index)
 	{
 		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_heapRefIndex, incrementSize);
 		m_commandList->SetComputeRootDescriptorTable(index, gpuHandle);
+		texture->m_lastRefFrame = m_deviceResources->m_currentFenceValue;
 	}
 	else
 	{
@@ -665,15 +662,17 @@ void GraphicsContext::UploadTexture(TextureCube^ texture, Uploader^ uploader)
 		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(&texture->m_texture)));
+	NAME_D3D12_OBJECT(texture->m_texture);
 
+	Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(uploader->m_data.size()),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&uploader->m_buffer)));
-	NAME_D3D12_OBJECT(uploader->m_buffer);
+		IID_PPV_ARGS(&uploadBuffer)));
+	m_deviceResources->m_recycleList.push_back(d3d12RecycleResource{ uploadBuffer,m_deviceResources->m_currentFenceValue });
 
 	std::vector<D3D12_SUBRESOURCE_DATA>subresources;
 
@@ -699,7 +698,7 @@ void GraphicsContext::UploadTexture(TextureCube^ texture, Uploader^ uploader)
 		}
 	}
 
-	UpdateSubresources(m_commandList.Get(), texture->m_texture.Get(), uploader->m_buffer.Get(), 0, 0, textureDesc.MipLevels * 6, subresources.data());
+	UpdateSubresources(m_commandList.Get(), texture->m_texture.Get(), uploadBuffer.Get(), 0, 0, textureDesc.MipLevels * 6, subresources.data());
 
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 
@@ -745,13 +744,16 @@ void GraphicsContext::UploadTexture(Texture2D^ texture, Uploader^ uploader)
 		IID_PPV_ARGS(&texture->m_texture)));
 	NAME_D3D12_OBJECT(texture->m_texture);
 
+	Microsoft::WRL::ComPtr<ID3D12Resource> uploadBuffer;
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE,
 		&CD3DX12_RESOURCE_DESC::Buffer(uploader->m_data.size()),
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&uploader->m_buffer)));
+		IID_PPV_ARGS(&uploadBuffer)));
+
+	m_deviceResources->m_recycleList.push_back(d3d12RecycleResource{ uploadBuffer,m_deviceResources->m_currentFenceValue });
 
 	std::vector<D3D12_SUBRESOURCE_DATA>subresources;
 	subresources.reserve(textureDesc.MipLevels);
@@ -773,7 +775,7 @@ void GraphicsContext::UploadTexture(Texture2D^ texture, Uploader^ uploader)
 		height /= 2;
 	}
 
-	UpdateSubresources(m_commandList.Get(), texture->m_texture.Get(), uploader->m_buffer.Get(), 0, 0, textureDesc.MipLevels, subresources.data());
+	UpdateSubresources(m_commandList.Get(), texture->m_texture.Get(), uploadBuffer.Get(), 0, 0, textureDesc.MipLevels, subresources.data());
 
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -784,48 +786,8 @@ void GraphicsContext::UploadTexture(Texture2D^ texture, Uploader^ uploader)
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = textureDesc.MipLevels;
 	d3dDevice->CreateShaderResourceView(texture->m_texture.Get(), &srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE(m_deviceResources->m_cbvSrvUavHeap->GetCPUDescriptorHandleForHeapStart(), incrementSize * texture->m_heapRefIndex));
+	texture->m_lastRefFrame = m_deviceResources->m_currentFenceValue;
 	texture->Status = GraphicsObjectStatus::loaded;
-}
-
-void GraphicsContext::UploadBuffer1(StaticBuffer^ buffer)
-{
-	auto d3dDevice = m_deviceResources->GetD3DDevice();
-
-	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(buffer->m_bufferData->Length),
-		D3D12_RESOURCE_STATE_COPY_DEST,
-		nullptr,
-		IID_PPV_ARGS(&buffer->m_buffer)));
-	NAME_D3D12_OBJECT(buffer->m_buffer);
-
-	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(buffer->m_bufferData->Length),
-		D3D12_RESOURCE_STATE_GENERIC_READ,
-		nullptr,
-		IID_PPV_ARGS(&buffer->m_bufferUpload)));
-
-	D3D12_SUBRESOURCE_DATA textureData = {};
-	textureData.pData = buffer->m_bufferData->begin();
-	textureData.RowPitch = buffer->m_bufferData->Length;
-	textureData.SlicePitch = buffer->m_bufferData->Length;
-
-	UpdateSubresources(m_commandList.Get(), buffer->m_buffer.Get(), buffer->m_bufferUpload.Get(), 0, 0, 1, &textureData);
-
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
-	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	buffer->m_heapRefIndex = _InterlockedIncrement(&m_deviceResources->m_cbvSrvUavHeapAllocCount) - 1;
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-	srvDesc.Buffer.StructureByteStride = buffer->m_stride;
-	srvDesc.Buffer.NumElements = buffer->m_bufferData->Length / buffer->m_stride;
-	d3dDevice->CreateShaderResourceView(buffer->m_buffer.Get(), &srvDesc, CD3DX12_CPU_DESCRIPTOR_HANDLE(m_deviceResources->m_cbvSrvUavHeap->GetCPUDescriptorHandleForHeapStart(), incrementSize * buffer->m_heapRefIndex));
 }
 
 void GraphicsContext::UpdateRenderTexture(IRenderTexture^ texture)
@@ -1175,6 +1137,7 @@ void GraphicsContext::BuildBASAndParam(RayTracingScene^ rayTracingAccelerationSt
 	instanceDesc.InstanceContributionToHitGroupIndex = index1 * rayTracingAccelerationStructure->m_rayTypeCount;
 	instanceDesc.AccelerationStructure = rayTracingAccelerationStructure->m_bottomLevelASs[rayTracingAccelerationStructure->asLastUpdateIndex][index1]->GetGPUVirtualAddress();
 	rayTracingAccelerationStructure->m_instanceDescs.push_back(instanceDesc);
+	diff->m_lastRefFrame = m_deviceResources->m_currentFenceValue;
 }
 
 void GraphicsContext::BuildTopAccelerationStructures(RayTracingScene^ rayTracingAccelerationStructure)
@@ -1516,11 +1479,4 @@ void GraphicsContext::Execute()
 {
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_deviceResources->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-}
-
-void GraphicsContext::ExecuteAndWait()
-{
-	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
-	m_deviceResources->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-	m_deviceResources->WaitForGpu();
 }

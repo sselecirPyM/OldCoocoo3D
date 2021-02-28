@@ -11,7 +11,6 @@ namespace Coocoo3DGraphics
 		void TextureCube(int width, int height, const Platform::Array <IBuffer^>^ files);
 		void TextureCubePure(int width, int height, const Platform::Array<Windows::Foundation::Numerics::float4>^ color);
 	internal:
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_buffer;
 
 		UINT m_width;
 		UINT m_height;

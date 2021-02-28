@@ -44,10 +44,9 @@ namespace Coocoo3D.RenderPipeline
 
         int allocated;
         int indexOfSelectedEntity;
-        public override void PrepareRenderData(RenderPipelineContext context)
+        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
-            var graphicsContext = context.graphicsContext;
             IntPtr pData = Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0);
             Vector2 screenSize = new Vector2(context.screenWidth, context.screenHeight) / context.logicScale;
             Marshal.StructureToPtr(screenSize, pData, true);
@@ -125,7 +124,7 @@ namespace Coocoo3D.RenderPipeline
                     uvOffset = new Vector2(0, 0),
                 }, pData + 128, true);
                 Marshal.StructureToPtr(screenSize, pData + 160, true);
-                var bones = selectedEntity.boneComponent.bones;
+                var bones = selectedEntity.rendererComponent.bones;
                 for (int i = 0; i < bones.Count; i++)
                 {
                     Marshal.StructureToPtr(bones[i].staticPosition, pData + i * 16 + 256, true);
@@ -144,10 +143,9 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.UpdateResource(bgConstantBuffers[1], context.bigBuffer, c_bgBufferSize, 0);
         }
 
-        public override void RenderCamera(RenderPipelineContext context)
+        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
-            var graphicsContext = context.graphicsContext;
             var rpAssets = context.RPAssetsManager;
             var rsPP = rpAssets.rootSignaturePostProcess;
             graphicsContext.SetCBVR(constantBuffer, 0);
@@ -177,7 +175,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(context.CBs_Bone[indexOfSelectedEntity], 3);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUI2);
 
-                graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, selectedEntity.boneComponent.bones.Count, 0);
+                graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, selectedEntity.rendererComponent.bones.Count, 0);
             }
             var selectedLight = context.dynamicContextRead.selectedLightings;
             if (selectedLight.Count > 0)

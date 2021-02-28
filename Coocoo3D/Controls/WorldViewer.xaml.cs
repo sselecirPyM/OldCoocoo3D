@@ -20,6 +20,7 @@ using Windows.UI.Input.Inking;
 using Windows.Devices.Input;
 using System.Numerics;
 using Coocoo3D.Core;
+using Windows.System.Threading;
 
 namespace Coocoo3D.Controls
 {
@@ -31,10 +32,21 @@ namespace Coocoo3D.Controls
             set { _appBody = value; SetupSwapChain(); }
         }
         Coocoo3DMain _appBody;
-
+        CoreIndependentInputSource coreIndependentInputSource;
         public WorldViewer()
         {
             this.InitializeComponent();
+            //WorkItemHandler workItemHandler = new WorkItemHandler((IAsyncAction action) =>
+            //{
+            //    coreIndependentInputSource = swapChainPanel.CreateCoreIndependentInputSource(CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Pen | CoreInputDeviceTypes.Touch);
+            //    coreIndependentInputSource.PointerPressed += Canvas_PointerPressed;
+            //    coreIndependentInputSource.PointerMoved += Canvas_PointerMoved;
+            //    coreIndependentInputSource.PointerReleased += Canvas_PointerReleased;
+            //    coreIndependentInputSource.PointerWheelChanged += InkCanvas_PointerWheelChanged;
+
+            //    coreIndependentInputSource.Dispatcher.ProcessEvents(CoreProcessEventsOption.ProcessUntilQuit);
+            //});
+            //ThreadPool.RunAsync(workItemHandler, WorkItemPriority.High, WorkItemOptions.TimeSliced);
         }
 
         private void SwapChainPanel_Loaded(object sender, RoutedEventArgs e)
@@ -90,7 +102,7 @@ namespace Coocoo3D.Controls
         {
             return new Rect(canvasSize.X - offset.X - rectSize.X, canvasSize.Y - offset.Y - rectSize.Y, rectSize.X, rectSize.Y);
         }
-        private void Canvas_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)
+        private void Canvas_PointerPressed(object sender, PointerEventArgs args)
         {
             args.Handled = true;
             this.Focus(FocusState.Pointer);
@@ -194,6 +206,44 @@ namespace Coocoo3D.Controls
             AppBody.RequireRender();
         }
 
+        private bool DragMoveRot(Vector3 delta, float movScale, float rotScale)
+        {
+            if (dragMove)
+            {
+                delta = delta / movScale;
+                for (int i = 0; i < AppBody.SelectedEntities.Count; i++)
+                {
+                    var entity = AppBody.SelectedEntities[i];
+                    entity.PositionNextFrame += delta;
+                    entity.NeedTransform = true;
+                }
+                for (int i = 0; i < AppBody.SelectedGameObjects.Count; i++)
+                {
+                    var gameObject = AppBody.SelectedGameObjects[i];
+                    gameObject.Position += delta;
+                }
+                return true;
+            }
+            else if (dragRot)
+            {
+                delta = delta / rotScale;
+                Quaternion quat = Quaternion.CreateFromYawPitchRoll(delta.Y, delta.X, delta.Z);
+                for (int i = 0; i < AppBody.SelectedEntities.Count; i++)
+                {
+                    var entity = AppBody.SelectedEntities[i];
+                    entity.RotationNextFrame = Quaternion.Normalize(entity.RotationNextFrame * quat);
+                    entity.NeedTransform = true;
+                }
+                for (int i = 0; i < AppBody.SelectedGameObjects.Count; i++)
+                {
+                    var gameObject = AppBody.SelectedGameObjects[i];
+                    gameObject.Rotation = Quaternion.Normalize(gameObject.Rotation * quat);
+                }
+                return true;
+            }
+            return false;
+        }
+
         private void WorldViewer_MouseMoved_DragAxis(MouseDevice sender, MouseEventArgs args)
         {
             Vector3 delta = new Vector3();
@@ -203,95 +253,26 @@ namespace Coocoo3D.Controls
                 delta.Y = -args.MouseDelta.Y;
             else if (moveZ)
                 delta.Z = -args.MouseDelta.Y;
-            if (dragMove)
-            {
-                delta = delta / 50.0f;
-                for (int i = 0; i < AppBody.SelectedEntities.Count; i++)
-                {
-                    var entity = AppBody.SelectedEntities[i];
-                    entity.PositionNextFrame += delta;
-                    entity.NeedTransform = true;
-                }
-                for (int i = 0; i < AppBody.SelectedLighting.Count; i++)
-                {
-                    var lighting = AppBody.SelectedLighting[i];
-                    lighting.Position += delta;
-                }
-                AppBody.RequireRender(true);
-            }
-            else if (dragRot)
-            {
-                delta = delta / 200.0f;
-                Quaternion quat = Quaternion.CreateFromYawPitchRoll(delta.Y, delta.X, delta.Z);
-                for (int i = 0; i < AppBody.SelectedEntities.Count; i++)
-                {
-                    var entity = AppBody.SelectedEntities[i];
-                    entity.RotationNextFrame = Quaternion.Normalize(entity.RotationNextFrame * quat);
-                    entity.NeedTransform = true;
-                }
-                for (int i = 0; i < AppBody.SelectedLighting.Count; i++)
-                {
-                    var lighting = AppBody.SelectedLighting[i];
-                    lighting.Rotation = Quaternion.Normalize(lighting.Rotation * quat);
-                }
-                AppBody.RequireRender(true);
-            }
+            DragMoveRot(delta, 50, 200);
+            AppBody.RequireRender(true);
         }
 
 
         Point lastPosition;
-        private void Canvas_PointerMoved(InkUnprocessedInput sender, PointerEventArgs args)
+        private void Canvas_PointerMoved(object sender, PointerEventArgs args)
         {
+            Vector3 delta = new Vector3();
             if (touched)
             {
-                if (dragMove)
+                if (moveX)
+                    delta.X = (float)(args.CurrentPoint.Position.Y - lastPosition.Y);
+                if (moveY)
+                    delta.Y = (float)(args.CurrentPoint.Position.Y - lastPosition.Y);
+                if (moveZ)
+                    delta.Z = (float)(args.CurrentPoint.Position.Y - lastPosition.Y);
+                
+                if(!DragMoveRot(delta, 12.5f, 50.0f))
                 {
-                    Vector3 delta = new Vector3();
-                    if (moveX)
-                        delta.X = (float)(args.CurrentPoint.Position.Y - lastPosition.Y) / 12.5f;
-                    if (moveY)
-                        delta.Y = (float)(args.CurrentPoint.Position.Y - lastPosition.Y) / 12.5f;
-                    if (moveZ)
-                        delta.Z = (float)(args.CurrentPoint.Position.Y - lastPosition.Y) / 12.5f;
-                    for (int i = 0; i < AppBody.SelectedEntities.Count; i++)
-                    {
-                        var entity = AppBody.SelectedEntities[i];
-                        entity.PositionNextFrame += delta;
-                        entity.NeedTransform = true;
-                    }
-                    for (int i = 0; i < AppBody.SelectedLighting.Count; i++)
-                    {
-                        var lighting = AppBody.SelectedLighting[i];
-                        lighting.Position += delta;
-                    }
-                    AppBody.RequireRender(true);
-                }
-                else if(dragRot)
-                {
-                    Vector3 delta = new Vector3();
-                    if (moveX)
-                        delta.X = (float)(args.CurrentPoint.Position.Y - lastPosition.Y) / 50.0f;
-                    if (moveY)
-                        delta.Y = (float)(args.CurrentPoint.Position.Y - lastPosition.Y) / 50.0f;
-                    if (moveZ)
-                        delta.Z = (float)(args.CurrentPoint.Position.Y - lastPosition.Y) / 50.0f;
-                    Quaternion quat = Quaternion.CreateFromYawPitchRoll(delta.Y, delta.X, delta.Z);
-                    for (int i = 0; i < AppBody.SelectedEntities.Count; i++)
-                    {
-                        var entity = AppBody.SelectedEntities[i];
-                        entity.RotationNextFrame = Quaternion.Normalize(entity.RotationNextFrame * quat);
-                        entity.NeedTransform = true;
-                    }
-                    for (int i = 0; i < AppBody.SelectedLighting.Count; i++)
-                    {
-                        var lighting = AppBody.SelectedLighting[i];
-                        lighting.Rotation = Quaternion.Normalize(lighting.Rotation * quat);
-                    }
-                    AppBody.RequireRender(true);
-                }
-                else
-                {
-                    Vector2 delta = args.CurrentPoint.Position.ToVector2() - lastPosition.ToVector2();
                     if (!args.CurrentPoint.Properties.IsEraser)
                         AppBody.camera.RotateDelta(-new Vector3(delta.Y, delta.X, 0) / 50);
                     else
@@ -302,7 +283,7 @@ namespace Coocoo3D.Controls
             lastPosition = args.CurrentPoint.Position;
         }
 
-        private void Canvas_PointerReleased(InkUnprocessedInput sender, PointerEventArgs args)
+        private void Canvas_PointerReleased(object sender, PointerEventArgs args)
         {
             currentMouse.MouseMoved -= CurrentMouseMovedDelegate;
             currentMouse = null;
@@ -318,6 +299,13 @@ namespace Coocoo3D.Controls
         {
             e.Handled = true;
             AppBody.camera.Distance += e.GetCurrentPoint(sender as UIElement).Properties.MouseWheelDelta / 20.0f;
+            AppBody.RequireRender();
+        }
+
+        private void InkCanvas_PointerWheelChanged(object sender, PointerEventArgs e)
+        {
+            e.Handled = true;
+            AppBody.camera.Distance += e.CurrentPoint.Properties.MouseWheelDelta / 20.0f;
             AppBody.RequireRender();
         }
     }

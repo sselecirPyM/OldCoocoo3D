@@ -12,7 +12,7 @@ namespace Coocoo3D.Core
     {
         public abstract bool Next(RenderPipelineContext context);
 
-        public virtual void AfterRender(RenderPipelineContext  context)
+        public virtual void AfterRender(RenderPipelineContext  context, GraphicsContext graphicsContext)
         {
 
         }

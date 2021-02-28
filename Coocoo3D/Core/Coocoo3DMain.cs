@@ -31,12 +31,9 @@ namespace Coocoo3D.Core
 
         public Scene CurrentScene;
 
-        private List<MMD3DEntity> Entities { get => CurrentScene.Entities; }
-        private ObservableCollection<ISceneObject> sceneObjects { get => CurrentScene.sceneObjects; }
         public object selectedObjcetLock = new object();
         public List<MMD3DEntity> SelectedEntities = new List<MMD3DEntity>();
-        public List<Lighting> SelectedLighting = new List<Lighting>();
-
+        public List<GameObject> SelectedGameObjects = new List<GameObject>();
 
         public Camera camera = new Camera();
         public GameDriver GameDriver;
@@ -155,21 +152,9 @@ namespace Coocoo3D.Core
         RenderPipeline.RenderPipeline _currentRenderPipeline;
 
         public bool UseNewFun;
-        private void UpdateEntities(float playTime)
-        {
-            int threshold = 1;
-            if (Entities.Count > threshold)
-            {
-                Parallel.ForEach(Entities, (MMD3DEntity e) => { e.SetMotionTime(playTime); });
-            }
-            else for (int i = 0; i < Entities.Count; i++)
-                {
-                    Entities[i].SetMotionTime(playTime);
-                }
-        }
         public void RequireRender(bool updateEntities)
         {
-            RPContext.gameDriverContext.NeedUpdateEntities |= updateEntities;
+            RPContext.gameDriverContext.notPaused |= updateEntities;
             RPContext.gameDriverContext.NeedRender = true;
         }
         public void RequireRender()
@@ -194,12 +179,12 @@ namespace Coocoo3D.Core
             }
             #region Render Preparing
 
-            bool needUpdateEntities = RPContext.gameDriverContext.NeedUpdateEntities;
-            RPContext.gameDriverContext.NeedUpdateEntities = false;
+            bool notPaused = RPContext.gameDriverContext.notPaused;
+            RPContext.gameDriverContext.notPaused = false;
 
             RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings, inShaderSettings);
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
-            if (RPContext.gameDriverContext.Playing || needUpdateEntities)
+            if (RPContext.gameDriverContext.Playing || notPaused)
                 RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
             else
                 RPContext.dynamicContextWrite.DeltaTime = 0;
@@ -209,18 +194,22 @@ namespace Coocoo3D.Core
             lock (CurrentScene)
             {
                 RPContext.dynamicContextWrite.entities.AddRange(CurrentScene.Entities);
-                for (int i = 0; i < CurrentScene.Lightings.Count; i++)
-                    RPContext.dynamicContextWrite.lightings.Add(CurrentScene.Lightings[i].GetLightingData());
+                RPContext.dynamicContextWrite.gameObjects.AddRange(CurrentScene.gameObjects);
             }
             RPContext.dynamicContextWrite.selectedEntity = SelectedEntities.FirstOrDefault();
 
             lock (selectedObjcetLock)
             {
-                for (int i = 0; i < SelectedLighting.Count; i++)
-                    RPContext.dynamicContextWrite.selectedLightings.Add(SelectedLighting[i].GetLightingData());
+                for (int i = 0; i < SelectedGameObjects.Count; i++)
+                {
+                    LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
+                    if (lightingComponent != null)
+                        RPContext.dynamicContextWrite.selectedLightings.Add(lightingComponent.GetLightingData());
+                }
             }
 
             var entities = RPContext.dynamicContextWrite.entities;
+            var rendererComponents = RPContext.dynamicContextWrite.rendererComponents;
             for (int i = 0; i < entities.Count; i++)
             {
                 var entity = entities[i];
@@ -229,7 +218,7 @@ namespace Coocoo3D.Core
                     entity.NeedTransform = false;
                     entity.Position = entity.PositionNextFrame;
                     entity.Rotation = entity.RotationNextFrame;
-                    entity.boneComponent.TransformToNew(physics3DScene, entity.Position, entity.Rotation);
+                    entity.rendererComponent.TransformToNew(physics3DScene, entity.Position, entity.Rotation);
 
                     RPContext.gameDriverContext.RequireResetPhysics = true;
                 }
@@ -243,9 +232,9 @@ namespace Coocoo3D.Core
 
             void _ResetPhysics()
             {
-                for (int i = 0; i < entities.Count; i++)
+                for (int i = 0; i < rendererComponents.Count; i++)
                 {
-                    entities[i].boneComponent.ResetPhysics(physics3DScene);
+                    rendererComponents[i].ResetPhysics(physics3DScene);
                 }
                 physics3DScene.Simulate(1 / 60.0);
                 physics3DScene.FetchResults();
@@ -254,18 +243,30 @@ namespace Coocoo3D.Core
             double t1 = RPContext.gameDriverContext.DeltaTime;
             void _BoneUpdate()
             {
+                void UpdateEntities(float playTime)
+                {
+                    int threshold = 1;
+                    if (entities.Count > threshold)
+                    {
+                        Parallel.ForEach(entities, (MMD3DEntity e) => { e.SetMotionTime(playTime); });
+                    }
+                    else for (int i = 0; i < entities.Count; i++)
+                        {
+                            entities[i].SetMotionTime(playTime);
+                        }
+                }
                 UpdateEntities((float)RPContext.gameDriverContext.PlayTime);
 
-                for (int i = 0; i < entities.Count; i++)
+                for (int i = 0; i < rendererComponents.Count; i++)
                 {
-                    entities[i].boneComponent.SetPhysicsPose(physics3DScene);
+                    rendererComponents[i].SetPhysicsPose(physics3DScene);
                 }
                 physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
 
                 physics3DScene.FetchResults();
-                for (int i = 0; i < entities.Count; i++)
+                for (int i = 0; i < rendererComponents.Count; i++)
                 {
-                    entities[i].boneComponent.SetPoseAfterPhysics(physics3DScene);
+                    rendererComponents[i].SetPoseAfterPhysics(physics3DScene);
                 }
             }
             if (RPContext.gameDriverContext.RequireResetPhysics)
@@ -275,13 +276,13 @@ namespace Coocoo3D.Core
                 _BoneUpdate();
                 _ResetPhysics();
             }
-            if (RPContext.gameDriverContext.Playing || needUpdateEntities)
+            if (RPContext.gameDriverContext.Playing || notPaused)
             {
                 _BoneUpdate();
             }
-            for (int i = 0; i < entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                entities[i].boneComponent.WriteMatriticesData();
+                rendererComponents[i].WriteMatriticesData();
             }
 
             if (RenderTask1 != null && RenderTask1.Status != TaskStatus.RanToCompletion) RenderTask1.Wait();
@@ -347,19 +348,19 @@ namespace Coocoo3D.Core
                 bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready;
                 if (thisFrameReady)
                 {
-                    currentRenderPipeline.PrepareRenderData(RPContext);
-                    postProcess.PrepareRenderData(RPContext);
-                    widgetRenderer.PrepareRenderData(RPContext);
+                    currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);
+                    postProcess.PrepareRenderData(RPContext, graphicsContext);
+                    widgetRenderer.PrepareRenderData(RPContext, graphicsContext);
                     RPContext.UpdateGPUResource();
                 }
 
                 void _RenderFunction()
                 {
                     graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._PRESENT, D3D12ResourceStates._RENDER_TARGET);
-                    currentRenderPipeline.RenderCamera(RPContext);
-                    postProcess.RenderCamera(RPContext);
-                    GameDriver.AfterRender(RPContext);
-                    widgetRenderer.RenderCamera(RPContext);
+                    currentRenderPipeline.RenderCamera(RPContext, graphicsContext);
+                    postProcess.RenderCamera(RPContext, graphicsContext);
+                    GameDriver.AfterRender(RPContext, graphicsContext);
+                    widgetRenderer.RenderCamera(RPContext, graphicsContext);
                     graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._RENDER_TARGET, D3D12ResourceStates._PRESENT);
                     graphicsContext.EndCommand();
                     graphicsContext.Execute();

@@ -35,20 +35,19 @@ namespace Coocoo3D.RenderPipeline
         }
 
         bool HasMainLight;
-        public override void PrepareRenderData(RenderPipelineContext context)
+        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             var deviceResources = context.deviceResources;
             var cameras = context.dynamicContextRead.cameras;
-            var graphicsContext = context.graphicsContext;
             ref var settings = ref context.dynamicContextRead.settings;
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
-            var Entities = context.dynamicContextRead.entities;
+            var rendererComponents = context.dynamicContextRead.rendererComponents;
             var lightings = context.dynamicContextRead.lightings;
 
             int numMaterials = 0;
-            for (int i = 0; i < Entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                numMaterials += Entities[i].rendererComponent.Materials.Count;
+                numMaterials += rendererComponents[i].Materials.Count;
             }
             context.DesireMaterialBuffers(numMaterials);
             ref var bigBuffer = ref context.bigBuffer;
@@ -93,9 +92,9 @@ namespace Coocoo3D.RenderPipeline
             #region Update material data
             int matIndex = 0;
             pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, c_offsetMaterialData);
-            for (int i = 0; i < Entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                var Materials = Entities[i].rendererComponent.Materials;
+                var Materials = rendererComponents[i].Materials;
                 for (int j = 0; j < Materials.Count; j++)
                 {
                     Marshal.StructureToPtr(Materials[j].innerStruct, pBufferData, true);
@@ -122,11 +121,10 @@ namespace Coocoo3D.RenderPipeline
 
         }
         //you can fold local function in your editor
-        public override void RenderCamera(RenderPipelineContext context)
+        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
 
-            var Entities = context.dynamicContextRead.entities;
-            var graphicsContext = context.graphicsContext;
+            var rendererComponents = context.dynamicContextRead.rendererComponents;
             ref var settings = ref context.dynamicContextRead.settings;
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
@@ -159,8 +157,8 @@ namespace Coocoo3D.RenderPipeline
                 int indexCountAll = rendererComponent.meshVertexCount;
                 graphicsContext.Draw(indexCountAll, 0);
             }
-            for (int i = 0; i < Entities.Count; i++)
-                EntitySkinning(Entities[i].rendererComponent, context.CameraDataBuffers, context.CBs_Bone[i]);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                EntitySkinning(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
 
@@ -183,8 +181,8 @@ namespace Coocoo3D.RenderPipeline
                 counter.vertex += rendererComponent.meshVertexCount;
             }
             _Counters counterParticle = new _Counters();
-            for (int i = 0; i < Entities.Count; i++)
-                ParticleCompute(Entities[i].rendererComponent, context.CameraDataBuffers, context.CBs_Bone[i], ref counterParticle);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                ParticleCompute(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i], ref counterParticle);
             if (HasMainLight && inShaderSettings.EnableShadow)
             {
                 void _RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, int bufferOffset, CBuffer entityBoneDataBuffer, ref _Counters counter)
@@ -220,12 +218,12 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 _Counters counterShadow0 = new _Counters();
                 var LightCameraDataBuffers = context.LightCameraDataBuffer;
-                for (int i = 0; i < Entities.Count; i++)
-                    _RenderEntityShadow(Entities[i].rendererComponent, LightCameraDataBuffers, 0, context.CBs_Bone[i], ref counterShadow0);
+                for (int i = 0; i < rendererComponents.Count; i++)
+                    _RenderEntityShadow(rendererComponents[i], LightCameraDataBuffers, 0, context.CBs_Bone[i], ref counterShadow0);
                 graphicsContext.SetDSV(context.ShadowMapCube, 1, true);
                 _Counters counterShadow1 = new _Counters();
-                for (int i = 0; i < Entities.Count; i++)
-                    _RenderEntityShadow(Entities[i].rendererComponent, LightCameraDataBuffers, 1, context.CBs_Bone[i], ref counterShadow1);
+                for (int i = 0; i < rendererComponents.Count; i++)
+                    _RenderEntityShadow(rendererComponents[i], LightCameraDataBuffers, 1, context.CBs_Bone[i], ref counterShadow1);
             }
 
             graphicsContext.SetRootSignature(RSBase);
@@ -237,17 +235,19 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.BRDFLut, 8);
             #region Render Sky box
 
-            PSODesc descSkyBox;
-            descSkyBox.blendState = EBlendState.none;
-            descSkyBox.cullMode = ECullMode.back;
-            descSkyBox.depthBias = 0;
-            descSkyBox.dsvFormat = context.depthFormat;
-            descSkyBox.inputLayout = EInputLayout.postProcess;
-            descSkyBox.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-            descSkyBox.rtvFormat = context.outputFormat;
-            descSkyBox.renderTargetCount = 1;
-            descSkyBox.streamOutput = false;
-            descSkyBox.wireFrame = false;
+            PSODesc descSkyBox = new PSODesc
+            {
+                blendState = EBlendState.none,
+                cullMode = ECullMode.back,
+                depthBias = 0,
+                dsvFormat = context.depthFormat,
+                inputLayout = EInputLayout.postProcess,
+                ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
+                rtvFormat = context.outputFormat,
+                renderTargetCount = 1,
+                streamOutput = false,
+                wireFrame = false,
+            };
             SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref descSkyBox, rpAssets.PObjectSkyBox);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
@@ -315,8 +315,8 @@ namespace Coocoo3D.RenderPipeline
                 counter.vertex += rendererComponent.meshVertexCount;
             }
             _Counters counter2 = new _Counters();
-            for (int i = 0; i < Entities.Count; i++)
-                _RenderEntity(Entities[i].rendererComponent, context.CameraDataBuffers, context.CBs_Bone[i], ref counter2);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                _RenderEntity(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i], ref counter2);
         }
     }
 }

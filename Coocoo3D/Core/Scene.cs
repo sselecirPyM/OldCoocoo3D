@@ -15,9 +15,26 @@ namespace Coocoo3D.Core
         public List<MMD3DEntity> EntityLoadList = new List<MMD3DEntity>();
         public List<MMD3DEntity> EntityRemoveList = new List<MMD3DEntity>();
         public List<MMD3DEntity> EntityRefreshList = new List<MMD3DEntity>();
-        public List<Lighting> Lightings = new List<Lighting>();
-        public List<Lighting> LightingLoadList = new List<Lighting>();
-        public List<Lighting> LightingRemoveList = new List<Lighting>();
+        public List<GameObject> gameObjects = new List<GameObject>();
+        public List<GameObject> gameObjectLoadList = new List<GameObject>();
+        public List<GameObject> gameObjectRemoveList = new List<GameObject>();
+
+        public void AddGameObject(GameObject gameObject)
+        {
+            lock (this)
+            {
+                gameObjectLoadList.Add(gameObject);
+            }
+            sceneObjects.Add(gameObject);
+        }
+
+        public void RemoveGameObject(GameObject gameObject)
+        {
+            lock (this)
+            {
+                gameObjectRemoveList.Add(gameObject);
+            }
+        }
 
         public void AddSceneObject(MMD3DEntity entity)
         {
@@ -27,26 +44,11 @@ namespace Coocoo3D.Core
             }
             sceneObjects.Add(entity);
         }
-        public void AddSceneObject(Lighting lighting)
-        {
-            lock (this)
-            {
-                LightingLoadList.Add(lighting);
-            }
-            sceneObjects.Add(lighting);
-        }
         public void RemoveSceneObject(MMD3DEntity entity)
         {
             lock (this)
             {
                 EntityRemoveList.Add(entity);
-            }
-        }
-        public void RemoveSceneObject(Lighting lighting)
-        {
-            lock (this)
-            {
-                LightingRemoveList.Add(lighting);
             }
         }
         public void DealProcessList(Coocoo3DPhysics.Physics3DScene physics3DScene)
@@ -56,31 +58,32 @@ namespace Coocoo3D.Core
                 for (int i = 0; i < EntityLoadList.Count; i++)
                 {
                     Entities.Add(EntityLoadList[i]);
-                    EntityLoadList[i].boneComponent.AddPhysics(physics3DScene);
-                }
-                for (int i = 0; i < LightingLoadList.Count; i++)
-                {
-                    Lightings.Add(LightingLoadList[i]);
+                    EntityLoadList[i].rendererComponent.AddPhysics(physics3DScene);
                 }
                 for (int i = 0; i < EntityRemoveList.Count; i++)
                 {
-                    EntityRemoveList[i].boneComponent.RemovePhysics(physics3DScene);
+                    EntityRemoveList[i].rendererComponent.RemovePhysics(physics3DScene);
                     Entities.Remove(EntityRemoveList[i]);
                 }
                 for (int i = 0; i < EntityRefreshList.Count; i++)
                 {
-                    EntityRefreshList[i].boneComponent.RemovePhysics(physics3DScene);
-                    EntityRefreshList[i].boneComponent.AddPhysics(physics3DScene);
-                }
-                for (int i = 0; i < LightingRemoveList.Count; i++)
-                {
-                    Lightings.Remove(LightingRemoveList[i]);
+                    EntityRefreshList[i].rendererComponent.RemovePhysics(physics3DScene);
+                    EntityRefreshList[i].rendererComponent.AddPhysics(physics3DScene);
                 }
                 EntityLoadList.Clear();
-                LightingLoadList.Clear();
                 EntityRemoveList.Clear();
                 EntityRefreshList.Clear();
-                LightingRemoveList.Clear();
+
+                for (int i = 0; i < gameObjectLoadList.Count; i++)
+                {
+                    gameObjects.Add(gameObjectLoadList[i]);
+                }
+                for (int i = 0; i < gameObjectRemoveList.Count; i++)
+                {
+                    gameObjects.Remove(gameObjectRemoveList[i]);
+                }
+                gameObjectLoadList.Clear();
+                gameObjectRemoveList.Clear();
             }
         }
         public void SortObjects()
@@ -88,16 +91,11 @@ namespace Coocoo3D.Core
             lock (this)
             {
                 Entities.Clear();
-                Lightings.Clear();
                 for (int i = 0; i < sceneObjects.Count; i++)
                 {
                     if (sceneObjects[i] is MMD3DEntity entity)
                     {
                         Entities.Add(entity);
-                    }
-                    else if (sceneObjects[i] is Lighting lighting)
-                    {
-                        Lightings.Add(lighting);
                     }
                 }
             }

@@ -62,13 +62,13 @@ namespace Coocoo3D.PropertiesPages
             lock (appBody.selectedObjcetLock)
             {
                 appBody.SelectedEntities.Clear();
-                appBody.SelectedLighting.Clear();
+                appBody.SelectedGameObjects.Clear();
                 for (int i = 0; i < selectedItem.Count; i++)
                 {
                     if (selectedItem[i] is MMD3DEntity entity)
                         appBody.SelectedEntities.Add(entity);
-                    else if (selectedItem[i] is Lighting lighting)
-                        appBody.SelectedLighting.Add(lighting);
+                    else if (selectedItem[i] is GameObject gameObject)
+                        appBody.SelectedGameObjects.Add(gameObject);
 
                 }
                 if (selectedItem.Count == 1)
@@ -77,9 +77,13 @@ namespace Coocoo3D.PropertiesPages
                     {
                         appBody.ShowDetailPage(typeof(EntityPropertiesPage), appBody);
                     }
-                    else if (appBody.SelectedLighting.Count == 1)
+                    else if (appBody.SelectedGameObjects.Count == 1)
                     {
-                        appBody.ShowDetailPage(typeof(LightingPropertiesPage), appBody);
+                        appBody.ShowDetailPage(typeof(GameObjectPage), appBody);
+                    }
+                    else
+                    {
+                        appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
                     }
                 }
                 else
@@ -103,10 +107,12 @@ namespace Coocoo3D.PropertiesPages
     {
         public DataTemplate EntityTemplate { get; set; }
         public DataTemplate LightingTemplate { get; set; }
+        public DataTemplate GameObjectTemplate { get; set; }
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
             if (item is MMD3DEntity) return EntityTemplate;
             if (item is Lighting) return LightingTemplate;
+            if (item is GameObject) return GameObjectTemplate;
             else return null;
         }
     }

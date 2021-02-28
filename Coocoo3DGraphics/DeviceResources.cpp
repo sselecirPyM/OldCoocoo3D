@@ -285,9 +285,6 @@ void DeviceResources::CreateDeviceResources()
 // 每次更改窗口大小时需要重新创建这些资源。
 void DeviceResources::CreateWindowSizeDependentResources()
 {
-	// 让Present函数处理它
-	m_ResolutionChange = true;
-
 	// 等到以前的所有 GPU 工作完成。
 	WaitForGpu();
 
@@ -299,8 +296,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
 	UpdateRenderTargetSize();
 
-	m_d3dRenderTargetSize.Width =  m_outputSize.Width;
-	m_d3dRenderTargetSize.Height =  m_outputSize.Height;
+	m_d3dRenderTargetSize.Width = m_outputSize.Width;
+	m_d3dRenderTargetSize.Height = m_outputSize.Height;
 
 	UINT backBufferWidth = lround(m_d3dRenderTargetSize.Width);
 	UINT backBufferHeight = lround(m_d3dRenderTargetSize.Height);
@@ -349,22 +346,21 @@ void DeviceResources::CreateWindowSizeDependentResources()
 				&swapChainDesc,
 				nullptr,
 				&swapChain
-		));
+			));
 
 		DX::ThrowIfFailed(swapChain.As(&m_swapChain));
 
 		// 将交换链与 SwapChainPanel 关联
 		// UI 更改将需要调度回 UI 线程
-		m_window->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
+		m_swapChainPanel->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
 			{
 				//获取 SwapChainPanel 的受支持的本机接口
 				ComPtr<ISwapChainPanelNative> panelNative;
-				DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_window)->QueryInterface(IID_PPV_ARGS(&panelNative)));
+				DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_swapChainPanel)->QueryInterface(IID_PPV_ARGS(&panelNative)));
 
 				DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
 			}, CallbackContext::Any));
 	}
-
 
 	// 在交换链上设置反向缩放
 	DXGI_MATRIX_3X2_F inverseScale = { 0 };
@@ -436,7 +432,7 @@ void DeviceResources::SetSwapChainPanel(SwapChainPanel^ window)
 {
 	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
-	m_window = window;
+	m_swapChainPanel = window;
 	m_logicalSize = Windows::Foundation::Size(window->Width, window->Height);
 	m_nativeOrientation = currentDisplayInformation->NativeOrientation;
 	m_currentOrientation = currentDisplayInformation->CurrentOrientation;
@@ -465,7 +461,7 @@ void DeviceResources::SetDpi(float dpi)
 		m_dpi = dpi;
 
 		// 显示 DPI 更改时，窗口的逻辑大小(以 Dip 为单位)也将更改并且需要更新。
-		m_logicalSize = Windows::Foundation::Size(m_window->Width, m_window->Height);
+		m_logicalSize = Windows::Foundation::Size(m_swapChainPanel->Width, m_swapChainPanel->Height);
 
 		CreateWindowSizeDependentResources();
 	}
@@ -519,27 +515,11 @@ void DeviceResources::Present(bool vsync)
 	HRESULT hr;
 	if (vsync)
 	{
-		if (m_ResolutionChange)
-		{
-			hr = m_swapChain->Present(1, 0);
-			m_ResolutionChange = false;
-		}
-		else
-		{
-			hr = m_swapChain->Present(1, 0);
-		}
+		hr = m_swapChain->Present(1, 0);
 	}
 	else
 	{
-		if (m_ResolutionChange)
-		{
-			hr = m_swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
-			m_ResolutionChange = false;
-		}
-		else
-		{
-			hr = m_swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
-		}
+		hr = m_swapChain->Present(0, DXGI_PRESENT_ALLOW_TEARING);
 	}
 
 	// 如果通过断开连接或升级驱动程序移除了设备，则必须
@@ -558,12 +538,18 @@ void DeviceResources::Present(bool vsync)
 		m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 		m_executeIndex = (m_executeIndex < (c_frameCount - 1)) ? (m_executeIndex + 1) : 0;
 
+
 		// 检查下一帧是否准备好启动。
 		if (m_fence->GetCompletedValue() < m_fenceValues[m_executeIndex])
 		{
 			DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_executeIndex], m_fenceEvent));
 			WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
 		}
+		std::vector<d3d12RecycleResource> temp;
+		for (int i = 0; i < m_recycleList.size(); i++)
+			if (m_recycleList[i].m_removeFrame > m_fenceValues[m_executeIndex])
+				temp.push_back(m_recycleList[i]);
+		m_recycleList = temp;
 
 		// 为下一帧设置围栏值。
 		m_currentFenceValue++;
@@ -580,6 +566,12 @@ void DeviceResources::WaitForGpu()
 	// 等待跨越围栏。
 	DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, m_fenceEvent));
 	WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+
+	std::vector<d3d12RecycleResource> temp;
+	for (int i = 0; i < m_recycleList.size(); i++)
+		if (m_recycleList[i].m_removeFrame > m_currentFenceValue)
+			temp.push_back(m_recycleList[i]);
+	m_recycleList = temp;
 
 	// 对当前帧递增围栏值。
 	m_currentFenceValue++;

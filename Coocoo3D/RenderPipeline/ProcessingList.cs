@@ -26,7 +26,6 @@ namespace Coocoo3D.RenderPipeline
         public List<IRenderTexture> RenderTextureUpdateList = new List<IRenderTexture>();
         public List<MMDMesh> MMDMeshLoadList = new List<MMDMesh>();
         public List<MeshAppendUploadPack> MMDMeshLoadList2 = new List<MeshAppendUploadPack>();
-        public List<StaticBuffer> staticBufferList = new List<StaticBuffer>();
         public List<ReadBackTexture2D> readBackTextureList = new List<ReadBackTexture2D>();
         public List<TwinBuffer> twinBufferList = new List<TwinBuffer>();
         public List<ShaderWarp1> pobjectList = new List<ShaderWarp1>();
@@ -74,13 +73,6 @@ namespace Coocoo3D.RenderPipeline
                 readBackTextureList.Add(texture);
             }
         }
-        public void AddObject(StaticBuffer buffer)
-        {
-            lock (staticBufferList)
-            {
-                staticBufferList.Add(buffer);
-            }
-        }
         public void AddObject(TwinBuffer buffer)
         {
             lock (twinBufferList)
@@ -112,7 +104,6 @@ namespace Coocoo3D.RenderPipeline
             Move1(MMDMeshLoadList, another.MMDMeshLoadList);
             Move1(MMDMeshLoadList2, another.MMDMeshLoadList2);
             Move1(readBackTextureList, another.readBackTextureList);
-            Move1(staticBufferList, another.staticBufferList);
             Move1(twinBufferList, another.twinBufferList);
             Move1(pobjectList, another.pobjectList);
             for (int i = 0; i < computePObjectLists.Length; i++)
@@ -127,7 +118,6 @@ namespace Coocoo3D.RenderPipeline
             MMDMeshLoadList.Clear();
             MMDMeshLoadList2.Clear();
             readBackTextureList.Clear();
-            staticBufferList.Clear();
             twinBufferList.Clear();
             pobjectList.Clear();
             for (int i = 0; i < computePObjectLists.Length; i++)
@@ -147,7 +137,6 @@ namespace Coocoo3D.RenderPipeline
                 RenderTextureUpdateList.Count == 0 &&
                 MMDMeshLoadList.Count == 0 &&
                 MMDMeshLoadList2.Count == 0 &&
-                staticBufferList.Count == 0 &&
                 readBackTextureList.Count == 0;
         }
 
@@ -176,8 +165,9 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.UploadMesh(MMDMeshLoadList[i]);
             for (int i = 0; i < MMDMeshLoadList2.Count; i++)
                 graphicsContext.UploadMesh(MMDMeshLoadList2[i].mesh, MMDMeshLoadList2[i].data);
-            for (int i = 0; i < staticBufferList.Count; i++)
-                graphicsContext.UploadBuffer1(staticBufferList[i]);
+
+            TextureCubeLoadList.Clear();
+            Texture2DLoadList.Clear();
         }
         public void _DealStep2(GraphicsContext graphicsContext, DeviceResources deviceResources)
         {
@@ -185,8 +175,6 @@ namespace Coocoo3D.RenderPipeline
                 pobjectList[i].pipelineState.Initialize(pobjectList[i].vs, pobjectList[i].gs, pobjectList[i].ps);
             for (int i = 0; i < MMDMeshLoadList.Count; i++)
                 MMDMeshLoadList[i].ReleaseUploadHeapResource();
-            for (int i = 0; i < staticBufferList.Count; i++)
-                staticBufferList[i].ReleaseUploadHeapResource();
 
             for (int i = 0; i < RenderTextureUpdateList.Count; i++)
                 graphicsContext.UpdateRenderTexture(RenderTextureUpdateList[i]);

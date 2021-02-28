@@ -120,7 +120,9 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Components\Component.cs" />
     <Compile Include="Components\CooRendererTypes.cs" />
+    <Compile Include="Components\LightingComponent.cs" />
     <Compile Include="Components\MMDMorphStateComponent.cs" />
     <Compile Include="Components\MMDMotionComponent.cs" />
     <Compile Include="Components\MMDRendererComponent.cs" />
@@ -128,6 +130,10 @@
     <Compile Include="Present\CameraMotion.cs" />
     <Compile Include="Core\GameDriver.cs" />
     <Compile Include="Core\GeneralGameDriver.cs" />
+    <Compile Include="Present\GameObject.cs" />
+    <Compile Include="PropertiesPages\GameObjectPage.xaml.cs">
+      <DependentUpon>GameObjectPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="RenderPipeline\DeferredRenderPipeline1.cs" />
     <Compile Include="RenderPipeline\ProcessingList.cs" />
     <Compile Include="Core\RecorderGameDriver.cs" />
@@ -135,7 +141,6 @@
     <Compile Include="FileFormat\CCSceneFormat.cs" />
     <Compile Include="FileFormat\VPDFormat.cs" />
     <Compile Include="Present\Camera.cs" />
-    <Compile Include="Components\MMDBoneComponent.cs" />
     <Compile Include="Controls\WorldViewer.xaml.cs">
       <DependentUpon>WorldViewer.xaml</DependentUpon>
     </Compile>
@@ -262,6 +267,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="PropertiesPages\ErrorPropertiesPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="PropertiesPages\GameObjectPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -75,17 +75,16 @@ namespace Coocoo3D.RenderPipeline
 
         bool HasMainLight;
         int renderMatCount = 0;
-        public override void PrepareRenderData(RenderPipelineContext context)
+        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var Entities = context.dynamicContextRead.entities;
+            var rendererComponents = context.dynamicContextRead.rendererComponents;
             var deviceResources = context.deviceResources;
             int countMaterials = 0;
-            for (int i = 0; i < Entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                countMaterials += Entities[i].rendererComponent.Materials.Count;
+                countMaterials += rendererComponents[i].Materials.Count;
             }
             DesireMaterialBuffers(deviceResources, countMaterials);
-            var graphicsContext = context.graphicsContext;
             var cameras = context.dynamicContextRead.cameras;
             var camera = context.dynamicContextRead.cameras[0];
             ref var settings = ref context.dynamicContextRead.settings;
@@ -133,9 +132,9 @@ namespace Coocoo3D.RenderPipeline
                 }
             }
             _Counters counterMaterial = new _Counters();
-            for (int i = 0; i < Entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                var Materials = Entities[i].rendererComponent.Materials;
+                var Materials = rendererComponents[i].Materials;
                 for (int j = 0; j < Materials.Count; j++)
                 {
                     Array.Clear(context.bigBuffer, 0, c_materialDataSize);
@@ -145,7 +144,7 @@ namespace Coocoo3D.RenderPipeline
                     materialBuffers1.UpdateSlience(graphicsContext, context.bigBuffer, 0, c_materialDataSize, counterMaterial.material);
                     counterMaterial.material++;
                 }
-                counterMaterial.vertex += Entities[i].rendererComponent.meshVertexCount;
+                counterMaterial.vertex += rendererComponents[i].meshVertexCount;
             }
             #endregion
             renderMatCount = counterMaterial.material;
@@ -153,16 +152,15 @@ namespace Coocoo3D.RenderPipeline
                 materialBuffers1.UpdateSlienceComplete(graphicsContext);
         }
 
-        public override void RenderCamera(RenderPipelineContext context)
+        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var graphicsContext = context.graphicsContext;
             var RPAssetsManager = context.RPAssetsManager;
 
             RayTracingScene.NextASIndex(renderMatCount);
             RayTracingScene.NextSTIndex();
 
 
-            var entities = context.dynamicContextRead.entities;
+            var rendererComponents = context.dynamicContextRead.rendererComponents;
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
 
@@ -181,8 +179,8 @@ namespace Coocoo3D.RenderPipeline
                 int indexCountAll = rendererComponent.meshVertexCount;
                 graphicsContext.Draw(indexCountAll, 0);
             }
-            for (int i = 0; i < entities.Count; i++)
-                EntitySkinning(entities[i].rendererComponent, CameraDataBuffer, context.CBs_Bone[i]);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                EntitySkinning(rendererComponents[i], CameraDataBuffer, context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
             graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
@@ -204,8 +202,8 @@ namespace Coocoo3D.RenderPipeline
                 counter.vertex += rendererComponent.meshIndexCount;
             }
             _Counters counterParticle = new _Counters();
-            for (int i = 0; i < entities.Count; i++)
-                ParticleCompute(entities[i].rendererComponent, CameraDataBuffer, context.CBs_Bone[i], null, ref counterParticle);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                ParticleCompute(rendererComponents[i], CameraDataBuffer, context.CBs_Bone[i], null, ref counterParticle);
 
             if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
             {
@@ -245,12 +243,12 @@ namespace Coocoo3D.RenderPipeline
                     counter.vertex += rendererComponent.meshVertexCount;
                 }
                 _Counters counterShadow = new _Counters();
-                for (int i = 0; i < entities.Count; i++)
-                    RenderEntityShadow(entities[i].rendererComponent, LightCameraDataBuffer, ref counterShadow);
+                for (int i = 0; i < rendererComponents.Count; i++)
+                    RenderEntityShadow(rendererComponents[i], LightCameraDataBuffer, ref counterShadow);
             }
 
 
-            if (entities.Count > 0)
+            if (rendererComponents.Count > 0)
             {
                 void BuildEntityBAS1(MMDRendererComponent rendererComponent, ref _Counters counter)
                 {
@@ -276,9 +274,9 @@ namespace Coocoo3D.RenderPipeline
                     counter.vertex += rendererComponent.meshVertexCount;
                 }
                 _Counters counter1 = new _Counters();
-                for (int i = 0; i < entities.Count; i++)
+                for (int i = 0; i < rendererComponents.Count; i++)
                 {
-                    BuildEntityBAS1(entities[i].rendererComponent, ref counter1);
+                    BuildEntityBAS1(rendererComponents[i], ref counter1);
                 }
                 graphicsContext.BuildTopAccelerationStructures(RayTracingScene);
                 RayTracingScene.BuildShaderTable(context.deviceResources, c_rayGenShaderNames, c_missShaderNames, c_hitGroupNames, counter1.material);

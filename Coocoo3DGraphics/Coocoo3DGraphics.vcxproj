@@ -302,7 +302,6 @@
     <ClInclude Include="ReadBackTexture2D.h" />
     <ClInclude Include="RenderTexture2D.h" />
     <ClInclude Include="RenderTextureCube.h" />
-    <ClInclude Include="StaticBuffer.h" />
     <ClInclude Include="Texture2D.h" />
     <ClInclude Include="TextureCube.h" />
     <ClInclude Include="TextUtil.h" />
@@ -363,7 +362,6 @@
     <ClCompile Include="ReadBackTexture2D.cpp" />
     <ClCompile Include="RenderTexture2D.cpp" />
     <ClCompile Include="RenderTextureCube.cpp" />
-    <ClCompile Include="StaticBuffer.cpp" />
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="TwinBuffer.cpp" />

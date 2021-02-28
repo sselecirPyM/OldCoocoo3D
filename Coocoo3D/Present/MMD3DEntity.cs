@@ -28,7 +28,6 @@ namespace Coocoo3D.Present
         public string ModelPath;
 
         public MMDRendererComponent rendererComponent = new MMDRendererComponent();
-        public MMDBoneComponent boneComponent = new MMDBoneComponent();
         public MMDMotionComponent motionComponent = new MMDMotionComponent();
         public MMDMorphStateComponent morphStateComponent = new MMDMorphStateComponent();
 
@@ -52,15 +51,15 @@ namespace Coocoo3D.Present
                 {
                     morphStateComponent.SetPose(motionComponent, time);
                     morphStateComponent.ComputeWeight();
-                    boneComponent.SetPose(motionComponent, morphStateComponent, time);
+                    rendererComponent.SetPose3(motionComponent, morphStateComponent, time);
                 }
             }
             else
             {
                 morphStateComponent.ComputeWeight();
-                boneComponent.SetPose2(morphStateComponent);
+                rendererComponent.SetPose2(morphStateComponent);
             }
-            boneComponent.ComputeMatricesData();
+            rendererComponent.ComputeMatricesData();
             rendererComponent.SetPose(morphStateComponent);
         }
 
@@ -90,7 +89,7 @@ namespace Coocoo3D.FileFormat
             entity.ComponentReady = false;
             var modelResource = modelPack.pmx;
             entity.morphStateComponent.Reload(modelResource);
-            entity.boneComponent.Initialize(modelResource);
+            entity.rendererComponent.Initialize2(modelResource);
 
             entity.rendererComponent.Reload(modelPack);
             processingList.AddObject(new MeshAppendUploadPack(entity.rendererComponent.meshAppend, entity.rendererComponent.meshPosData));

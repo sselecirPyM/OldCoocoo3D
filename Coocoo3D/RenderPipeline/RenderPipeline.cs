@@ -13,9 +13,9 @@ namespace Coocoo3D.RenderPipeline
     {
         public const int c_maxCameraPerRender = 2;
 
-        public abstract void PrepareRenderData(RenderPipelineContext context);
+        public abstract void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext);
 
-        public abstract void RenderCamera(RenderPipelineContext context);
+        public abstract void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext);
 
         public volatile bool Ready;
 
@@ -50,7 +50,7 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected void SetPipelineStateVariant(DeviceResources deviceResources,GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject)
+        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject)
         {
             int variant = pObject.GetVariantIndex(deviceResources, graphicsSignature, desc);
             graphicsContext.SetPObject1(pObject, variant);

@@ -74,14 +74,14 @@ namespace Coocoo3D.Core
             }
         }
         Pack1[] packs = new Pack1[c_frameCount];
-        public override void AfterRender(RenderPipelineContext rpContext)
+        public override void AfterRender(RenderPipelineContext rpContext, GraphicsContext graphicsContext)
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
 
             if (context.PlayTime >= StartTime && (RenderCount - c_frameCount) * FrameIntervalF <= StopTime)
             {
                 int index1 = RecordCount % c_frameCount;
-                rpContext.graphicsContext.CopyBackBuffer(rpContext.ReadBackTexture2D, index1);
+                graphicsContext.CopyBackBuffer(rpContext.ReadBackTexture2D, index1);
                 if (RecordCount >= c_frameCount)
                 {
                     rpContext.ReadBackTexture2D.GetDataTolocal(index1);

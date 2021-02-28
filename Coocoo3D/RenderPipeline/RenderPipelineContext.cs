@@ -1,4 +1,5 @@
-﻿using Coocoo3D.Core;
+﻿using Coocoo3D.Components;
+using Coocoo3D.Core;
 using Coocoo3D.Present;
 using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3D.ResourceWarp;
@@ -26,7 +27,7 @@ namespace Coocoo3D.RenderPipeline
     public class GameDriverContext
     {
         public volatile bool NeedRender;
-        public volatile bool NeedUpdateEntities;
+        public volatile bool notPaused;
         public volatile bool EnableDisplay;
         public bool Playing;
         public double PlayTime;
@@ -56,7 +57,7 @@ namespace Coocoo3D.RenderPipeline
 
         public void RequireRender(bool updateEntities)
         {
-            NeedUpdateEntities |= updateEntities;
+            notPaused |= updateEntities;
             NeedRender = true;
         }
 
@@ -71,6 +72,8 @@ namespace Coocoo3D.RenderPipeline
         public Settings settings;
         public InShaderSettings inShaderSettings;
         public List<MMD3DEntity> entities = new List<MMD3DEntity>();
+        public List<GameObject> gameObjects = new List<GameObject>();
+        public List<Components.MMDRendererComponent> rendererComponents = new List<Components.MMDRendererComponent>();
         public MMD3DEntity selectedEntity;
         public List<LightingData> lightings = new List<LightingData>();
         public List<LightingData> selectedLightings = new List<LightingData>();
@@ -85,9 +88,9 @@ namespace Coocoo3D.RenderPipeline
         public int GetSceneObjectVertexCount()
         {
             int count = 0;
-            for (int i = 0; i < entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                count += entities[i].rendererComponent.meshVertexCount;
+                count += rendererComponents[i].meshVertexCount;
             }
             VertexCount = count;
             return count;
@@ -96,12 +99,32 @@ namespace Coocoo3D.RenderPipeline
         public void Preprocess()
         {
             lightings.Sort();
+            for (int i = 0; i < entities.Count; i++)
+            {
+                MMD3DEntity entity = entities[i];
+                entity.rendererComponent.position = entity.Position;
+                entity.rendererComponent.rotation = entity.Rotation;
+                rendererComponents.Add(entity.rendererComponent);
+            }
+            for (int i = 0; i < gameObjects.Count; i++)
+            {
+                GameObject gameObject = gameObjects[i];
+                LightingComponent lightingComponent = gameObject.GetComponent<LightingComponent>();
+                if (lightingComponent != null)
+                {
+                    lightingComponent.Position = gameObject.Position;
+                    lightingComponent.Rotation = gameObject.Rotation;
+                    lightings.Add(lightingComponent.GetLightingData());
+                }
+            }
         }
 
         public void ClearCollections()
         {
             entities.Clear();
+            gameObjects.Clear();
             lightings.Clear();
+            rendererComponents.Clear();
             selectedLightings.Clear();
             cameras.Clear();
         }
@@ -258,7 +281,7 @@ namespace Coocoo3D.RenderPipeline
         public void UpdateGPUResource()
         {
             #region Update bone data
-            int count = dynamicContextRead.entities.Count;
+            int count = dynamicContextRead.rendererComponents.Count;
             while (CBs_Bone.Count < count)
             {
                 CBuffer constantBuffer = new CBuffer();
@@ -269,12 +292,11 @@ namespace Coocoo3D.RenderPipeline
             Vector3 camPos = dynamicContextRead.cameras[0].Pos;
             for (int i = 0; i < count; i++)
             {
-                var entity = dynamicContextRead.entities[i];
-                var rendererComponent = entity.rendererComponent;
+                var rendererComponent = dynamicContextRead.rendererComponents[i];
                 data1.vertexCount = rendererComponent.meshVertexCount;
                 data1.indexCount = rendererComponent.meshIndexCount;
                 IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
-                Matrix4x4 world = Matrix4x4.CreateFromQuaternion(entity.Rotation) * Matrix4x4.CreateTranslation(entity.Position);
+                Matrix4x4 world = Matrix4x4.CreateFromQuaternion(rendererComponent.rotation) * Matrix4x4.CreateTranslation(rendererComponent.position);
                 Marshal.StructureToPtr(Matrix4x4.Transpose(world), ptr1, true);
                 Marshal.StructureToPtr(rendererComponent.amountAB, ptr1 + 64, true);
                 Marshal.StructureToPtr(rendererComponent.meshVertexCount, ptr1 + 68, true);
@@ -282,7 +304,7 @@ namespace Coocoo3D.RenderPipeline
                 Marshal.StructureToPtr(data1, ptr1 + 80, true);
 
                 graphicsContext.UpdateResource(CBs_Bone[i], bigBuffer, 256, 0);
-                graphicsContext.UpdateResourceRegion(CBs_Bone[i], 256, dynamicContextRead.entities[i].boneComponent.boneMatricesData, 65280, 0);
+                graphicsContext.UpdateResourceRegion(CBs_Bone[i], 256, rendererComponent.boneMatricesData, 65280, 0);
                 data1.vertexStart += rendererComponent.meshVertexCount;
                 data1.indexStart += rendererComponent.meshIndexCount;
 
@@ -351,7 +373,7 @@ namespace Coocoo3D.RenderPipeline
         public Task LoadTask;
         public async Task ReloadDefalutResources(ProcessingList processingList, MiscProcessContext miscProcessContext)
         {
-                deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
+            deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
             deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
 
             HighResolutionShadowNow = true;

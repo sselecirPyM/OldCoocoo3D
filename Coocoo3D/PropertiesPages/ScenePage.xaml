@@ -15,7 +15,10 @@
         <DataTemplate x:DataType="present:MMD3DEntity" x:Key="EntityTemplate">
             <ContentPresenter Content="{x:Bind Name,Mode=OneWay}"/>
         </DataTemplate>
-        <local:SceneObjectTemplateSelector x:Key="templateSelector" LightingTemplate="{StaticResource LightingTemplate}" EntityTemplate="{StaticResource EntityTemplate}"/>
+        <DataTemplate x:DataType="present:GameObject" x:Key="GameObjectTemplate">
+            <ContentPresenter Content="{x:Bind Name,Mode=OneWay}"/>
+        </DataTemplate>
+        <local:SceneObjectTemplateSelector x:Key="templateSelector" LightingTemplate="{StaticResource LightingTemplate}" EntityTemplate="{StaticResource EntityTemplate}" GameObjectTemplate="{StaticResource GameObjectTemplate}"/>
     </Page.Resources>
 
     <Grid>

@@ -55,16 +55,27 @@ namespace Coocoo3D.UI
         }
         public static void NewLighting(Coocoo3DMain appBody)
         {
-            Lighting lighting = new Lighting();
+            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+            //Lighting lighting = new Lighting();
+            //lighting.Name = resourceLoader.GetString("Object_Name_Lighting");
+            //lighting.lightingComponent.Color = new Vector4(3, 3, 3, 1);
+            //lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
+            //lighting.Position = new Vector3(0, 1, 0);
+            //lighting.lightingComponent.Range = 10;
+            //if (appBody.CurrentScene.Lightings.Count > 0)
+            //    lighting.lightingComponent.LightingType = LightingType.Point;
+            //appBody.CurrentScene.AddSceneObject(lighting);
+            //appBody.RequireRender();
             var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+            GameObject lighting = new GameObject();
+            Components.LightingComponent lightingComponent = new Components.LightingComponent();
+            lighting.AddComponent(lightingComponent);
             lighting.Name = resourceLoader.GetString("Object_Name_Lighting");
-            lighting.Color = new Vector4(3, 3, 3, 1);
             lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
             lighting.Position = new Vector3(0, 1, 0);
-            lighting.Range = 10;
-            if (appBody.CurrentScene.Lightings.Count > 0)
-                lighting.LightingType = LightingType.Point;
-            appBody.CurrentScene.AddSceneObject(lighting);
+            lightingComponent.Color = new Vector4(3, 3, 3, 1);
+            lightingComponent.Range = 10;
+            appBody.CurrentScene.AddGameObject(lighting);
             appBody.RequireRender();
         }
         public static void RemoveSceneObject(Coocoo3DMain appBody, Scene scene, ISceneObject sceneObject)
@@ -73,8 +84,10 @@ namespace Coocoo3D.UI
             {
                 if (sceneObject is MMD3DEntity entity)
                     scene.RemoveSceneObject(entity);
-                else if (sceneObject is Lighting lighting)
-                    scene.RemoveSceneObject(lighting);
+                //else if (sceneObject is Lighting lighting)
+                //    scene.RemoveSceneObject(lighting);
+                else if (sceneObject is GameObject gameObject)
+                    scene.RemoveGameObject(gameObject);
             }
             appBody.RequireRender();
         }

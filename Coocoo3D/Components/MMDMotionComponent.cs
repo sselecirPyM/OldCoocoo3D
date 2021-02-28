@@ -279,9 +279,7 @@ namespace Coocoo3D.FileFormat
                 motionComponent.MorphKeyFrameSet.Clear();
             }
         }
-        /// <summary>
-        /// 线程安全
-        /// </summary>
+
         public static void Reload(this MMDMotionComponent motionComponent, VMDFormat vmd)
         {
             lock (motionComponent)

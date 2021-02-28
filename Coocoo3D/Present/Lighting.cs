@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3DGraphics;
+using Coocoo3D.Components;
 
 namespace Coocoo3D.Present
 {
@@ -97,15 +98,12 @@ namespace Coocoo3D.Present
     public class Lighting : ISceneObject, INotifyPropertyChanged
     {
         public string Name = "";
-        public LightingType LightingType;
         public Vector3 Position;
         public Quaternion Rotation = Quaternion.Identity;
-        public Vector4 Color;
 
-        public Matrix4x4 vpMatrix;
-        public Matrix4x4 rotateMatrix;
-        public float Range;
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public LightingComponent lightingComponent = new LightingComponent();
 
         public void PropChange(PropertyChangedEventArgs e)
         {
@@ -115,18 +113,6 @@ namespace Coocoo3D.Present
         public override string ToString()
         {
             return Name;
-        }
-
-        public LightingData GetLightingData()
-        {
-            return new LightingData
-            {
-                LightingType = LightingType,
-                Position = Position,
-                Rotation = Rotation,
-                Color = Color,
-                Range = Range,
-            };
         }
     }
 }

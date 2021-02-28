@@ -48,7 +48,6 @@
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="RenderTextureCube.cpp" />
     <ClCompile Include="ReadBackTexture2D.cpp" />
-    <ClCompile Include="StaticBuffer.cpp" />
     <ClCompile Include="TwinBuffer.cpp" />
     <ClCompile Include="GPUProgram\ComputePO.cpp">
       <Filter>GPUProgram</Filter>
@@ -166,7 +165,6 @@
     <ClInclude Include="RenderTextureCube.h" />
     <ClInclude Include="ITexture.h" />
     <ClInclude Include="ReadBackTexture2D.h" />
-    <ClInclude Include="StaticBuffer.h" />
     <ClInclude Include="TwinBuffer.h" />
     <ClInclude Include="GPUProgram\ComputePO.h">
       <Filter>GPUProgram</Filter>

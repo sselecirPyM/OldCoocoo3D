@@ -38,15 +38,14 @@ namespace Coocoo3D.RenderPipeline
             Ready = true;
         }
 
-        public override void PrepareRenderData(RenderPipelineContext context)
+        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             Marshal.StructureToPtr(innerStruct, Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0), true);
-            context.graphicsContext.UpdateResource(postProcessDataBuffer, context.bigBuffer, c_postProcessDataSize, 0);
+            graphicsContext.UpdateResource(postProcessDataBuffer, context.bigBuffer, c_postProcessDataSize, 0);
         }
 
-        public override void RenderCamera(RenderPipelineContext context)
+        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var graphicsContext = context.graphicsContext;
             var rsPostProcess = context.RPAssetsManager.rootSignaturePostProcess;
             graphicsContext.SetRootSignature(rsPostProcess);
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, context.ScreenSizeDSVs[1], true, true);
@@ -54,17 +53,19 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.outputRTV, 1);
             graphicsContext.SetSRVT(context.postProcessBackground, 2);
             graphicsContext.SetMesh(context.ndcQuadMesh);
-            PSODesc desc;
-            desc.blendState = EBlendState.none;
-            desc.cullMode = ECullMode.back;
-            desc.depthBias = 0;
-            desc.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
-            desc.inputLayout = EInputLayout.postProcess;
-            desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-            desc.rtvFormat = context.swapChainFormat;
-            desc.renderTargetCount = 1;
-            desc.streamOutput = false;
-            desc.wireFrame = false;
+            PSODesc desc = new PSODesc
+            {
+                blendState = EBlendState.none,
+                cullMode = ECullMode.back,
+                depthBias = 0,
+                dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
+                inputLayout = EInputLayout.postProcess,
+                ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
+                rtvFormat = context.swapChainFormat,
+                renderTargetCount = 1,
+                streamOutput = false,
+                wireFrame = false,
+            };
 
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PObjectPostProcess);
             graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);

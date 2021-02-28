@@ -50,7 +50,7 @@ namespace Coocoo3D.PropertiesPages
                 _cacheRQ = entity.RotationNextFrame;
                 ViewMaterials.ItemsSource = entity.rendererComponent.Materials;
                 ViewMorph.ItemsSource = entity.morphStateComponent.morphs;
-                ViewBone.ItemsSource = entity.boneComponent.bones;
+                ViewBone.ItemsSource = entity.rendererComponent.bones;
             }
             else
             {
@@ -193,7 +193,7 @@ namespace Coocoo3D.PropertiesPages
             {
                 var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
                 return string.Format(resourceLoader.GetString("Message_ModelInfo"),
-                    entity.rendererComponent.mesh.m_vertexCount, entity.rendererComponent.mesh.m_indexCount / 3, entity.boneComponent.bones.Count);
+                    entity.rendererComponent.mesh.m_vertexCount, entity.rendererComponent.mesh.m_indexCount / 3, entity.rendererComponent.bones.Count);
             }
         }
 

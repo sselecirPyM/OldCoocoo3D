@@ -56,20 +56,19 @@ namespace Coocoo3D.RenderPipeline
 
         bool HasMainLight;
         Matrix4x4 lightCameraMatrix = Matrix4x4.Identity;
-        public override void PrepareRenderData(RenderPipelineContext context)
+        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             var deviceResources = context.deviceResources;
             var cameras = context.dynamicContextRead.cameras;
-            var graphicsContext = context.graphicsContext;
             ref var settings = ref context.dynamicContextRead.settings;
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
-            var Entities = context.dynamicContextRead.entities;
+            var rendererComponents = context.dynamicContextRead.rendererComponents;
             var lightings = context.dynamicContextRead.lightings;
 
             int numMaterials = 0;
-            for (int i = 0; i < Entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                numMaterials += Entities[i].rendererComponent.Materials.Count;
+                numMaterials += rendererComponents[i].Materials.Count;
             }
             context.DesireMaterialBuffers(numMaterials);
             DesireLightingBuffers(context.deviceResources, lightings.Count * 2);
@@ -116,9 +115,9 @@ namespace Coocoo3D.RenderPipeline
             pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
             #region Update material data
             int matIndex = 0;
-            for (int i = 0; i < Entities.Count; i++)
+            for (int i = 0; i < rendererComponents.Count; i++)
             {
-                var Materials = Entities[i].rendererComponent.Materials;
+                var Materials = rendererComponents[i].Materials;
                 for (int j = 0; j < Materials.Count; j++)
                 {
                     Marshal.StructureToPtr(Materials[j].innerStruct, pBufferData, true);
@@ -163,10 +162,9 @@ namespace Coocoo3D.RenderPipeline
                 lightingBuffers.UpdateSlienceComplete(graphicsContext);
         }
 
-        public override void RenderCamera(RenderPipelineContext context)
+        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var Entities = context.dynamicContextRead.entities;
-            var graphicsContext = context.graphicsContext;
+            var rendererComponents = context.dynamicContextRead.rendererComponents;
             ref var settings = ref context.dynamicContextRead.settings;
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
@@ -191,8 +189,8 @@ namespace Coocoo3D.RenderPipeline
                 int indexCountAll = rendererComponent.meshVertexCount;
                 graphicsContext.Draw(indexCountAll, 0);
             }
-            for (int i = 0; i < Entities.Count; i++)
-                EntitySkinning(Entities[i].rendererComponent, context.CameraDataBuffers, context.CBs_Bone[i]);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                EntitySkinning(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
             graphicsContext.SetRootSignature(RSBase);
@@ -249,8 +247,8 @@ namespace Coocoo3D.RenderPipeline
                 counter.vertex += rendererComponent.meshVertexCount;
             }
             _Counters counter2 = new _Counters();
-            for (int i = 0; i < Entities.Count; i++)
-                _RenderEntity(Entities[i].rendererComponent, context.CameraDataBuffers, context.CBs_Bone[i], ref counter2);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                _RenderEntity(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i], ref counter2);
 
             graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, true);
             graphicsContext.SetCBVR(context.CameraDataBuffers, 2);
@@ -317,13 +315,13 @@ namespace Coocoo3D.RenderPipeline
 
                     graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                     _Counters counterShadow0 = new _Counters();
-                    for (int j = 0; j < Entities.Count; j++)
-                        _RenderEntityShadow(Entities[j].rendererComponent, lightingBuffers, i * 2, context.CBs_Bone[j], ref counterShadow0);
+                    for (int j = 0; j < rendererComponents.Count; j++)
+                        _RenderEntityShadow(rendererComponents[j], lightingBuffers, i * 2, context.CBs_Bone[j], ref counterShadow0);
 
                     graphicsContext.SetDSV(context.ShadowMapCube, 1, true);
                     _Counters counterShadow1 = new _Counters();
-                    for (int j = 0; j < Entities.Count; j++)
-                        _RenderEntityShadow(Entities[j].rendererComponent, lightingBuffers, i * 2 + 1, context.CBs_Bone[j], ref counterShadow1);
+                    for (int j = 0; j < rendererComponents.Count; j++)
+                        _RenderEntityShadow(rendererComponents[j], lightingBuffers, i * 2 + 1, context.CBs_Bone[j], ref counterShadow1);
 
 
                     graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, false);
@@ -398,12 +396,12 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 _Counters counterShadow0 = new _Counters();
                 var LightCameraDataBuffers = context.LightCameraDataBuffer;
-                for (int i = 0; i < Entities.Count; i++)
-                    _RenderEntityShadow(Entities[i].rendererComponent, LightCameraDataBuffers, 0, context.CBs_Bone[i], ref counterShadow0);
+                for (int i = 0; i < rendererComponents.Count; i++)
+                    _RenderEntityShadow(rendererComponents[i], LightCameraDataBuffers, 0, context.CBs_Bone[i], ref counterShadow0);
                 graphicsContext.SetDSV(context.ShadowMapCube, 1, true);
                 _Counters counterShadow1 = new _Counters();
-                for (int i = 0; i < Entities.Count; i++)
-                    _RenderEntityShadow(Entities[i].rendererComponent, LightCameraDataBuffers, 1, context.CBs_Bone[i], ref counterShadow1);
+                for (int i = 0; i < rendererComponents.Count; i++)
+                    _RenderEntityShadow(rendererComponents[i], LightCameraDataBuffers, 1, context.CBs_Bone[i], ref counterShadow1);
             }
             graphicsContext.SetSRVTArray(context.ShadowMapCube, 5);
             graphicsContext.SetSRVT(context.EnvironmentMap, 6);
@@ -464,8 +462,8 @@ namespace Coocoo3D.RenderPipeline
                 counter.vertex += rendererComponent.meshVertexCount;
             }
             _Counters counter3 = new _Counters();
-            for (int i = 0; i < Entities.Count; i++)
-                _RenderEntity2(Entities[i].rendererComponent, context.CameraDataBuffers, context.CBs_Bone[i], ref counter3);
+            for (int i = 0; i < rendererComponents.Count; i++)
+                _RenderEntity2(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i], ref counter3);
             #endregion
         }
     }
