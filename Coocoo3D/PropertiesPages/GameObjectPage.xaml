@@ -17,28 +17,32 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <TextBox Height="100" x:Name="pageHeader" FontSize="18" Text="{x:Bind vName,Mode=TwoWay}" PlaceholderText="名称" TextWrapping="Wrap" AcceptsReturn="True"/>
-                <StackPanel Grid.Row="1" Orientation="Vertical">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="X" Value="{x:Bind VPX,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="Y" Value="{x:Bind VPY,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="Z" Value="{x:Bind VPZ,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="2" Grid.Column="0" Header="X" Value="{x:Bind VRX,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="2" Grid.Column="1" Header="Y" Value="{x:Bind VRY,Mode=TwoWay}" AcceptsExpression="True"/>
-                        <mu:NumberBox Grid.Row="2" Grid.Column="2" Header="Z" Value="{x:Bind VRZ,Mode=TwoWay}" AcceptsExpression="True"/>
-                    </Grid>
-                </StackPanel>
+                <Pivot x:Name="pivot1" Grid.Row="1">
+                    <PivotItem Header="物体">
+                        <StackPanel Orientation="Vertical">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="X" Value="{x:Bind VPX,Mode=TwoWay}" AcceptsExpression="True"/>
+                                <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="Y" Value="{x:Bind VPY,Mode=TwoWay}" AcceptsExpression="True"/>
+                                <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="Z" Value="{x:Bind VPZ,Mode=TwoWay}" AcceptsExpression="True"/>
+                                <mu:NumberBox Grid.Row="2" Grid.Column="0" Header="X" Value="{x:Bind VRX,Mode=TwoWay}" AcceptsExpression="True"/>
+                                <mu:NumberBox Grid.Row="2" Grid.Column="1" Header="Y" Value="{x:Bind VRY,Mode=TwoWay}" AcceptsExpression="True"/>
+                                <mu:NumberBox Grid.Row="2" Grid.Column="2" Header="Z" Value="{x:Bind VRZ,Mode=TwoWay}" AcceptsExpression="True"/>
+                            </Grid>
+                        </StackPanel>
+                    </PivotItem>
+                </Pivot>
             </Grid>
         </ScrollViewer>
     </Grid>

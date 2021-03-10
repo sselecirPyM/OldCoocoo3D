@@ -126,6 +126,10 @@
     <Compile Include="Components\MMDMorphStateComponent.cs" />
     <Compile Include="Components\MMDMotionComponent.cs" />
     <Compile Include="Components\MMDRendererComponent.cs" />
+    <Compile Include="Controls\C2Control.cs" />
+    <Compile Include="Controls\CLightingComponent.xaml.cs">
+      <DependentUpon>CLightingComponent.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Core\ModelReloader.cs" />
     <Compile Include="Present\CameraMotion.cs" />
     <Compile Include="Core\GameDriver.cs" />
@@ -246,6 +250,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="Controls\CLightingComponent.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Controls\WorldViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
