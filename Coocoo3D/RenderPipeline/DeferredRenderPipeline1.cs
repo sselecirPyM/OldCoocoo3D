@@ -169,6 +169,8 @@ namespace Coocoo3D.RenderPipeline
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
+            Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
+
             var RPAssetsManager = context.RPAssetsManager;
             var RSBase = RPAssetsManager.rootSignature;
 
@@ -221,15 +223,15 @@ namespace Coocoo3D.RenderPipeline
                     if (Materials[i].toonIndex > -1 && Materials[i].toonIndex < Materials.Count)
                         tex2 = texs[Materials[i].toonIndex];
                     context.MaterialBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
-                    graphicsContext.SetSRVT(TextureStatusSelect(tex1, texLoading, texError, texError), 3);
-                    graphicsContext.SetSRVT(TextureStatusSelect(tex2, texLoading, texError, texError), 4);
-                    //CooGExtension.SetSRVTexture2(graphicsContext, tex1, tex2, 3, texLoading, texError);
+                    graphicsContext.SetSRVT(_Tex(tex1), 3);
+                    graphicsContext.SetSRVT(_Tex(tex2), 4);
 
 
                     PSODesc desc;
                     desc.blendState = EBlendState.none;
                     desc.cullMode = Materials[i].DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
                     desc.depthBias = 0;
+                    desc.slopeScaledDepthBias = 0;
                     desc.dsvFormat = context.depthFormat;
                     desc.inputLayout = EInputLayout.skinned;
                     desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
@@ -263,6 +265,7 @@ namespace Coocoo3D.RenderPipeline
             desc1.blendState = EBlendState.add;
             desc1.cullMode = ECullMode.back;
             desc1.depthBias = 0;
+            desc1.slopeScaledDepthBias = 0;
             desc1.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
             desc1.inputLayout = EInputLayout.skinned;
             desc1.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
@@ -415,6 +418,7 @@ namespace Coocoo3D.RenderPipeline
                 desc.blendState = EBlendState.alpha;
                 desc.cullMode = ECullMode.back;
                 desc.depthBias = 0;
+                desc.slopeScaledDepthBias = 0;
                 desc.dsvFormat = context.depthFormat;
                 desc.inputLayout = EInputLayout.skinned;
                 desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
@@ -446,8 +450,8 @@ namespace Coocoo3D.RenderPipeline
                     if (Materials[i].toonIndex > -1 && Materials[i].toonIndex < Materials.Count)
                         tex2 = texs[Materials[i].toonIndex];
                     context.MaterialBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
-                    graphicsContext.SetSRVT(TextureStatusSelect(tex1, texLoading, texError, texError), 3);
-                    graphicsContext.SetSRVT(TextureStatusSelect(tex2, texLoading, texError, texError), 4);
+                    graphicsContext.SetSRVT(_Tex(tex1), 3);
+                    graphicsContext.SetSRVT(_Tex(tex2), 4);
                     //CooGExtension.SetSRVTexture2(graphicsContext, tex1, tex2, 3, textureLoading, textureError);
 
 

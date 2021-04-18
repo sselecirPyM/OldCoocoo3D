@@ -156,6 +156,7 @@ namespace Coocoo3D.RenderPipeline
             desc.blendState = EBlendState.alpha;
             desc.cullMode = ECullMode.none;
             desc.depthBias = 0;
+            desc.slopeScaledDepthBias = 0;
             desc.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
             desc.inputLayout = EInputLayout.postProcess;
             desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;

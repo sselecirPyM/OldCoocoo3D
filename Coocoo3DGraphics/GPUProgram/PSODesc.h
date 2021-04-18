@@ -39,6 +39,7 @@ namespace Coocoo3DGraphics
 		DxgiFormat dsvFormat;
 		int renderTargetCount;
 		int depthBias;
+		float slopeScaledDepthBias;
 		bool wireFrame;
 		bool streamOutput;
 	};

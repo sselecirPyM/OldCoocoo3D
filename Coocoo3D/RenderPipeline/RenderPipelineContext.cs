@@ -192,6 +192,7 @@ namespace Coocoo3D.RenderPipeline
             blendState = EBlendState.none,
             cullMode = ECullMode.back,
             depthBias = 0,
+            slopeScaledDepthBias = 0,
             dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
             inputLayout = EInputLayout.mmd,
             ptt = ED3D12PrimitiveTopologyType.POINT,
@@ -206,6 +207,7 @@ namespace Coocoo3D.RenderPipeline
             blendState = EBlendState.none,
             cullMode = ECullMode.none,
             depthBias = 2500,
+            slopeScaledDepthBias = 1.0f,
             dsvFormat = DxgiFormat.DXGI_FORMAT_D24_UNORM_S8_UINT,//
             inputLayout = EInputLayout.skinned,
             ptt = ED3D12PrimitiveTopologyType.TRIANGLE,

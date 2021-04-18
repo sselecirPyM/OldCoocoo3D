@@ -58,6 +58,7 @@ namespace Coocoo3D.RenderPipeline
                 blendState = EBlendState.none,
                 cullMode = ECullMode.back,
                 depthBias = 0,
+                slopeScaledDepthBias = 0,
                 dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
                 inputLayout = EInputLayout.postProcess,
                 ptt = ED3D12PrimitiveTopologyType.TRIANGLE,

@@ -126,9 +126,10 @@ namespace Coocoo3D.RenderPipeline
 
             var rendererComponents = context.dynamicContextRead.rendererComponents;
             ref var settings = ref context.dynamicContextRead.settings;
-            ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
+            ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings; ;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
+            Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
             var rpAssets = context.RPAssetsManager;
             var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
@@ -240,6 +241,7 @@ namespace Coocoo3D.RenderPipeline
                 blendState = EBlendState.none,
                 cullMode = ECullMode.back,
                 depthBias = 0,
+                slopeScaledDepthBias = 0,
                 dsvFormat = context.depthFormat,
                 inputLayout = EInputLayout.postProcess,
                 ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
@@ -262,6 +264,7 @@ namespace Coocoo3D.RenderPipeline
                 desc.blendState = EBlendState.alpha;
                 desc.cullMode = ECullMode.back;
                 desc.depthBias = 0;
+                desc.slopeScaledDepthBias = 0;
                 desc.dsvFormat = context.depthFormat;
                 desc.inputLayout = EInputLayout.skinned;
                 desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
@@ -293,20 +296,13 @@ namespace Coocoo3D.RenderPipeline
                         tex2 = texs[Materials[i].toonIndex];
                     context.MaterialBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
 
-                    graphicsContext.SetSRVT(TextureStatusSelect(tex1, texLoading, texError, texError), 3);
-                    graphicsContext.SetSRVT(TextureStatusSelect(tex2, texLoading, texError, texError), 4);
-                    //CooGExtension.SetSRVTexture2(graphicsContext, tex1, tex2, 3, textureLoading, textureError);
+                    graphicsContext.SetSRVT(_Tex(tex1), 3);
+                    graphicsContext.SetSRVT(_Tex(tex2), 4);
 
 
                     desc.cullMode = Materials[i].DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
                     int variant = PODraw.GetVariantIndex(deviceResources, RSBase, desc);
-                    if (variant != -1)
-                        graphicsContext.SetPObject1(PODraw, variant);
-                    else
-                    {
-                        variant = rpAssets.PObjectMMDError.GetVariantIndex(deviceResources, RSBase, desc);
-                        graphicsContext.SetPObject1(rpAssets.PObjectMMDError, variant);
-                    }
+                    graphicsContext.SetPObject1(PODraw, variant);
 
                     graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
                     counter.material++;

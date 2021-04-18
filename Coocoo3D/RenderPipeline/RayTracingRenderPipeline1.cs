@@ -311,6 +311,7 @@ namespace Coocoo3D.RenderPipeline
                 descSkyBox.blendState = EBlendState.none;
                 descSkyBox.cullMode = ECullMode.back;
                 descSkyBox.depthBias = 0;
+                descSkyBox.slopeScaledDepthBias = 1.0f;
                 descSkyBox.dsvFormat = context.depthFormat;
                 descSkyBox.inputLayout = EInputLayout.postProcess;
                 descSkyBox.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
