@@ -185,25 +185,25 @@ namespace Coocoo3D.RenderPipeline
 
             graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
 
-            void ParticleCompute(MMDRendererComponent rendererComponent, SBuffer cameraPresentData, CBuffer entityBoneDataBuffer, CBuffer entityDataBuffer, ref _Counters counter)
-            {
-                if (rendererComponent.ParticleCompute == null || rendererComponent.meshParticleBuffer == null || rendererComponent.ParticleCompute.Status != GraphicsObjectStatus.loaded)
-                {
-                    counter.vertex += rendererComponent.meshIndexCount;
-                    return;
-                }
-                graphicsContext.SetComputeCBVR(entityBoneDataBuffer, 0);
-                //graphicsContext.SetComputeCBVR(entityDataBuffer, 1);
-                graphicsContext.SetComputeCBVR(cameraPresentData, 2);
-                graphicsContext.SetComputeUAVR(context.SkinningMeshBuffer, counter.vertex, 4);
-                graphicsContext.SetComputeUAVR(rendererComponent.meshParticleBuffer, 0, 5);
-                graphicsContext.SetPObject(rendererComponent.ParticleCompute);
-                graphicsContext.Dispatch((rendererComponent.meshVertexCount + 63) / 64, 1, 1);
-                counter.vertex += rendererComponent.meshIndexCount;
-            }
-            _Counters counterParticle = new _Counters();
-            for (int i = 0; i < rendererComponents.Count; i++)
-                ParticleCompute(rendererComponents[i], CameraDataBuffer, context.CBs_Bone[i], null, ref counterParticle);
+            //void ParticleCompute(MMDRendererComponent rendererComponent, SBuffer cameraPresentData, CBuffer entityBoneDataBuffer, CBuffer entityDataBuffer, ref _Counters counter)
+            //{
+            //    if (rendererComponent.ParticleCompute == null || rendererComponent.meshParticleBuffer == null || rendererComponent.ParticleCompute.Status != GraphicsObjectStatus.loaded)
+            //    {
+            //        counter.vertex += rendererComponent.meshIndexCount;
+            //        return;
+            //    }
+            //    graphicsContext.SetComputeCBVR(entityBoneDataBuffer, 0);
+            //    //graphicsContext.SetComputeCBVR(entityDataBuffer, 1);
+            //    graphicsContext.SetComputeCBVR(cameraPresentData, 2);
+            //    graphicsContext.SetComputeUAVR(context.SkinningMeshBuffer, counter.vertex, 4);
+            //    graphicsContext.SetComputeUAVR(rendererComponent.meshParticleBuffer, 0, 5);
+            //    graphicsContext.SetPObject(rendererComponent.ParticleCompute);
+            //    graphicsContext.Dispatch((rendererComponent.meshVertexCount + 63) / 64, 1, 1);
+            //    counter.vertex += rendererComponent.meshIndexCount;
+            //}
+            //_Counters counterParticle = new _Counters();
+            //for (int i = 0; i < rendererComponents.Count; i++)
+            //    ParticleCompute(rendererComponents[i], CameraDataBuffer, context.CBs_Bone[i], null, ref counterParticle);
 
             if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
             {

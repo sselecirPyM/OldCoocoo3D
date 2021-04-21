@@ -96,14 +96,15 @@ namespace Coocoo3D.Core
             RPContext.gameDriverContext.DeviceResources = deviceResources;
             RPContext.gameDriverContext.ProcessingList = ProcessingList;
             RPContext.gameDriverContext.WICFactory = wicFactory;
-            _currentRenderPipeline = forwardRenderPipeline1;
+            _currentRenderPipeline = forwardRenderPipeline2;
             RPContext.LoadTask = Task.Run(async () =>
             {
                 await RPAssetsManager.LoadAssets();
                 await RPContext.ReloadDefalutResources(ProcessingList, miscProcessContext);
                 RPAssetsManager.InitializeRootSignature(deviceResources);
                 RPAssetsManager.InitializePipelineState();
-                forwardRenderPipeline1.Reload(deviceResources);
+                //forwardRenderPipeline1.Reload(deviceResources);
+                forwardRenderPipeline2.Reload(deviceResources);
                 deferredRenderPipeline1.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
                 widgetRenderer.Reload(deviceResources);
@@ -140,7 +141,8 @@ namespace Coocoo3D.Core
         }
         #region Rendering
         public RPAssetsManager RPAssetsManager { get => RPContext.RPAssetsManager; }
-        ForwardRenderPipeline1 forwardRenderPipeline1 = new ForwardRenderPipeline1();
+        //ForwardRenderPipeline1 forwardRenderPipeline1 = new ForwardRenderPipeline1();
+        ForwardRenderPipeline2 forwardRenderPipeline2 = new ForwardRenderPipeline2();
         DeferredRenderPipeline1 deferredRenderPipeline1 = new DeferredRenderPipeline1();
         RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
         public PostProcess postProcess = new PostProcess();
@@ -394,7 +396,7 @@ namespace Coocoo3D.Core
                 currentRenderPipelineIndex = index;
                 if (currentRenderPipelineIndex == 0)
                 {
-                    _currentRenderPipeline = forwardRenderPipeline1;
+                    _currentRenderPipeline = forwardRenderPipeline2;
                 }
                 if (currentRenderPipelineIndex == 1)
                 {

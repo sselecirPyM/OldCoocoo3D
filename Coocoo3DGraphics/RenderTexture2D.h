@@ -9,6 +9,7 @@ namespace Coocoo3DGraphics
 		void ReloadAsDepthStencil(int width, int height, DxgiFormat format);
 		void ReloadAsRenderTarget(int width, int height, DxgiFormat format);
 		void ReloadAsRTVUAV(int width, int height, DxgiFormat format);
+		DxgiFormat GetFormat();
 	internal:
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;

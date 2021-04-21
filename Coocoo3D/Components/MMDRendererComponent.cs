@@ -25,7 +25,7 @@ namespace Coocoo3D.Components
         public int meshIndexCount;
         public byte[] meshPosData;//ref type
 
-        public TwinBuffer meshParticleBuffer;
+        //public TwinBuffer meshParticleBuffer;
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
         public List<RuntimeMaterial.InnerStruct> materialsBaseData = new List<RuntimeMaterial.InnerStruct>();
         public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();

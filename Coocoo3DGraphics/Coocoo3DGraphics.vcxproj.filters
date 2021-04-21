@@ -272,7 +272,7 @@
     <FxCompile Include="Shaders\ImageProcess\G_IrradianceMap0.hlsl">
       <Filter>Shaders\ImageProcess</Filter>
     </FxCompile>
-    <FxCompile Include="VSSkyBox.hlsl">
+    <FxCompile Include="Shaders\VSSkyBox.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PSSkyBox.hlsl">
@@ -281,7 +281,7 @@
     <FxCompile Include="Shaders\ImageProcess\G_ClearIrradianceMap.hlsl">
       <Filter>Shaders\ImageProcess</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PSMMD_Toon1.hlsl">
+    <FxCompile Include="Shaders\PS_Pass1.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PSMMDAlphaClip1.hlsl">

@@ -139,6 +139,8 @@
       <DependentUpon>GameObjectPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="RenderPipeline\DeferredRenderPipeline1.cs" />
+    <Compile Include="RenderPipeline\ForwardRenderPipeline2.cs" />
+    <Compile Include="RenderPipeline\PassSetting.cs" />
     <Compile Include="RenderPipeline\ProcessingList.cs" />
     <Compile Include="Core\RecorderGameDriver.cs" />
     <Compile Include="Core\Scene.cs" />
@@ -233,6 +235,7 @@
     <Content Include="Assets\Textures\UI_1.png" />
     <Content Include="Assets\Textures\UI_0.png" />
     <Content Include="DefaultResources\DefaultResourceList.xml" />
+    <Content Include="DefaultResources\PassSetting.xml" />
     <Content Include="PhysXCommon_64.dll" />
     <Content Include="PhysXFoundation_64.dll" />
     <Content Include="PhysX_64.dll" />

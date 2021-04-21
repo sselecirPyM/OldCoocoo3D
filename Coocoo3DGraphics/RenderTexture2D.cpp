@@ -37,3 +37,10 @@ void RenderTexture2D::ReloadAsRTVUAV(int width, int height, DxgiFormat format)
 	m_uavFormat = (DXGI_FORMAT)format;
 	m_resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 }
+
+DxgiFormat Coocoo3DGraphics::RenderTexture2D::GetFormat()
+{
+	if (m_dsvFormat != DXGI_FORMAT_UNKNOWN)
+		return (DxgiFormat)m_dsvFormat;
+	return (DxgiFormat)m_format;
+}

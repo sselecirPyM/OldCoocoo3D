@@ -151,6 +151,7 @@ namespace Coocoo3D.RenderPipeline
         public RenderTexture2D[] ScreenSizeDSVs = new RenderTexture2D[2];
 
         public RenderTextureCube ShadowMapCube = new RenderTextureCube();
+        public RenderTexture2D ShadowMap=new RenderTexture2D();
 
         public Texture2D TextureLoading = new Texture2D();
         public Texture2D TextureError = new Texture2D();
@@ -206,9 +207,9 @@ namespace Coocoo3D.RenderPipeline
         {
             blendState = EBlendState.none,
             cullMode = ECullMode.none,
-            depthBias = 2500,
+            depthBias = 3000,
             slopeScaledDepthBias = 1.0f,
-            dsvFormat = DxgiFormat.DXGI_FORMAT_D24_UNORM_S8_UINT,//
+            dsvFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT,//
             inputLayout = EInputLayout.skinned,
             ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
             rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
@@ -220,7 +221,7 @@ namespace Coocoo3D.RenderPipeline
         public DxgiFormat gBufferFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
-        public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D24_UNORM_S8_UINT;
+        public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT;
 
         public int screenWidth;
         public int screenHeight;
@@ -360,6 +361,8 @@ namespace Coocoo3D.RenderPipeline
             {
                 ShadowMapCube.ReloadAsDSV(x, y, depthFormat);
                 processingList.UnsafeAdd(ShadowMapCube);
+                ShadowMap.ReloadAsDepthStencil(x, y, depthFormat);
+                processingList.UnsafeAdd(ShadowMap);
             }
             if (highQuality)
             {
@@ -392,7 +395,7 @@ namespace Coocoo3D.RenderPipeline
             processingList.AddObject(new Texture2DUploadPack(postProcessBackground, upTexPostprocessBackground));
 
             Uploader upTexEnvCube = new Uploader();
-            upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.2f, 0.16f, 0.16f, 1), new Vector4(0.16f, 0.2f, 0.16f, 1), new Vector4(0.2f, 0.2f, 0.2f, 1), new Vector4(0.16f, 0.2f, 0.2f, 1), new Vector4(0.2f, 0.2f, 0.16f, 1), new Vector4(0.16f, 0.16f, 0.2f, 1) });
+            upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
 
             IrradianceMap.ReloadAsRTVUAV(32, 32, 1, DxgiFormat.DXGI_FORMAT_R32G32B32A32_FLOAT);
             EnvironmentMap.ReloadAsRTVUAV(1024, 1024, 7, DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT);

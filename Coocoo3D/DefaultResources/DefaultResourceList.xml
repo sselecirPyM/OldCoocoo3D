@@ -73,6 +73,10 @@
     <Name>PSError.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSError.cso</Path>
   </PixelShader>
+  <PixelShader>
+    <Name>PS_Pass1</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_Pass1.cso</Path>
+  </PixelShader>
   <PipelineState>
     <Name></Name>
   </PipelineState>

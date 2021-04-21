@@ -24,7 +24,6 @@ namespace Coocoo3D.RenderPipeline
         public PixelShader PSMMD = new PixelShader();
         public PixelShader PSMMDTransparent = new PixelShader();
         public PixelShader PSMMD_DisneyBrdf = new PixelShader();
-        public PixelShader PSMMD_Toon1 = new PixelShader();
         public PixelShader PSMMDAlphaClip = new PixelShader();
         public PixelShader PSMMDAlphaClip1 = new PixelShader();
 
@@ -33,9 +32,9 @@ namespace Coocoo3D.RenderPipeline
 
         public PObject PObjectMMDSkinning = new PObject();
         public PObject PObjectMMD = new PObject();
+        public PObject POPass1 = new PObject();
         public PObject PObjectMMDTransparent = new PObject();
         public PObject PObjectMMD_DisneyBrdf = new PObject();
-        public PObject PObjectMMD_Toon1 = new PObject();
         public PObject PObjectMMDShadowDepth = new PObject();
         public PObject PObjectMMDDepth = new PObject();
         public PObject PObjectMMDLoading = new PObject();
@@ -49,6 +48,8 @@ namespace Coocoo3D.RenderPipeline
         public PObject PObjectWidgetUI1 = new PObject();
         public PObject PObjectWidgetUI2 = new PObject();
         public PObject PObjectWidgetUILight = new PObject();
+
+        public PassSetting defaultPassSetting;
         public bool Ready;
         public void InitializeRootSignature(DeviceResources deviceResources)
         {
@@ -63,7 +64,6 @@ namespace Coocoo3D.RenderPipeline
             await ReloadPixelShader(PSMMD, "ms-appx:///Coocoo3DGraphics/PSMMD.cso");
             await ReloadPixelShader(PSMMDTransparent, "ms-appx:///Coocoo3DGraphics/PSMMDTransparent.cso");
             await ReloadPixelShader(PSMMD_DisneyBrdf, "ms-appx:///Coocoo3DGraphics/PSMMD_DisneyBRDF.cso");
-            await ReloadPixelShader(PSMMD_Toon1, "ms-appx:///Coocoo3DGraphics/PSMMD_Toon1.cso");
             await ReloadPixelShader(PSMMDAlphaClip, "ms-appx:///Coocoo3DGraphics/PSMMDAlphaClip.cso");
             await ReloadPixelShader(PSMMDAlphaClip1, "ms-appx:///Coocoo3DGraphics/PSMMDAlphaClip1.cso");
 
@@ -78,19 +78,10 @@ namespace Coocoo3D.RenderPipeline
                 RegPSAssets(pixelShader.Name, pixelShader.Path);
             }
 
-            //await RegPSAssets("PSDeferredRenderGBuffer.cso");
-            //await RegPSAssets("PSDeferredRenderIBL.cso");
-            //await RegPSAssets("PSDeferredRenderDirectLight.cso");
-            //await RegPSAssets("PSDeferredRenderPointLight.cso");
 
-            //await RegPSAssets("PSSkyBox.cso");
-            //await RegPSAssets("PSPostProcess.cso");
-            //await RegPSAssets("PSWidgetUI1.cso");
-            //await RegPSAssets("PSWidgetUI2.cso");
-            //await RegPSAssets("PSWidgetUILight.cso");
-
-            //await RegPSAssets("PSLoading.cso");
-            //await RegPSAssets("PSError.cso");
+            XmlSerializer xmlSerializer2 = new XmlSerializer(typeof(PassSetting));
+            defaultPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/PassSetting.xml"));
+            if (!defaultPassSetting.Verify()) throw new Exception("PassSetting is not verification");
         }
         public void InitializePipelineState()
         {
@@ -100,7 +91,7 @@ namespace Coocoo3D.RenderPipeline
 
             PObjectMMD.Initialize(VSMMDTransform, null, PSMMD);
             PObjectMMD_DisneyBrdf.Initialize(VSMMDTransform, null, PSMMD_DisneyBrdf);
-            PObjectMMD_Toon1.Initialize(VSMMDTransform, null, PSMMD_Toon1);
+            POPass1.Initialize(VSMMDTransform, null, PSAssets["PS_Pass1"]);
 
             PObjectMMDTransparent.Initialize(VSMMDTransform, null, PSMMDTransparent);
             PObjectMMDLoading.Initialize(VSMMDTransform, null, PSAssets["PSLoading.cso"]);
@@ -133,7 +124,6 @@ namespace Coocoo3D.RenderPipeline
         {
             computeShader.Initialize(await ReadFile(uri));
         }
-        static string assetsUri = "ms-appx:///Coocoo3DGraphics/";
         protected async Task RegVSAssets(string name, string path)
         {
             VertexShader vertexShader = new VertexShader();
