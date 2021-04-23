@@ -11,6 +11,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.Components
 {
@@ -31,10 +32,11 @@ namespace Coocoo3D.Components
         public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();
         public List<Texture2D> textures = new List<Texture2D>();
 
-        public PObject POSkinning;
-        public PObject PODraw;
-        public PObject POParticleDraw;
-        public ComputePO ParticleCompute;
+        public PSO PSOSkinning;
+        //public PSO PODraw;
+        //public PSO POParticleDraw;
+        //public ComputePO ParticleCompute;
+        public Dictionary<string, PSO> shaders = new Dictionary<string, PSO>();
 
         public Vector3[] meshPosData1;
         public Vector3[] meshPosData2;
@@ -207,7 +209,7 @@ namespace Coocoo3D.Components
             for (int i = 0; i < bones.Count; i++)
                 boneMatricesData[i] = Matrix4x4.Transpose(bones[i].GeneratedTransform);
         }
-        public void SetPose3(MMDMotionComponent motionComponent, MMDMorphStateComponent morphStateComponent, float time)
+        public void SetPoseWithMotion(MMDMotionComponent motionComponent, MMDMorphStateComponent morphStateComponent, float time)
         {
             foreach (var bone in bones)
             {
@@ -243,7 +245,7 @@ namespace Coocoo3D.Components
             UpdateAppendBones();
         }
 
-        public void SetPose2(MMDMorphStateComponent morphStateComponent)
+        public void SetPoseNoMotion(MMDMorphStateComponent morphStateComponent)
         {
             for (int i = 0; i < bones.Count; i++)
             {
@@ -349,14 +351,14 @@ namespace Coocoo3D.Components
                                 ikRotateAxis.Z = 0;
                                 break;
                             case AxisFixType.FixY:
-                                ikRotateAxis.Y = ikRotateAxis.Y >= 0 ? 1 : -1;
                                 ikRotateAxis.X = 0;
+                                ikRotateAxis.Y = ikRotateAxis.Y >= 0 ? 1 : -1;
                                 ikRotateAxis.Z = 0;
                                 break;
                             case AxisFixType.FixZ:
-                                ikRotateAxis.Z = ikRotateAxis.Z >= 0 ? 1 : -1;
                                 ikRotateAxis.X = 0;
                                 ikRotateAxis.Y = 0;
+                                ikRotateAxis.Z = ikRotateAxis.Z >= 0 ? 1 : -1;
                                 break;
                         }
                     //重命名函数以缩短函数名
@@ -982,10 +984,11 @@ namespace Coocoo3D.FileFormat
     {
         public static void Reload(this MMDRendererComponent rendererComponent, ModelPack modelPack)
         {
-            rendererComponent.POSkinning = null;
-            rendererComponent.PODraw = null;
-            rendererComponent.ParticleCompute = null;
-            rendererComponent.POParticleDraw = null;
+            rendererComponent.PSOSkinning = null;
+            //rendererComponent.PODraw = null;
+            //rendererComponent.ParticleCompute = null;
+            //rendererComponent.POParticleDraw = null;
+            rendererComponent.shaders.Clear();
 
             ReloadModel(rendererComponent, modelPack);
         }
@@ -998,12 +1001,12 @@ namespace Coocoo3D.FileFormat
 
             rendererComponent.mesh = modelPack.GetMesh();
             rendererComponent.meshPosData = modelPack.verticesDataPosPart;
-            rendererComponent.meshVertexCount = rendererComponent.mesh.m_vertexCount;
-            rendererComponent.meshIndexCount = rendererComponent.mesh.m_indexCount;
+            rendererComponent.meshVertexCount = rendererComponent.mesh.GetVertexCount();
+            rendererComponent.meshIndexCount = rendererComponent.mesh.GetIndexCount();
             //rendererComponent.meshParticleBuffer = new TwinBuffer();
             //rendererComponent.meshParticleBuffer.Reload(rendererComponent.mesh.m_vertexCount * 32);
-            rendererComponent.meshPosData1 = new Vector3[rendererComponent.mesh.m_vertexCount];
-            rendererComponent.meshPosData2 = new Vector3[rendererComponent.mesh.m_vertexCount];
+            rendererComponent.meshPosData1 = new Vector3[rendererComponent.mesh.GetVertexCount()];
+            rendererComponent.meshPosData2 = new Vector3[rendererComponent.mesh.GetVertexCount()];
 
             rendererComponent.meshAppend.Reload(rendererComponent.meshVertexCount);
 
@@ -1025,7 +1028,7 @@ namespace Coocoo3D.FileFormat
                         EdgeSize = mmdMat.EdgeScale,
                         EdgeColor = mmdMat.EdgeColor,
                         AmbientColor = new Vector3(MathF.Pow(mmdMat.AmbientColor.X, 2.2f), MathF.Pow(mmdMat.AmbientColor.Y, 2.2f), MathF.Pow(mmdMat.AmbientColor.Z, 2.2f)),
-                        Roughness = 1.0f,
+                        Roughness = 0.8f,
                         Specular = 0.5f,
                     },
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,

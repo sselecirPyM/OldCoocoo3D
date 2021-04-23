@@ -14,6 +14,7 @@ namespace Coocoo3D.Present
         public Matrix4x4 vMatrix;
         public Matrix4x4 pMatrix;
         public Matrix4x4 vpMatrix;
+        public Matrix4x4 pvMatrix;
         public Vector3 LookAtPoint;
         public float Distance;
         public Vector3 Angle;
@@ -58,7 +59,7 @@ namespace Coocoo3D.Present
             Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos, LookAtPoint, up);
             Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Fov, AspectRatio, 2.0f, 5000) * Matrix4x4.CreateScale(-1, 1, 1);
             Matrix4x4 vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
-
+            Matrix4x4.Invert(vpMatrix, out Matrix4x4 pvMatrix);
             return new CameraData()
             {
                 Angle = Angle,
@@ -66,10 +67,11 @@ namespace Coocoo3D.Present
                 Distance = Distance,
                 Fov = Fov,
                 LookAtPoint = LookAtPoint,
-                pMatrix = pMatrix,
                 Pos = pos,
                 vMatrix = vMatrix,
+                pMatrix = pMatrix,
                 vpMatrix = vpMatrix,
+                pvMatrix = pvMatrix,
             };
         }
     }

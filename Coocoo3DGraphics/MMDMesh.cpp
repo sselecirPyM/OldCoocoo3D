@@ -153,3 +153,13 @@ void MMDMesh::CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics
 MMDMesh::~MMDMesh()
 {
 }
+
+int MMDMesh::GetIndexCount()
+{
+	return m_indexCount;
+}
+
+int MMDMesh::GetVertexCount()
+{
+	return m_vertexCount;
+}

@@ -58,11 +58,13 @@ namespace Coocoo3DGraphics
 		void ReleaseUploadHeapResource();
 		static void CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics::float3>^ Target, const Platform::Array<byte>^ source);
 		virtual ~MMDMesh();
+		int GetIndexCount();
+		int GetVertexCount();
 
 		property Platform::Array<byte>^ m_verticeData;
-		property int m_indexCount;
-		property int m_vertexCount;
 	internal:
+		int m_indexCount;
+		int m_vertexCount;
 		const static UINT c_indexStride = sizeof(UINT);
 		UINT m_vertexStride;
 		Microsoft::WRL::ComPtr<ID3DBlob> m_indexData;

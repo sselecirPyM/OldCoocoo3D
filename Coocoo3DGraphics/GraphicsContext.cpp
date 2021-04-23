@@ -120,15 +120,29 @@ void GraphicsContext::UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Arr
 	_UpdateVerticesPos(m_commandList.Get(), mesh->m_vertexBufferPos[index].Get(), mesh->m_vertexBufferPosUpload[index].Get(), verticeData->begin(), verticeData->Length * 12, mesh->lastUpdateIndexs[index] * mesh->m_bufferSize);
 }
 
-void GraphicsContext::SetSRVT(Texture2D^ texture, int index)
+void GraphicsContext::SetSRVT(ITexture2D^ texture, int index)
 {
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
 	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	Texture2D^ tex2d = dynamic_cast<Texture2D^>(texture);
+	RenderTexture2D^ rtex2d = dynamic_cast<RenderTexture2D^>(texture);
 	if (texture != nullptr)
 	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_heapRefIndex, incrementSize);
-		m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
-		texture->m_lastRefFrame = m_deviceResources->m_currentFenceValue;
+		if (tex2d != nullptr)
+		{
+			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), tex2d->m_heapRefIndex, incrementSize);
+			m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
+			tex2d->m_lastRefFrame = m_deviceResources->m_currentFenceValue;
+		}
+		else if (rtex2d != nullptr)
+		{
+			if (rtex2d->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
+				m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtex2d->m_texture.Get(), rtex2d->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
+			rtex2d->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), rtex2d->m_srvRefIndex, incrementSize);
+			m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
+		}
 	}
 	else
 	{
@@ -136,52 +150,28 @@ void GraphicsContext::SetSRVT(Texture2D^ texture, int index)
 	}
 }
 
-void GraphicsContext::SetSRVT(TextureCube^ texture, int index)
+void GraphicsContext::SetSRVT(ITextureCube^ texture, int index)
 {
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
 	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	TextureCube^ texc = dynamic_cast<TextureCube^>(texture);
+	RenderTextureCube^ rtexc = dynamic_cast<RenderTextureCube^>(texture);
 	if (texture != nullptr)
 	{
-		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_heapRefIndex, incrementSize);
-		m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
-	}
-	else
-	{
-		throw ref new Platform::NotImplementedException();
-	}
-}
+		if (texc != nullptr)
+		{
+			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texc->m_heapRefIndex, incrementSize);
+			m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
+		}
+		else if (rtexc != nullptr)
+		{
+			if (rtexc->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
+				m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtexc->m_texture.Get(), rtexc->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
+			rtexc->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
 
-void GraphicsContext::SetSRVT(RenderTexture2D^ texture, int index)
-{
-	auto d3dDevice = m_deviceResources->GetD3DDevice();
-	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	if (texture != nullptr)
-	{
-		if (texture->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
-			m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->m_texture.Get(), texture->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
-		texture->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
-
-		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_srvRefIndex, incrementSize);
-		m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
-	}
-	else
-	{
-		throw ref new Platform::NotImplementedException();
-	}
-}
-
-void GraphicsContext::SetSRVT(RenderTextureCube^ texture, int index)
-{
-	auto d3dDevice = m_deviceResources->GetD3DDevice();
-	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	if (texture != nullptr)
-	{
-		if (texture->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
-			m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->m_texture.Get(), texture->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
-		texture->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
-
-		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_srvRefIndex, incrementSize);
-		m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
+			CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), rtexc->m_srvRefIndex, incrementSize);
+			m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
+		}
 	}
 	else
 	{

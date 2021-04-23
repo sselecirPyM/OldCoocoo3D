@@ -32,7 +32,7 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected PObject PObjectStatusSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject, PObject loading, PObject unload, PObject error)
+        protected PObject PSOSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject, PObject loading, PObject unload, PObject error)
         {
             if (pObject == null) return unload;
             if (pObject.Status == GraphicsObjectStatus.unload)

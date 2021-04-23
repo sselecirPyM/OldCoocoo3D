@@ -148,6 +148,9 @@
     <ClCompile Include="GPUProgram\ShaderMacro.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
+    <ClCompile Include="Extension\CooUtility.cpp">
+      <Filter>Extension</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -228,6 +231,9 @@
       <Filter>GPUProgram</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsConstance.h" />
+    <ClInclude Include="Extension\CooUtility.h">
+      <Filter>Extension</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\VSParticleStandard.hlsl">
@@ -333,6 +339,15 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VSMMDSkinning.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\VS_Pass1.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\VS_SkyBox.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PS_SkyBox.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

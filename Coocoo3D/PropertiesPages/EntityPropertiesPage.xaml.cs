@@ -193,7 +193,7 @@ namespace Coocoo3D.PropertiesPages
             {
                 var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
                 return string.Format(resourceLoader.GetString("Message_ModelInfo"),
-                    entity.rendererComponent.mesh.m_vertexCount, entity.rendererComponent.mesh.m_indexCount / 3, entity.rendererComponent.bones.Count);
+                    entity.rendererComponent.mesh.GetVertexCount(), entity.rendererComponent.mesh.GetIndexCount() / 3, entity.rendererComponent.bones.Count);
             }
         }
 

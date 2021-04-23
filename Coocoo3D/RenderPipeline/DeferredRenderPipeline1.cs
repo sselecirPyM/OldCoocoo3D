@@ -27,16 +27,11 @@ namespace Coocoo3D.RenderPipeline
 
         public void Reload(DeviceResources deviceResources)
         {
-            lightingBuffers.Reload(256, 65536);
+            lightingBuffers.Reload(deviceResources,256, 65536);
             Ready = true;
         }
 
         public CBufferGroup lightingBuffers = new CBufferGroup();
-
-        private void DesireLightingBuffers(DeviceResources deviceResources, int count)
-        {
-            lightingBuffers.SetSlienceCount(deviceResources, count);
-        }
 
         struct _Counters
         {
@@ -71,7 +66,7 @@ namespace Coocoo3D.RenderPipeline
                 numMaterials += rendererComponents[i].Materials.Count;
             }
             context.DesireMaterialBuffers(numMaterials);
-            DesireLightingBuffers(context.deviceResources, lightings.Count * 2);
+            lightingBuffers.SetSlienceCount(lightings.Count * 2);
             var camera = context.dynamicContextRead.cameras[0];
             ref var bigBuffer = ref context.bigBuffer;
             IntPtr pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
@@ -176,13 +171,13 @@ namespace Coocoo3D.RenderPipeline
 
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
-            PObject mmdSkinning = RPAssetsManager.PObjectMMDSkinning;
+            PObject mmdSkinning = RPAssetsManager.PSOMMDSkinning;
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = PObjectStatusSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.POSkinning, mmdSkinning, mmdSkinning, mmdSkinning);
+                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.PSOSkinning, mmdSkinning, mmdSkinning, mmdSkinning);
 
                 int variant3 = POSkinning.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignatureSkinning, context.SkinningDesc);
                 graphicsContext.SetPObject1(POSkinning, variant3);
@@ -201,7 +196,7 @@ namespace Coocoo3D.RenderPipeline
 
             void _RenderEntity(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
-                var PODraw = context.RPAssetsManager.PObjectDeferredRenderGBuffer; ;
+                var PODraw = context.RPAssetsManager.PObjectDeferredRenderGBuffer;
                 var Materials = rendererComponent.Materials;
                 List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);
@@ -257,7 +252,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVT(context.ScreenSizeRenderTextures[0], 3);
             graphicsContext.SetSRVT(context.ScreenSizeRenderTextures[1], 4);
             graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 5);
-            graphicsContext.SetSRVT(context.EnvironmentMap, 6);
+            graphicsContext.SetSRVT(context.ReflectMap, 6);
             graphicsContext.SetSRVT(context.IrradianceMap, 7);
             graphicsContext.SetSRVT(context.BRDFLut, 8);
 
@@ -277,15 +272,15 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetPObject1(RPAssetsManager.PObjectDeferredRenderIBL, variant1);
 
             graphicsContext.SetMesh(context.ndcQuadMesh);
-            graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
+            graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
 
             var lightings = context.dynamicContextRead.lightings;
             for (int i = lightings.Count - 1; i >= 0; i--)
             {
                 if (lightings[i].LightingType == LightingType.Directional)
                 {
-                    int variant = RPAssetsManager.PObjectMMDShadowDepth.GetVariantIndex(context.deviceResources, RSBase, context.shadowDesc);
-                    graphicsContext.SetPObject1(RPAssetsManager.PObjectMMDShadowDepth, variant);
+                    int variant = RPAssetsManager.PSOMMDShadowDepth.GetVariantIndex(context.deviceResources, RSBase, context.shadowDesc);
+                    graphicsContext.SetPObject1(RPAssetsManager.PSOMMDShadowDepth, variant);
 
                     graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
@@ -339,7 +334,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetPObject1(RPAssetsManager.PObjectDeferredRenderDirectLight, variant2);
 
                     graphicsContext.SetMesh(context.ndcQuadMesh);
-                    graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
+                    graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 }
                 else if (lightings[i].LightingType == LightingType.Point)
                 {
@@ -355,7 +350,7 @@ namespace Coocoo3D.RenderPipeline
                     int variant = RPAssetsManager.PObjectDeferredRenderPointLight.GetVariantIndex(context.deviceResources, RSBase, desc1);
                     graphicsContext.SetPObject1(RPAssetsManager.PObjectDeferredRenderPointLight, variant);
 
-                    graphicsContext.DrawIndexed(context.cubeMeshIndexCount, 0, 0);
+                    graphicsContext.DrawIndexed(context.cubeMesh.GetIndexCount(), 0, 0);
                 }
             }
 
@@ -393,8 +388,8 @@ namespace Coocoo3D.RenderPipeline
                 }
 
                 graphicsContext.SetMesh(context.SkinningMeshBuffer);
-                int variant = RPAssetsManager.PObjectMMDShadowDepth.GetVariantIndex(context.deviceResources, RSBase, context.shadowDesc);
-                graphicsContext.SetPObject1(RPAssetsManager.PObjectMMDShadowDepth, variant);
+                int variant = RPAssetsManager.PSOMMDShadowDepth.GetVariantIndex(context.deviceResources, RSBase, context.shadowDesc);
+                graphicsContext.SetPObject1(RPAssetsManager.PSOMMDShadowDepth, variant);
 
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 _Counters counterShadow0 = new _Counters();
@@ -407,7 +402,7 @@ namespace Coocoo3D.RenderPipeline
                     _RenderEntityShadow(rendererComponents[i], LightCameraDataBuffers, 1, context.CBs_Bone[i], ref counterShadow1);
             }
             graphicsContext.SetSRVTArray(context.ShadowMapCube, 5);
-            graphicsContext.SetSRVT(context.EnvironmentMap, 6);
+            graphicsContext.SetSRVT(context.ReflectMap, 6);
             graphicsContext.SetSRVT(context.IrradianceMap, 7);
             graphicsContext.SetSRVT(context.BRDFLut, 8);
 
@@ -427,7 +422,7 @@ namespace Coocoo3D.RenderPipeline
                 desc.streamOutput = false;
                 desc.wireFrame = context.dynamicContextRead.settings.Wireframe;
 
-                var PODraw = PObjectStatusSelect(context.deviceResources, RSBase, ref desc, rendererComponent.PODraw, RPAssetsManager.PObjectMMDLoading, RPAssetsManager.PObjectMMDTransparent, RPAssetsManager.PObjectMMDError);
+                var PODraw = RPAssetsManager.PSOMMDTransparent;
                 var Materials = rendererComponent.Materials;
                 List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);

@@ -100,9 +100,9 @@ namespace Coocoo3D.Core
             RPContext.LoadTask = Task.Run(async () =>
             {
                 await RPAssetsManager.LoadAssets();
-                await RPContext.ReloadDefalutResources(ProcessingList, miscProcessContext);
                 RPAssetsManager.InitializeRootSignature(deviceResources);
                 RPAssetsManager.InitializePipelineState();
+                await RPContext.ReloadDefalutResources(ProcessingList, miscProcessContext);
                 //forwardRenderPipeline1.Reload(deviceResources);
                 forwardRenderPipeline2.Reload(deviceResources);
                 deferredRenderPipeline1.Reload(deviceResources);
@@ -444,6 +444,6 @@ namespace Coocoo3D.Core
         public uint RenderStyle;
         public bool ViewerUI;
         public bool Wireframe;
-        public float SkyBoxLightMultiple;
+        //public float SkyBoxLightMultiple;
     }
 }

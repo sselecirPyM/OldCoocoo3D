@@ -32,7 +32,7 @@ namespace Coocoo3D.ResourceWarp
         public PObject POSkinning = new PObject();
         public PObject PODraw = new PObject();
         public PObject POParticleDraw = new PObject();
-        public ComputePO CSParticle = new ComputePO();
+        //public ComputePO CSParticle = new ComputePO();
 
         public DateTimeOffset lastModifiedTime;
         public StorageFolder folder;
@@ -47,7 +47,7 @@ namespace Coocoo3D.ResourceWarp
             POSkinning.Status = status;
             PODraw.Status = status;
             POParticleDraw.Status = status;
-            CSParticle.Status = status;
+            //CSParticle.Status = status;
         }
 
         public async Task<bool> Reload1(StorageFolder folder, string relativePath, RPAssetsManager RPAssetsManager, ProcessingList processingList)
@@ -97,7 +97,7 @@ namespace Coocoo3D.ResourceWarp
             VertexShader vs2 = VSParticle;
             GeometryShader gs2 = GSParticle;
             PixelShader ps2 = PSParticle;
-            ComputePO cs1 = CSParticle;
+            //ComputePO cs1 = CSParticle;
 
 
             bool haveVS = vs0.CompileInitialize1(datas, "VS", macroEntryVS);
@@ -111,7 +111,7 @@ namespace Coocoo3D.ResourceWarp
             bool havePSParticle = ps2.CompileInitialize1(datas, "PSParticle", macroEntryPS);
 
 
-            bool haveCS1 = cs1.CompileInitialize1(datas, "CSParticle", macroEntryCS1);
+            //bool haveCS1 = cs1.CompileInitialize1(datas, "CSParticle", macroEntryCS1);
             if (haveVS || haveGS)
             {
                 processingList.UL(new ShaderWarp1() { pipelineState = POSkinning, vs = haveVS ? vs0 : RPAssetsManager.VSAssets["VSMMDSkinning2.cso"], gs = haveGS ? gs0 : null, ps = null });
@@ -130,10 +130,10 @@ namespace Coocoo3D.ResourceWarp
             }
             else
                 POParticleDraw.Status = GraphicsObjectStatus.unload;
-            if (haveCS1)
-                processingList.UL(CSParticle, 0);
-            else
-                CSParticle.Status = GraphicsObjectStatus.unload;
+            //if (haveCS1)
+            //    processingList.UL(CSParticle, 0);
+            //else
+            //    CSParticle.Status = GraphicsObjectStatus.unload;
 
             Status = GraphicsObjectStatus.loaded;
             return true;

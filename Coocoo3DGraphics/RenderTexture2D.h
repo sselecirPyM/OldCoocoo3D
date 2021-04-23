@@ -3,7 +3,7 @@
 #include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
-	public ref class RenderTexture2D sealed :public IRenderTexture
+	public ref class RenderTexture2D sealed :public IRenderTexture, public ITexture2D
 	{
 	public:
 		void ReloadAsDepthStencil(int width, int height, DxgiFormat format);

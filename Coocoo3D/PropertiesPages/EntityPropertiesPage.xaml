@@ -80,15 +80,15 @@
                         <TextBlock x:Uid="Page_Entity_Text_Others"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Metallic" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Metallic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Roughness" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Roughness,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Subsurface" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Subsurface,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Emission" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Emission,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_Subsurface" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Subsurface,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Specular" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Specular,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_SpecularTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.SpecularTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <!--<Slider Margin="5" StepFrequency="1e-4" Minimum="0" Maximum="1" Header="各向异性" Value="{x:Bind innerStruct.Anisotropic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        --><!--<Slider Margin="5" StepFrequency="1e-4" Minimum="0" Maximum="1" Header="各向异性" Value="{x:Bind innerStruct.Anisotropic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>--><!--
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Sheen" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Sheen,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_SheenTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.SheenTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Clearcoat" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Clearcoat,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_ClearcoatGloss" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.ClearcoatGloss,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Emission" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Emission,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_ClearcoatGloss" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.ClearcoatGloss,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

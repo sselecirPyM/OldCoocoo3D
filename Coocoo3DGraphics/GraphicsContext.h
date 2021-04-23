@@ -61,10 +61,9 @@ namespace Coocoo3DGraphics
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
-		void SetSRVT(Texture2D^ texture, int index);
-		void SetSRVT(TextureCube^ texture, int index);
-		void SetSRVT(RenderTexture2D^ texture, int index);
-		void SetSRVT(RenderTextureCube^ texture, int index);
+		void SetSRVT(ITexture2D^ texture, int index);
+		void SetSRVT(ITextureCube^ texture, int index);
+		//void SetSRVT(RenderTextureCube^ texture, int index);
 		void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetSRVTArray(RenderTextureCube^ texture, int index);
 		void SetCBVR(CBuffer^ buffer, int index);

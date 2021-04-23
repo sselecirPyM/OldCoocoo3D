@@ -3,7 +3,7 @@
 #include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
-	public ref class RenderTextureCube sealed :public IRenderTexture
+	public ref class RenderTextureCube sealed :public IRenderTexture, public ITextureCube
 	{
 	public:
 		void ReloadAsRTVUAV(int width, int height,int mipLevels, DxgiFormat format);

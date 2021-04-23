@@ -120,7 +120,7 @@ namespace Coocoo3D.PropertiesPages
             }
             prevRenderFrame = t1;
             appBody.ProcessingList.AddObject(new TextureCubeUploadPack(rp.SkyBox, uploader));
-            appBody.miscProcessContext.Add(new P_Env_Data() { source = rp.SkyBox, IrradianceMap = rp.IrradianceMap, EnvMap = rp.EnvironmentMap, Level = level });
+            appBody.miscProcessContext.Add(new P_Env_Data() { source = rp.SkyBox, IrradianceMap = rp.IrradianceMap, EnvMap = rp.ReflectMap, Level = level });
             appBody.RequireRender();
             showInfo.Text = resourceLoader.GetString("Message_Done");
         }

@@ -28,6 +28,18 @@
     <Name>VSWidgetUILight.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSWidgetUILight.cso</Path>
   </VertexShader>
+  <VertexShader>
+    <Name>VS_ShadowMap</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/VS_Pass1.cso</Path>
+  </VertexShader>
+  <VertexShader>
+    <Name>VS_Pass1</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/VS_Pass1.cso</Path>
+  </VertexShader>
+  <VertexShader>
+    <Name>VS_SkyBox</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/VS_SkyBox.cso</Path>
+  </VertexShader>
   <!--pixelshaders-->
   <PixelShader>
     <Name>PSDeferredRenderGBuffer.cso</Name>
@@ -76,6 +88,10 @@
   <PixelShader>
     <Name>PS_Pass1</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PS_Pass1.cso</Path>
+  </PixelShader>
+  <PixelShader>
+    <Name>PS_SkyBox</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_SkyBox.cso</Path>
   </PixelShader>
   <PipelineState>
     <Name></Name>

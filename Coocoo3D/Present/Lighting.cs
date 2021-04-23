@@ -31,7 +31,7 @@ namespace Coocoo3D.Present
 
         public Matrix4x4 GetLightingMatrix(float ExtendRange, Vector3 cameraLookAt, float cameraDistance)
         {
-            Matrix4x4 vpMatrix = Matrix4x4.Identity;
+            Matrix4x4 vp = Matrix4x4.Identity;
             if (LightingType == LightingType.Directional)
             {
                 Vector3 lookat = cameraLookAt + Vector3.UnitY * 4;
@@ -44,18 +44,18 @@ namespace Coocoo3D.Present
                 Matrix4x4 pMatrix;
                 float dist = MathF.Abs(cameraDistance);
                 pMatrix = Matrix4x4.CreateOrthographic(dist + ExtendRange, dist + ExtendRange, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
-                vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
+                vp = Matrix4x4.Multiply(vMatrix, pMatrix);
 
             }
             else if (LightingType == LightingType.Point)
             {
 
             }
-            return vpMatrix;
+            return vp;
         }
         public Matrix4x4 GetLightingMatrix(float ExtendRange, Vector3 cameraLookAt, Vector3 cameraRotation, float cameraDistance)
         {
-            Matrix4x4 vpMatrix = Matrix4x4.Identity;
+            Matrix4x4 vp = Matrix4x4.Identity;
             if (LightingType == LightingType.Directional)
             {
                 Matrix4x4 rot = Matrix4x4.CreateFromYawPitchRoll(-cameraRotation.Y, -cameraRotation.X, -cameraRotation.Z);
@@ -79,19 +79,29 @@ namespace Coocoo3D.Present
                 Vector3 viewdirXZ = Vector3.Normalize(Vector3.Transform(new Vector3(0, 0, 1), rot));
                 Vector3 lookat = cameraLookAt + Vector3.UnitY * 8 + a * viewdirXZ * ExtendRange * 2;
                 Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos + lookat, lookat, up);
-                vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
+                vp = Matrix4x4.Multiply(vMatrix, pMatrix);
 
             }
             else if (LightingType == LightingType.Point)
             {
 
             }
-            return vpMatrix;
+            return vp;
         }
         public Vector3 GetPositionOrDirection()
         {
             Vector3 result = LightingType == LightingType.Directional ? Vector3.Transform(-Vector3.UnitZ, Rotation) : Position;
             return result;
+        }
+        public LStruct GetLStruct()
+        {
+            return new LStruct { PosOrDir = GetPositionOrDirection(), Type = (uint)LightingType, Color = Color };
+        }
+        public struct LStruct
+        {
+            public Vector3 PosOrDir;
+            public uint Type;
+            public Vector4 Color;
         }
     }
 

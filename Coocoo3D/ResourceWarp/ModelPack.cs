@@ -46,44 +46,40 @@ namespace Coocoo3D.ResourceWarp
             gch_vertAnother = GCHandle.Alloc(verticesDataAnotherPart);
             gch_vertPos = GCHandle.Alloc(verticesDataPosPart);
             IntPtr ptr = Marshal.UnsafeAddrOfPinnedArrayElement(verticesDataAnotherPart, 0);
-            int[] test = new int[4];
-            float[] test1 = new float[4];
+            int[] temp1 = new int[4];
+            float[] temp2 = new float[4];
             void _SortVertexSkinning(ref PMX_Vertex vertex, out Vector4 v)//for optimization
             {
-                test[0] = vertex.boneId0;
-                test[1] = vertex.boneId1;
-                test[2] = vertex.boneId2;
-                test[3] = vertex.boneId3;
-                test1[0] = vertex.Weights.X;
-                test1[1] = vertex.Weights.Y;
-                test1[2] = vertex.Weights.Z;
-                test1[3] = vertex.Weights.W;
+                temp1[0] = vertex.boneId0;
+                temp1[1] = vertex.boneId1;
+                temp1[2] = vertex.boneId2;
+                temp1[3] = vertex.boneId3;
+                temp2[0] = vertex.Weights.X;
+                temp2[1] = vertex.Weights.Y;
+                temp2[2] = vertex.Weights.Z;
+                temp2[3] = vertex.Weights.W;
                 for (int i = 0; i < 3; i++)
-                {
                     for (int j = i; j < 3; j++)
-                    {
-                        if ((uint)test[j] > (uint)test[j + 1])
+                        if ((uint)temp1[j] > (uint)temp1[j + 1])
                         {
-                            int a = test[j];
-                            test[j] = test[j + 1];
-                            test[j + 1] = a;
-                            float b = test1[j];
-                            test1[j] = test1[j + 1];
-                            test1[j + 1] = b;
+                            int a = temp1[j];
+                            temp1[j] = temp1[j + 1];
+                            temp1[j + 1] = a;
+                            float b = temp2[j];
+                            temp2[j] = temp2[j + 1];
+                            temp2[j + 1] = b;
                         }
-                    }
-                }
-                v = new Vector4(test1[0], test1[1], test1[2], test1[3]);
+                v = new Vector4(temp2[0], temp2[1], temp2[2], temp2[3]);
             }
             for (int i = 0; i < pmx.Vertices.Length; i++)
             {
                 Marshal.StructureToPtr(pmx.Vertices[i].innerStruct, ptr, true);
 
                 _SortVertexSkinning(ref pmx.Vertices[i], out Vector4 weights);
-                Marshal.WriteInt32(ptr + 24 + 0 * 2, test[0]);
-                Marshal.WriteInt32(ptr + 24 + 1 * 2, test[1]);
-                Marshal.WriteInt32(ptr + 24 + 2 * 2, test[2]);
-                Marshal.WriteInt32(ptr + 24 + 3 * 2, test[3]);//ushort
+                Marshal.WriteInt32(ptr + 24 + 0 * 2, temp1[0]);
+                Marshal.WriteInt32(ptr + 24 + 1 * 2, temp1[1]);
+                Marshal.WriteInt32(ptr + 24 + 2 * 2, temp1[2]);
+                Marshal.WriteInt32(ptr + 24 + 3 * 2, temp1[3]);//ushort
                 Marshal.StructureToPtr(weights, ptr + 24 + 8, true);
 
                 ptr += c_vertexStride;

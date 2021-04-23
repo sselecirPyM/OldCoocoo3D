@@ -33,6 +33,8 @@ namespace Coocoo3D.RenderPipeline
             {
                 var combined = new CombinedPass();
                 combined.PassMatch1 = RenderSequence[i];
+                if (combined.PassMatch1.Type == null)
+                    combined.DrawObjects = true;
                 foreach (var pass in Passes)
                 {
                     if (RenderSequence[i].Name == pass.Name)
@@ -54,6 +56,7 @@ namespace Coocoo3D.RenderPipeline
         public string Type;
         public string RenderTarget;
         public string DepthStencil;
+        public EBlendState BlendMode;
     }
     public class Pass
     {
@@ -64,6 +67,8 @@ namespace Coocoo3D.RenderPipeline
         public string PixelShader;
         [XmlElement(ElementName = "SRV")]
         public List<ShaderSlotRes> SRVs;
+        [XmlElement(ElementName = "CBV")]
+        public List<CBVSlotRes> CBVs;
     }
     public class CombinedPass
     {
@@ -79,6 +84,12 @@ namespace Coocoo3D.RenderPipeline
         public int Index;
         public string ResourceType;
         public string Resource;
+    }
+    public struct CBVSlotRes
+    {
+        public int Index;
+        [XmlArrayItem(ElementName = "Data")]
+        public List<string> Datas;
     }
     public struct RenderTarget
     {

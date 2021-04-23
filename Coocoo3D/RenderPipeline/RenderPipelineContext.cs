@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -67,68 +68,6 @@ namespace Coocoo3D.RenderPipeline
         }
     }
 
-    public class RenderPipelineDynamicContext
-    {
-        public Settings settings;
-        public InShaderSettings inShaderSettings;
-        public List<MMD3DEntity> entities = new List<MMD3DEntity>();
-        public List<GameObject> gameObjects = new List<GameObject>();
-        public List<Components.MMDRendererComponent> rendererComponents = new List<Components.MMDRendererComponent>();
-        public MMD3DEntity selectedEntity;
-        public List<LightingData> lightings = new List<LightingData>();
-        public List<LightingData> selectedLightings = new List<LightingData>();
-        public List<CameraData> cameras = new List<CameraData>();
-        public int VertexCount;
-        public int frameRenderIndex;
-        public int progressiveRenderIndex;
-        public double Time;
-        public double DeltaTime;
-        public bool EnableDisplay;
-
-        public int GetSceneObjectVertexCount()
-        {
-            int count = 0;
-            for (int i = 0; i < rendererComponents.Count; i++)
-            {
-                count += rendererComponents[i].meshVertexCount;
-            }
-            VertexCount = count;
-            return count;
-        }
-
-        public void Preprocess()
-        {
-            lightings.Sort();
-            for (int i = 0; i < entities.Count; i++)
-            {
-                MMD3DEntity entity = entities[i];
-                entity.rendererComponent.position = entity.Position;
-                entity.rendererComponent.rotation = entity.Rotation;
-                rendererComponents.Add(entity.rendererComponent);
-            }
-            for (int i = 0; i < gameObjects.Count; i++)
-            {
-                GameObject gameObject = gameObjects[i];
-                LightingComponent lightingComponent = gameObject.GetComponent<LightingComponent>();
-                if (lightingComponent != null)
-                {
-                    lightingComponent.Position = gameObject.Position;
-                    lightingComponent.Rotation = gameObject.Rotation;
-                    lightings.Add(lightingComponent.GetLightingData());
-                }
-            }
-        }
-
-        public void ClearCollections()
-        {
-            entities.Clear();
-            gameObjects.Clear();
-            lightings.Clear();
-            rendererComponents.Clear();
-            selectedLightings.Clear();
-            cameras.Clear();
-        }
-    }
     public class RenderPipelineContext
     {
         const int c_entityDataBufferSize = 65536;
@@ -139,11 +78,11 @@ namespace Coocoo3D.RenderPipeline
         public const int c_lightingBufferSize = 1024;
         public CBuffer CameraDataBuffers = new CBuffer();
         public CBuffer LightCameraDataBuffer = new CBuffer();
-        public const int c_materialDataSize = 768;
         public CBufferGroup MaterialBufferGroup = new CBufferGroup();
+        public CBufferGroup XBufferGroup = new CBufferGroup();
         public void DesireMaterialBuffers(int count)
         {
-            MaterialBufferGroup.SetSlienceCount(deviceResources, count);
+            MaterialBufferGroup.SetSlienceCount(count);
         }
 
         public RenderTexture2D outputRTV = new RenderTexture2D();
@@ -151,20 +90,17 @@ namespace Coocoo3D.RenderPipeline
         public RenderTexture2D[] ScreenSizeDSVs = new RenderTexture2D[2];
 
         public RenderTextureCube ShadowMapCube = new RenderTextureCube();
-        public RenderTexture2D ShadowMap=new RenderTexture2D();
+        public RenderTexture2D ShadowMap = new RenderTexture2D();
 
         public Texture2D TextureLoading = new Texture2D();
         public Texture2D TextureError = new Texture2D();
         public TextureCube SkyBox = new TextureCube();
         public RenderTextureCube IrradianceMap = new RenderTextureCube();
-        public RenderTextureCube EnvironmentMap = new RenderTextureCube();
+        public RenderTextureCube ReflectMap = new RenderTextureCube();
 
         public MMDMesh ndcQuadMesh = new MMDMesh();
         public MMDMesh cubeMesh = new MMDMesh();
         public MMDMesh cubeWireMesh = new MMDMesh();
-        public int ndcQuadMeshIndexCount;
-        public int cubeMeshIndexCount;
-        public int cubeWireMeshIndexCount;
         public MeshBuffer SkinningMeshBuffer = new MeshBuffer();
         public TwinBuffer LightCacheBuffer = new TwinBuffer();
         public int SkinningMeshBufferSize;
@@ -174,7 +110,6 @@ namespace Coocoo3D.RenderPipeline
         public DeviceResources deviceResources = new DeviceResources();
         public GraphicsContext graphicsContext = new GraphicsContext();
         public GraphicsContext graphicsContext1 = new GraphicsContext();
-        public GraphicsContext[] graphicsContexts;
 
         public Texture2D UI1Texture = new Texture2D();
         public Texture2D BRDFLut = new Texture2D();
@@ -209,7 +144,7 @@ namespace Coocoo3D.RenderPipeline
             cullMode = ECullMode.none,
             depthBias = 3000,
             slopeScaledDepthBias = 1.0f,
-            dsvFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT,//
+            dsvFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT,
             inputLayout = EInputLayout.skinned,
             ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
             rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
@@ -222,6 +157,8 @@ namespace Coocoo3D.RenderPipeline
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
         public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT;
+
+        public PassSetting currentPassSetting;
 
         public int screenWidth;
         public int screenHeight;
@@ -251,7 +188,8 @@ namespace Coocoo3D.RenderPipeline
             {
                 ScreenSizeDSVs[i] = new RenderTexture2D();
             }
-            MaterialBufferGroup.Reload(768, 768 * 84);
+            MaterialBufferGroup.Reload(deviceResources, 768, 768 * 84);
+            XBufferGroup.Reload(deviceResources, 768, 768 * 84);
         }
         ~RenderPipelineContext()
         {
@@ -365,13 +303,9 @@ namespace Coocoo3D.RenderPipeline
                 processingList.UnsafeAdd(ShadowMap);
             }
             if (highQuality)
-            {
                 _Quality(c_shadowMapResolutionHigh, c_shadowMapResolutionHigh);
-            }
             else
-            {
                 _Quality(c_shadowMapResolutionLow, c_shadowMapResolutionLow);
-            }
         }
 
         public bool Initilized = false;
@@ -387,7 +321,7 @@ namespace Coocoo3D.RenderPipeline
             Uploader upTexLoading = new Uploader();
             Uploader upTexError = new Uploader();
             upTexLoading.Texture2DPure(1, 1, new Vector4(0, 1, 1, 1));
-            upTexError.Texture2DPure(1, 1, new Vector4(1, 0, 1, 1)); ;
+            upTexError.Texture2DPure(1, 1, new Vector4(1, 0, 1, 1));
             processingList.AddObject(new Texture2DUploadPack(TextureLoading, upTexLoading));
             processingList.AddObject(new Texture2DUploadPack(TextureError, upTexError));
             Uploader upTexPostprocessBackground = new Uploader();
@@ -398,28 +332,72 @@ namespace Coocoo3D.RenderPipeline
             upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
 
             IrradianceMap.ReloadAsRTVUAV(32, 32, 1, DxgiFormat.DXGI_FORMAT_R32G32B32A32_FLOAT);
-            EnvironmentMap.ReloadAsRTVUAV(1024, 1024, 7, DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT);
-            miscProcessContext.Add(new P_Env_Data() { source = SkyBox, IrradianceMap = IrradianceMap, EnvMap = EnvironmentMap, Level = 16 });
+            ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT);
+            miscProcessContext.Add(new P_Env_Data() { source = SkyBox, IrradianceMap = IrradianceMap, EnvMap = ReflectMap, Level = 16 });
             processingList.AddObject(new TextureCubeUploadPack(SkyBox, upTexEnvCube));
             processingList.AddObject(IrradianceMap);
-            processingList.AddObject(EnvironmentMap);
+            processingList.AddObject(ReflectMap);
 
             ndcQuadMesh.ReloadNDCQuad();
-            ndcQuadMeshIndexCount = ndcQuadMesh.m_indexCount;
             processingList.AddObject(ndcQuadMesh);
-
             cubeMesh.ReloadCube();
-            cubeMeshIndexCount = cubeMesh.m_indexCount;
             processingList.AddObject(cubeMesh);
-
             cubeWireMesh.ReloadCubeWire();
-            cubeWireMeshIndexCount = cubeWireMesh.m_indexCount;
             processingList.AddObject(cubeWireMesh);
 
             await ReloadTexture2DNoMip(BRDFLut, processingList, "ms-appx:///Assets/Textures/brdflut.png");
             await ReloadTexture2DNoMip(UI1Texture, processingList, "ms-appx:///Assets/Textures/UI_1.png");
+            ConfigPassSettings(RPAssetsManager.defaultPassSetting);
+            currentPassSetting = RPAssetsManager.defaultPassSetting;
 
             Initilized = true;
+        }
+
+        public bool ConfigPassSettings(PassSetting passSetting)
+        {
+            foreach (var pass in passSetting.CombinedPasses)
+            {
+                pass.depthSencil = (RenderTexture2D)_GetTex2DByName(pass.PassMatch1.DepthStencil);
+                pass.renderTarget = (RenderTexture2D)_GetTex2DByName(pass.PassMatch1.RenderTarget);
+                VertexShader vs = null;
+                PixelShader ps = null;
+                if (pass.Pass.VertexShader != null)
+                    RPAssetsManager.VSAssets.TryGetValue(pass.Pass.VertexShader, out vs);
+                if (pass.Pass.PixelShader != null)
+                    RPAssetsManager.PSAssets.TryGetValue(pass.Pass.PixelShader, out ps);
+                PSO pso = new PSO();
+                pso.Initialize(vs, null, ps);
+                pass.PSODefault = pso;
+                RPAssetsManager.PSOs[pass.Pass.Name] = pso;
+            }
+            return true;
+
+        }
+        public ITexture2D _GetTex2DByName(string name)
+        {
+            if (name == "_ShadowMap0")
+                return ShadowMap;
+            else if (name == "_Output0")
+                return outputRTV;
+            else if (name == "_ScreenDepth0")
+                return ScreenSizeDSVs[0];
+            else if (name == "_ScreenDepth1")
+                return ScreenSizeDSVs[1];
+            else if (name == "_ScreenDepth2")
+                return ScreenSizeDSVs[2];
+            else if (name == "_BRDFLUT")
+                return BRDFLut;
+            return null;
+        }
+        public ITextureCube _GetTexCubeByName(string name)
+        {
+            if (name == "_SkyBoxReflect")
+                return ReflectMap;
+            else if (name == "_SkyBoxIrradiance")
+                return IrradianceMap;
+            else if (name == "_SkyBox")
+                return SkyBox;
+            return null;
         }
         private async Task ReloadTexture2D(Texture2D texture2D, ProcessingList processingList, string uri)
         {

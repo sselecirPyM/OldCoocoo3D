@@ -1,8 +1,9 @@
 #pragma once
 #include "Interoperation/InteroperationTypes.h"
+#include "ITexture.h"
 namespace Coocoo3DGraphics
 {
-	public ref class TextureCube sealed
+	public ref class TextureCube sealed : public ITextureCube
 	{
 	public:
 		property GraphicsObjectStatus Status;

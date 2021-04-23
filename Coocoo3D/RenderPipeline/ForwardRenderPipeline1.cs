@@ -123,10 +123,9 @@ namespace Coocoo3D.RenderPipeline
         //you can fold local function in your editor
         public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-
             var rendererComponents = context.dynamicContextRead.rendererComponents;
             ref var settings = ref context.dynamicContextRead.settings;
-            ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings; ;
+            ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
             Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
@@ -134,9 +133,8 @@ namespace Coocoo3D.RenderPipeline
             var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
 
-            PObject drawPO = rpAssets.PObjectMMD;
-            PObject skinningPO;
-            skinningPO = rpAssets.PObjectMMDSkinning;
+            PObject drawPO = rpAssets.PSOMMD;
+            PObject skinningPO = rpAssets.PSOMMDSkinning;
 
             graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
@@ -145,7 +143,7 @@ namespace Coocoo3D.RenderPipeline
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = PObjectStatusSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.POSkinning, skinningPO, skinningPO, skinningPO);
+                var POSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.PSOSkinning, skinningPO, skinningPO, skinningPO);
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, POSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
@@ -193,7 +191,7 @@ namespace Coocoo3D.RenderPipeline
 
                 graphicsContext.SetMesh(context.SkinningMeshBuffer);
                 graphicsContext.SetRootSignature(RSBase);
-                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref context.shadowDesc, rpAssets.PObjectMMDShadowDepth);
+                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref context.shadowDesc, rpAssets.PSOMMDShadowDepth);
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 _Counters counterShadow0 = new _Counters();
                 var LightCameraDataBuffers = context.LightCameraDataBuffer;
@@ -228,12 +226,12 @@ namespace Coocoo3D.RenderPipeline
                 streamOutput = false,
                 wireFrame = false,
             };
-            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref descSkyBox, rpAssets.PObjectSkyBox);
+            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref descSkyBox, rpAssets.PSOSkyBox);
             graphicsContext.SetMesh(context.ndcQuadMesh);
-            graphicsContext.DrawIndexed(context.ndcQuadMeshIndexCount, 0, 0);
+            graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
             #endregion
 
-            graphicsContext.SetSRVT(context.EnvironmentMap, 6);
+            graphicsContext.SetSRVT(context.ReflectMap, 6);
             graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
             void _RenderEntity(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
@@ -251,7 +249,7 @@ namespace Coocoo3D.RenderPipeline
                 desc.streamOutput = false;
                 desc.wireFrame = context.dynamicContextRead.settings.Wireframe;
 
-                var PODraw = PObjectStatusSelect(deviceResources, RSBase, ref desc, rendererComponent.PODraw, rpAssets.PObjectMMDLoading, drawPO, rpAssets.PObjectMMDError);
+                var PODraw = PSOSelect(deviceResources, RSBase, ref desc, null, rpAssets.PSOMMDLoading, drawPO, rpAssets.PSOMMDError);
                 var Materials = rendererComponent.Materials;
                 List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);

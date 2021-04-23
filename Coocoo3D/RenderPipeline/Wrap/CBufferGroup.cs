@@ -14,19 +14,21 @@ namespace Coocoo3D.RenderPipeline.Wrap
         public int sliencesPerBuffer;
         public int sizeD256;
         public List<CBuffer> constantBuffers = new List<CBuffer>();
+        public DeviceResources deviceResources;
 
         byte[] tempBuffer;
         int lastUpdateBufferIndex = 0;
-        public void Reload(int slienceSize, int bufferSize)
+        public void Reload(DeviceResources deviceResources,int slienceSize, int bufferSize)
         {
             this.slienceSize = slienceSize;
             this.bufferSize = bufferSize;
+            this.deviceResources = deviceResources;
             sliencesPerBuffer = bufferSize / slienceSize;
             sizeD256 = slienceSize / 256;
             tempBuffer = new byte[bufferSize];
         }
 
-        public void SetSlienceCount(DeviceResources deviceResources, int count)
+        public void SetSlienceCount(int count)
         {
             int slience1 = (count + sliencesPerBuffer - 1) / sliencesPerBuffer;
             while (constantBuffers.Count < slience1)
@@ -37,15 +39,16 @@ namespace Coocoo3D.RenderPipeline.Wrap
             }
         }
 
-        public void UpdateBuffer(GraphicsContext graphicsContext, byte[] data, int bufferIndex)
-        {
-            graphicsContext.UpdateResource(constantBuffers[bufferIndex], data, (uint)bufferSize, 0);
-        }
+        //public void UpdateBuffer(GraphicsContext graphicsContext, byte[] data, int bufferIndex)
+        //{
+        //    graphicsContext.UpdateResource(constantBuffers[bufferIndex], data, (uint)bufferSize, 0);
+        //}
 
         public void UpdateSlience(GraphicsContext graphicsContext, byte[] data, int dataOffset, int dataLength, int slienceIndex)
         {
             int slience1 = slienceIndex / sliencesPerBuffer;
             int slience2 = slienceIndex % sliencesPerBuffer;
+
             if (lastUpdateBufferIndex == slience1)
             {
                 Array.Copy(data, dataOffset, tempBuffer, slience2 * slienceSize, dataLength);

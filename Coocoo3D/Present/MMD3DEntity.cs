@@ -26,6 +26,7 @@ namespace Coocoo3D.Present
         public string Name;
         public string Description;
         public string ModelPath;
+        public bool IsStatic = false;
 
         public MMDRendererComponent rendererComponent = new MMDRendererComponent();
         public MMDMotionComponent motionComponent = new MMDMotionComponent();
@@ -51,13 +52,13 @@ namespace Coocoo3D.Present
                 {
                     morphStateComponent.SetPose(motionComponent, time);
                     morphStateComponent.ComputeWeight();
-                    rendererComponent.SetPose3(motionComponent, morphStateComponent, time);
+                    rendererComponent.SetPoseWithMotion(motionComponent, morphStateComponent, time);
                 }
             }
             else
             {
                 morphStateComponent.ComputeWeight();
-                rendererComponent.SetPose2(morphStateComponent);
+                rendererComponent.SetPoseNoMotion(morphStateComponent);
             }
             rendererComponent.ComputeMatricesData();
             rendererComponent.SetPose(morphStateComponent);

@@ -171,7 +171,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 //graphicsContext.SetCBVR(entityDataBuffer, 1);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = PObjectStatusSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.POSkinning, RPAssetsManager.PObjectMMDSkinning, RPAssetsManager.PObjectMMDSkinning, RPAssetsManager.PObjectMMDSkinning);
+                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.PSOSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning);
                 int variant3 = POSkinning.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignatureSkinning, context.SkinningDesc);
                 graphicsContext.SetPObject1(POSkinning, variant3);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
@@ -221,7 +221,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetCBVR(cameraPresentData, 2);
 
                     graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, RPAssetsManager.PObjectMMDShadowDepth);
+                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, RPAssetsManager.PSOMMDShadowDepth);
                     //List<Texture2D> texs = rendererComponent.textures;
                     //int countIndexLocal = 0;
                     //for (int i = 0; i < Materials.Count; i++)
@@ -319,9 +319,9 @@ namespace Coocoo3D.RenderPipeline
                 descSkyBox.renderTargetCount = 1;
                 descSkyBox.streamOutput = false;
                 descSkyBox.wireFrame = false;
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref descSkyBox, RPAssetsManager.PObjectSkyBox);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref descSkyBox, RPAssetsManager.PSOSkyBox);
 
-                graphicsContext.DrawIndexed(context.ndcQuadMesh.m_indexCount, 0, 0);
+                graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 #endregion
             }
         }

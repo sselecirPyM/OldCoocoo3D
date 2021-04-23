@@ -2,22 +2,25 @@
 <PassSetting>
   <RenderSequence>
     <Pass>
+      <Name>DrawSkyBox</Name>
+      <Type>DrawScreen</Type>
+      <RenderTarget>_Output0</RenderTarget>
+      <DepthStencil>_ScreenDepth0</DepthStencil>
+    </Pass>
+    <Pass>
       <Name>ShadowMapPass</Name>
       <DepthBias>3000</DepthBias>
       <SlopeScaledDepthBias>1.0</SlopeScaledDepthBias>
       <DepthStencil>_ShadowMap0</DepthStencil>
     </Pass>
-    <!--<Pass>
-      <Name>DrawSkyBox</Name>
-      <Type>DrawScreen</Type>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass>-->
     <Pass>
       <Name>Pass1</Name>
+      <BlendMode>Alpha</BlendMode>
       <DepthStencil>_ScreenDepth0</DepthStencil>
       <RenderTarget>_Output0</RenderTarget>
     </Pass>
   </RenderSequence>
+  <!--It doesn't work now.-->
   <RenderTargets>
     <RenderTarget>
       <Name>_ShadowMap0</Name>
@@ -47,6 +50,31 @@
       <Name>ShadowMapPass</Name>
       <Camera>ShadowMap</Camera>
       <VertexShader>VS_ShadowMap</VertexShader>
+      <CBV>
+        <Index>0</Index>
+        <Datas>
+          <Data>Camera</Data>
+        </Datas>
+      </CBV>
+    </Pass>
+    <Pass>
+      <Name>DrawSkyBox</Name>
+      <Camera>Main</Camera>
+      <VertexShader>VS_SkyBox</VertexShader>
+      <PixelShader>PS_SkyBox</PixelShader>
+      <CBV>
+        <Index>0</Index>
+        <Datas>
+          <Data>Camera</Data>
+          <Data>CameraPosition</Data>
+          <Data>IndirectMultiplier</Data>
+        </Datas>
+      </CBV>
+      <SRV>
+        <Index>3</Index>
+        <ResourceType>TextureCube</ResourceType>
+        <Resource>_SkyBox</Resource>
+      </SRV>
     </Pass>
     <Pass>
       <Name>Pass1</Name>
@@ -54,13 +82,17 @@
       <VertexShader>VS_Pass1</VertexShader>
       <PixelShader>PS_Pass1</PixelShader>
       <CBV>
-        <Index>2</Index>
+        <Index>0</Index>
         <Datas>
-          <Data>Albedo</Data>
+          <Data>Camera</Data>
+          <Data>DirectionalLight</Data>
+          <Data>Metallic</Data>
           <Data>Roughness</Data>
           <Data>Emission</Data>
-          <Data>Lighting</Data>
-          <Data>ShadowMap</Data>
+          <Data>Specular</Data>
+          <Data>Diffuse</Data>
+          <Data>CameraPosition</Data>
+          <Data>IndirectMultiplier</Data>
         </Datas>
       </CBV>
       <SRV>
@@ -77,6 +109,21 @@
         <Index>2</Index>
         <ResourceType>Texture2D</ResourceType>
         <Resource>_ShadowMap0</Resource>
+      </SRV>
+      <SRV>
+        <Index>3</Index>
+        <ResourceType>TextureCube</ResourceType>
+        <Resource>_SkyBoxReflect</Resource>
+      </SRV>
+      <SRV>
+        <Index>4</Index>
+        <ResourceType>TextureCube</ResourceType>
+        <Resource>_SkyBoxIrradiance</Resource>
+      </SRV>
+      <SRV>
+        <Index>5</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_BRDFLUT</Resource>
       </SRV>
     </Pass>
   </Passes>

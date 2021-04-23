@@ -131,15 +131,15 @@ namespace Coocoo3D.RenderPipeline
                 }
                 graphicsContext.UpdateResource(bgConstantBuffers[0], context.bigBuffer, c_bgBufferSize, 0);
             }
-            var selectedLight = context.dynamicContextRead.selectedLightings;
-            for (int i = 0; i < selectedLight.Count; i++)
+            var selectedLightings = context.dynamicContextRead.selectedLightings;
+            for (int i = 0; i < selectedLightings.Count; i++)
             {
                 Marshal.StructureToPtr(Matrix4x4.Transpose(cam.vpMatrix), pData, true);
-                Marshal.StructureToPtr(selectedLight[i].Position, pData + i * 16 + 128, true);
-                Marshal.StructureToPtr(selectedLight[i].Range, pData + i * 16 + 140, true);
+                Marshal.StructureToPtr(selectedLightings[i].Position, pData + i * 16 + 128, true);
+                Marshal.StructureToPtr(selectedLightings[i].Range, pData + i * 16 + 140, true);
                 if (i >= 1024) break;
             }
-            if (selectedLight.Count > 0)
+            if (selectedLightings.Count > 0)
                 graphicsContext.UpdateResource(bgConstantBuffers[1], context.bigBuffer, c_bgBufferSize, 0);
         }
 
@@ -165,7 +165,7 @@ namespace Coocoo3D.RenderPipeline
             desc.streamOutput = false;
             desc.wireFrame = false;
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP,ref desc, rpAssets.PObjectWidgetUI1);
-            graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, allocated, 0);
+            graphicsContext.DrawIndexedInstanced(context.ndcQuadMesh.GetIndexCount(), 0, 0, allocated, 0);
 
             var selectedEntity = context.dynamicContextRead.selectedEntity;
             if (selectedEntity != null)
@@ -176,7 +176,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(context.CBs_Bone[indexOfSelectedEntity], 3);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUI2);
 
-                graphicsContext.DrawIndexedInstanced(context.ndcQuadMeshIndexCount, 0, 0, selectedEntity.rendererComponent.bones.Count, 0);
+                graphicsContext.DrawIndexedInstanced(context.ndcQuadMesh.GetIndexCount(), 0, 0, selectedEntity.rendererComponent.bones.Count, 0);
             }
             var selectedLight = context.dynamicContextRead.selectedLightings;
             if (selectedLight.Count > 0)
@@ -186,7 +186,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(bgConstantBuffers[1], 0);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUILight);
 
-                graphicsContext.DrawIndexedInstanced(context.cubeWireMeshIndexCount, 0, 0, selectedLight.Count, 0);
+                graphicsContext.DrawIndexedInstanced(context.cubeWireMesh.GetIndexCount(), 0, 0, selectedLight.Count, 0);
             }
         }
     }

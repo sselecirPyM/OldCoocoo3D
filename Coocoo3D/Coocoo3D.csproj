@@ -202,6 +202,7 @@
     <Compile Include="RenderPipeline\RayTracingRenderPipeline1.cs" />
     <Compile Include="RenderPipeline\RenderPipeline.cs" />
     <Compile Include="RenderPipeline\RenderPipelineContext.cs" />
+    <Compile Include="RenderPipeline\RenderPipelineDynamicContext.cs" />
     <Compile Include="RenderPipeline\RPAssetsManager.cs" />
     <Compile Include="RenderPipeline\WidgetRenderer.cs" />
     <Compile Include="RenderPipeline\Wrap\CBufferGroup.cs" />

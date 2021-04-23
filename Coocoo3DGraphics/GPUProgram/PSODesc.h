@@ -13,6 +13,9 @@ namespace Coocoo3DGraphics
 		none = 0,
 		alpha = 1,
 		add = 2,
+		None = 0,
+		Alpha = 1,
+		Add = 2,
 	};
 	public enum struct EInputLayout
 	{
