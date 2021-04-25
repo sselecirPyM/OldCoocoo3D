@@ -28,6 +28,7 @@ namespace Coocoo3D.RenderPipeline
         public PixelShader PSMMDAlphaClip1 = new PixelShader();
 
         public Dictionary<string, VertexShader> VSAssets = new Dictionary<string, VertexShader>();
+        public Dictionary<string, GeometryShader> GSAssets = new Dictionary<string, GeometryShader>();
         public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
 
@@ -48,7 +49,6 @@ namespace Coocoo3D.RenderPipeline
         public PSO PObjectWidgetUI2 = new PSO();
         public PSO PObjectWidgetUILight = new PSO();
 
-        public PassSetting defaultPassSetting;
         public bool Ready;
         public void InitializeRootSignature(DeviceResources deviceResources)
         {
@@ -75,11 +75,21 @@ namespace Coocoo3D.RenderPipeline
             {
                 RegPSAssets(pixelShader.Name, pixelShader.Path);
             }
-
-
-            XmlSerializer xmlSerializer2 = new XmlSerializer(typeof(PassSetting));
-            defaultPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/PassSetting.xml"));
-            if (!defaultPassSetting.Verify()) throw new Exception("PassSetting is not verification");
+            foreach(var pipelineState in d.pipelineStates)
+            {
+                PSO pso = new PSO();
+                VertexShader vs = null;
+                GeometryShader gs = null;
+                PixelShader ps = null;
+                if (pipelineState.VertexShader != null)
+                    vs = VSAssets[pipelineState.VertexShader];
+                if (pipelineState.GeometryShader != null)
+                    gs = GSAssets[pipelineState.GeometryShader];
+                if (pipelineState.PixelShader != null)
+                    ps = PSAssets[pipelineState.PixelShader];
+                pso.Initialize(vs, gs, ps);
+                PSOs.Add(pipelineState.Name, pso);
+            }
         }
         public void InitializePipelineState()
         {
@@ -94,18 +104,19 @@ namespace Coocoo3D.RenderPipeline
             PSOMMDError.Initialize(VSMMDTransform, null, PSAssets["PSError.cso"]);
 
             PObjectDeferredRenderGBuffer.Initialize(VSMMDTransform, null, PSAssets["PSDeferredRenderGBuffer.cso"]);
-            PObjectDeferredRenderIBL.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderIBL.cso"]);
-            PObjectDeferredRenderDirectLight.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSDeferredRenderDirectLight.cso"]);
+            PObjectDeferredRenderIBL.Initialize(VSAssets["VS_SkyBox"], null, PSAssets["PSDeferredRenderIBL.cso"]);
+            PObjectDeferredRenderDirectLight.Initialize(VSAssets["VS_SkyBox"], null, PSAssets["PSDeferredRenderDirectLight.cso"]);
             PObjectDeferredRenderPointLight.Initialize(VSAssets["VSDeferredRenderPointLight.cso"], null, PSAssets["PSDeferredRenderPointLight.cso"]);
 
             PSOMMDShadowDepth.Initialize(VSMMDTransform, null, null);
             PObjectMMDDepth.Initialize(VSMMDTransform, null, PSMMDAlphaClip1);
 
-            PSOSkyBox.Initialize(VSAssets["VSSkyBox.cso"], null, PSAssets["PSSkyBox.cso"]);
+            PSOSkyBox.Initialize(VSAssets["VS_SkyBox"], null, PSAssets["PS_SkyBox"]);
             PObjectPostProcess.Initialize(VSAssets["VSPostProcess.cso"], null, PSAssets["PSPostProcess.cso"]);
             PObjectWidgetUI1.Initialize(VSAssets["VSWidgetUI1.cso"], null, PSAssets["PSWidgetUI1.cso"]);
             PObjectWidgetUI2.Initialize(VSAssets["VSWidgetUI2.cso"], null, PSAssets["PSWidgetUI2.cso"]);
             PObjectWidgetUILight.Initialize(VSAssets["VSWidgetUILight.cso"], null, PSAssets["PSWidgetUILight.cso"]);
+
             Ready = true;
         }
         protected async Task ReloadVertexShader(VertexShader vertexShader, string uri)
@@ -146,12 +157,23 @@ namespace Coocoo3D.RenderPipeline
     {
         [XmlElement(ElementName = "VertexShader")]
         public List<_ResourceStr2> vertexShaders;
+        [XmlElement(ElementName = "GeometryShader")]
+        public List<_ResourceStr2> geometryShaders;
         [XmlElement(ElementName = "PixelShader")]
         public List<_ResourceStr2> pixelShaders;
+        [XmlElement(ElementName = "PipelineState")]
+        public List<_ResourceStr3> pipelineStates;
     }
     public struct _ResourceStr2
     {
         public string Name;
         public string Path;
+    }
+    public struct _ResourceStr3
+    {
+        public string Name;
+        public string VertexShader;
+        public string GeometryShader;
+        public string PixelShader;
     }
 }

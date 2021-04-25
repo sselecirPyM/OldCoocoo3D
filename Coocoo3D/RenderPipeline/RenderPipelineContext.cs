@@ -6,11 +6,13 @@ using Coocoo3D.ResourceWarp;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using PSO = Coocoo3DGraphics.PObject;
@@ -28,7 +30,6 @@ namespace Coocoo3D.RenderPipeline
     public class GameDriverContext
     {
         public volatile bool NeedRender;
-        public volatile bool notPaused;
         public volatile bool EnableDisplay;
         public bool Playing;
         public double PlayTime;
@@ -37,14 +38,12 @@ namespace Coocoo3D.RenderPipeline
         public float PlaySpeed;
         public volatile bool RequireResetPhysics;
         public bool NeedReloadModel;
-        public DeviceResources DeviceResources;
-        public ProcessingList ProcessingList;
         public bool RequireResize;
         public bool RequireResizeOuter;
         public Windows.Foundation.Size NewSize;
         public float AspectRatio;
         public bool RequireInterruptRender;
-        public WICFactory WICFactory;
+        public WICFactory WICFactory = new WICFactory();
         public RecordSettings recordSettings;
 
         public DateTime LatestRenderTime;
@@ -58,7 +57,6 @@ namespace Coocoo3D.RenderPipeline
 
         public void RequireRender(bool updateEntities)
         {
-            notPaused |= updateEntities;
             NeedRender = true;
         }
 
@@ -92,6 +90,8 @@ namespace Coocoo3D.RenderPipeline
         public RenderTextureCube ShadowMapCube = new RenderTextureCube();
         public RenderTexture2D ShadowMap = new RenderTexture2D();
 
+        public Dictionary<string, RenderTexture2D> RTs = new Dictionary<string, RenderTexture2D>();
+
         public Texture2D TextureLoading = new Texture2D();
         public Texture2D TextureError = new Texture2D();
         public TextureCube SkyBox = new TextureCube();
@@ -122,6 +122,7 @@ namespace Coocoo3D.RenderPipeline
 
         public List<CBuffer> CBs_Bone = new List<CBuffer>();
 
+        public ProcessingList processingList = new ProcessingList();
 
         public PSODesc SkinningDesc = new PSODesc
         {
@@ -158,6 +159,9 @@ namespace Coocoo3D.RenderPipeline
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
         public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT;
 
+        XmlSerializer xmlSerializer2 = new XmlSerializer(typeof(PassSetting));
+        public PassSetting defaultPassSetting;
+        public PassSetting deferredPassSetting;
         public PassSetting currentPassSetting;
 
         public int screenWidth;
@@ -219,6 +223,54 @@ namespace Coocoo3D.RenderPipeline
             public int vertexCount;
             public int indexCount;
         }
+        public void PreConfig()
+        {
+            if (!Initilized) return;
+            Prepare1(currentPassSetting);
+        }
+        public void Prepare1(PassSetting passSetting)
+        {
+            if (passSetting == null) return;
+            foreach (var rt in passSetting.RenderTargets)
+            {
+                if (!RTs.TryGetValue(rt.Name, out var tex2d))
+                {
+                    tex2d = new RenderTexture2D();
+                    RTs[rt.Name] = tex2d;
+                }
+                int x;
+                int y;
+                int z;
+
+                if (rt.Size.Source == "OutputSize")
+                {
+                    x = screenWidth;
+                    y = screenHeight;
+                    z = 1;
+                }
+                else if (rt.Size.Source == "ShadowMapSize")
+                {
+                    x = ShadowMapResolution;
+                    y = ShadowMapResolution;
+                    z = 1;
+                }
+                else
+                {
+                    x = rt.Size.x;
+                    y = rt.Size.y;
+                    z = rt.Size.z;
+                }
+                if (tex2d.GetWidth() != x || tex2d.GetHeight() != y)
+                {
+                    if (rt.Format == DxgiFormat.DXGI_FORMAT_D16_UNORM || rt.Format == DxgiFormat.DXGI_FORMAT_D24_UNORM_S8_UINT || rt.Format == DxgiFormat.DXGI_FORMAT_D32_FLOAT)
+                        tex2d.ReloadAsDepthStencil(x, y, rt.Format);
+                    else
+                        tex2d.ReloadAsRTVUAV(x, y, rt.Format);
+                    graphicsContext.UpdateRenderTexture(tex2d);
+                }
+            }
+        }
+
         public void UpdateGPUResource()
         {
             #region Update bone data
@@ -264,24 +316,27 @@ namespace Coocoo3D.RenderPipeline
             #endregion
         }
 
-        public void ReloadTextureSizeResources(ProcessingList processingList)
+        public void ReloadTextureSizeResources2()
         {
             int x = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Width), 1);
             int y = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Height), 1);
-            outputRTV.ReloadAsRTVUAV(x, y, outputFormat);
-            processingList.UnsafeAdd(outputRTV);
+            if (outputRTV.GetWidth() != x || outputRTV.GetHeight() != y)
+            {
+                outputRTV.ReloadAsRTVUAV(x, y, outputFormat);
+                graphicsContext.UpdateRenderTexture(outputRTV);
+            }
             for (int i = 0; i < ScreenSizeRenderTextures.Length; i++)
             {
                 ScreenSizeRenderTextures[i].ReloadAsRTVUAV(x, y, gBufferFormat);
-                processingList.UnsafeAdd(ScreenSizeRenderTextures[i]);
+                graphicsContext.UpdateRenderTexture(ScreenSizeRenderTextures[i]);
             }
             for (int i = 0; i < ScreenSizeDSVs.Length; i++)
             {
                 ScreenSizeDSVs[i].ReloadAsDepthStencil(x, y, depthFormat);
-                processingList.UnsafeAdd(ScreenSizeDSVs[i]);
+                graphicsContext.UpdateRenderTexture(ScreenSizeDSVs[i]);
             }
             ReadBackTexture2D.Reload(x, y, 4);
-            processingList.UnsafeAdd(ReadBackTexture2D);
+            graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
             screenWidth = x;
             screenHeight = y;
             dpi = deviceResources.GetDpi();
@@ -290,33 +345,35 @@ namespace Coocoo3D.RenderPipeline
 
         const int c_shadowMapResolutionLow = 2048;
         const int c_shadowMapResolutionHigh = 4096;
+        int ShadowMapResolution = 2048;
         public bool HighResolutionShadowNow;
-        public void ChangeShadowMapsQuality(ProcessingList processingList, bool highQuality)
+        public void ChangeShadowMapsQuality2(bool highQuality)
         {
             if (HighResolutionShadowNow == highQuality) return;
             HighResolutionShadowNow = highQuality;
             void _Quality(int x, int y)
             {
                 ShadowMapCube.ReloadAsDSV(x, y, depthFormat);
-                processingList.UnsafeAdd(ShadowMapCube);
                 ShadowMap.ReloadAsDepthStencil(x, y, depthFormat);
-                processingList.UnsafeAdd(ShadowMap);
+                graphicsContext.UpdateRenderTexture(ShadowMapCube);
+                graphicsContext.UpdateRenderTexture(ShadowMap);
             }
             if (highQuality)
-                _Quality(c_shadowMapResolutionHigh, c_shadowMapResolutionHigh);
+                ShadowMapResolution = c_shadowMapResolutionHigh;
             else
-                _Quality(c_shadowMapResolutionLow, c_shadowMapResolutionLow);
+                ShadowMapResolution = c_shadowMapResolutionLow;
+            _Quality(ShadowMapResolution, ShadowMapResolution);
         }
 
         public bool Initilized = false;
         public Task LoadTask;
-        public async Task ReloadDefalutResources(ProcessingList processingList, MiscProcessContext miscProcessContext)
+        public async Task ReloadDefalutResources(MiscProcessContext miscProcessContext)
         {
             deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
             deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
 
             HighResolutionShadowNow = true;
-            ChangeShadowMapsQuality(processingList, false);
+            ChangeShadowMapsQuality2(false);
 
             Uploader upTexLoading = new Uploader();
             Uploader upTexError = new Uploader();
@@ -335,8 +392,8 @@ namespace Coocoo3D.RenderPipeline
             ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT);
             miscProcessContext.Add(new P_Env_Data() { source = SkyBox, IrradianceMap = IrradianceMap, EnvMap = ReflectMap, Level = 16 });
             processingList.AddObject(new TextureCubeUploadPack(SkyBox, upTexEnvCube));
-            processingList.AddObject(IrradianceMap);
-            processingList.AddObject(ReflectMap);
+            graphicsContext.UpdateRenderTexture(IrradianceMap);
+            graphicsContext.UpdateRenderTexture(ReflectMap);
 
             ndcQuadMesh.ReloadNDCQuad();
             processingList.AddObject(ndcQuadMesh);
@@ -347,18 +404,40 @@ namespace Coocoo3D.RenderPipeline
 
             await ReloadTexture2DNoMip(BRDFLut, processingList, "ms-appx:///Assets/Textures/brdflut.png");
             await ReloadTexture2DNoMip(UI1Texture, processingList, "ms-appx:///Assets/Textures/UI_1.png");
-            ConfigPassSettings(RPAssetsManager.defaultPassSetting);
-            currentPassSetting = RPAssetsManager.defaultPassSetting;
+
+            defaultPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/PassSetting.xml"));
+            deferredPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredPassSetting.xml"));
+
+            RTs["_Output0"] = outputRTV;
+            ConfigPassSettings(defaultPassSetting);
+            currentPassSetting = defaultPassSetting;
 
             Initilized = true;
         }
 
         public bool ConfigPassSettings(PassSetting passSetting)
         {
-            foreach (var pass in passSetting.CombinedPasses)
+            if (!passSetting.Verify()) return false;
+            Prepare1(passSetting);
+
+            //foreach (var rt in passSetting.RenderTargets)
+            //{
+            //    if (!RTs.TryGetValue(rt.Name, out var tex2d))
+            //    {
+            //        tex2d = new RenderTexture2D();
+            //        RTs[rt.Name] = tex2d;
+            //    }
+            //}
+            foreach (var pipelineState in passSetting.pipelineStates)
             {
-                pass.depthSencil = (RenderTexture2D)_GetTex2DByName(pass.PassMatch1.DepthStencil);
-                pass.renderTarget = (RenderTexture2D)_GetTex2DByName(pass.PassMatch1.RenderTarget);
+            }
+            foreach (var pass in passSetting.RenderSequence)
+            {
+                pass.depthSencil = (RenderTexture2D)_GetTex2DByName(pass.DepthStencil);
+                var t1 = new List<RenderTexture2D>();
+                foreach (var renderTarget in pass.RenderTargets)
+                    t1.Add((RenderTexture2D)_GetTex2DByName(renderTarget));
+                pass.renderTargets = t1.ToArray();
                 VertexShader vs = null;
                 PixelShader ps = null;
                 if (pass.Pass.VertexShader != null)
@@ -375,16 +454,29 @@ namespace Coocoo3D.RenderPipeline
         }
         public ITexture2D _GetTex2DByName(string name)
         {
+            if (string.IsNullOrEmpty(name)) return null;
+            if (RTs.TryGetValue(name, out var tex))
+            {
+                return tex;
+            }
             if (name == "_ShadowMap0")
                 return ShadowMap;
-            else if (name == "_Output0")
-                return outputRTV;
-            else if (name == "_ScreenDepth0")
-                return ScreenSizeDSVs[0];
-            else if (name == "_ScreenDepth1")
-                return ScreenSizeDSVs[1];
-            else if (name == "_ScreenDepth2")
-                return ScreenSizeDSVs[2];
+            //else if (name == "_Output0")
+            //    return outputRTV;
+            //else if (name == "_ScreenDepth0")
+            //    return ScreenSizeDSVs[0];
+            //else if (name == "_ScreenDepth1")
+            //    return ScreenSizeDSVs[1];
+            //else if (name == "_ScreenDepth2")
+            //    return ScreenSizeDSVs[2];
+            //else if (name == "_ScreenColor0")
+            //    return ScreenSizeRenderTextures[0];
+            //else if (name == "_ScreenColor1")
+            //    return ScreenSizeRenderTextures[1];
+            //else if (name == "_ScreenColor2")
+            //    return ScreenSizeRenderTextures[2];
+            //else if (name == "_ScreenColor3")
+            //    return ScreenSizeRenderTextures[3];
             else if (name == "_BRDFLUT")
                 return BRDFLut;
             return null;
@@ -410,6 +502,11 @@ namespace Coocoo3D.RenderPipeline
             Uploader uploader = new Uploader();
             uploader.Texture2D(await FileIO.ReadBufferAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))), false, false);
             processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
+        }
+        protected async Task<Stream> OpenReadStream(string uri)
+        {
+            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
+            return (await file.OpenAsync(FileAccessMode.Read)).AsStreamForRead();
         }
     }
 }

@@ -282,6 +282,12 @@ void DeviceResources::CreateDeviceResources()
 	}
 }
 
+void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res)
+{
+	if (res != nullptr)
+		m_recycleList.push_back(d3d12RecycleResource{ res,m_currentFenceValue });
+}
+
 // 每次更改窗口大小时需要重新创建这些资源。
 void DeviceResources::CreateWindowSizeDependentResources()
 {
@@ -610,6 +616,7 @@ void DeviceResources::InitializeCBuffer(CBuffer^ cBuffer, int size)
 	auto d3dDevice = GetD3DDevice();
 	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
 	CD3DX12_RESOURCE_DESC constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(c_frameCount * cBuffer->m_size);
+	ResourceDelayRecycle(cBuffer->m_constantBuffer);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&uploadHeapProperties,
 		D3D12_HEAP_FLAG_NONE,
@@ -632,6 +639,7 @@ void DeviceResources::InitializeSBuffer(SBuffer^ sBuffer, int size)
 
 	auto d3dDevice = GetD3DDevice();
 	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
+	ResourceDelayRecycle(sBuffer->m_constantBuffer);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
@@ -640,6 +648,7 @@ void DeviceResources::InitializeSBuffer(SBuffer^ sBuffer, int size)
 		nullptr,
 		IID_PPV_ARGS(&sBuffer->m_constantBuffer)));
 	NAME_D3D12_OBJECT(sBuffer->m_constantBuffer);
+	ResourceDelayRecycle(sBuffer->m_constantBufferUploads);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&uploadHeapProperties,
 		D3D12_HEAP_FLAG_NONE,
@@ -656,6 +665,7 @@ void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCou
 	auto d3dDevice = GetD3DDevice();
 	CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 	CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(meshBuffer->m_size * meshBuffer->c_vbvStride + meshBuffer->c_vbvOffset, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+	ResourceDelayRecycle(meshBuffer->m_buffer);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&defaultHeapProperties,
 		D3D12_HEAP_FLAG_NONE,

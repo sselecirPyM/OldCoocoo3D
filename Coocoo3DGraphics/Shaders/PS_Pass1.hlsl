@@ -1,12 +1,5 @@
 #include "BRDF/PBR.hlsli"
-#include "CameraDataDefine.hlsli"
-//struct LightInfo
-//{
-//	float3 LightDir;
-//	uint LightType;
-//	float4 LightColor;
-//};
-struct LightInfo2
+struct LightInfo
 {
 	float4x4 LightMapVP;
 	float3 LightDir;
@@ -17,12 +10,12 @@ cbuffer cb0 : register(b0)
 {
 	float4x4 _worldToProj;
 	float4x4 _projToWorld;
-	LightInfo2 Lightings2[1];
+	LightInfo Lightings[1];
 	float _Metallic;
 	float _Roughness;
 	float _Emission;
 	float _Specular;
-	float4 _DiffuseColor1;
+	float4 _DiffuseColor;
 	float3 g_vCamPos;
 	float g_skyBoxMultiple;
 }
@@ -45,7 +38,7 @@ struct PSSkinnedIn
 };
 float4 main(PSSkinnedIn input) : SV_TARGET
 {
-	float4 texColor = texture0.Sample(s1, input.TexCoord) * _DiffuseColor1;
+	float4 texColor = texture0.Sample(s1, input.TexCoord) * _DiffuseColor;
 	clip(texColor.a - 0.01f);
 
 	float3 V = normalize(g_vCamPos - input.wPos);
@@ -64,12 +57,12 @@ float4 main(PSSkinnedIn input) : SV_TARGET
 	float3 outputColor = float3(0,0,0);
 	for (int i = 0; i < 1; i++)
 	{
-		if (Lightings2[i].LightColor.a == 0)continue;
-		if (Lightings2[i].LightType == 0)
+		if (Lightings[i].LightColor.a == 0)continue;
+		if (Lightings[i].LightType == 0)
 		{
 			float inShadow = 1.0f;
-			float3 lightStrength = max(Lightings2[i].LightColor.rgb * Lightings2[i].LightColor.a, 0);
-			float4 sPos = mul(input.wPos, Lightings2[i].LightMapVP);
+			float3 lightStrength = max(Lightings[i].LightColor.rgb * Lightings[i].LightColor.a, 0);
+			float4 sPos = mul(input.wPos, Lightings[i].LightMapVP);
 			sPos = sPos / sPos.w;
 
 			float2 shadowTexCoords;
@@ -79,7 +72,7 @@ float4 main(PSSkinnedIn input) : SV_TARGET
 			if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
 			inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords, sPos.z).r;
 
-			float3 L = normalize(Lightings2[i].LightDir);
+			float3 L = normalize(Lightings[i].LightDir);
 			float3 H = normalize(L + V);
 
 			float3 NdotL = saturate(dot(N, L));
@@ -91,12 +84,12 @@ float4 main(PSSkinnedIn input) : SV_TARGET
 
 			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
 		}
-		else if (Lightings2[i].LightType == 1)
+		else if (Lightings[i].LightType == 1)
 		{
 			float inShadow = 1.0f;
-			float3 lightStrength = Lightings2[i].LightColor.rgb * Lightings2[i].LightColor.a / pow(distance(Lightings2[i].LightDir, input.wPos), 2);
+			float3 lightStrength = Lightings[i].LightColor.rgb * Lightings[i].LightColor.a / pow(distance(Lightings[i].LightDir, input.wPos), 2);
 
-			float3 L = normalize(Lightings2[i].LightDir - input.wPos);
+			float3 L = normalize(Lightings[i].LightDir - input.wPos);
 			float3 H = normalize(L + V);
 
 			float3 NdotL = saturate(dot(N, L));

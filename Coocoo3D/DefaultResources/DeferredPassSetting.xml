@@ -1,13 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <PassSetting>
   <RenderSequence>
-    <Pass>
+    <!--<Pass>
       <Name>DrawSkyBox</Name>
       <Type>DrawScreen</Type>
-      <ClearDepth>1</ClearDepth>
       <RenderTarget>_Output0</RenderTarget>
       <DepthStencil>_ScreenDepth0</DepthStencil>
-    </Pass>
+    </Pass>-->
     <Pass>
       <Name>ShadowMapPass</Name>
       <ClearDepth>1</ClearDepth>
@@ -16,9 +15,16 @@
       <DepthStencil>_ShadowMap0</DepthStencil>
     </Pass>
     <Pass>
-      <Name>Pass1</Name>
-      <BlendMode>Alpha</BlendMode>
+      <Name>GBuffer</Name>
+      <ClearDepth>true</ClearDepth>
       <DepthStencil>_ScreenDepth0</DepthStencil>
+      <RenderTarget>_ScreenColor0</RenderTarget>
+      <RenderTarget>_ScreenColor1</RenderTarget>
+      <RenderTarget>_ScreenColor2</RenderTarget>
+    </Pass>
+    <Pass>
+      <Name>Final</Name>
+      <Type>DrawScreen</Type>
       <RenderTarget>_Output0</RenderTarget>
     </Pass>
   </RenderSequence>
@@ -37,6 +43,34 @@
       </Size>
       <Format>DXGI_FORMAT_D32_FLOAT</Format>
     </RenderTarget>
+    <RenderTarget>
+      <Name>_ScreenColor0</Name>
+      <Size>
+        <Source>OutputSize</Source>
+      </Size>
+      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+    </RenderTarget>
+    <RenderTarget>
+      <Name>_ScreenColor1</Name>
+      <Size>
+        <Source>OutputSize</Source>
+      </Size>
+      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+    </RenderTarget>
+    <RenderTarget>
+      <Name>_ScreenColor2</Name>
+      <Size>
+        <Source>OutputSize</Source>
+      </Size>
+      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+    </RenderTarget>
+    <RenderTarget>
+      <Name>_ScreenColor3</Name>
+      <Size>
+        <Source>OutputSize</Source>
+      </Size>
+      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+    </RenderTarget>
   </RenderTargets>
   <Passes>
     <Pass>
@@ -50,7 +84,7 @@
         </Datas>
       </CBV>
     </Pass>
-    <Pass>
+    <!--<Pass>
       <Name>DrawSkyBox</Name>
       <Camera>Main</Camera>
       <VertexShader>VS_SkyBox</VertexShader>
@@ -68,12 +102,12 @@
         <ResourceType>TextureCube</ResourceType>
         <Resource>_SkyBox</Resource>
       </SRV>
-    </Pass>
+    </Pass>-->
     <Pass>
-      <Name>Pass1</Name>
+      <Name>GBuffer</Name>
       <Camera>Main</Camera>
       <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Pass1</PixelShader>
+      <PixelShader>PS_DeferredGBuffer</PixelShader>
       <CBV>
         <Index>0</Index>
         <Datas>
@@ -117,6 +151,57 @@
         <Index>5</Index>
         <ResourceType>Texture2D</ResourceType>
         <Resource>_BRDFLUT</Resource>
+      </SRV>
+    </Pass>
+    <Pass>
+      <Name>Final</Name>
+      <Camera>Main</Camera>
+      <VertexShader>VS_SkyBox</VertexShader>
+      <!--<PixelShader>PS_DeferredIndirect</PixelShader>-->
+      <PixelShader>PS_DeferredFinal</PixelShader>
+      <CBV>
+        <Index>0</Index>
+        <Datas>
+          <Data>Camera</Data>
+          <Data>CameraPosition</Data>
+          <Data>IndirectMultiplier</Data>
+          <Data>DirectionalLight</Data>
+        </Datas>
+      </CBV>
+      <SRV>
+        <Index>0</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_ScreenColor0</Resource>
+      </SRV>
+      <SRV>
+        <Index>1</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_ScreenColor1</Resource>
+      </SRV>
+      <SRV>
+        <Index>2</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_ScreenDepth0</Resource>
+      </SRV>
+      <SRV>
+        <Index>3</Index>
+        <ResourceType>TextureCube</ResourceType>
+        <Resource>_SkyBoxReflect</Resource>
+      </SRV>
+      <SRV>
+        <Index>4</Index>
+        <ResourceType>TextureCube</ResourceType>
+        <Resource>_SkyBoxIrradiance</Resource>
+      </SRV>
+      <SRV>
+        <Index>5</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_BRDFLUT</Resource>
+      </SRV>
+      <SRV>
+        <Index>6</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_ShadowMap0</Resource>
       </SRV>
     </Pass>
   </Passes>

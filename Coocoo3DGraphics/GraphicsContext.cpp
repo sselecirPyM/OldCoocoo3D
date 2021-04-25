@@ -514,7 +514,7 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 	CD3DX12_RESOURCE_DESC vertexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_verticeData->Length);
 	CD3DX12_RESOURCE_DESC indexBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_indexCount * mesh->c_indexStride);
 	CD3DX12_RESOURCE_DESC uploaderBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_verticeData->Length + mesh->m_indexCount * mesh->c_indexStride);
-
+	m_deviceResources->ResourceDelayRecycle(mesh->m_bufferUpload);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&uploadHeapProperties,
 		D3D12_HEAP_FLAG_NONE,
@@ -529,6 +529,7 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 	DX::ThrowIfFailed(mesh->m_bufferUpload->Map(0, &readRange, &mapped));
 	if (mesh->m_verticeData->Length > 0)
 	{
+		m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBuffer);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -546,6 +547,7 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 	}
 	if (mesh->m_indexCount > 0)
 	{
+		m_deviceResources->ResourceDelayRecycle(mesh->m_indexBuffer);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -586,6 +588,7 @@ void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte
 	CD3DX12_HEAP_PROPERTIES uploadHeapProperties(D3D12_HEAP_TYPE_UPLOAD);
 	for (int i = 0; i < mesh->c_bufferCount; i++)
 	{
+		m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBufferPos[i]);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -598,6 +601,7 @@ void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte
 	CD3DX12_RESOURCE_DESC uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_bufferSize * c_frameCount);
 	for (int i = 0; i < mesh->c_bufferCount; i++)
 	{
+		m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBufferPosUpload[i]);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&uploadHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
@@ -645,6 +649,7 @@ void GraphicsContext::UploadTexture(TextureCube^ texture, Uploader^ uploader)
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
 	int bitsPerPixel = DeviceResources::BitsPerPixel(textureDesc.Format);
+	m_deviceResources->ResourceDelayRecycle(texture->m_texture);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
@@ -662,7 +667,7 @@ void GraphicsContext::UploadTexture(TextureCube^ texture, Uploader^ uploader)
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&uploadBuffer)));
-	m_deviceResources->m_recycleList.push_back(d3d12RecycleResource{ uploadBuffer,m_deviceResources->m_currentFenceValue });
+	m_deviceResources->ResourceDelayRecycle(uploadBuffer);
 
 	std::vector<D3D12_SUBRESOURCE_DATA>subresources;
 
@@ -724,7 +729,7 @@ void GraphicsContext::UploadTexture(Texture2D^ texture, Uploader^ uploader)
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
+	m_deviceResources->ResourceDelayRecycle(texture->m_texture);
 	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
@@ -742,8 +747,7 @@ void GraphicsContext::UploadTexture(Texture2D^ texture, Uploader^ uploader)
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&uploadBuffer)));
-
-	m_deviceResources->m_recycleList.push_back(d3d12RecycleResource{ uploadBuffer,m_deviceResources->m_currentFenceValue });
+	m_deviceResources->ResourceDelayRecycle(uploadBuffer);
 
 	std::vector<D3D12_SUBRESOURCE_DATA>subresources;
 	subresources.reserve(textureDesc.MipLevels);
@@ -822,6 +826,7 @@ void GraphicsContext::UpdateRenderTexture(IRenderTexture^ texture)
 			if (tex2D->m_dsvFormat != DXGI_FORMAT_UNKNOWN)
 			{
 				CD3DX12_CLEAR_VALUE clearValue(tex2D->m_dsvFormat, 1.0f, 0);
+				m_deviceResources->ResourceDelayRecycle(tex2D->m_texture);
 				DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 					D3D12_HEAP_FLAG_NONE,
@@ -834,6 +839,7 @@ void GraphicsContext::UpdateRenderTexture(IRenderTexture^ texture)
 			{
 				float color[] = { 0.0f,0.0f,0.0f,0.0f };
 				CD3DX12_CLEAR_VALUE clearValue(tex2D->m_format, color);
+				m_deviceResources->ResourceDelayRecycle(tex2D->m_texture);
 				DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 					D3D12_HEAP_FLAG_NONE,
@@ -914,6 +920,7 @@ void GraphicsContext::UpdateRenderTexture(IRenderTexture^ texture)
 			if (texCube->m_dsvFormat != DXGI_FORMAT_UNKNOWN)
 			{
 				CD3DX12_CLEAR_VALUE clearValue(texCube->m_dsvFormat, 1.0f, 0);
+				m_deviceResources->ResourceDelayRecycle(texCube->m_texture);
 				DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 					D3D12_HEAP_FLAG_NONE,
@@ -926,6 +933,7 @@ void GraphicsContext::UpdateRenderTexture(IRenderTexture^ texture)
 			{
 				float color[] = { 0.0f,0.0f,0.0f,0.0f };
 				CD3DX12_CLEAR_VALUE clearValue(texCube->m_format, color);
+				m_deviceResources->ResourceDelayRecycle(texCube->m_texture);
 				DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 					&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 					D3D12_HEAP_FLAG_NONE,
@@ -1021,6 +1029,7 @@ void GraphicsContext::UpdateReadBackTexture(ReadBackTexture2D^ texture)
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
 	for (int i = 0; i < c_frameCount; i++)
 	{
+		m_deviceResources->ResourceDelayRecycle(texture->m_textureReadBack[i]);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
 			D3D12_HEAP_FLAG_NONE,
@@ -1290,6 +1299,44 @@ void GraphicsContext::SetRTV(RenderTexture2D^ RTV, Windows::Foundation::Numerics
 	if (clear)
 		m_commandList->ClearRenderTargetView(renderTargetView, _color, 0, nullptr);
 	m_commandList->OMSetRenderTargets(1, &renderTargetView, false, nullptr);
+}
+
+void GraphicsContext::SetRTV(const Platform::Array<RenderTexture2D^>^ RTVs, Windows::Foundation::Numerics::float4 color, bool clear)
+{
+	D3D12_VIEWPORT viewport = CD3DX12_VIEWPORT(
+		0.0f,
+		0.0f,
+		RTVs[0]->m_width,
+		RTVs[0]->m_height
+	);
+	D3D12_RECT scissorRect = { 0, 0, static_cast<LONG>(viewport.Width), static_cast<LONG>(viewport.Height) };
+	m_commandList->RSSetViewports(1, &viewport);
+	m_commandList->RSSetScissorRects(1, &scissorRect);
+
+	for (int i = 0; i < RTVs->Length; i++)
+	{
+		auto RTV = RTVs[i];
+		if (RTV->prevResourceState != D3D12_RESOURCE_STATE_RENDER_TARGET)
+			m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(RTV->m_texture.Get(), RTV->prevResourceState, D3D12_RESOURCE_STATE_RENDER_TARGET));
+		RTV->prevResourceState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	}
+
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+
+	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	D3D12_CPU_DESCRIPTOR_HANDLE* rtvs1 = (D3D12_CPU_DESCRIPTOR_HANDLE*)malloc(sizeof(D3D12_CPU_DESCRIPTOR_HANDLE) * RTVs->Length);
+	for (int i = 0; i < RTVs->Length; i++)
+	{
+		UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		rtvs1[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(m_deviceResources->m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), RTVs[i]->m_rtvHeapRefIndex, incrementSize);
+	}
+	float _color[4] = { color.x,color.y,color.z,color.w };
+	if (clear)
+		for (int i = 0; i < RTVs->Length; i++)
+			m_commandList->ClearRenderTargetView(rtvs1[i], _color, 0, nullptr);
+	m_commandList->OMSetRenderTargets(RTVs->Length, rtvs1, false, nullptr);
+	free(rtvs1);
 }
 
 void GraphicsContext::SetRTVDSV(RenderTexture2D^ RTV, RenderTexture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV)

@@ -172,12 +172,12 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             PObject mmdSkinning = RPAssetsManager.PSOMMDSkinning;
-            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer)
+            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
-                graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.PSOSkinning, mmdSkinning, mmdSkinning, mmdSkinning);
+                rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
+                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, mmdSkinning, mmdSkinning, mmdSkinning);
 
                 int variant3 = POSkinning.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignatureSkinning, context.SkinningDesc);
                 graphicsContext.SetPObject1(POSkinning, variant3);
@@ -187,7 +187,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.Draw(indexCountAll, 0);
             }
             for (int i = 0; i < rendererComponents.Count; i++)
-                EntitySkinning(rendererComponents[i], context.CameraDataBuffers, context.CBs_Bone[i]);
+                EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
             graphicsContext.SetRootSignature(RSBase);

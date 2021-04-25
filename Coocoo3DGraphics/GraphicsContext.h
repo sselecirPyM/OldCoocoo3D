@@ -114,6 +114,7 @@ namespace Coocoo3DGraphics
 		void SetDSV(RenderTexture2D^ texture, bool clear);
 		void SetDSV(RenderTextureCube^ texture, int face, bool clear);
 		void SetRTV(RenderTexture2D^ RTV, Windows::Foundation::Numerics::float4 color, bool clear);
+		void SetRTV(const Platform::Array <RenderTexture2D^>^ RTVs, Windows::Foundation::Numerics::float4 color, bool clear);
 		void SetRTVDSV(RenderTexture2D^ RTV, RenderTexture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV);
 		void SetRTVDSV(const Platform::Array <RenderTexture2D^>^ RTVs, RenderTexture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV);
 		void SetRootSignature(GraphicsSignature^ rootSignature);

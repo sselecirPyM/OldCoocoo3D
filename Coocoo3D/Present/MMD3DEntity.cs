@@ -92,7 +92,7 @@ namespace Coocoo3D.FileFormat
             entity.morphStateComponent.Reload(modelResource);
             entity.rendererComponent.Initialize2(modelResource);
 
-            entity.rendererComponent.Reload(modelPack);
+            entity.rendererComponent.ReloadModel(modelPack);
             processingList.AddObject(new MeshAppendUploadPack(entity.rendererComponent.meshAppend, entity.rendererComponent.meshPosData));
             //processingList.AddObject(entity.rendererComponent.meshParticleBuffer);
             entity.rendererComponent.textures = textures;

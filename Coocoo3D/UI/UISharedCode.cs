@@ -144,10 +144,11 @@ namespace Coocoo3D.UI
             foreach (var entity in entities)
             {
                 //entity.rendererComponent.PODraw = shaderPack.PODraw;
-                entity.rendererComponent.PSOSkinning = shaderPack.POSkinning;
+                //entity.rendererComponent.PSOSkinning = shaderPack.POSkinning;
                 //entity.rendererComponent.POParticleDraw = shaderPack.POParticleDraw;
-                entity.rendererComponent.shaders.Add("Pass1", shaderPack.PODraw);
                 //entity.rendererComponent.ParticleCompute = shaderPack.CSParticle;
+                entity.rendererComponent.shaders["Pass1"] = shaderPack.PODraw;
+                entity.rendererComponent.shaders["Skinning"] = shaderPack.POSkinning;
             }
             appBody.RequireRender();
         }

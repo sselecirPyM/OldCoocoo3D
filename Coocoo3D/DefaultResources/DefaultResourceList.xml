@@ -5,10 +5,6 @@
     <Path>ms-appx:///Coocoo3DGraphics/VSMMDSkinning.cso</Path>
   </VertexShader>
   <VertexShader>
-    <Name>VSSkyBox.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSSkyBox.cso</Path>
-  </VertexShader>
-  <VertexShader>
     <Name>VSDeferredRenderPointLight.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSDeferredRenderPointLight.cso</Path>
   </VertexShader>
@@ -58,10 +54,6 @@
     <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderPointLight.cso</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSSkyBox.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSSkyBox.cso</Path>
-  </PixelShader>
-  <PixelShader>
     <Name>PSPostProcess.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSPostProcess.cso</Path>
   </PixelShader>
@@ -86,6 +78,14 @@
     <Path>ms-appx:///Coocoo3DGraphics/PSError.cso</Path>
   </PixelShader>
   <PixelShader>
+    <Name>PS_Loading</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PSLoading.cso</Path>
+  </PixelShader>
+  <PixelShader>
+    <Name>PS_Error</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PSError.cso</Path>
+  </PixelShader>
+  <PixelShader>
     <Name>PS_Pass1</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PS_Pass1.cso</Path>
   </PixelShader>
@@ -93,7 +93,26 @@
     <Name>PS_SkyBox</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PS_SkyBox.cso</Path>
   </PixelShader>
+  <PixelShader>
+    <Name>PS_DeferredGBuffer</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredGBuffer.cso</Path>
+  </PixelShader>
+  <PixelShader>
+    <Name>PS_DeferredIndirect</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredIndirect.cso</Path>
+  </PixelShader>
+  <PixelShader>
+    <Name>PS_DeferredFinal</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredFinal.cso</Path>
+  </PixelShader>
   <PipelineState>
-    <Name></Name>
+    <Name>Loading</Name>
+    <VertexShader>VS_Pass1</VertexShader>
+    <PixelShader>PS_Loading</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>Error</Name>
+    <VertexShader>VS_Pass1</VertexShader>
+    <PixelShader>PS_Error</PixelShader>
   </PipelineState>
 </DefaultResource>

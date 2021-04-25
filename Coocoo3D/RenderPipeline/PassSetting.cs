@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,9 +17,8 @@ namespace Coocoo3D.RenderPipeline
         public List<PassMatch1> RenderSequence;
         [XmlArrayItem("Pass")]
         public List<Pass> Passes;
-
-        [XmlIgnore]
-        public List<CombinedPass> CombinedPasses;
+        [XmlArrayItem("PipelineState")]
+        public List<PSPS> pipelineStates;
 
         public bool Verify()
         {
@@ -28,21 +28,27 @@ namespace Coocoo3D.RenderPipeline
                 return false;
             if (Passes == null || Passes.Count == 0)
                 return false;
-            CombinedPasses = new List<CombinedPass>();
-            for (int i = 0; i < RenderSequence.Count; i++)
+            if (pipelineStates == null)
+                pipelineStates = new List<PSPS>();
+            foreach (var passMatch in RenderSequence)
             {
-                var combined = new CombinedPass();
-                combined.PassMatch1 = RenderSequence[i];
-                if (combined.PassMatch1.Type == null)
-                    combined.DrawObjects = true;
-                foreach (var pass in Passes)
+                if (passMatch.Name != null)
                 {
-                    if (RenderSequence[i].Name == pass.Name)
-                        combined.Pass = pass;
+                    if (passMatch.Type == null)
+                        passMatch.DrawObjects = true;
+                    foreach (var pass in Passes)
+                    {
+                        if (passMatch.Name == pass.Name)
+                            passMatch.Pass = pass;
+                    }
+                    if (passMatch.Pass == null)
+                        return false;
                 }
-                if (combined.Pass == null)
+                //else if (passMatch.Foreach != null)
+                //{
+                //}
+                else
                     return false;
-                CombinedPasses.Add(combined);
             }
 
             return true;
@@ -54,9 +60,26 @@ namespace Coocoo3D.RenderPipeline
         public int DepthBias;
         public float SlopeScaledDepthBias;
         public string Type;
-        public string RenderTarget;
+        [XmlElement("RenderTarget")]
+        public List<string> RenderTargets;
         public string DepthStencil;
         public EBlendState BlendMode;
+        public bool ClearDepth;
+
+        //public string Foreach;
+        //[XmlElement("Pass")]
+        //public List<PassMatch1> passes;
+
+        [XmlIgnore]
+        public RenderTexture2D[] renderTargets;
+        [XmlIgnore]
+        public RenderTexture2D depthSencil;
+        [XmlIgnore]
+        public PObject PSODefault;
+        [XmlIgnore]
+        public bool DrawObjects;
+        [XmlIgnore]
+        public Pass Pass;
     }
     public class Pass
     {
@@ -70,15 +93,14 @@ namespace Coocoo3D.RenderPipeline
         [XmlElement(ElementName = "CBV")]
         public List<CBVSlotRes> CBVs;
     }
-    public class CombinedPass
+    public class PSPS
     {
-        public PassMatch1 PassMatch1;
-        public Pass Pass;
-        public RenderTexture2D renderTarget;
-        public RenderTexture2D depthSencil;
-        public PObject PSODefault;
-        public bool DrawObjects;
+        public string Name;
+        public string VertexShader;
+        public string GeometryShader;
+        public string PixelShader;
     }
+
     public struct ShaderSlotRes
     {
         public int Index;
@@ -97,11 +119,14 @@ namespace Coocoo3D.RenderPipeline
         public VarSize Size;
         public DxgiFormat Format;
     }
-    public struct VarSize
+    public class VarSize
     {
         public string Source;
-        public int x;
-        public int y;
-        public int z;
+        [DefaultValue(1)]
+        public int x = 1;
+        [DefaultValue(1)]
+        public int y = 1;
+        [DefaultValue(1)]
+        public int z = 1;
     }
 }

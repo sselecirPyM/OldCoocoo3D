@@ -22,11 +22,11 @@ namespace Coocoo3D.RenderPipeline
         public Matrix4x4 wpMatrix;
         public Matrix4x4 pwMatrix;
         public Vector3 CameraPosition;
+        public InShaderSettings inShaderSettings;
         public float AspectRatio;
         public float PlayTime;
         public float DeltaTime;
         public int RandomValue1;
         public int RandomValue2;
-        public InShaderSettings inShaderSettings;
     }
 }

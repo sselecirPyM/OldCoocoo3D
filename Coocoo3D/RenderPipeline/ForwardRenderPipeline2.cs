@@ -15,13 +15,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class ForwardRenderPipeline2 : RenderPipeline
     {
-        public const int c_materialDataSize = 256;
-        public const int c_offsetMaterialData = 0;
-        public const int c_lightingDataSize = 512;
-        public const int c_offsetLightingData = c_offsetMaterialData + c_materialDataSize;
-
-        public const int c_presentDataSize = 512;
-        public const int c_offsetPresentData = c_offsetLightingData + c_lightingDataSize;
         public void Reload(DeviceResources deviceResources)
         {
             Ready = true;
@@ -47,36 +40,31 @@ namespace Coocoo3D.RenderPipeline
             var camera = context.dynamicContextRead.cameras[0];
             var bigBuffer = context.bigBuffer;
 
-            int numMaterials = 0;
-            for (int i = 0; i < rendererComponents.Count; i++)
-                numMaterials += rendererComponents[i].Materials.Count;
-            context.DesireMaterialBuffers(numMaterials);
-
-
             #region Lighting
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
-            IntPtr pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, c_offsetPresentData);
-            HasMainLight = false;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
                 lightCameraMatrix0 = Matrix4x4.Transpose(lightings[0].GetLightingMatrix(settings.ExtendShadowMapRange, camera.LookAtPoint, camera.Angle, camera.Distance));
                 HasMainLight = true;
             }
+            else
+                HasMainLight = false;
 
-            IntPtr p0 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, c_offsetLightingData);
-            Array.Clear(bigBuffer, c_offsetLightingData, c_lightingDataSize);
             #endregion
 
-            int matC = 0;
+            int numMaterials = 0;
+            for (int i = 0; i < rendererComponents.Count; i++)
+                numMaterials += rendererComponents[i].Materials.Count;
 
+            int matC = 0;
             int num2 = 0;
-            foreach (var combinedPass in context.currentPassSetting.CombinedPasses)
+            foreach (var combinedPass in context.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.CBVs != null)
                     num2 += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
             }
             context.XBufferGroup.SetSlienceCount(num2);
-            foreach (var combinedPass in context.currentPassSetting.CombinedPasses)
+            foreach (var combinedPass in context.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.Camera == "Main")
                 {
@@ -199,6 +187,8 @@ namespace Coocoo3D.RenderPipeline
             var deviceResources = context.deviceResources;
 
             PSO PSOSkinning = rpAssets.PSOMMDSkinning;
+            PSO psoLoading = rpAssets.PSOs["Loading"];
+            PSO psoError = rpAssets.PSOs["Error"];
 
             graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
@@ -206,8 +196,9 @@ namespace Coocoo3D.RenderPipeline
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
-                var POSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.PSOSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
-                SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, POSkinning);
+                rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
+                var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
+                SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
@@ -218,9 +209,9 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSOMeshNone();
 
             //graphicsContext.SetRootSignature(RSBase);
-            graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, false, true);
+            //graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, false, true);
             int matC = 0;
-            foreach (var combinedPass in context.currentPassSetting.CombinedPasses)
+            foreach (var combinedPass in context.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.Camera == "Main")
                 {
@@ -231,32 +222,30 @@ namespace Coocoo3D.RenderPipeline
                 }
                 graphicsContext.SetRootSignature(RSBase);
 
-                if (combinedPass.renderTarget == null)
+                if (combinedPass.renderTargets.Length == 0)
                     graphicsContext.SetDSV(combinedPass.depthSencil, true);
-                else if (combinedPass.renderTarget != null && combinedPass.depthSencil != null)
-                    graphicsContext.SetRTVDSV(combinedPass.renderTarget, combinedPass.depthSencil, Vector4.Zero, false, false);
+                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthSencil != null)
+                    graphicsContext.SetRTVDSV(combinedPass.renderTargets, combinedPass.depthSencil, Vector4.Zero, false, combinedPass.ClearDepth);
+                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthSencil == null)
+                    graphicsContext.SetRTV(combinedPass.renderTargets, Vector4.Zero, false);
 
                 PSODesc passPsoDesc;
-                passPsoDesc.blendState = combinedPass.PassMatch1.BlendMode;
+                passPsoDesc.blendState = combinedPass.BlendMode;
                 passPsoDesc.cullMode = ECullMode.none;
-                passPsoDesc.depthBias = combinedPass.PassMatch1.DepthBias;
-                passPsoDesc.slopeScaledDepthBias = combinedPass.PassMatch1.SlopeScaledDepthBias;
+                passPsoDesc.depthBias = combinedPass.DepthBias;
+                passPsoDesc.slopeScaledDepthBias = combinedPass.SlopeScaledDepthBias;
                 passPsoDesc.dsvFormat = combinedPass.depthSencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.depthSencil.GetFormat();
                 passPsoDesc.inputLayout = EInputLayout.skinned;
                 passPsoDesc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                passPsoDesc.rtvFormat = combinedPass.renderTarget == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.renderTarget.GetFormat();
-                passPsoDesc.renderTargetCount = combinedPass.renderTarget == null ? 0 : 1;
+                passPsoDesc.rtvFormat = combinedPass.renderTargets.Length == 0 ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.renderTargets[0].GetFormat();
+                passPsoDesc.renderTargetCount = combinedPass.renderTargets.Length;
                 passPsoDesc.streamOutput = false;
                 passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
                 _PassSetRes();
                 if (combinedPass.DrawObjects)
                 {
                     graphicsContext.SetMesh(context.SkinningMeshBuffer);
-                    _Counters counterX = new _Counters();
-                    for (int i = 0; i < rendererComponents.Count; i++)
-                    {
-                        _PassRender(rendererComponents[i], ref counterX);
-                    }
+                    _PassRender(rendererComponents, combinedPass);
                 }
                 else
                 {
@@ -270,44 +259,48 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetMesh(context.ndcQuadMesh);
                     graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 }
-                void _PassRender(MMDRendererComponent rendererComponent, ref _Counters counter)
+                void _PassRender(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
                 {
-                    graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    PSO pso = null;
-                    if (rendererComponent.shaders != null)
-                        rendererComponent.shaders.TryGetValue(combinedPass.PassMatch1.Name, out pso);
-
-                    var PSODraw = PSOSelect(deviceResources, RSBase, ref passPsoDesc, pso, rpAssets.PSOMMDLoading, combinedPass.PSODefault, rpAssets.PSOMMDError);
-                    var Materials = rendererComponent.Materials;
-                    List<Texture2D> texs = rendererComponent.textures;
-                    int indexOffset = 0;
+                    _Counters counterX = new _Counters();
                     Texture2D albedo = null;
-                    foreach (var material in Materials)
+                    foreach (var rendererComponent in _rendererComponents)
                     {
-                        foreach (var cbv in combinedPass.Pass.CBVs)
-                        {
-                            context.XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
-                            matC++;
-                        }
-                        if (material.innerStruct.DiffuseColor.W > 0)
-                        {
-                            if (material.texIndex != -1 && material.texIndex < Materials.Count)
-                                albedo = _Tex(texs[material.texIndex]);
+                        graphicsContext.SetMeshIndex(rendererComponent.mesh);
+                        PSO pso = null;
+                        if (rendererComponent.shaders != null)
+                            rendererComponent.shaders.TryGetValue(_combinedPass.Name, out pso);
 
-                            _PassSetRes1();
-                            passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
-                            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
-                            graphicsContext.DrawIndexed(material.indexCount, indexOffset, counter.vertex);
+                        var PSODraw = PSOSelect(deviceResources, RSBase, ref passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);
+                        var Materials = rendererComponent.Materials;
+                        List<Texture2D> texs = rendererComponent.textures;
+                        int indexOffset = 0;
+                        foreach (var material in Materials)
+                        {
+                            foreach (var cbv in _combinedPass.Pass.CBVs)
+                            {
+                                context.XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
+                                matC++;
+                            }
+                            if (material.innerStruct.DiffuseColor.W > 0)
+                            {
+                                if (material.texIndex != -1 && material.texIndex < Materials.Count)
+                                    albedo = _Tex(texs[material.texIndex]);
+
+                                _PassSetRes1();
+                                passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
+                                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
+                                graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
+                            }
+                            counterX.material++;
+                            indexOffset += material.indexCount;
                         }
-                        counter.material++;
-                        indexOffset += material.indexCount;
+                        counterX.vertex += rendererComponent.meshVertexCount;
                     }
-                    counter.vertex += rendererComponent.meshVertexCount;
                     void _PassSetRes1()
                     {
-                        if (combinedPass.Pass.SRVs != null)
+                        if (_combinedPass.Pass.SRVs != null)
                         {
-                            foreach (var resd in combinedPass.Pass.SRVs)
+                            foreach (var resd in _combinedPass.Pass.SRVs)
                             {
                                 //if (resd.ResourceType == "TextureCube")
                                 //{

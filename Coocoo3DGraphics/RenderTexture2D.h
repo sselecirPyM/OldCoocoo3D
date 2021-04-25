@@ -10,6 +10,8 @@ namespace Coocoo3DGraphics
 		void ReloadAsRenderTarget(int width, int height, DxgiFormat format);
 		void ReloadAsRTVUAV(int width, int height, DxgiFormat format);
 		DxgiFormat GetFormat();
+		int GetWidth() { return m_width; }
+		int GetHeight() { return m_height; }
 	internal:
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;

@@ -165,13 +165,12 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
 
 
-            void EntitySkinning(MMDRendererComponent rendererComponent, SBuffer cameraPresentData, CBuffer entityBoneDataBuffer)
+            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
-                //graphicsContext.SetCBVR(entityDataBuffer, 1);
-                graphicsContext.SetCBVR(cameraPresentData, 2);
-                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, rendererComponent.PSOSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning);
+                rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
+                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning);
                 int variant3 = POSkinning.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignatureSkinning, context.SkinningDesc);
                 graphicsContext.SetPObject1(POSkinning, variant3);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
@@ -180,7 +179,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.Draw(indexCountAll, 0);
             }
             for (int i = 0; i < rendererComponents.Count; i++)
-                EntitySkinning(rendererComponents[i], CameraDataBuffer, context.CBs_Bone[i]);
+                EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
             graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
@@ -302,7 +301,7 @@ namespace Coocoo3D.RenderPipeline
                 #region Render Sky box
                 graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
                 graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, true, true);
-                graphicsContext.SetCBVR(CameraDataBuffer, 2);
+                graphicsContext.SetCBVR(CameraDataBuffer, 0);
                 graphicsContext.SetSRVT(context.SkyBox, 6);
                 graphicsContext.SetSRVT(context.IrradianceMap, 7);
                 graphicsContext.SetSRVT(context.BRDFLut, 8);

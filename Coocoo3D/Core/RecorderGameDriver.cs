@@ -28,7 +28,7 @@ namespace Coocoo3D.Core
                 context.Playing = true;
                 context.PlaySpeed = 2.0f;
                 context.PlayTime = 0.0f;
-                float logicSizeScale = context.DeviceResources.GetDpi() / 96.0f;
+                float logicSizeScale = rpContext.deviceResources.GetDpi() / 96.0f;
                 context.NewSize = new Windows.Foundation.Size(recordSettings.Width / logicSizeScale, recordSettings.Height / logicSizeScale);
                 context.RequireResize = true;
                 context.RequireInterruptRender = true;

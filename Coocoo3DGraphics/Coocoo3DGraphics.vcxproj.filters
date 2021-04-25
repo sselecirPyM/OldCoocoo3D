@@ -269,20 +269,11 @@
     <FxCompile Include="Shaders\PSMMDAlphaClip.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PSMMD_DisneyBRDF.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\GSMMD.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\ImageProcess\G_IrradianceMap0.hlsl">
       <Filter>Shaders\ImageProcess</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VSSkyBox.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSSkyBox.hlsl">
-      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\ImageProcess\G_ClearIrradianceMap.hlsl">
       <Filter>Shaders\ImageProcess</Filter>
@@ -348,6 +339,15 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PS_SkyBox.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PS_DeferredGBuffer.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PS_DeferredIndirect.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PS_DeferredFinal.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

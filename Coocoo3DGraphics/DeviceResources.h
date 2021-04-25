@@ -73,7 +73,7 @@ namespace Coocoo3DGraphics
 
 		UINT64											m_fenceValues[c_frameCount];
 		UINT64											m_currentFenceValue;
-
+		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res);
 		std::vector<d3d12RecycleResource> m_recycleList;
 	private:
 		void CreateWindowSizeDependentResources();

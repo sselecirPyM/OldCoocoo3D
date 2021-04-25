@@ -21,6 +21,7 @@ void TwinBuffer::Initialize(DeviceResources^ deviceResources, int size)
 	auto d3dDevice = deviceResources->GetD3DDevice();
 	for (int i = 0; i < 2; i++)
 	{
+		deviceResources->ResourceDelayRecycle(m_buffer[i]);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 			D3D12_HEAP_FLAG_NONE,

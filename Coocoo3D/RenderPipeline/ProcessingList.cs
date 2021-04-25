@@ -23,13 +23,10 @@ namespace Coocoo3D.RenderPipeline
         }
         public List<TextureCubeUploadPack> TextureCubeLoadList = new List<TextureCubeUploadPack>();
         public List<Texture2DUploadPack> Texture2DLoadList = new List<Texture2DUploadPack>();
-        public List<IRenderTexture> RenderTextureUpdateList = new List<IRenderTexture>();
         public List<MMDMesh> MMDMeshLoadList = new List<MMDMesh>();
         public List<MeshAppendUploadPack> MMDMeshLoadList2 = new List<MeshAppendUploadPack>();
         public List<ReadBackTexture2D> readBackTextureList = new List<ReadBackTexture2D>();
-        public List<TwinBuffer> twinBufferList = new List<TwinBuffer>();
         public List<ShaderWarp1> pobjectList = new List<ShaderWarp1>();
-        public List<ComputePO>[] computePObjectLists = new List<ComputePO>[] { new List<ComputePO>(), };
 
         public void AddObject(MMDMesh mesh)
         {
@@ -59,25 +56,11 @@ namespace Coocoo3D.RenderPipeline
                 Texture2DLoadList.Add(texture);
             }
         }
-        public void AddObject(IRenderTexture texture)
-        {
-            lock (RenderTextureUpdateList)
-            {
-                RenderTextureUpdateList.Add(texture);
-            }
-        }
         public void AddObject(ReadBackTexture2D texture)
         {
             lock (readBackTextureList)
             {
                 readBackTextureList.Add(texture);
-            }
-        }
-        public void AddObject(TwinBuffer buffer)
-        {
-            lock (twinBufferList)
-            {
-                twinBufferList.Add(buffer);
             }
         }
         /// <summary>添加到上传列表</summary>
@@ -88,71 +71,37 @@ namespace Coocoo3D.RenderPipeline
                 pobjectList.Add(pObject);
             }
         }
-        public void UL(ComputePO pObject, int slot)
-        {
-            lock (computePObjectLists[slot])
-            {
-                computePObjectLists[slot].Add(pObject);
-            }
-        }
 
         public void MoveToAnother(ProcessingList another)
         {
             Move1(TextureCubeLoadList, another.TextureCubeLoadList);
             Move1(Texture2DLoadList, another.Texture2DLoadList);
-            Move1(RenderTextureUpdateList, another.RenderTextureUpdateList);
             Move1(MMDMeshLoadList, another.MMDMeshLoadList);
             Move1(MMDMeshLoadList2, another.MMDMeshLoadList2);
             Move1(readBackTextureList, another.readBackTextureList);
-            Move1(twinBufferList, another.twinBufferList);
             Move1(pobjectList, another.pobjectList);
-            for (int i = 0; i < computePObjectLists.Length; i++)
-                Move1(computePObjectLists[i], another.computePObjectLists[i]);
         }
 
         public void Clear()
         {
             TextureCubeLoadList.Clear();
             Texture2DLoadList.Clear();
-            RenderTextureUpdateList.Clear();
             MMDMeshLoadList.Clear();
             MMDMeshLoadList2.Clear();
             readBackTextureList.Clear();
-            twinBufferList.Clear();
             pobjectList.Clear();
-            for (int i = 0; i < computePObjectLists.Length; i++)
-                computePObjectLists[i].Clear();
         }
 
         public bool IsEmpty()
         {
             if (pobjectList.Count == 0)
                 return false;
-            for (int i = 0; i < computePObjectLists.Length; i++)
-                if (computePObjectLists[i].Count == 0)
-                    return false;
 
             return TextureCubeLoadList.Count == 0 &&
                  Texture2DLoadList.Count == 0 &&
-                RenderTextureUpdateList.Count == 0 &&
                 MMDMeshLoadList.Count == 0 &&
                 MMDMeshLoadList2.Count == 0 &&
                 readBackTextureList.Count == 0;
-        }
-
-        public void UnsafeAdd(IRenderTexture texture)
-        {
-            RenderTextureUpdateList.Add(texture);
-        }
-
-        public void UnsafeAdd(MMDMesh mesh)
-        {
-            MMDMeshLoadList.Add(mesh);
-        }
-
-        public void UnsafeAdd(ReadBackTexture2D texture)
-        {
-            readBackTextureList.Add(texture);
         }
 
         public void _DealStep1(GraphicsContext graphicsContext)
@@ -176,12 +125,8 @@ namespace Coocoo3D.RenderPipeline
             for (int i = 0; i < MMDMeshLoadList.Count; i++)
                 MMDMeshLoadList[i].ReleaseUploadHeapResource();
 
-            for (int i = 0; i < RenderTextureUpdateList.Count; i++)
-                graphicsContext.UpdateRenderTexture(RenderTextureUpdateList[i]);
             for (int i = 0; i < readBackTextureList.Count; i++)
                 graphicsContext.UpdateReadBackTexture(readBackTextureList[i]);
-            for (int i = 0; i < twinBufferList.Count; i++)
-                twinBufferList[i].Initialize(deviceResources);
         }
     }
 }

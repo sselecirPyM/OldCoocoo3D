@@ -32,7 +32,7 @@ namespace Coocoo3D.Components
         public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();
         public List<Texture2D> textures = new List<Texture2D>();
 
-        public PSO PSOSkinning;
+        //public PSO PSOSkinning;
         //public PSO PODraw;
         //public PSO POParticleDraw;
         //public ComputePO ParticleCompute;
@@ -982,19 +982,9 @@ namespace Coocoo3D.FileFormat
 {
     public static partial class PMXFormatExtension
     {
-        public static void Reload(this MMDRendererComponent rendererComponent, ModelPack modelPack)
-        {
-            rendererComponent.PSOSkinning = null;
-            //rendererComponent.PODraw = null;
-            //rendererComponent.ParticleCompute = null;
-            //rendererComponent.POParticleDraw = null;
-            rendererComponent.shaders.Clear();
-
-            ReloadModel(rendererComponent, modelPack);
-        }
-
         public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack)
         {
+            rendererComponent.shaders.Clear();
             rendererComponent.Materials.Clear();
             rendererComponent.materialsBaseData.Clear();
             rendererComponent.computedMaterialsData.Clear();
@@ -1003,8 +993,6 @@ namespace Coocoo3D.FileFormat
             rendererComponent.meshPosData = modelPack.verticesDataPosPart;
             rendererComponent.meshVertexCount = rendererComponent.mesh.GetVertexCount();
             rendererComponent.meshIndexCount = rendererComponent.mesh.GetIndexCount();
-            //rendererComponent.meshParticleBuffer = new TwinBuffer();
-            //rendererComponent.meshParticleBuffer.Reload(rendererComponent.mesh.m_vertexCount * 32);
             rendererComponent.meshPosData1 = new Vector3[rendererComponent.mesh.GetVertexCount()];
             rendererComponent.meshPosData2 = new Vector3[rendererComponent.mesh.GetVertexCount()];
 
