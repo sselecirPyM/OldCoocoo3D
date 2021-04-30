@@ -19,6 +19,11 @@ namespace Coocoo3D.RenderPipeline
         public List<Pass> Passes;
         [XmlArrayItem("PipelineState")]
         public List<PSPS> pipelineStates;
+        //[XmlArrayItem("RayTracingStateObject")]
+        public PSRTSO RayTracingStateObject;
+
+        [XmlIgnore]
+        public RayTracingStateObject RTSO;
 
         public bool Verify()
         {
@@ -70,6 +75,10 @@ namespace Coocoo3D.RenderPipeline
         //[XmlElement("Pass")]
         //public List<PassMatch1> passes;
 
+        [XmlIgnore]
+        public string[] RayGenShaders;
+        [XmlIgnore]
+        public string[] MissShaders;
         [XmlIgnore]
         public RenderTexture2D[] renderTargets;
         [XmlIgnore]
@@ -128,5 +137,30 @@ namespace Coocoo3D.RenderPipeline
         public int y = 1;
         [DefaultValue(1)]
         public int z = 1;
+    }
+    public class PSRTSO
+    {
+        public string Name;
+        public string Path;
+        public int MaxPayloadSize;
+        public int MaxAttributeSize;
+        public int MaxRecursionDepth;
+        [XmlElement(ElementName = "RayGenShader")]
+        public RTShader[] rayGenShaders;
+        [XmlElement(ElementName = "MissShader")]
+        public List<RTShader> missShaders;
+        [XmlElement("HitGroupSubobject")]
+        public List<RTHitGroup> hitGroups;
+
+    }
+    public class RTShader
+    {
+        public string Name;
+    }
+    public class RTHitGroup
+    {
+        public string Name;
+        public string AnyHitShader;
+        public string ClosestHitShader;
     }
 }

@@ -670,10 +670,10 @@ void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCou
 		&defaultHeapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&vertexBufferDesc,
-		D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
 		IID_PPV_ARGS(&meshBuffer->m_buffer)));
 	NAME_D3D12_OBJECT(meshBuffer->m_buffer);
 
-	meshBuffer->m_prevState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	meshBuffer->m_prevState = D3D12_RESOURCE_STATE_GENERIC_READ;
 }

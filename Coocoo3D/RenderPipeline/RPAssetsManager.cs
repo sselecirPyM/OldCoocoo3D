@@ -21,6 +21,8 @@ namespace Coocoo3D.RenderPipeline
         public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
         public GraphicsSignature rootSignaturePostProcess = new GraphicsSignature();
         public GraphicsSignature rootSignatureCompute = new GraphicsSignature();
+        public GraphicsSignature rtLocal = new GraphicsSignature();
+        public GraphicsSignature rtGlobal = new GraphicsSignature();
         public VertexShader VSMMDTransform = new VertexShader();
         public PixelShader PSMMD = new PixelShader();
         public PixelShader PSMMDTransparent = new PixelShader();
@@ -36,7 +38,6 @@ namespace Coocoo3D.RenderPipeline
         public PSO PSOMMD = new PSO();
         public PSO PSOMMDTransparent = new PSO();
         public PSO PSOMMDShadowDepth = new PSO();
-        public PSO PObjectMMDDepth = new PSO();
         public PSO PSOMMDLoading = new PSO();
         public PSO PSOMMDError = new PSO();
         public PSO PObjectDeferredRenderGBuffer = new PSO();
@@ -52,10 +53,15 @@ namespace Coocoo3D.RenderPipeline
         public bool Ready;
         public void InitializeRootSignature(DeviceResources deviceResources)
         {
-            rootSignature.ReloadMMD(deviceResources);
+            rootSignature.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV,GSD.CBV,GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable });
             rootSignatureSkinning.ReloadSkinning(deviceResources);
             rootSignaturePostProcess.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.CBV });
             rootSignatureCompute.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRV, GSD.UAV, GSD.UAV });
+            if (deviceResources.IsRayTracingSupport())
+            {
+                rtLocal.RayTracingLocal(deviceResources);
+                rtGlobal.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
+            }
         }
         public async Task LoadAssets()
         {
@@ -67,15 +73,15 @@ namespace Coocoo3D.RenderPipeline
 
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));
             DefaultResource d = (DefaultResource)xmlSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DefaultResourceList.xml"));
-            foreach(var vertexShader in d.vertexShaders)
+            foreach (var vertexShader in d.vertexShaders)
             {
                 RegVSAssets(vertexShader.Name, vertexShader.Path);
             }
-            foreach(var pixelShader in d.pixelShaders)
+            foreach (var pixelShader in d.pixelShaders)
             {
                 RegPSAssets(pixelShader.Name, pixelShader.Path);
             }
-            foreach(var pipelineState in d.pipelineStates)
+            foreach (var pipelineState in d.pipelineStates)
             {
                 PSO pso = new PSO();
                 VertexShader vs = null;
@@ -109,7 +115,6 @@ namespace Coocoo3D.RenderPipeline
             PObjectDeferredRenderPointLight.Initialize(VSAssets["VSDeferredRenderPointLight.cso"], null, PSAssets["PSDeferredRenderPointLight.cso"]);
 
             PSOMMDShadowDepth.Initialize(VSMMDTransform, null, null);
-            PObjectMMDDepth.Initialize(VSMMDTransform, null, PSMMDAlphaClip1);
 
             PSOSkyBox.Initialize(VSAssets["VS_SkyBox"], null, PSAssets["PS_SkyBox"]);
             PObjectPostProcess.Initialize(VSAssets["VSPostProcess.cso"], null, PSAssets["PSPostProcess.cso"]);
@@ -133,7 +138,7 @@ namespace Coocoo3D.RenderPipeline
             vertexShader.Initialize(await ReadFile(path));
             VSAssets.Add(name, vertexShader);
         }
-        protected async Task RegPSAssets(string name,string path)
+        protected async Task RegPSAssets(string name, string path)
         {
             PixelShader pixelShader = new PixelShader();
             pixelShader.Initialize(await ReadFile(path));

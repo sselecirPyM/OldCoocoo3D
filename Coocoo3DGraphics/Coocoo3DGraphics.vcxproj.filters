@@ -151,6 +151,14 @@
     <ClCompile Include="Extension\CooUtility.cpp">
       <Filter>Extension</Filter>
     </ClCompile>
+    <ClCompile Include="Extension\BoundingBox.cpp">
+      <Filter>Extension</Filter>
+    </ClCompile>
+    <ClCompile Include="RayTracingStateObject.cpp" />
+    <ClCompile Include="RayTracingASGroup.cpp" />
+    <ClCompile Include="RayTracingShaderTable.cpp" />
+    <ClCompile Include="RayTracingTopAS.cpp" />
+    <ClCompile Include="RayTracingInstanceGroup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -234,6 +242,14 @@
     <ClInclude Include="Extension\CooUtility.h">
       <Filter>Extension</Filter>
     </ClInclude>
+    <ClInclude Include="Extension\BoundingBox.h">
+      <Filter>Extension</Filter>
+    </ClInclude>
+    <ClInclude Include="RayTracingStateObject.h" />
+    <ClInclude Include="RayTracingASGroup.h" />
+    <ClInclude Include="RayTracingShaderTable.h" />
+    <ClInclude Include="RayTracingTopAS.h" />
+    <ClInclude Include="RayTracingInstanceGroup.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\VSParticleStandard.hlsl">
@@ -349,6 +365,9 @@
     </FxCompile>
     <FxCompile Include="Shaders\PS_DeferredFinal.hlsl">
       <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="RayTracing\RayTracing2.hlsl">
+      <Filter>RayTracing</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -34,6 +34,7 @@ namespace Coocoo3D.Controls
             lightingComponent = (LightingComponent)component;
             appBody = _appBody;
             _cacheColor = lightingComponent.Color;
+            _cachedRange = lightingComponent.Range;
             if (lightingComponent.LightingType == LightingType.Directional)
                 radio1.IsChecked = true;
             else if (lightingComponent.LightingType == LightingType.Point)

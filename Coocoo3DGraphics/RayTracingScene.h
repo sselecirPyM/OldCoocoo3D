@@ -35,24 +35,20 @@ namespace Coocoo3DGraphics
 	{
 	public:
 		void ReloadLibrary(IBuffer^ rtShader);
-		void ReloadPipelineStates(DeviceResources^ deviceResources,const Platform::Array<Platform::String^>^ exportNames, const Platform::Array<HitGroupDesc^>^ hitGroups, RayTracingSceneSettings settings);
+		void ReloadPipelineStates(DeviceResources^ deviceResources, GraphicsSignature^ globalSignature, GraphicsSignature^ localSignature, const Platform::Array<Platform::String^>^ exportNames, const Platform::Array<HitGroupDesc^>^ hitGroups, RayTracingSceneSettings settings);
 		void ReloadAllocScratchAndInstance(DeviceResources^ deviceResources, UINT scratchSize, UINT maxIinstanceCount);
-		void NextASIndex(int meshCount);
-		void NextSTIndex();
-		void BuildShaderTable(DeviceResources^ deviceResources, const Platform::Array<Platform::String^>^ raygenShaderNames, const Platform::Array<Platform::String^>^ missShaderNames, const Platform::Array <Platform::String^>^ hitGroupNames, int instances);
 		virtual ~RayTracingScene();
 	internal:
 		D3D12_SHADER_BYTECODE m_byteCode;
 
-		static const int c_argumentCacheStride = sizeof(CooRayTracingParamLocal1);
+		std::vector<CooRayTracingParamLocal1> arguments;
 
-		Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignatures[10];
+		//Microsoft::WRL::ComPtr<ID3D12RootSignature> m_rootSignatures[10];
 
 		Microsoft::WRL::ComPtr<ID3D12StateObject> m_dxrStateObject;
-		int stLastUpdateIndex = 0;
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_missShaderTable[c_frameCount];
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_hitGroupShaderTable[c_frameCount];
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_rayGenShaderTable[c_frameCount];
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_missShaderTable;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_hitGroupShaderTable;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_rayGenShaderTable;
 
 		UINT m_rayGenerateShaderTableStrideInBytes;
 		UINT m_hitGroupShaderTableStrideInBytes;
@@ -60,17 +56,18 @@ namespace Coocoo3DGraphics
 
 		UINT m_rayTypeCount = 2;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_topLevelAccelerationStructure[c_frameCount];
-		UINT m_topLevelAccelerationStructureSize[c_frameCount] = {};
-		std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>m_bottomLevelASs[c_frameCount];
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_topAS;
+		std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>m_bottomLevelASs;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> instanceDescs[c_frameCount];
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_scratchResource[c_frameCount];
-		int asLastUpdateIndex = 0;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_instanceDescs;
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_scratchResource;
 
-		std::vector <D3D12_RAYTRACING_INSTANCE_DESC> m_instanceDescs;
+		std::vector <D3D12_RAYTRACING_INSTANCE_DESC> m_instanceDescDRAMs;
 
-		void* pArgumentCache = nullptr;
+		UINT m_scratchSize;
+		UINT m_maxInstanceCount;
+		GraphicsSignature^ m_globalSignature;
+		GraphicsSignature^ m_localSignature;
 	private:
 		void SubobjectHitGroup(CD3DX12_HIT_GROUP_SUBOBJECT* hitGroupSubobject, LPCWSTR hitGroupName, LPCWSTR anyHitShaderName, LPCWSTR closestHitShaderName);
 	};

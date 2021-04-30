@@ -76,10 +76,6 @@ struct Ray
 	float3 direction;
 };
 
-StructuredBuffer<VertexSkinned> VerticesX : register(t1, space2);
-RWStructuredBuffer<float4>SceneLightWrite : register(u0, space2);
-StructuredBuffer<float4>SceneLightRead : register(t0, space2);
-
 RaytracingAccelerationStructure Scene : register(t0);
 TextureCube EnvCube : register (t1);
 TextureCube IrradianceCube : register (t2);
@@ -204,58 +200,6 @@ void MyRaygenShader()
 	g_renderTarget[DispatchRaysIndex().xy] = payload.color;
 }
 
-[shader("raygeneration")]
-void MyRaygenShader1()
-{
-	uint3 dtid = DispatchRaysIndex();
-	uint randomState = RNG::RandomSeed(dtid.x + dtid.y * 8192 + g_camera_randomValue);
-	int giSampleCount = g_quality * 16 + 64;
-	float3 N = VerticesX[dtid.x].Norm;
-	float3 V = N;
-	float3 pos = VerticesX[dtid.x].Pos;
-	float3 gi = float3(0, 0, 0);
-
-	float4 cPos = mul(float4(pos, 1), g_mWorldToProj);
-	float3 cPos2 = cPos.xyz / cPos.w;
-	bool InCamera = (cPos2.x > -1 && cPos2.x<1 && cPos2.y>-1 && cPos2.y < 1 && cPos2.z>0 && cPos2.z < 0.5);
-	bool isFront = dot(g_vCamPos - pos, N) > 0;
-	if (!InCamera || !isFront)
-		giSampleCount = (giSampleCount + 3) / 4;
-	for (int i = 0; i < giSampleCount; i++)
-	{
-		RayPayload payloadGI;
-
-		float2 E = RNG::Hammersley(i, giSampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
-		float3 vec1 = normalize(TangentToWorld(N, RNG::HammersleySampleCos(E)));
-
-		payloadGI.direction = vec1;
-
-		payloadGI.color = float4(0, 0, 0, 0);
-		payloadGI.depth = 2;
-		RayDesc rayX;
-		rayX.Origin = pos;
-		rayX.Direction = payloadGI.direction;
-		rayX.TMin = 1e-3f;
-		rayX.TMax = 10000.0;
-		TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 2, 0, rayX, payloadGI);
-
-		float3 L = vec1;
-		float3 H = normalize(L + V);
-		float3 NdotL = saturate(dot(N, L));
-		float3 LdotH = saturate(dot(L, H));
-		float3 NdotH = saturate(dot(N, H));
-
-		float diffuse_factor = 1;
-		gi += NdotL * (payloadGI.color.rgb) * (diffuse_factor / COO_PI);
-	}
-	gi /= giSampleCount;
-	//if(InCamera)
-	//SceneLightWrite[dtid.x] = float4(1,1,1, 1);
-	//else
-	//for denoise
-	SceneLightWrite[dtid.x] = float4(SceneLightRead[dtid.x].rgb * 0.5 + gi * 0.5, 1);
-}
-
 [shader("anyhit")]
 void AnyHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 {
@@ -308,9 +252,9 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 		triVert[1].Norm * vertexWeight[1] +
 		triVert[2].Norm * vertexWeight[2];
 
-	float3 GIVertex = SceneLightRead[meshIndexs[0] + _VertexBegin] * vertexWeight[0] +
-		SceneLightRead[meshIndexs[1] + _VertexBegin] * vertexWeight[1] +
-		SceneLightRead[meshIndexs[2] + _VertexBegin] * vertexWeight[2];
+	//float3 GIVertex = SceneLightRead[meshIndexs[0] + _VertexBegin] * vertexWeight[0] +
+	//	SceneLightRead[meshIndexs[1] + _VertexBegin] * vertexWeight[1] +
+	//	SceneLightRead[meshIndexs[2] + _VertexBegin] * vertexWeight[2];
 
 	float4 diffuseColor = diffuseMap.SampleLevel(s0, uv, 0) * _DiffuseColor;
 
@@ -499,11 +443,11 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 		if (diffuseBudget > 4)
 			outputColor += gi / diffuseBudget;
 		else
-			outputColor += gi / diffuseBudget * 0.75 + GIVertex * albedo.rgb * c_diffuse * 0.25;
+			outputColor += gi / diffuseBudget;
 	}
 	else
 	{
-		outputColor += GIVertex * albedo.rgb * c_diffuse;
+		outputColor += albedo.rgb * c_diffuse;
 	}
 
 	if (payload.depth < 3 && specularBudget > 0)

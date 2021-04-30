@@ -79,6 +79,7 @@
         <Datas>
           <Data>Camera</Data>
           <Data>DirectionalLight</Data>
+          <Data>PointLights4</Data>
           <Data>Metallic</Data>
           <Data>Roughness</Data>
           <Data>Emission</Data>

@@ -55,7 +55,6 @@ namespace Coocoo3DGraphics
 		void ReloadNDCQuad();
 		void ReloadCube();
 		void ReloadCubeWire();
-		void ReleaseUploadHeapResource();
 		static void CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics::float3>^ Target, const Platform::Array<byte>^ source);
 		virtual ~MMDMesh();
 		int GetIndexCount();
@@ -75,7 +74,6 @@ namespace Coocoo3DGraphics
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_indexBuffer;
 		D3D12_INDEX_BUFFER_VIEW m_indexBufferView;
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_bufferUpload;
 	};
 }
 

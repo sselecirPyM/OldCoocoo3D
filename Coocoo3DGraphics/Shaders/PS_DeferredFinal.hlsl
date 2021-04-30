@@ -6,6 +6,13 @@ struct LightInfo
 	uint LightType;
 	float4 LightColor;
 };
+struct PointLightInfo
+{
+	float3 LightDir;
+	uint LightType;
+	float4 LightColor;
+};
+#define POINT_LIGHT_COUNT 4
 cbuffer cb0 : register(b0)
 {
 	float4x4 g_mWorldToProj;
@@ -13,6 +20,7 @@ cbuffer cb0 : register(b0)
 	float3   g_vCamPos;
 	float g_skyBoxMultiple;
 	LightInfo Lightings[1];
+	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 };
 Texture2D texture0 :register(t0);
 Texture2D texture1 :register(t1);
@@ -123,6 +131,26 @@ float4 main(PSIn input) : SV_TARGET
 				float3 lightStrength = Lightings[i].LightColor.rgb * Lightings[i].LightColor.a / pow(distance(Lightings[i].LightDir, wPos), 2);
 
 				float3 L = normalize(Lightings[i].LightDir - wPos);
+				float3 H = normalize(L + V);
+
+				float3 NdotL = saturate(dot(N, L));
+				float3 LdotH = saturate(dot(L, H));
+				float3 NdotH = saturate(dot(N, H));
+
+				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+				float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+
+				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
+			}
+		}
+		for (int i = 0; i < POINT_LIGHT_COUNT; i++)
+		{
+			if (PointLights[i].LightType == 1)
+			{
+				float inShadow = 1.0f;
+				float3 lightStrength = PointLights[i].LightColor.rgb * PointLights[i].LightColor.a / pow(distance(PointLights[i].LightDir, wPos), 2);
+
+				float3 L = normalize(PointLights[i].LightDir - wPos);
 				float3 H = normalize(L + V);
 
 				float3 NdotL = saturate(dot(N, L));

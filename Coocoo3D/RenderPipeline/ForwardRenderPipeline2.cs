@@ -39,6 +39,7 @@ namespace Coocoo3D.RenderPipeline
             var lightings = context.dynamicContextRead.lightings;
             var camera = context.dynamicContextRead.cameras[0];
             var bigBuffer = context.bigBuffer;
+            List<LightingData> pointLights = new List<LightingData>();
 
             #region Lighting
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
@@ -49,7 +50,12 @@ namespace Coocoo3D.RenderPipeline
             }
             else
                 HasMainLight = false;
-
+            for (int i = 1; i < lightings.Count; i++)
+            {
+                LightingData lighting = lightings[i];
+                if (lighting.LightingType == LightingType.Point)
+                    pointLights.Add(lighting);
+            }
             #endregion
 
             int numMaterials = 0;
@@ -162,6 +168,20 @@ namespace Coocoo3D.RenderPipeline
                             else
                                 ofs += 96;
                             break;
+                        case "PointLights4":
+                            {
+                                int ofsa = ofs + 128;
+                                int count = Math.Min(pointLights.Count, 4);
+                                for (int pli = 0; pli < count; pli++)
+                                {
+                                    var lstruct = pointLights[pli].GetLStruct();
+                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.PosOrDir);
+                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Type);
+                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Color);
+                                }
+                                ofs = ofsa;
+                            }
+                            break;
                         case "IndirectMultiplier":
                             ofs += CooUtility.Write(_buffer, ofs, inShaderSettings.SkyBoxLightMultiple);
                             break;
@@ -208,8 +228,6 @@ namespace Coocoo3D.RenderPipeline
                 EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
-            //graphicsContext.SetRootSignature(RSBase);
-            //graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, false, true);
             int matC = 0;
             foreach (var combinedPass in context.currentPassSetting.RenderSequence)
             {
@@ -241,11 +259,15 @@ namespace Coocoo3D.RenderPipeline
                 passPsoDesc.renderTargetCount = combinedPass.renderTargets.Length;
                 passPsoDesc.streamOutput = false;
                 passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
-                _PassSetRes();
+                _PassSetRes(combinedPass);
                 if (combinedPass.DrawObjects)
                 {
                     graphicsContext.SetMesh(context.SkinningMeshBuffer);
                     _PassRender(rendererComponents, combinedPass);
+                }
+                else if (combinedPass.Type == "RayTracing")
+                {
+                    _RayTracing(rendererComponents, combinedPass);
                 }
                 else
                 {
@@ -304,7 +326,7 @@ namespace Coocoo3D.RenderPipeline
                             {
                                 //if (resd.ResourceType == "TextureCube")
                                 //{
-                                //    graphicsContext.SetSRVT(context._GetTexCubeByName(resd.Resource), resd.Index + 3);
+                                //    graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
                                 //}
                                 if (resd.ResourceType == "Texture2D")
                                 {
@@ -313,32 +335,88 @@ namespace Coocoo3D.RenderPipeline
                                     if (resd.Resource == "_Albedo")
                                         tex2D = albedo;
                                     if (tex2D != null)
-                                        graphicsContext.SetSRVT(tex2D, resd.Index + 3);
+                                        graphicsContext.SetSRVTSlot(tex2D, resd.Index);
                                 }
                             }
                         }
                     }
                 }
-                void _PassSetRes()
+                void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
                 {
-                    if (combinedPass.Pass.SRVs != null)
+                    if (_rendererComponents.Count == 0) return;
+                    _Counters counterX = new _Counters();
+                    var rtso = context.currentPassSetting.RTSO;
+                    var rtst = context.RTSTs[_combinedPass.Name];
+                    var rtis = context.RTIGroups[_combinedPass.Name];
+                    var rttas = context.RTTASs[_combinedPass.Name];
+                    var rtTex1 = combinedPass.renderTargets[0];
+                    var rtasg = context.RTASGroup;
+                    graphicsContext.Prepare(rtasg);
+                    graphicsContext.Prepare(rtis);
+
+                    foreach (var rendererComponent in _rendererComponents)
                     {
-                        foreach (var resd in combinedPass.Pass.SRVs)
+                        int indexOffset = 0;
+                        foreach (var material in rendererComponent.Materials)
                         {
-                            if (resd.ResourceType == "TextureCube")
-                            {
-                                graphicsContext.SetSRVT(context._GetTexCubeByName(resd.Resource), resd.Index + 3);
-                            }
-                            if (resd.ResourceType == "Texture2D")
-                            {
-                                var tex2D = context._GetTex2DByName(resd.Resource);
-                                if (tex2D != null)
-                                    graphicsContext.SetSRVT(tex2D, resd.Index + 3);
-                            }
+                            graphicsContext.BuildBTAS(rtasg, context.SkinningMeshBuffer, rendererComponent.mesh, counterX.vertex, indexOffset, material.indexCount);
+                            graphicsContext.BuildInst(rtis, rtasg, counterX.material, counterX.material, uint.MaxValue);
+
+                            counterX.material++;
+                            indexOffset += material.indexCount;
                         }
+                        counterX.vertex += rendererComponent.meshVertexCount;
                     }
+                    graphicsContext.TestShaderTable(rtst, rtso, _combinedPass.RayGenShaders, _combinedPass.MissShaders);
+                    graphicsContext.TestShaderTable2(rtst, rtso, rtasg, new string[] { "Test" });
+                    graphicsContext.BuildTPAS(rtis, rttas, rtasg);
+                    graphicsContext.SetRayTracingStateObject(rtso);
+                    graphicsContext.SetTPAS(rttas, rtso, 0);
+
+
+                    foreach (var cbv in combinedPass.Pass.CBVs)
+                    {
+                        context.XBufferGroup.SetComputeCBVR(graphicsContext, matC, cbv.Index);
+                        matC++;
+                    }
+                    graphicsContext.SetComputeUAVTSlot(context.outputRTV, 0);
+                    graphicsContext.DispatchRay(rtst, rtTex1.GetWidth(), rtTex1.GetHeight(), 1);
                 }
             }
+            void _PassSetRes(PassMatch1 _combinedPass)
+            {
+                if (_combinedPass.Pass.SRVs != null)
+                    foreach (var resd in _combinedPass.Pass.SRVs)
+                    {
+                        if (resd.ResourceType == "TextureCube")
+                        {
+                            graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
+                        }
+                        if (resd.ResourceType == "Texture2D")
+                        {
+                            var tex2D = context._GetTex2DByName(resd.Resource);
+                            if (tex2D != null)
+                                graphicsContext.SetSRVTSlot(tex2D, resd.Index);
+                        }
+                    }
+            }
+            //void _PassSetResRayTracing(PassMatch1 _combinedPass)
+            //{
+            //    if (_combinedPass.Pass.SRVs != null)
+            //        foreach (var resd in _combinedPass.Pass.SRVs)
+            //        {
+            //            if (resd.ResourceType == "TextureCube")
+            //            {
+            //                graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
+            //            }
+            //            if (resd.ResourceType == "Texture2D")
+            //            {
+            //                var tex2D = context._GetTex2DByName(resd.Resource);
+            //                if (tex2D != null)
+            //                    graphicsContext.SetSRVTSlot(tex2D, resd.Index);
+            //            }
+            //        }
+            //}
         }
     }
 }

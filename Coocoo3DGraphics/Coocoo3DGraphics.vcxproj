@@ -268,11 +268,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="RayTracingASGroup.h" />
     <ClInclude Include="CBuffer.h" />
+    <ClInclude Include="Extension\BoundingBox.h" />
     <ClInclude Include="Extension\CooUtility.h" />
     <ClInclude Include="GPUProgram\PSODesc.h" />
     <ClInclude Include="GraphicsConstance.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h" />
+    <ClInclude Include="RayTracingInstanceGroup.h" />
+    <ClInclude Include="RayTracingShaderTable.h" />
+    <ClInclude Include="RayTracingStateObject.h" />
+    <ClInclude Include="RayTracingTopAS.h" />
     <ClInclude Include="SBuffer.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DeviceResources.h" />
@@ -311,11 +317,17 @@
     <ClInclude Include="WICFactory.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="RayTracingASGroup.cpp" />
     <ClCompile Include="CBuffer.cpp" />
+    <ClCompile Include="Extension\BoundingBox.cpp" />
     <ClCompile Include="Extension\CooUtility.cpp" />
     <ClCompile Include="GPUProgram\PSODesc.cpp" />
     <ClCompile Include="GPUProgram\ShaderMacro.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp" />
+    <ClCompile Include="RayTracingInstanceGroup.cpp" />
+    <ClCompile Include="RayTracingShaderTable.cpp" />
+    <ClCompile Include="RayTracingStateObject.cpp" />
+    <ClCompile Include="RayTracingTopAS.cpp" />
     <ClCompile Include="SBuffer.cpp" />
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="DirectXTex\BC.cpp" />
@@ -386,6 +398,40 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">6.4</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.4</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </EntryPointName>
+    </FxCompile>
+    <FxCompile Include="RayTracing\RayTracing2.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">6.4</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">Library</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">6.4</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Library</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.4</ShaderModel>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

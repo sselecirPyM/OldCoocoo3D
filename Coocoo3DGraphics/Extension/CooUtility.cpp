@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "CooUtility.h"
+#include <DirectXCollision.h>
 using namespace Coocoo3DGraphics;
 using namespace Windows::Foundation::Numerics;
 
@@ -43,4 +44,9 @@ int CooUtility::Write(const Platform::Array<byte>^ array, int startIndex, Window
 {
 	*(float4x4*)(array->begin() + startIndex) = value;
 	return sizeof(value);
+}
+
+bool Intersect()
+{
+	return false;
 }

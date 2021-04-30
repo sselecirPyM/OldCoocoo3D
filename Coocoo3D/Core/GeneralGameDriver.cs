@@ -25,8 +25,6 @@ namespace Coocoo3D.Core
             context.NeedRender = false;
             context.RequireResize = context.RequireResizeOuter;
             context.RequireResizeOuter = false;
-            if (context.RequireResize)
-                context.RequireInterruptRender = true;
 
             DateTime now = DateTime.Now;
             context.DeltaTime = Math.Clamp((now - context.LatestRenderTime).TotalSeconds * context.PlaySpeed, -0.17f, 0.17f);

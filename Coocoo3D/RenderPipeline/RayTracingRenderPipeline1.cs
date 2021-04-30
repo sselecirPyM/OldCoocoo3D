@@ -53,7 +53,7 @@ namespace Coocoo3D.RenderPipeline
         }
 
         #region graphics assets
-        static readonly string[] c_rayGenShaderNames = { "MyRaygenShader", "MyRaygenShader1" };
+        static readonly string[] c_rayGenShaderNames = { "MyRaygenShader", };
         static readonly string[] c_missShaderNames = { "MissShaderSurface", "MissShaderTest", };
         static readonly string[] c_hitGroupNames = new string[] { "HitGroupSurface", "HitGroupTest", };
         static readonly HitGroupDesc[] hitGroupDescs = new HitGroupDesc[]
@@ -61,12 +61,13 @@ namespace Coocoo3D.RenderPipeline
             new HitGroupDesc { HitGroupName = "HitGroupSurface", AnyHitName = "AnyHitShaderSurface", ClosestHitName = "ClosestHitShaderSurface" },
             new HitGroupDesc { HitGroupName = "HitGroupTest", AnyHitName = "AnyHitShaderTest", ClosestHitName = "ClosestHitShaderTest" },
         };
-        static readonly string[] c_exportNames = new string[] { "MyRaygenShader", "MyRaygenShader1", "ClosestHitShaderSurface", "ClosestHitShaderTest", "MissShaderSurface", "MissShaderTest", "AnyHitShaderSurface", "AnyHitShaderTest", };
+        static readonly string[] c_exportNames = new string[] { "MyRaygenShader", "ClosestHitShaderSurface", "ClosestHitShaderTest", "MissShaderSurface", "MissShaderTest", "AnyHitShaderSurface", "AnyHitShaderTest", };
 
-        public async Task ReloadAssets(DeviceResources deviceResources)
+        public async Task ReloadAssets(RenderPipelineContext context)
         {
+            DeviceResources deviceResources = context.deviceResources;
             RayTracingScene.ReloadLibrary(await ReadFile("ms-appx:///Coocoo3DGraphics/Raytracing.cso"));
-            RayTracingScene.ReloadPipelineStates(deviceResources, c_exportNames, hitGroupDescs, c_rayTracingSceneSettings);
+            RayTracingScene.ReloadPipelineStates(deviceResources, context.RPAssetsManager.rtGlobal, context.RPAssetsManager.rtLocal, c_exportNames, hitGroupDescs, c_rayTracingSceneSettings);
             RayTracingScene.ReloadAllocScratchAndInstance(deviceResources, 1024 * 1024 * 64, 1024);
             Ready = true;
         }
@@ -156,10 +157,6 @@ namespace Coocoo3D.RenderPipeline
         {
             var RPAssetsManager = context.RPAssetsManager;
 
-            RayTracingScene.NextASIndex(renderMatCount);
-            RayTracingScene.NextSTIndex();
-
-
             var rendererComponents = context.dynamicContextRead.rendererComponents;
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
@@ -183,26 +180,6 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSOMeshNone();
 
             graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
-
-            //void ParticleCompute(MMDRendererComponent rendererComponent, SBuffer cameraPresentData, CBuffer entityBoneDataBuffer, CBuffer entityDataBuffer, ref _Counters counter)
-            //{
-            //    if (rendererComponent.ParticleCompute == null || rendererComponent.meshParticleBuffer == null || rendererComponent.ParticleCompute.Status != GraphicsObjectStatus.loaded)
-            //    {
-            //        counter.vertex += rendererComponent.meshIndexCount;
-            //        return;
-            //    }
-            //    graphicsContext.SetComputeCBVR(entityBoneDataBuffer, 0);
-            //    //graphicsContext.SetComputeCBVR(entityDataBuffer, 1);
-            //    graphicsContext.SetComputeCBVR(cameraPresentData, 2);
-            //    graphicsContext.SetComputeUAVR(context.SkinningMeshBuffer, counter.vertex, 4);
-            //    graphicsContext.SetComputeUAVR(rendererComponent.meshParticleBuffer, 0, 5);
-            //    graphicsContext.SetPObject(rendererComponent.ParticleCompute);
-            //    graphicsContext.Dispatch((rendererComponent.meshVertexCount + 63) / 64, 1, 1);
-            //    counter.vertex += rendererComponent.meshIndexCount;
-            //}
-            //_Counters counterParticle = new _Counters();
-            //for (int i = 0; i < rendererComponents.Count; i++)
-            //    ParticleCompute(rendererComponents[i], CameraDataBuffer, context.CBs_Bone[i], null, ref counterParticle);
 
             if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
             {
@@ -249,6 +226,7 @@ namespace Coocoo3D.RenderPipeline
 
             if (rendererComponents.Count > 0)
             {
+                graphicsContext.Prepare(RayTracingScene, renderMatCount);
                 void BuildEntityBAS1(MMDRendererComponent rendererComponent, ref _Counters counter)
                 {
                     Texture2D texLoading = context.TextureLoading;
@@ -278,7 +256,7 @@ namespace Coocoo3D.RenderPipeline
                     BuildEntityBAS1(rendererComponents[i], ref counter1);
                 }
                 graphicsContext.BuildTopAccelerationStructures(RayTracingScene);
-                RayTracingScene.BuildShaderTable(context.deviceResources, c_rayGenShaderNames, c_missShaderNames, c_hitGroupNames, counter1.material);
+                graphicsContext.BuildShaderTable(RayTracingScene, c_rayGenShaderNames, c_missShaderNames, c_hitGroupNames, counter1.material);
                 graphicsContext.SetRootSignatureRayTracing(RayTracingScene);
                 graphicsContext.SetComputeUAVT(context.outputRTV, 0);
                 graphicsContext.SetComputeCBVR(CameraDataBuffer, 2);
@@ -286,14 +264,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
                 graphicsContext.SetComputeSRVT(context.BRDFLut, 5);
                 graphicsContext.SetComputeSRVTFace(context.ShadowMapCube, 0, 6);
-                graphicsContext.SetComputeSRVR(context.SkinningMeshBuffer, 0, 7);
-                graphicsContext.SetComputeUAVR(context.LightCacheBuffer, context.dynamicContextRead.frameRenderIndex % 2, 8);
-                graphicsContext.SetComputeSRVR(context.LightCacheBuffer, (context.dynamicContextRead.frameRenderIndex + 1) % 2, 9);
 
-                graphicsContext.DoRayTracing(RayTracingScene, context.dynamicContextRead.VertexCount, 1, 1);
-
-                graphicsContext.SetComputeUAVR(context.LightCacheBuffer, (context.dynamicContextRead.frameRenderIndex + 1) % 2, 8);
-                graphicsContext.SetComputeSRVR(context.LightCacheBuffer, context.dynamicContextRead.frameRenderIndex % 2, 9);
                 graphicsContext.DoRayTracing(RayTracingScene, context.screenWidth, context.screenHeight, 0);
             }
             else

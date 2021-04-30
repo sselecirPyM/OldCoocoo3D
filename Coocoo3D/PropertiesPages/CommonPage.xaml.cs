@@ -286,7 +286,6 @@ namespace Coocoo3D.PropertiesPages
             set
             {
                 appBody.performaceSettings.HighResolutionShadow = value;
-                appBody.GameDriverContext.RequireInterruptRender = true;
                 appBody.RequireRender();
             }
         }
@@ -297,14 +296,14 @@ namespace Coocoo3D.PropertiesPages
             set => appBody.performaceSettings.VSync = value;
         }
 
-        public bool VZPrepass
-        {
-            get => appBody.settings.ZPrepass; set
-            {
-                appBody.settings.ZPrepass = value;
-                appBody.RequireRender();
-            }
-        }
+        //public bool VZPrepass
+        //{
+        //    get => appBody.settings.ZPrepass; set
+        //    {
+        //        appBody.settings.ZPrepass = value;
+        //        appBody.RequireRender();
+        //    }
+        //}
 
         public bool VWireframe
         {

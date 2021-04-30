@@ -16,6 +16,12 @@
 #include "MeshBuffer.h"
 #include "Uploader.h"
 #include "MMDMeshAppend.h"
+#include "RayTracingStateObject.h"
+#include "RayTracingASGroup.h"
+#include "RayTracingShaderTable.h"
+#include "RayTracingTopAS.h"
+#include "RayTracingInstanceGroup.h"
+
 namespace Coocoo3DGraphics
 {
 	public enum struct D3D12ResourceStates
@@ -63,7 +69,8 @@ namespace Coocoo3DGraphics
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
 		void SetSRVT(ITexture2D^ texture, int index);
 		void SetSRVT(ITextureCube^ texture, int index);
-		//void SetSRVT(RenderTextureCube^ texture, int index);
+		void SetSRVTSlot(ITexture2D^ texture, int slot);
+		void SetSRVTSlot(ITextureCube^ texture, int slot);
 		void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetSRVTArray(RenderTextureCube^ texture, int index);
 		void SetCBVR(CBuffer^ buffer, int index);
@@ -71,10 +78,8 @@ namespace Coocoo3DGraphics
 		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetCBVR(SBuffer^ buffer, int offset256, int size256, int index);
 		void SetUAVT(RenderTexture2D^ texture, int index);
-		void SetComputeSRVT(Texture2D^ texture, int index);
-		void SetComputeSRVT(TextureCube^ texture, int index);
-		void SetComputeSRVT(RenderTexture2D^ texture, int index);
-		void SetComputeSRVT(RenderTextureCube^ texture, int index);
+		void SetComputeSRVT(ITexture2D^ texture, int index);
+		void SetComputeSRVT(ITextureCube^ texture, int index);
 		void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
@@ -83,16 +88,19 @@ namespace Coocoo3DGraphics
 		void SetComputeCBVR(SBuffer^ buffer, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetComputeCBVR(SBuffer^ buffer, int offset256, int size256, int index);
+		void SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
+		void SetComputeCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot);
 		void SetComputeUAVR(MeshBuffer^ mesh, int startLocation, int index);
 		void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
 		void SetComputeUAVT(RenderTexture2D^ texture, int index);
 		void SetComputeUAVT(RenderTextureCube^ texture, int mipIndex, int index);
+		void SetComputeUAVTSlot(RenderTexture2D^ texture, int slot);
+		void SetRayTracingStateObject(RayTracingStateObject^ stateObject);
 		void SetSOMesh(MeshBuffer^ mesh);
 		void SetSOMeshNone();
 		void Draw(int vertexCount, int startVertexLocation);
 		void DrawIndexed(int indexCount, int startIndexLocation, int baseVertexLocation);
 		void DrawIndexedInstanced(int indexCount, int startIndexLocation, int baseVertexLocation, int instanceCount, int startInstanceLocation);
-		void Dispatch(int x, int y, int z);
 		void DoRayTracing(RayTracingScene^ rayTracingScene, int width, int height, int raygenIndex);
 		void UploadMesh(MMDMesh^ mesh);
 		void UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte>^ data);
@@ -102,9 +110,21 @@ namespace Coocoo3DGraphics
 		void UpdateReadBackTexture(ReadBackTexture2D^ texture);
 		void Copy(TextureCube^ source, RenderTextureCube^ dest);
 		void CopyBackBuffer(ReadBackTexture2D^ target, int index);
+		void Dispatch(int x, int y, int z);
+		void DispatchRay(RayTracingShaderTable^ rtst, int x, int y, int z);
+		void Prepare(RayTracingScene^ rtas, int meshCount);
 		void BuildBottomAccelerationStructures(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, int vertexBegin, int indexBegin, int indexCount);
 		void BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, SBuffer^ mat, int offset256);
-		void BuildTopAccelerationStructures(RayTracingScene^ rayTracingAccelerationStructure);
+		void BuildTopAccelerationStructures(RayTracingScene^ rtas);
+		void BuildShaderTable(RayTracingScene^ rts, const Platform::Array<Platform::String^>^ raygenShaderNames, const Platform::Array<Platform::String^>^ missShaderNames, const Platform::Array <Platform::String^>^ hitGroupNames, int instances);
+		void Prepare(RayTracingASGroup^ asGroup);
+		void Prepare(RayTracingInstanceGroup^ rtig);
+		void BuildBTAS(RayTracingASGroup^ asGroup, MeshBuffer^ mesh, MMDMesh^ indexBuffer, int vertexBegin, int indexBegin, int indexCount);
+		void BuildInst(RayTracingInstanceGroup^ rtig, RayTracingASGroup^ asGroup, int instId,int i2hitGroup, UINT instMask);
+		void TestShaderTable(RayTracingShaderTable^ rtst, RayTracingStateObject^ rtso, const Platform::Array<Platform::String^>^ raygenShaderNames, const Platform::Array<Platform::String^>^ missShaderNames);
+		void TestShaderTable2(RayTracingShaderTable^ rtst, RayTracingStateObject^ rtso, RayTracingASGroup^ asGroup, const Platform::Array<Platform::String^>^ hitGroupNames);
+		void BuildTPAS(RayTracingInstanceGroup^ rtis, RayTracingTopAS^ rttas, RayTracingASGroup^ asGroup);
+		void SetTPAS(RayTracingTopAS^ rttas, RayTracingStateObject^ rtso, int slot);
 		void SetMesh(MMDMesh^ mesh);
 		void SetMeshVertex(MMDMesh^ mesh);
 		void SetMeshVertex1(MMDMesh^ mesh);
@@ -120,6 +140,7 @@ namespace Coocoo3DGraphics
 		void SetRootSignature(GraphicsSignature^ rootSignature);
 		void SetRootSignatureCompute(GraphicsSignature^ rootSignature);
 		void SetRootSignatureRayTracing(RayTracingScene^ rootSignature);
+		void SetRootSignatureRayTracing(GraphicsSignature^ rootSignature);
 		void ResourceBarrierScreen(D3D12ResourceStates before, D3D12ResourceStates after);
 		void SetRenderTargetScreen(Windows::Foundation::Numerics::float4 color, RenderTexture2D^ DSV, bool clearScreen, bool clearDSV);
 		static void BeginAlloctor(DeviceResources^ deviceResources);
@@ -131,6 +152,7 @@ namespace Coocoo3DGraphics
 		void Execute();
 	internal:
 		DeviceResources^ m_deviceResources;
+		GraphicsSignature^ m_currentSign;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>	m_commandList;
 	};
 }

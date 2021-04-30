@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <PassSetting>
   <RenderSequence>
-    <Pass>
+    <!--<Pass>
       <Name>DrawSkyBox</Name>
       <Type>DrawScreen</Type>
       <ClearDepth>1</ClearDepth>
@@ -19,6 +19,11 @@
       <Name>Pass1</Name>
       <BlendMode>Alpha</BlendMode>
       <DepthStencil>_ScreenDepth0</DepthStencil>
+      <RenderTarget>_Output0</RenderTarget>
+    </Pass>-->
+    <Pass>
+      <Name>PassRayTracing</Name>
+      <Type>RayTracing</Type>
       <RenderTarget>_Output0</RenderTarget>
     </Pass>
   </RenderSequence>
@@ -79,6 +84,7 @@
         <Datas>
           <Data>Camera</Data>
           <Data>DirectionalLight</Data>
+          <Data>PointLights4</Data>
           <Data>Metallic</Data>
           <Data>Roughness</Data>
           <Data>Emission</Data>
@@ -119,17 +125,41 @@
         <Resource>_BRDFLUT</Resource>
       </SRV>
     </Pass>
+    <Pass>
+      <Name>PassRayTracing</Name>
+      <Camera>Main</Camera>
+      <RayTracingStateObject>RTTest</RayTracingStateObject>
+      <CBV>
+        <Index>0</Index>
+        <Datas>
+          <Data>Camera</Data>
+          <Data>CameraPosition</Data>
+          <Data>IndirectMultiplier</Data>
+        </Datas>
+      </CBV>
+      <RayTracingShader></RayTracingShader>
+      <SRV>
+        <Index>0</Index>
+        <ResourceType>TopAccelerateStructure</ResourceType>
+      </SRV>
+    </Pass>
   </Passes>
-  <!--<PipelineStates>
-    <PipelineState>
-      <Name>Loading</Name>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Loading</PixelShader>
-    </PipelineState>
-    <PipelineState>
-      <Name>Error</Name>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Error</PixelShader>
-    </PipelineState>
-  </PipelineStates>-->
+  <RayTracingStateObject>
+    <Name>RTTest</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/Raytracing2.cso</Path>
+    <MaxPayloadSize>32</MaxPayloadSize>
+    <MaxAttributeSize>8</MaxAttributeSize>
+    <MaxRecursionDepth>2</MaxRecursionDepth>
+    <RayGenShader>
+      <Name>MyRaygenShader</Name>
+    </RayGenShader>
+    <MissShader>
+      <Name>MyMissShader</Name>
+    </MissShader>
+    <HitGroupSubobject>
+      <Name>Test</Name>
+      <!--<AnyHitShader></AnyHitShader>-->
+      <ClosestHitShader>MyClosestHitShader</ClosestHitShader>
+    </HitGroupSubobject>
+  </RayTracingStateObject>
 </PassSetting>

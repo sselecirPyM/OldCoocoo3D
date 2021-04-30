@@ -71,5 +71,12 @@ namespace Coocoo3D.RenderPipeline.Wrap
             int slience2 = slienceIndex % sliencesPerBuffer;
             graphicsContext.SetCBVR(constantBuffers[slience1], sizeD256 * slience2, sizeD256, slot);
         }
+
+        public void SetComputeCBVR(GraphicsContext graphicsContext, int slienceIndex, int slot)
+        {
+            int slience1 = slienceIndex / sliencesPerBuffer;
+            int slience2 = slienceIndex % sliencesPerBuffer;
+            graphicsContext.SetComputeCBVRSlot(constantBuffers[slience1], sizeD256 * slience2, sizeD256, slot);
+        }
     }
 }
