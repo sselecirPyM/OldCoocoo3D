@@ -54,8 +54,16 @@ MRTOutput main(PSSkinnedIn input) : SV_TARGET
 	MRTOutput output;
 	float4 color = texture0.Sample(s1, input.uv) * _DiffuseColor;
 	clip(color.a - 0.98f);
-	output.color0 = float4(color.rgb, _Metallic);
+	float roughness = max(_Roughness, 0.002);
+	float alpha = roughness * roughness;
+
+	float3 albedo = color.rgb;
+
+	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
+	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
+
+	output.color0 = float4(c_diffuse, _Metallic);
 	output.color1 = float4(encodedNormal, _Roughness, 1);
-	output.color2 = float4(1, 0, 0, 1);
+	output.color2 = float4(c_specular, 1);
 	return output;
 }

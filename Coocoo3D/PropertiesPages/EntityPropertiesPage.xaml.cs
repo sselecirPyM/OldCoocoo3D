@@ -304,10 +304,6 @@ namespace Coocoo3D.PropertiesPages
                             await dialog.ShowAsync();
                         }
                     }
-                    if (".hlsl".Equals(extName, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        UI.UISharedCode.LoadShaderForEntities1(appBody, storageFile, storageFolder, new MMD3DEntity[] { entity });
-                    }
                 }
             }
         }
@@ -320,10 +316,6 @@ namespace Coocoo3D.PropertiesPages
                 if (extName != null)
                 {
                     if (".vmd".Equals(extName, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        e.AcceptedOperation = DataPackageOperation.Copy;
-                    }
-                    else if (".hlsl".Equals(extName, StringComparison.CurrentCultureIgnoreCase))
                     {
                         e.AcceptedOperation = DataPackageOperation.Copy;
                     }

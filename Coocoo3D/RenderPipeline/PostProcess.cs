@@ -24,7 +24,7 @@ namespace Coocoo3D.RenderPipeline
             Threshold2 = 0.2f,
             Transition2 = 0.1f,
             Saturation3 = 1.0f,
-            BackgroundFactory = 1.0f,
+            BackgroundFactor = 1.0f,
         };
         CBuffer postProcessDataBuffer = new CBuffer();
 
@@ -51,7 +51,6 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, context.ScreenSizeDSVs[1], true, true);
             graphicsContext.SetCBVR(postProcessDataBuffer, 0);
             graphicsContext.SetSRVT(context.outputRTV, 1);
-            graphicsContext.SetSRVT(context.postProcessBackground, 2);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             PSODesc desc = new PSODesc
             {
@@ -68,7 +67,7 @@ namespace Coocoo3D.RenderPipeline
                 wireFrame = false,
             };
 
-            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PObjectPostProcess);
+            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PSOs["PostProcess"]);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
         }
 
@@ -82,7 +81,7 @@ namespace Coocoo3D.RenderPipeline
             public float Threshold2;
             public float Transition2;
             public float Saturation3;
-            public float BackgroundFactory;
+            public float BackgroundFactor;
         }
 
     }

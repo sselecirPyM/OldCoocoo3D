@@ -25,7 +25,7 @@ namespace Coocoo3D.RenderPipeline
         public List<Texture2DUploadPack> Texture2DLoadList = new List<Texture2DUploadPack>();
         public List<MMDMesh> MMDMeshLoadList = new List<MMDMesh>();
         public List<MeshAppendUploadPack> MMDMeshLoadList2 = new List<MeshAppendUploadPack>();
-        public List<ShaderWarp1> pobjectList = new List<ShaderWarp1>();
+        //public List<ShaderWarp1> pobjectList = new List<ShaderWarp1>();
 
         public void AddObject(MMDMesh mesh)
         {
@@ -55,14 +55,14 @@ namespace Coocoo3D.RenderPipeline
                 Texture2DLoadList.Add(texture);
             }
         }
-        /// <summary>添加到上传列表</summary>
-        public void UL(ShaderWarp1 pObject)
-        {
-            lock (pobjectList)
-            {
-                pobjectList.Add(pObject);
-            }
-        }
+        ///// <summary>添加到上传列表</summary>
+        //public void UL(ShaderWarp1 pObject)
+        //{
+        //    lock (pobjectList)
+        //    {
+        //        pobjectList.Add(pObject);
+        //    }
+        //}
 
         public void MoveToAnother(ProcessingList another)
         {
@@ -70,13 +70,13 @@ namespace Coocoo3D.RenderPipeline
             Move1(Texture2DLoadList, another.Texture2DLoadList);
             Move1(MMDMeshLoadList, another.MMDMeshLoadList);
             Move1(MMDMeshLoadList2, another.MMDMeshLoadList2);
-            Move1(pobjectList, another.pobjectList);
+            //Move1(pobjectList, another.pobjectList);
         }
 
         public bool IsEmpty()
         {
-            if (pobjectList.Count == 0)
-                return false;
+            //if (pobjectList.Count == 0)
+            //    return false;
 
             return TextureCubeLoadList.Count == 0 &&
                  Texture2DLoadList.Count == 0 &&
@@ -102,9 +102,9 @@ namespace Coocoo3D.RenderPipeline
         }
         public void _DealStep2(GraphicsContext graphicsContext, DeviceResources deviceResources)
         {
-            for (int i = 0; i < pobjectList.Count; i++)
-                pobjectList[i].pipelineState.Initialize(pobjectList[i].vs, pobjectList[i].gs, pobjectList[i].ps);
-            pobjectList.Clear();
+            //for (int i = 0; i < pobjectList.Count; i++)
+            //    pobjectList[i].pipelineState.Initialize(pobjectList[i].vs, pobjectList[i].gs, pobjectList[i].ps);
+            //pobjectList.Clear();
         }
     }
 }

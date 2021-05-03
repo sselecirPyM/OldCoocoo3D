@@ -1,11 +1,11 @@
 # Coocoo3D
-一个CPU要求极低的MMD渲染器，支持DirectX12和DXR实时光线追踪。
+一个CPU要求极低的MMD渲染器，支持自定义渲染，支持DirectX12和DXR实时光线追踪。
 
-正在尝试一种新的使用标记语言来扩展渲染过程的方法，只需使用XML写出Pass的描述，渲染器就会按照Pass标记进行渲染，可以让你更灵活的修改渲染流程。
+你可以配置渲染文件来修改渲染Pass，增加所需纹理，使用自定义着色器等。
 
-视频[https://www.bilibili.com/video/BV1p54y127ig/](https://www.bilibili.com/video/BV1p54y127ig/)
+软件运行时点击菜单栏的 帮助->保存示例着色器文件 来查看示例文件，打开示例文件里的samplePasses.coocoox就可以查看自定义渲染的效果。
 
-光线追踪全局光照演示[https://www.bilibili.com/video/bv13Z4y1V7a2](https://www.bilibili.com/video/bv13Z4y1V7a2)
+(远古版本)视频[https://www.bilibili.com/video/BV1p54y127ig/](https://www.bilibili.com/video/BV1p54y127ig/)
 
 ## 基本功能
 * 加载pmx模型
@@ -14,6 +14,5 @@
 * 录制图像序列
 ## 图形功能
 * 自定义着色器
-* GPU粒子系统
 * 烘焙天空盒
 * 后处理

@@ -17,6 +17,5 @@ namespace Coocoo3DGraphics
 		DXGI_FORMAT m_format;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
 		UINT m_heapRefIndex;
-		UINT64 m_lastRefFrame;
 	};
 }

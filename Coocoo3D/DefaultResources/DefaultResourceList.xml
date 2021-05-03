@@ -36,6 +36,10 @@
     <Name>VS_SkyBox</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VS_SkyBox.cso</Path>
   </VertexShader>
+  <VertexShader>
+    <Name>VSMMDTransform</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/VSMMDTransform.cso</Path>
+  </VertexShader>
   <!--pixelshaders-->
   <PixelShader>
     <Name>PSDeferredRenderGBuffer.cso</Name>
@@ -70,14 +74,6 @@
     <Path>ms-appx:///Coocoo3DGraphics/PSWidgetUILight.cso</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSLoading.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSLoading.cso</Path>
-  </PixelShader>
-  <PixelShader>
-    <Name>PSError.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSError.cso</Path>
-  </PixelShader>
-  <PixelShader>
     <Name>PS_Loading</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSLoading.cso</Path>
   </PixelShader>
@@ -105,6 +101,14 @@
     <Name>PS_DeferredFinal</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredFinal.cso</Path>
   </PixelShader>
+  <PixelShader>
+    <Name>PSMMD</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PSMMD.cso</Path>
+  </PixelShader>
+  <PixelShader>
+    <Name>PSMMDTransparent</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PSMMDTransparent.cso</Path>
+  </PixelShader>
   <PipelineState>
     <Name>Loading</Name>
     <VertexShader>VS_Pass1</VertexShader>
@@ -115,4 +119,36 @@
     <VertexShader>VS_Pass1</VertexShader>
     <PixelShader>PS_Error</PixelShader>
   </PipelineState>
+  <PipelineState>
+    <Name>PostProcess</Name>
+    <VertexShader>VSPostProcess.cso</VertexShader>
+    <PixelShader>PSPostProcess.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>SkyBox</Name>
+    <VertexShader>VS_SkyBox</VertexShader>
+    <PixelShader>PS_SkyBox</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PSOMMD</Name>
+    <VertexShader>VSMMDTransform</VertexShader>
+    <PixelShader>PSMMD</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PSOMMDTransparent</Name>
+    <VertexShader>VSMMDTransform</VertexShader>
+    <PixelShader>PSMMDTransparent</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PSOMMDShadowDepth</Name>
+    <VertexShader>VSMMDTransform</VertexShader>
+  </PipelineState>
+  <Texture2D>
+    <Name>_BRDFLUT</Name>
+    <Path>ms-appx:///Assets/Textures/brdflut.png</Path>
+  </Texture2D>
+  <Texture2D>
+    <Name>_UI1Texture</Name>
+    <Path>ms-appx:///Assets/Textures/UI_1.png</Path>
+  </Texture2D>
 </DefaultResource>

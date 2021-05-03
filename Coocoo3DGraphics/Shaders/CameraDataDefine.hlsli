@@ -7,7 +7,5 @@
 	uint g_enableShadow;\
 	uint g_quality;\
 	float g_aspectRatio;\
-	float g_time;\
-	float g_deltaTime;\
 	uint2 g_camera_randomValue;\
 	float4 g_camera_preserved2[5]

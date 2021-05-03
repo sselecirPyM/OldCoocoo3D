@@ -156,3 +156,11 @@ int PObject::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature
 	return index;
 }
 
+void PObject::DelayDestroy(DeviceResources^ deviceResources)
+{
+	for (int i = 0; i < m_pipelineStates.size(); i++)
+	{
+		deviceResources->ResourceDelayRecycle(m_pipelineStates[i]);
+	}
+}
+

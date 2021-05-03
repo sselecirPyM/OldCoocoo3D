@@ -24,12 +24,13 @@ cbuffer cb0 : register(b0)
 };
 Texture2D texture0 :register(t0);
 Texture2D texture1 :register(t1);
-Texture2D gbufferDepth : register (t2);
+Texture2D texture2 :register(t2);
+Texture2D gbufferDepth : register (t3);
 
-TextureCube EnvCube : register (t3);
-TextureCube IrradianceCube : register (t4);
-Texture2D BRDFLut : register(t5);
-Texture2D ShadowMap0 : register(t6);
+TextureCube EnvCube : register (t4);
+TextureCube IrradianceCube : register (t5);
+Texture2D BRDFLut : register(t6);
+Texture2D ShadowMap0 : register(t7);
 SamplerState s0 : register(s0);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 SamplerState s3 : register(s3);
@@ -55,6 +56,7 @@ float4 main(PSIn input) : SV_TARGET
 	float depth1 = gbufferDepth.SampleLevel(s3, uv, 0).r;
 	float4 buffer0Color = texture0.Sample(s3, uv);
 	float4 buffer1Color = texture1.Sample(s3, uv);
+	float4 buffer2Color = texture2.Sample(s3, uv);
 
 	float4 vx = mul(float4(input.uv,0,1),g_mProjToWorld);
 	float3 V = normalize(g_vCamPos - vx.xyz / vx.w);
@@ -67,12 +69,11 @@ float4 main(PSIn input) : SV_TARGET
 	{
 		float3 N = normalize(NormalDecode(buffer1Color.rg));
 		float NdotV = saturate(dot(N, V));
-		float3 albedo = buffer0Color.rgb;
 		float metallic = buffer0Color.a;
 		float roughness = buffer1Color.b;
 		float alpha = roughness * roughness;
-		float3 c_diffuse = lerp(albedo * (1 - 0.04), 0, metallic);
-		float3 c_specular = lerp(0.04f, albedo, metallic);
+		float3 c_diffuse = buffer0Color.rgb;
+		float3 c_specular = buffer2Color.rgb;
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
 		float3 outputColor = float3(0, 0, 0);

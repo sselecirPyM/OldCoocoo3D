@@ -285,7 +285,12 @@ void DeviceResources::CreateDeviceResources()
 void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res)
 {
 	if (res != nullptr)
-		m_recycleList.push_back(d3d12RecycleResource{ res,m_currentFenceValue });
+		m_recycleList.push_back(d3d12RecycleResource{ res, nullptr, m_currentFenceValue });
+}
+void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12PipelineState> res2)
+{
+	if (res2 != nullptr)
+		m_recycleList.push_back(d3d12RecycleResource{ nullptr,res2,  m_currentFenceValue });
 }
 
 // 每次更改窗口大小时需要重新创建这些资源。

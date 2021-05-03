@@ -162,7 +162,7 @@
     <value>打开文件夹</value>
   </data>
   <data name="M_MenuBarItem_ShaderFileSample.Text" xml:space="preserve">
-    <value>示例着色器文件</value>
+    <value>保存示例着色器文件</value>
   </data>
   <data name="M_MenuBarItem_View.Title" xml:space="preserve">
     <value>视图</value>

@@ -17,6 +17,9 @@ using Microsoft.UI.Xaml.Controls;
 using Coocoo3DGraphics;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Core;
+using Windows.UI.Popups;
+using Windows.ApplicationModel;
+using Windows.Storage;
 
 // https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x804 上介绍了“空白页”项模板
 
@@ -111,10 +114,8 @@ namespace Coocoo3D
         private void Current_Activated(object sender, Windows.UI.Core.WindowActivatedEventArgs e)
         {
             if (appBody.Recording) return;
-            if (appBody.performaceSettings.AutoReloadShaders)
-                appBody.mainCaches.ReloadShaders(appBody.ProcessingList, appBody.RPAssetsManager,appBody.RequireRender);
             if (appBody.performaceSettings.AutoReloadTextures)
-                appBody.mainCaches.ReloadTextures(appBody.ProcessingList,appBody.RequireRender);
+                appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
             if (appBody.performaceSettings.AutoReloadModels)
                 appBody.GameDriverContext.ReqireReloadModel();
         }
@@ -204,7 +205,7 @@ namespace Coocoo3D
                     ViewMode = PickerViewMode.Thumbnail,
                     SettingsIdentifier = "RecordFolder",
                 };
-                Windows.Storage.StorageFolder folder = await folderPicker.PickSingleFolderAsync();
+                StorageFolder folder = await folderPicker.PickSingleFolderAsync();
                 if (folder == null) return;
                 appBody._RecorderGameDriver.saveFolder = folder;
                 appBody._RecorderGameDriver.SwitchEffect();
@@ -259,20 +260,32 @@ namespace Coocoo3D
         }
         private async void SampleShader_Click(object sender, RoutedEventArgs e)
         {
-            FileSavePicker fileSavePicker = new FileSavePicker()
+            FolderPicker folderPicker = new FolderPicker()
             {
-                FileTypeChoices =
+                FileTypeFilter =
                     {
-                        { ".hlsl",new string[]{".hlsl"} }
+                        "*"
                     },
-                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-                SuggestedFileName = "Sample.hlsl",
+                SuggestedStartLocation = PickerLocationId.ComputerFolder,
+                ViewMode = PickerViewMode.Thumbnail,
                 SettingsIdentifier = "SampleShader",
             };
-            var sf = await fileSavePicker.PickSaveFileAsync();
-            if (sf == null) return;
-            var f = await Windows.Storage.StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Samples/SampleShader.hlsl"));
-            await f.CopyAndReplaceAsync(sf);
+            try
+            {
+                var folder = await folderPicker.PickSingleFolderAsync();
+                if (folder == null) return;
+                var sampleFolder = await Package.Current.InstalledLocation.GetFolderAsync("Samples\\");
+                foreach (var item in await sampleFolder.GetFilesAsync())
+                {
+                    var file = await folder.CreateFileAsync(item.Name, CreationCollisionOption.OpenIfExists);
+                    await item.CopyAndReplaceAsync(file);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageDialog dialog = new MessageDialog(string.Format("error:{0}", exception));
+                await dialog.ShowAsync();
+            }
         }
 
         private void worldViewer_Loaded(object sender, RoutedEventArgs e)

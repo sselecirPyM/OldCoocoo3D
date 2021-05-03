@@ -49,7 +49,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 numMaterials += rendererComponents[i].Materials.Count;
             }
-            context.DesireMaterialBuffers(numMaterials);
+            context.XBufferGroup.SetSlienceCount(numMaterials);
             ref var bigBuffer = ref context.bigBuffer;
             #region Lighting
             int lightCount = 0;
@@ -98,19 +98,17 @@ namespace Coocoo3D.RenderPipeline
                 for (int j = 0; j < Materials.Count; j++)
                 {
                     Marshal.StructureToPtr(Materials[j].innerStruct, pBufferData, true);
-                    context.MaterialBufferGroup.UpdateSlience(graphicsContext, bigBuffer, c_offsetMaterialData, c_materialDataSize + c_lightingDataSize, matIndex);
+                    context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, c_offsetMaterialData, c_materialDataSize + c_lightingDataSize, matIndex);
                     matIndex++;
                 }
             }
             if (matIndex > 0)
-                context.MaterialBufferGroup.UpdateSlienceComplete(graphicsContext);
+                context.XBufferGroup.UpdateSlienceComplete(graphicsContext);
             #endregion
 
             pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, c_offsetPresentData);
 
             PresentData cameraPresentData = new PresentData();
-            cameraPresentData.PlayTime = (float)context.dynamicContextRead.Time;
-            cameraPresentData.DeltaTime = (float)context.dynamicContextRead.DeltaTime;
 
             cameraPresentData.UpdateCameraData(cameras[0]);
             cameraPresentData.RandomValue1 = randomGenerator.Next(int.MinValue, int.MaxValue);
@@ -133,8 +131,9 @@ namespace Coocoo3D.RenderPipeline
             var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
 
-            PObject drawPO = rpAssets.PSOMMD;
+            PObject drawPO = rpAssets.PSOs["PSOMMD"];
             PObject skinningPO = rpAssets.PSOMMDSkinning;
+            var shadowDepth = rpAssets.PSOs["PSOMMDShadowDepth"];
 
             graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
@@ -192,7 +191,7 @@ namespace Coocoo3D.RenderPipeline
 
                 graphicsContext.SetMesh(context.SkinningMeshBuffer);
                 graphicsContext.SetRootSignature(RSBase);
-                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref context.shadowDesc, rpAssets.PSOMMDShadowDepth);
+                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref context.shadowDesc, shadowDepth);
                 graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
                 _Counters counterShadow0 = new _Counters();
                 var LightCameraDataBuffers = context.LightCameraDataBuffer;
@@ -210,7 +209,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSRVTArray(context.ShadowMapCube, 5);
             graphicsContext.SetSRVT(context.SkyBox, 6);
             graphicsContext.SetSRVT(context.IrradianceMap, 7);
-            graphicsContext.SetSRVT(context.BRDFLut, 8);
+            graphicsContext.SetSRVT(rpAssets.texture2ds["_BRDFLUT"], 8);
             #region Render Sky box
 
             PSODesc descSkyBox = new PSODesc
@@ -227,7 +226,7 @@ namespace Coocoo3D.RenderPipeline
                 streamOutput = false,
                 wireFrame = false,
             };
-            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref descSkyBox, rpAssets.PSOSkyBox);
+            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref descSkyBox, rpAssets.PSOs["SkyBox"]);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
             #endregion
@@ -250,7 +249,7 @@ namespace Coocoo3D.RenderPipeline
                 desc.streamOutput = false;
                 desc.wireFrame = context.dynamicContextRead.settings.Wireframe;
 
-                var PODraw = PSOSelect(deviceResources, RSBase, ref desc, null, rpAssets.PSOMMDLoading, drawPO, rpAssets.PSOMMDError);
+                var PODraw = PSOSelect(deviceResources, RSBase, ref desc, null, drawPO, drawPO, drawPO);
                 var Materials = rendererComponent.Materials;
                 List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);
@@ -268,14 +267,9 @@ namespace Coocoo3D.RenderPipeline
                     Texture2D tex1 = null;
                     if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
                         tex1 = texs[Materials[i].texIndex];
-                    Texture2D tex2 = null;
-                    if (Materials[i].toonIndex > -1 && Materials[i].toonIndex < Materials.Count)
-                        tex2 = texs[Materials[i].toonIndex];
-                    context.MaterialBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
+                    context.XBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
 
                     graphicsContext.SetSRVT(_Tex(tex1), 3);
-                    graphicsContext.SetSRVT(_Tex(tex2), 4);
-
 
                     desc.cullMode = Materials[i].DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
                     int variant = PODraw.GetVariantIndex(deviceResources, RSBase, desc);

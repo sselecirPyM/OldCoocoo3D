@@ -13,7 +13,7 @@ namespace Coocoo3DGraphics
 		int GetWidth() { return m_width; }
 		int GetHeight() { return m_height; }
 	internal:
-
+		void StateTransition(ID3D12GraphicsCommandList* commandList, D3D12_RESOURCE_STATES state);
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
 		UINT m_srvRefIndex;
 		UINT m_uavRefIndex;

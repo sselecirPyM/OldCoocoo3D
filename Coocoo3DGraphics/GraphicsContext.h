@@ -77,6 +77,8 @@ namespace Coocoo3DGraphics
 		void SetCBVR(SBuffer^ buffer, int index);
 		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetCBVR(SBuffer^ buffer, int offset256, int size256, int index);
+		void SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
+		void SetCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot);
 		void SetUAVT(RenderTexture2D^ texture, int index);
 		void SetComputeSRVT(ITexture2D^ texture, int index);
 		void SetComputeSRVT(ITextureCube^ texture, int index);
@@ -120,7 +122,7 @@ namespace Coocoo3DGraphics
 		void Prepare(RayTracingASGroup^ asGroup);
 		void Prepare(RayTracingInstanceGroup^ rtig);
 		void BuildBTAS(RayTracingASGroup^ asGroup, MeshBuffer^ mesh, MMDMesh^ indexBuffer, int vertexBegin, int indexBegin, int indexCount);
-		void BuildInst(RayTracingInstanceGroup^ rtig, RayTracingASGroup^ asGroup, int instId,int i2hitGroup, UINT instMask);
+		void BuildInst(RayTracingInstanceGroup^ rtig, RayTracingASGroup^ asGroup, int instId, int i2hitGroup, UINT instMask);
 		void TestShaderTable(RayTracingShaderTable^ rtst, RayTracingStateObject^ rtso, const Platform::Array<Platform::String^>^ raygenShaderNames, const Platform::Array<Platform::String^>^ missShaderNames);
 		void TestShaderTable2(RayTracingShaderTable^ rtst, RayTracingStateObject^ rtso, RayTracingASGroup^ asGroup, const Platform::Array<Platform::String^>^ hitGroupNames);
 		void BuildTPAS(RayTracingInstanceGroup^ rtis, RayTracingTopAS^ rttas, RayTracingASGroup^ asGroup);

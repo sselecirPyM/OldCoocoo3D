@@ -209,7 +209,6 @@
     <Compile Include="RenderPipeline\Wrap\SBufferGroup.cs" />
     <Compile Include="ResourceWarp\MeshAppendUploadPack.cs" />
     <Compile Include="ResourceWarp\ModelPack.cs" />
-    <Compile Include="ResourceWarp\ShaderPack.cs" />
     <Compile Include="ResourceWarp\Texture2DPack.cs" />
     <Compile Include="ResourceWarp\Texture2DUploadPack.cs" />
     <Compile Include="ResourceWarp\TextureCubeUploadPack.cs" />
@@ -226,7 +225,10 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="Samples\VS_Pass1.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
+    <Content Include="Samples\PS_Pass1.hlsl" />
+    <Content Include="Samples\samplePasses.coocoox" />
     <PRIResource Include="Strings\ja-JP\Resources.resw" />
     <PRIResource Include="Strings\en-US\Resources.resw" />
     <PRIResource Include="Strings\zh-CN\Resources.resw" />
@@ -250,7 +252,6 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
-    <Content Include="Samples\SampleShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">

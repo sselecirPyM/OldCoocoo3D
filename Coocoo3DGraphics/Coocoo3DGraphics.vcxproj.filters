@@ -252,12 +252,6 @@
     <ClInclude Include="RayTracingInstanceGroup.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\VSParticleStandard.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSParticleStandard.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\GSParticleStandard.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -282,9 +276,6 @@
     <FxCompile Include="Shaders\VSMMDTransform.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PSMMDAlphaClip.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\GSMMD.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -295,9 +286,6 @@
       <Filter>Shaders\ImageProcess</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PS_Pass1.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSMMDAlphaClip1.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\ImageProcess\G_PreFilterEnv.hlsl">

@@ -43,9 +43,13 @@ namespace Coocoo3D.RenderPipeline
 
             #region Lighting
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
+            Matrix4x4 invLightCameraMatrix0 = Matrix4x4.Identity;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
-                lightCameraMatrix0 = Matrix4x4.Transpose(lightings[0].GetLightingMatrix(settings.ExtendShadowMapRange, camera.LookAtPoint, camera.Angle, camera.Distance));
+                lightCameraMatrix0 = lightings[0].GetLightingMatrix(settings.ExtendShadowMapRange, camera.LookAtPoint, camera.Angle, camera.Distance);
+                Matrix4x4.Invert(lightCameraMatrix0, out invLightCameraMatrix0);
+                lightCameraMatrix0 = Matrix4x4.Transpose(lightCameraMatrix0);
+                invLightCameraMatrix0 = Matrix4x4.Transpose(invLightCameraMatrix0);
                 HasMainLight = true;
             }
             else
@@ -64,13 +68,13 @@ namespace Coocoo3D.RenderPipeline
 
             int matC = 0;
             int num2 = 0;
-            foreach (var combinedPass in context.currentPassSetting.RenderSequence)
+            foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.CBVs != null)
                     num2 += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
             }
             context.XBufferGroup.SetSlienceCount(num2);
-            foreach (var combinedPass in context.currentPassSetting.RenderSequence)
+            foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.Camera == "Main")
                 {
@@ -83,23 +87,21 @@ namespace Coocoo3D.RenderPipeline
                 if (combinedPass.DrawObjects)
                 {
                     foreach (var rendererComponent in rendererComponents)
-                    {
                         foreach (var material in rendererComponent.Materials)
                         {
                             foreach (var cbv in combinedPass.Pass.CBVs)
                             {
-                                int ofs = _WriteCBV(cbv, combinedPass.Pass.Camera, bigBuffer, material);
+                                int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, material);
                                 context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
                                 matC++;
                             }
                         }
-                    }
                 }
                 else
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        int ofs = _WriteCBV(cbv, combinedPass.Pass.Camera, bigBuffer, null);
+                        int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, null);
                         context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
                         matC++;
                     }
@@ -107,7 +109,8 @@ namespace Coocoo3D.RenderPipeline
             }
             if (matC > 0)
                 context.XBufferGroup.UpdateSlienceComplete(graphicsContext);
-            int _WriteCBV(CBVSlotRes cbv, string cam, byte[] _buffer, RuntimeMaterial material)
+            //发送到着色器里的数据
+            int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material)
             {
                 Array.Clear(_buffer, 0, _buffer.Length);
                 int ofs = 0;
@@ -136,21 +139,47 @@ namespace Coocoo3D.RenderPipeline
                         case "AmbientColor":
                             ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.AmbientColor);
                             break;
+                        case "ToonIndex":
+                            ofs += CooUtility.Write(_buffer, ofs, material.toonIndex);
+                            break;
+                        case "TextureIndex":
+                            ofs += CooUtility.Write(_buffer, ofs, material.texIndex);
+                            break;
                         case "CameraPosition":
                             ofs += CooUtility.Write(_buffer, ofs, camera.Pos);
                             break;
+                        case "DrawFlags":
+                            ofs += CooUtility.Write(_buffer, ofs, (int)material.DrawFlags);
+                            break;
+                        case "DeltaTime":
+                            ofs += CooUtility.Write(_buffer, ofs, (float)context.dynamicContextRead.DeltaTime);
+                            break;
+                        case "WidthHeight":
+                            if (_pass.renderTargets != null && _pass.renderTargets.Length > 0)
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, _pass.renderTargets[0].GetWidth());
+                                ofs += CooUtility.Write(_buffer, ofs, _pass.renderTargets[0].GetHeight());
+                            }
+                            else if (_pass.depthSencil != null)
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthSencil.GetWidth());
+                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthSencil.GetHeight());
+                            }
+                            else
+                                ofs += sizeof(int) * 2;
+                            break;
                         case "Camera":
-                            if (cam == "Main")
+                            if (_pass.Pass.Camera == "Main")
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.vpMatrix));
                                 ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
                             }
-                            else if (cam == "ShadowMap")
+                            else if (_pass.Pass.Camera == "ShadowMap")
                             {
                                 if (lightings.Count > 0)
                                 {
                                     ofs += CooUtility.Write(_buffer, ofs, lightCameraMatrix0);
-                                    ofs += CooUtility.Write(_buffer, ofs, lightCameraMatrix0);
+                                    ofs += CooUtility.Write(_buffer, ofs, invLightCameraMatrix0);
                                 }
                                 else
                                     ofs += 128;
@@ -172,6 +201,20 @@ namespace Coocoo3D.RenderPipeline
                             {
                                 int ofsa = ofs + 128;
                                 int count = Math.Min(pointLights.Count, 4);
+                                for (int pli = 0; pli < count; pli++)
+                                {
+                                    var lstruct = pointLights[pli].GetLStruct();
+                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.PosOrDir);
+                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Type);
+                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Color);
+                                }
+                                ofs = ofsa;
+                            }
+                            break;
+                        case "PointLights8":
+                            {
+                                int ofsa = ofs + 256;
+                                int count = Math.Min(pointLights.Count, 8);
                                 for (int pli = 0; pli < count; pli++)
                                 {
                                     var lstruct = pointLights[pli].GetLStruct();
@@ -221,15 +264,14 @@ namespace Coocoo3D.RenderPipeline
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
-                int indexCountAll = rendererComponent.meshVertexCount;
-                graphicsContext.Draw(indexCountAll, 0);
+                graphicsContext.Draw(rendererComponent.meshVertexCount, 0);
             }
             for (int i = 0; i < rendererComponents.Count; i++)
                 EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
 
             int matC = 0;
-            foreach (var combinedPass in context.currentPassSetting.RenderSequence)
+            foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.Camera == "Main")
                 {
@@ -284,7 +326,6 @@ namespace Coocoo3D.RenderPipeline
                 void _PassRender(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
                 {
                     _Counters counterX = new _Counters();
-                    Texture2D albedo = null;
                     foreach (var rendererComponent in _rendererComponents)
                     {
                         graphicsContext.SetMeshIndex(rendererComponent.mesh);
@@ -294,7 +335,6 @@ namespace Coocoo3D.RenderPipeline
 
                         var PSODraw = PSOSelect(deviceResources, RSBase, ref passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);
                         var Materials = rendererComponent.Materials;
-                        List<Texture2D> texs = rendererComponent.textures;
                         int indexOffset = 0;
                         foreach (var material in Materials)
                         {
@@ -305,10 +345,7 @@ namespace Coocoo3D.RenderPipeline
                             }
                             if (material.innerStruct.DiffuseColor.W > 0)
                             {
-                                if (material.texIndex != -1 && material.texIndex < Materials.Count)
-                                    albedo = _Tex(texs[material.texIndex]);
-
-                                _PassSetRes1();
+                                _PassSetRes1(material);
                                 passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
                                 SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
                                 graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
@@ -318,34 +355,39 @@ namespace Coocoo3D.RenderPipeline
                         }
                         counterX.vertex += rendererComponent.meshVertexCount;
                     }
-                    void _PassSetRes1()
+                    void _PassSetRes1(RuntimeMaterial material)
                     {
                         if (_combinedPass.Pass.SRVs != null)
-                        {
                             foreach (var resd in _combinedPass.Pass.SRVs)
                             {
-                                //if (resd.ResourceType == "TextureCube")
-                                //{
-                                //    graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
-                                //}
+                                if (resd.ResourceType == "TextureCube")
+                                {
+                                    graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
+                                }
                                 if (resd.ResourceType == "Texture2D")
                                 {
-                                    //var tex2D = context._GetTex2DByName(resd.Resource);
                                     ITexture2D tex2D = null;
-                                    if (resd.Resource == "_Albedo")
-                                        tex2D = albedo;
+                                    if (material.textures.TryGetValue(resd.Resource, out ITexture2D tex))
+                                        tex2D = tex;
+                                    if (tex2D == null)
+                                        tex2D = context._GetTex2DByName(resd.Resource);
+
                                     if (tex2D != null)
-                                        graphicsContext.SetSRVTSlot(tex2D, resd.Index);
+                                    {
+                                        if (tex2D is Texture2D _tex2d1)
+                                            graphicsContext.SetSRVTSlot(_Tex(_tex2d1), resd.Index);
+                                        else
+                                            graphicsContext.SetSRVTSlot(tex2D, resd.Index);
+                                    }
                                 }
                             }
-                        }
                     }
                 }
                 void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
                 {
                     if (_rendererComponents.Count == 0) return;
                     _Counters counterX = new _Counters();
-                    var rtso = context.currentPassSetting.RTSO;
+                    var rtso = context.dynamicContextRead.currentPassSetting.RTSO;
                     var rtst = context.RTSTs[_combinedPass.Name];
                     var rtis = context.RTIGroups[_combinedPass.Name];
                     var rttas = context.RTTASs[_combinedPass.Name];

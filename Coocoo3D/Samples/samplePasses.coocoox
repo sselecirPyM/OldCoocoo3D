@@ -1,11 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
+<!--入门-->
+<!--RenderSequence决定渲染流程-->
+<!--加入vertex shader/geometry shader/pixel shader来直接使用或者覆盖默认资源-->
 <PassSetting>
   <RenderSequence>
-    <Pass>
+    <!--取消注释skybox pass即可正常渲染，这里是为了演示不清屏效果-->
+    <!--Type为DrawScreen时会绘制一个正方形，否则绘制场景里的所有物体-->
+    <!-- <Pass>
       <Name>DrawSkyBox</Name>
       <Type>DrawScreen</Type>
+      <ClearDepth>1</ClearDepth>
       <RenderTarget>_Output0</RenderTarget>
-    </Pass>
+    </Pass> -->
     <Pass>
       <Name>ShadowMapPass</Name>
       <ClearDepth>1</ClearDepth>
@@ -15,18 +21,22 @@
     </Pass>
     <Pass>
       <Name>Pass1</Name>
+      <!--混合模式有Alpha/Add-->
       <BlendMode>Alpha</BlendMode>
       <ClearDepth>1</ClearDepth>
       <DepthStencil>_ScreenDepth0</DepthStencil>
       <RenderTarget>_Output0</RenderTarget>
     </Pass>
   </RenderSequence>
+  <!--渲染所需的中间缓冲区-->
   <RenderTargets>
     <RenderTarget>
       <Name>_ShadowMap0</Name>
+      <!--Size由RenderPipelineContext.cs里的PrepareRenderTarget函数决定-->
       <Size>
         <Source>ShadowMapSize</Source>
       </Size>
+      <!--Direct3D的DXGI格式-->
       <Format>DXGI_FORMAT_D32_FLOAT</Format>
     </RenderTarget>
     <RenderTarget>
@@ -38,10 +48,15 @@
     </RenderTarget>
   </RenderTargets>
   <Passes>
+    <!--这里的pass名称和RenderSequence匹配-->
+    <!--源文件ForwardRenderPipeline2.cs可能提供更多信息-->
+    <!--渲染ShadowMap-->
     <Pass>
       <Name>ShadowMapPass</Name>
+      <!--主光源阴影摄像机-->
       <Camera>ShadowMap</Camera>
       <VertexShader>VS_ShadowMap</VertexShader>
+      <!--请看ForwardRenderPipeline2.cs里的_WriteCBV函数-->
       <CBV>
         <Index>0</Index>
         <Datas>
@@ -49,6 +64,7 @@
         </Datas>
       </CBV>
     </Pass>
+    <!--渲染天空盒-->
     <Pass>
       <Name>DrawSkyBox</Name>
       <Camera>Main</Camera>
@@ -65,9 +81,11 @@
       <SRV>
         <Index>3</Index>
         <ResourceType>TextureCube</ResourceType>
+        <!--天空盒立方体贴图-->
         <Resource>_SkyBox</Resource>
       </SRV>
     </Pass>
+    <!--渲染物体-->
     <Pass>
       <Name>Pass1</Name>
       <Camera>Main</Camera>
@@ -91,6 +109,7 @@
       <SRV>
         <Index>0</Index>
         <ResourceType>Texture2D</ResourceType>
+        <!--模型纹理-->
         <Resource>_Albedo</Resource>
       </SRV>
       <SRV>
@@ -106,30 +125,41 @@
       <SRV>
         <Index>3</Index>
         <ResourceType>TextureCube</ResourceType>
+        <!--环境光高光-->
         <Resource>_SkyBoxReflect</Resource>
       </SRV>
       <SRV>
         <Index>4</Index>
         <ResourceType>TextureCube</ResourceType>
+        <!--环境光漫反射-->
         <Resource>_SkyBoxIrradiance</Resource>
       </SRV>
       <SRV>
         <Index>5</Index>
         <ResourceType>Texture2D</ResourceType>
+        <!--环境光高光预积分表-->
         <Resource>_BRDFLUT</Resource>
       </SRV>
     </Pass>
   </Passes>
-  <!--<PipelineStates>
-    <PipelineState>
-      <Name>Loading</Name>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Loading</PixelShader>
-    </PipelineState>
-    <PipelineState>
-      <Name>Error</Name>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Error</PixelShader>
-    </PipelineState>
-  </PipelineStates>-->
+  <!--载入自定义着色器，可以覆盖默认值-->
+  <VertexShaders>
+    <VertexShader>
+      <Name>VS_Pass1</Name>
+      <Path>VS_Pass1.hlsl</Path>
+    </VertexShader>
+  </VertexShaders>
+  <PixelShaders>
+    <PixelShader>
+      <Name>PS_Pass1</Name>
+      <Path>PS_Pass1.hlsl</Path>
+    </PixelShader>
+  </PixelShaders>
+  <!--可以载入纹理资源，可以覆盖默认值-->
+  <!--<Texture2Ds>
+    <Texture2D>
+      <Name></Name>
+      <Path></Path>
+    </Texture2D>
+  </Texture2Ds>-->
 </PassSetting>

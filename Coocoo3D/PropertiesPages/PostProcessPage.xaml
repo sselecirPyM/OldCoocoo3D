@@ -26,18 +26,6 @@
                 <StackPanel BorderThickness="2" BorderBrush="LightBlue">
                     <Slider Header="饱和度" Value="{x:Bind VSaturation3,Mode=TwoWay}" Minimum="0" Maximum="2" StepFrequency="0.01"/>
                 </StackPanel>
-                <TextBlock Text="镜头图案"/>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Border Width="100" Height="100" BorderThickness="1" BorderBrush="Gray">
-                        <Image x:Name="_img0" AllowDrop="True" DragOver="_img0_DragOver" Drop="_img0_Drop" Tag="0" Source="ms-appx:///Assets/Textures/UI_0.png"/>
-                    </Border>
-                    <Button Content="应用" Grid.Column="1" Click="Button_Click"/>
-                </Grid>
-                <Slider Header="镜头图案强度" Value="{x:Bind VBackgroundFactory,Mode=TwoWay}" Minimum="0" Maximum="1" StepFrequency="0.01"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

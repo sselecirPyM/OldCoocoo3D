@@ -104,8 +104,6 @@ namespace Coocoo3D.RenderPipeline
             }
 
             PresentData cameraPresentData = new PresentData();
-            cameraPresentData.PlayTime = (float)context.dynamicContextRead.Time;
-            cameraPresentData.DeltaTime = (float)context.dynamicContextRead.DeltaTime;
 
             cameraPresentData.UpdateCameraData(cameras[0]);
             cameraPresentData.RandomValue1 = randomGenerator.Next(int.MinValue, int.MaxValue);
@@ -160,6 +158,7 @@ namespace Coocoo3D.RenderPipeline
             var rendererComponents = context.dynamicContextRead.rendererComponents;
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
+            var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];
 
 
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
@@ -197,7 +196,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetCBVR(cameraPresentData, 2);
 
                     graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, RPAssetsManager.PSOMMDShadowDepth);
+                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, shadowDepth);
                     //List<Texture2D> texs = rendererComponent.textures;
                     //int countIndexLocal = 0;
                     //for (int i = 0; i < Materials.Count; i++)
@@ -233,20 +232,18 @@ namespace Coocoo3D.RenderPipeline
                     Texture2D texError = context.TextureError;
 
                     var Materials = rendererComponent.Materials;
-                    List<Texture2D> texs = rendererComponent.textures;
 
                     int numIndex = 0;
-                    for (int i = 0; i < Materials.Count; i++)
+                    foreach (RuntimeMaterial material in Materials)
                     {
-                        Texture2D tex1 = null;
-                        if (Materials[i].texIndex != -1)
-                            tex1 = texs[Materials[i].texIndex];
+                        material.textures.TryGetValue("_Albedo", out ITexture2D tex);
+                        Texture2D tex1 = (Texture2D)tex;
                         tex1 = TextureStatusSelect(tex1, texLoading, texError, texError);
 
-                        graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, Materials[i].indexCount, tex1,
+                        graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, material.indexCount, tex1,
                             materialBuffers1.constantBuffers[counter.material / materialBuffers1.sliencesPerBuffer], (counter.material % materialBuffers1.sliencesPerBuffer) * 2);
                         counter.material++;
-                        numIndex += Materials[i].indexCount;
+                        numIndex += material.indexCount;
                     }
                     counter.vertex += rendererComponent.meshVertexCount;
                 }
@@ -262,7 +259,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetComputeCBVR(CameraDataBuffer, 2);
                 graphicsContext.SetComputeSRVT(context.SkyBox, 3);
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
-                graphicsContext.SetComputeSRVT(context.BRDFLut, 5);
+                graphicsContext.SetComputeSRVT(RPAssetsManager.texture2ds["_BRDFLUT"], 5);
                 graphicsContext.SetComputeSRVTFace(context.ShadowMapCube, 0, 6);
 
                 graphicsContext.DoRayTracing(RayTracingScene, context.screenWidth, context.screenHeight, 0);
@@ -275,7 +272,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(CameraDataBuffer, 0);
                 graphicsContext.SetSRVT(context.SkyBox, 6);
                 graphicsContext.SetSRVT(context.IrradianceMap, 7);
-                graphicsContext.SetSRVT(context.BRDFLut, 8);
+                graphicsContext.SetSRVT(RPAssetsManager.texture2ds["_BRDFLUT"], 8);
                 graphicsContext.SetMesh(context.ndcQuadMesh);
                 PSODesc descSkyBox;
                 descSkyBox.blendState = EBlendState.none;
@@ -289,7 +286,7 @@ namespace Coocoo3D.RenderPipeline
                 descSkyBox.renderTargetCount = 1;
                 descSkyBox.streamOutput = false;
                 descSkyBox.wireFrame = false;
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref descSkyBox, RPAssetsManager.PSOSkyBox);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref descSkyBox, RPAssetsManager.PSOs["SkyBox"]);
 
                 graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 #endregion

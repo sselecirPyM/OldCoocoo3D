@@ -10,6 +10,7 @@ namespace Coocoo3DGraphics
 	struct d3d12RecycleResource
 	{
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_recycleResource;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_recyclePipelineState;
 		UINT64 m_removeFrame;
 	};
 	// 控制所有 DirectX 设备资源。
@@ -74,6 +75,7 @@ namespace Coocoo3DGraphics
 		UINT64											m_fenceValues[c_frameCount];
 		UINT64											m_currentFenceValue;
 		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res);
+		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12PipelineState> res2);
 		std::vector<d3d12RecycleResource> m_recycleList;
 	private:
 		void CreateWindowSizeDependentResources();

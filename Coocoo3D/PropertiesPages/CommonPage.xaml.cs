@@ -355,14 +355,22 @@ namespace Coocoo3D.PropertiesPages
 
         bool _cacheCameraMotionOn;
         #endregion
-
+        bool muted = false;
         private void VRenderPipeline_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (appBody == null) return;
+            if (muted) return;
             int selectedIndex = (sender as ComboBox).SelectedIndex;
-            if (!appBody.deviceResources.IsRayTracingSupport() && selectedIndex >= 2)
+            if (!appBody.deviceResources.IsRayTracingSupport() && selectedIndex == 2)
             {
                 (sender as ComboBox).SelectedIndex = 0;
+            }
+            else if(selectedIndex == 3)
+            {
+                appBody.SwitchToRenderPipeline(selectedIndex);
+                muted = true;
+                (sender as ComboBox).SelectedIndex = 0;
+                muted = false;
             }
             else
             {
@@ -450,11 +458,6 @@ namespace Coocoo3D.PropertiesPages
         private void ReloadTextures_Click(object sender, RoutedEventArgs e)
         {
             appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
-        }
-
-        private void ReloadShaders_Click(object sender, RoutedEventArgs e)
-        {
-            appBody.mainCaches.ReloadShaders(appBody.ProcessingList, appBody.RPAssetsManager, appBody.RequireRender);
         }
 
         private void ReloadModels_Click(object sender, RoutedEventArgs e)

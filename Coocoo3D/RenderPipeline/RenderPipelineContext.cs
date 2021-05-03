@@ -76,12 +76,8 @@ namespace Coocoo3D.RenderPipeline
         public const int c_lightingBufferSize = 1024;
         public CBuffer CameraDataBuffers = new CBuffer();
         public CBuffer LightCameraDataBuffer = new CBuffer();
-        public CBufferGroup MaterialBufferGroup = new CBufferGroup();
         public CBufferGroup XBufferGroup = new CBufferGroup();
-        public void DesireMaterialBuffers(int count)
-        {
-            MaterialBufferGroup.SetSlienceCount(count);
-        }
+        public MainCaches mainCaches = new MainCaches();
 
         public RenderTexture2D outputRTV = new RenderTexture2D();
         public RenderTexture2D[] ScreenSizeRenderTextures = new RenderTexture2D[4];
@@ -106,7 +102,6 @@ namespace Coocoo3D.RenderPipeline
         public MMDMesh cubeMesh = new MMDMesh();
         public MMDMesh cubeWireMesh = new MMDMesh();
         public MeshBuffer SkinningMeshBuffer = new MeshBuffer();
-        public TwinBuffer LightCacheBuffer = new TwinBuffer();
         public int SkinningMeshBufferSize;
         public int frameRenderCount;
 
@@ -114,10 +109,6 @@ namespace Coocoo3D.RenderPipeline
         public DeviceResources deviceResources = new DeviceResources();
         public GraphicsContext graphicsContext = new GraphicsContext();
         public GraphicsContext graphicsContext1 = new GraphicsContext();
-
-        public Texture2D UI1Texture = new Texture2D();
-        public Texture2D BRDFLut = new Texture2D();
-        public Texture2D postProcessBackground = new Texture2D();
 
         public ReadBackTexture2D ReadBackTexture2D = new ReadBackTexture2D();
 
@@ -163,11 +154,12 @@ namespace Coocoo3D.RenderPipeline
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
         public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT;
 
-        XmlSerializer xmlSerializer2 = new XmlSerializer(typeof(PassSetting));
+        public XmlSerializer PassSettingSerializer = new XmlSerializer(typeof(PassSetting));
         public PassSetting defaultPassSetting;
         public PassSetting deferredPassSetting;
         public PassSetting RTPassSetting;
         public PassSetting currentPassSetting;
+        public PassSetting customPassSetting;
 
         public int screenWidth;
         public int screenHeight;
@@ -197,7 +189,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 ScreenSizeDSVs[i] = new RenderTexture2D();
             }
-            MaterialBufferGroup.Reload(deviceResources, 768, 768 * 84);
             XBufferGroup.Reload(deviceResources, 768, 768 * 84);
         }
         ~RenderPipelineContext()
@@ -214,11 +205,12 @@ namespace Coocoo3D.RenderPipeline
         public void BeginDynamicContext(bool enableDisplay, Settings settings, InShaderSettings inShaderSettings)
         {
             dynamicContextWrite.ClearCollections();
-            dynamicContextWrite.frameRenderIndex = frameRenderCount;
             dynamicContextWrite.EnableDisplay = enableDisplay;
-            frameRenderCount++;
             dynamicContextWrite.settings = settings;
             dynamicContextWrite.inShaderSettings = inShaderSettings;
+            dynamicContextWrite.currentPassSetting = currentPassSetting;
+            dynamicContextWrite.frameRenderIndex = frameRenderCount;
+            frameRenderCount++;
         }
 
         struct _Data1
@@ -277,9 +269,9 @@ namespace Coocoo3D.RenderPipeline
         public void PreConfig()
         {
             if (!Initilized) return;
-            Prepare1(currentPassSetting);
+            PrepareRenderTarget(currentPassSetting);
         }
-        public void Prepare1(PassSetting passSetting)
+        public void PrepareRenderTarget(PassSetting passSetting)
         {
             if (passSetting == null) return;
             foreach (var rt in passSetting.RenderTargets)
@@ -382,9 +374,6 @@ namespace Coocoo3D.RenderPipeline
             upTexError.Texture2DPure(1, 1, new Vector4(1, 0, 1, 1));
             processingList.AddObject(new Texture2DUploadPack(TextureLoading, upTexLoading));
             processingList.AddObject(new Texture2DUploadPack(TextureError, upTexError));
-            Uploader upTexPostprocessBackground = new Uploader();
-            upTexPostprocessBackground.Texture2DPure(64, 64, new Vector4(1, 1, 1, 0));
-            processingList.AddObject(new Texture2DUploadPack(postProcessBackground, upTexPostprocessBackground));
 
             Uploader upTexEnvCube = new Uploader();
             upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
@@ -403,12 +392,16 @@ namespace Coocoo3D.RenderPipeline
             cubeWireMesh.ReloadCubeWire();
             processingList.AddObject(cubeWireMesh);
 
-            await ReloadTexture2DNoMip(BRDFLut, processingList, "ms-appx:///Assets/Textures/brdflut.png");
-            await ReloadTexture2DNoMip(UI1Texture, processingList, "ms-appx:///Assets/Textures/UI_1.png");
+            foreach (var tex2dDef in RPAssetsManager.defaultResource.texture2Ds)
+            {
+                Texture2D tex2d = new Texture2D();
+                await ReloadTexture2DNoMip(tex2d, processingList, tex2dDef.Path);
+                RPAssetsManager.texture2ds.Add(tex2dDef.Name, tex2d);
+            }
 
-            defaultPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/PassSetting.xml"));
-            deferredPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredPassSetting.xml"));
-            RTPassSetting = (PassSetting)xmlSerializer2.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredRayTracingPassSetting.xml"));
+            defaultPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/PassSetting.xml"));
+            deferredPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredPassSetting.xml"));
+            RTPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredRayTracingPassSetting.xml"));
             try
             {
                 if (deviceResources.IsRayTracingSupport())
@@ -418,33 +411,41 @@ namespace Coocoo3D.RenderPipeline
             {
                 string a = e.ToString();
             }
-
             RTs["_Output0"] = outputRTV;
-            ConfigPassSettings(defaultPassSetting);
-            currentPassSetting = defaultPassSetting;
-            //ConfigPassSettings(deferredPassSetting);
-            //currentPassSetting = deferredPassSetting;
-            //ConfigPassSettings(RTPassSetting);
-            //currentPassSetting = RTPassSetting;
+
+            SetCurrentPassSetting(defaultPassSetting);
 
             Initilized = true;
         }
 
+        public void SetCurrentPassSetting(PassSetting passSetting)
+        {
+            ConfigPassSettings(passSetting);
+            currentPassSetting = passSetting;
+        }
+
         public bool ConfigPassSettings(PassSetting passSetting)
         {
+            if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
-            Prepare1(passSetting);
+            PrepareRenderTarget(passSetting);
 
-            //foreach (var rt in passSetting.RenderTargets)
-            //{
-            //    if (!RTs.TryGetValue(rt.Name, out var tex2d))
-            //    {
-            //        tex2d = new RenderTexture2D();
-            //        RTs[rt.Name] = tex2d;
-            //    }
-            //}
-            foreach (var pipelineState in passSetting.pipelineStates)
+            foreach (var pipelineState in passSetting.PipelineStates)
             {
+                PSO pso = new PSO();
+                VertexShader vs = null;
+                GeometryShader gs = null;
+                PixelShader ps = null;
+                if (pipelineState.VertexShader != null)
+                    vs = RPAssetsManager.VSAssets[pipelineState.VertexShader];
+                if (pipelineState.GeometryShader != null)
+                    gs = RPAssetsManager.GSAssets[pipelineState.GeometryShader];
+                if (pipelineState.PixelShader != null)
+                    ps = RPAssetsManager.PSAssets[pipelineState.PixelShader];
+                if (RPAssetsManager.PSOs.TryGetValue(pipelineState.Name, out var psoDestroy))
+                    psoDestroy.DelayDestroy(deviceResources);
+                pso.Initialize(vs, gs, ps);
+                RPAssetsManager.PSOs[pipelineState.Name] = pso;
             }
             foreach (var pass in passSetting.RenderSequence)
             {
@@ -454,16 +455,20 @@ namespace Coocoo3D.RenderPipeline
                     t1.Add((RenderTexture2D)_GetTex2DByName(renderTarget));
                 pass.renderTargets = t1.ToArray();
                 VertexShader vs = null;
+                GeometryShader gs = null;
                 PixelShader ps = null;
                 if (pass.Pass.VertexShader != null)
                     RPAssetsManager.VSAssets.TryGetValue(pass.Pass.VertexShader, out vs);
+                if (pass.Pass.GeometryShader != null)
+                    RPAssetsManager.GSAssets.TryGetValue(pass.Pass.GeometryShader, out gs);
                 if (pass.Pass.PixelShader != null)
                     RPAssetsManager.PSAssets.TryGetValue(pass.Pass.PixelShader, out ps);
                 PSO pso = new PSO();
-                pso.Initialize(vs, null, ps);
+                pso.Initialize(vs, gs, ps);
                 pass.PSODefault = pso;
                 RPAssetsManager.PSOs[pass.Pass.Name] = pso;
             }
+            passSetting.configured = true;
             return true;
 
         }
@@ -531,10 +536,12 @@ namespace Coocoo3D.RenderPipeline
             {
                 return tex;
             }
+            else if (RPAssetsManager.texture2ds.TryGetValue(name, out var tex2))
+            {
+                return tex2;
+            }
             //else if (name == "_Output0")
             //    return outputRTV;
-            else if (name == "_BRDFLUT")
-                return BRDFLut;
             return null;
         }
         public ITextureCube _GetTexCubeByName(string name)

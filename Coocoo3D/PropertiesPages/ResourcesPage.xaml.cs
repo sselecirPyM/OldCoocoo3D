@@ -74,7 +74,8 @@ namespace Coocoo3D.PropertiesPages
             else if (grid.DataContext is StorageFile file && !HaveLoadTask)
             {
                 var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-                if (file.FileType.Equals(".pmx", StringComparison.CurrentCultureIgnoreCase))
+                bool ExtEquals(string ext) => ext.Equals(file.FileType, StringComparison.CurrentCultureIgnoreCase);
+                if (ExtEquals(".pmx"))
                 {
                     try
                     {
@@ -86,33 +87,53 @@ namespace Coocoo3D.PropertiesPages
                         await dialog.ShowAsync();
                     }
                 }
-                else if (file.FileType.Equals(".vmd", StringComparison.CurrentCultureIgnoreCase))
+                else if (ExtEquals(".vmd"))
                 {
                     HaveLoadTask = true;
                     try
                     {
                         BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
                         VMDFormat motionSet = VMDFormat.Load(reader);
-                            foreach (var entity in appBody.SelectedEntities)
-                            {
-                                entity.motionComponent.Reload(motionSet);
-                            }
+                        foreach (var entity in appBody.SelectedEntities)
+                        {
+                            entity.motionComponent.Reload(motionSet);
+                        }
                     }
                     catch (Exception exception)
                     {
                         MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
                         await dialog.ShowAsync();
-                        HaveLoadTask = false;
                         return;
+                    }
+                    finally
+                    {
+                        HaveLoadTask = false;
                     }
                     appBody.GameDriverContext.RequireResetPhysics = true;
                     appBody.RequireRender(true);
-                    HaveLoadTask = false;
                 }
-                else if (file.FileType.Equals(".hlsl", StringComparison.CurrentCultureIgnoreCase))
+                else if (ExtEquals(".coocoox"))
                 {
-                    UI.UISharedCode.LoadShaderForEntities1(appBody, file, viewFolderStack.Last(), new List<Present.MMD3DEntity>(appBody.SelectedEntities));
+                    HaveLoadTask = true;
+                    try
+                    {
+                        await UI.UISharedCode.LoadPassSetting(appBody, file, viewFolderStack.Last());
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageDialog dialog = new MessageDialog(string.Format("error", exception));
+                        await dialog.ShowAsync();
+                    }
+                    finally
+                    {
+                        HaveLoadTask = false;
+                    }
+                    appBody.RequireRender(false);
                 }
+                //else if (ExtEquals(".hlsl"))
+                //{
+                //    UI.UISharedCode.LoadShaderForEntities1(appBody, file, viewFolderStack.Last(), new List<Present.MMD3DEntity>(appBody.SelectedEntities));
+                //}
             }
         }
 
@@ -131,7 +152,7 @@ namespace Coocoo3D.PropertiesPages
                 await SetFolder();
             }
         }
-        async Task SetFolder()
+        private async Task SetFolder()
         {
             try
             {

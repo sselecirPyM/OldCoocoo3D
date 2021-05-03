@@ -24,8 +24,8 @@ namespace Coocoo3D.RenderPipeline
         public Vector3 CameraPosition;
         public InShaderSettings inShaderSettings;
         public float AspectRatio;
-        public float PlayTime;
-        public float DeltaTime;
+        //public float PlayTime;
+        //public float DeltaTime;
         public int RandomValue1;
         public int RandomValue2;
     }

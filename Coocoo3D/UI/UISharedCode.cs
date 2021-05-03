@@ -16,6 +16,7 @@ using Coocoo3D.Core;
 using Windows.Storage.Streams;
 using System.Threading;
 using Coocoo3D.ResourceWarp;
+using Coocoo3D.RenderPipeline;
 
 namespace Coocoo3D.UI
 {
@@ -55,17 +56,6 @@ namespace Coocoo3D.UI
         }
         public static void NewLighting(Coocoo3DMain appBody)
         {
-            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-            //Lighting lighting = new Lighting();
-            //lighting.Name = resourceLoader.GetString("Object_Name_Lighting");
-            //lighting.lightingComponent.Color = new Vector4(3, 3, 3, 1);
-            //lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
-            //lighting.Position = new Vector3(0, 1, 0);
-            //lighting.lightingComponent.Range = 10;
-            //if (appBody.CurrentScene.Lightings.Count > 0)
-            //    lighting.lightingComponent.LightingType = LightingType.Point;
-            //appBody.CurrentScene.AddSceneObject(lighting);
-            //appBody.RequireRender();
             var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
             GameObject lighting = new GameObject();
             Components.LightingComponent lightingComponent = new Components.LightingComponent();
@@ -84,8 +74,6 @@ namespace Coocoo3D.UI
             {
                 if (sceneObject is MMD3DEntity entity)
                     scene.RemoveSceneObject(entity);
-                //else if (sceneObject is Lighting lighting)
-                //    scene.RemoveSceneObject(lighting);
                 else if (sceneObject is GameObject gameObject)
                     scene.RemoveGameObject(gameObject);
             }
@@ -116,43 +104,6 @@ namespace Coocoo3D.UI
             appBody.RequireRender(true);
         }
 
-        public static void LoadShaderForEntities1(Coocoo3DMain appBody, StorageFile storageFile, StorageFolder storageFolder, IList<MMD3DEntity> entities)
-        {
-            RPShaderPack shaderPack;
-            lock (appBody.mainCaches.RPShaderPackCaches)
-            {
-                shaderPack = appBody.mainCaches.RPShaderPackCaches.GetOrCreate(storageFile.Path);
-                if (shaderPack.Status != GraphicsObjectStatus.loaded)
-                {
-                    if (shaderPack.loadLocker.GetLocker())
-                    {
-                        string relativePath = storageFile.Name;
-                        _ = Task.Run(async () =>
-                        {
-                            var task1 = shaderPack.Reload1(storageFolder, relativePath, appBody.RPAssetsManager, appBody.ProcessingList);
-                            appBody.RequireRender();
-                            if (await task1)
-                            {
-
-                            }
-                            appBody.RequireRender();
-                            shaderPack.loadLocker.FreeLocker();
-                        });
-                    }
-                }
-            }
-            foreach (var entity in entities)
-            {
-                //entity.rendererComponent.PODraw = shaderPack.PODraw;
-                //entity.rendererComponent.PSOSkinning = shaderPack.POSkinning;
-                //entity.rendererComponent.POParticleDraw = shaderPack.POParticleDraw;
-                //entity.rendererComponent.ParticleCompute = shaderPack.CSParticle;
-                entity.rendererComponent.shaders["Pass1"] = shaderPack.PODraw;
-                entity.rendererComponent.shaders["Skinning"] = shaderPack.POSkinning;
-            }
-            appBody.RequireRender();
-        }
-
         public static List<Texture2D> GetTextureList(Coocoo3DMain appBody, StorageFolder storageFolder, PMXFormat pmx)
         {
             List<Texture2D> textures = new List<Texture2D>();
@@ -178,6 +129,63 @@ namespace Coocoo3D.UI
                 }
             }
             return textures;
+        }
+
+        public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)
+        {
+            var stream = (await file.OpenReadAsync()).AsStreamForRead();
+            var passSetting = (RenderPipeline.PassSetting)appBody.RPContext.PassSettingSerializer.Deserialize(stream);
+            var rpc = appBody.RPContext;
+            if (passSetting.VertexShaders != null)
+                foreach (var v1 in passSetting.VertexShaders)
+                {
+                    VertexShader vertexShader = new VertexShader();
+                    vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), "main", new MacroEntry[0]);
+                    rpc.RPAssetsManager.VSAssets[v1.Name] = vertexShader;
+                }
+            if (passSetting.GeometryShaders != null)
+                foreach (var g1 in passSetting.GeometryShaders)
+                {
+                    GeometryShader geometryShader = new GeometryShader();
+                    geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), "main", new MacroEntry[0]);
+                    rpc.RPAssetsManager.GSAssets[g1.Name] = geometryShader;
+                }
+            if (passSetting.PixelShaders != null)
+                foreach (var p1 in passSetting.PixelShaders)
+                {
+                    PixelShader pixelShader = new PixelShader();
+                    pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), "main", new MacroEntry[0]);
+                    rpc.RPAssetsManager.PSAssets[p1.Name] = pixelShader;
+                }
+            if (passSetting.Texture2Ds != null)
+                foreach (var t1 in passSetting.Texture2Ds)
+                {
+                    Texture2D texture = null;
+                    rpc.RPAssetsManager.texture2ds.TryGetValue(t1.Name, out texture);
+                    if (texture == null)
+                    {
+                        texture = new Texture2D();
+                        rpc.RPAssetsManager.texture2ds[t1.Name] = texture;
+                    }
+                    texture.Status = GraphicsObjectStatus.loading;
+                    await ReloadTexture2DNoMip(texture, rpc.processingList, await storageFolder.GetFileAsync(t1.Path));
+                }
+
+            rpc.SetCurrentPassSetting(passSetting);
+            rpc.customPassSetting = passSetting;
+
+        }
+        private static async Task ReloadTexture2D(Texture2D texture2D, ProcessingList processingList, StorageFile storageFile)
+        {
+            Uploader uploader = new Uploader();
+            uploader.Texture2D(await FileIO.ReadBufferAsync(storageFile), true, true);
+            processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
+        }
+        private static async Task ReloadTexture2DNoMip(Texture2D texture2D, ProcessingList processingList, StorageFile storageFile)
+        {
+            Uploader uploader = new Uploader();
+            uploader.Texture2D(await FileIO.ReadBufferAsync(storageFile), false, false);
+            processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
         }
     }
 }

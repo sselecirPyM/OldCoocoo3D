@@ -24,18 +24,13 @@ namespace Coocoo3D.Components
 
         public int meshVertexCount;
         public int meshIndexCount;
-        public byte[] meshPosData;//ref type
+        public byte[] meshPosData;
 
-        //public TwinBuffer meshParticleBuffer;
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
         public List<RuntimeMaterial.InnerStruct> materialsBaseData = new List<RuntimeMaterial.InnerStruct>();
         public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();
         public List<Texture2D> textures = new List<Texture2D>();
 
-        //public PSO PSOSkinning;
-        //public PSO PODraw;
-        //public PSO POParticleDraw;
-        //public ComputePO ParticleCompute;
         public Dictionary<string, PSO> shaders = new Dictionary<string, PSO>();
 
         public Vector3[] meshPosData1;
@@ -806,13 +801,13 @@ namespace Coocoo3D.Components
     {
         public const int c_materialDataSize = 256;
 
-        public Texture2D tex;
         public string Name;
         public string NameEN;
         public int indexCount;
         public int texIndex;
         public int toonIndex;
         public DrawFlag DrawFlags;
+        public bool Transparent;
 
         public InnerStruct innerStruct;
         public struct InnerStruct
@@ -839,6 +834,7 @@ namespace Coocoo3D.Components
             public float Clearcoat;
             public float ClearcoatGloss;
         }
+        public Dictionary<string, ITexture2D> textures = new Dictionary<string, ITexture2D>();
         public override string ToString()
         {
             return string.Format("{0}_{1}", Name, NameEN);
@@ -1022,6 +1018,9 @@ namespace Coocoo3D.FileFormat
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
                     toonIndex = mmdMat.ToonIndex,
                 };
+                if (rendererComponent.textures.Count > mat.texIndex && mat.texIndex >= 0)
+                    mat.textures["_Albedo"] = rendererComponent.textures[mat.texIndex];
+
                 rendererComponent.Materials.Add(mat);
                 rendererComponent.materialsBaseData.Add(mat.innerStruct);
                 rendererComponent.computedMaterialsData.Add(mat.innerStruct);

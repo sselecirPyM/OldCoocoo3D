@@ -18,10 +18,21 @@ namespace Coocoo3D.RenderPipeline
         [XmlArrayItem("Pass")]
         public List<Pass> Passes;
         [XmlArrayItem("PipelineState")]
-        public List<PSPS> pipelineStates;
+        public List<PSPS> PipelineStates;
+        [XmlArrayItem("VertexShader")]
+        public List<_AssetDefine> VertexShaders;
+        [XmlArrayItem("GeometryShader")]
+        public List<_AssetDefine> GeometryShaders;
+        [XmlArrayItem("PixelShader")]
+        public List<_AssetDefine> PixelShaders;
+        [XmlArrayItem("Texture2D")]
+        public List<_AssetDefine> Texture2Ds;
+
         //[XmlArrayItem("RayTracingStateObject")]
         public PSRTSO RayTracingStateObject;
 
+        [XmlIgnore]
+        public bool configured;
         [XmlIgnore]
         public RayTracingStateObject RTSO;
 
@@ -33,8 +44,8 @@ namespace Coocoo3D.RenderPipeline
                 return false;
             if (Passes == null || Passes.Count == 0)
                 return false;
-            if (pipelineStates == null)
-                pipelineStates = new List<PSPS>();
+            if (PipelineStates == null)
+                PipelineStates = new List<PSPS>();
             foreach (var passMatch in RenderSequence)
             {
                 if (passMatch.Name != null)
@@ -162,5 +173,10 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public string AnyHitShader;
         public string ClosestHitShader;
+    }
+    public struct _AssetDefine
+    {
+        public string Name;
+        public string Path;
     }
 }

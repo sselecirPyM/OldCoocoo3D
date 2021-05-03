@@ -20,6 +20,7 @@ namespace Coocoo3D.RenderPipeline
         public List<LightingData> lightings = new List<LightingData>();
         public List<LightingData> selectedLightings = new List<LightingData>();
         public List<CameraData> cameras = new List<CameraData>();
+        public PassSetting currentPassSetting;
         public int VertexCount;
         public int frameRenderIndex;
         public int progressiveRenderIndex;

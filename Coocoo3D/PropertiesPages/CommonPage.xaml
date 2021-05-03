@@ -72,11 +72,8 @@
                     <ComboBoxItem x:Uid="Page_Common_RenderPipeline_ComboBoxItem_Forward" Content="forward"/>
                     <ComboBoxItem x:Uid="Page_Common_RenderPipeline_ComboBoxItem_Deferred" Content="deferred"/>
                     <ComboBoxItem x:Uid="Page_Common_RenderPipeline_ComboBoxItem_RayTracing" Content="ray tracing"/>
+                    <ComboBoxItem x:Uid="Page_Common_RenderPipeline_ComboBoxItem_Custom" Content="Custom"/>
                 </ComboBox>
-                <!--<ComboBox Header="风格(仅forward渲染支持)" SelectedIndex="0" SelectionChanged="VRenderStyle_SelectionChanged">
-                    <ComboBoxItem Content="写实"/>
-                    <ComboBoxItem Content="卡通1"/>
-                </ComboBox>-->
                 <TextBlock x:Name="VRayTracingSupport" TextWrapping="Wrap"/>
                 <TextBlock TextWrapping="Wrap">
                     <Hyperlink NavigateUri="ms-settings:display-advancedgraphics">点击这里更改使用的显卡。</Hyperlink>
@@ -87,10 +84,8 @@
                     <Button.Flyout>
                         <Flyout>
                             <StackPanel>
-                                <Button x:Uid="Page_Common_Button_RefreshShaderCaches" Click="ReloadShaders_Click"/>
                                 <Button x:Uid="Page_Common_Button_RefreshTextureCaches" Click="ReloadTextures_Click"/>
                                 <Button x:Uid="Page_Common_Button_RefreshModelCaches" Click="ReloadModels_Click"/>
-                                <CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadShader" IsChecked="{x:Bind VAutoReloadShader,Mode=TwoWay}" Checked="ReloadShaders_Click"/>
                                 <CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadTexture" IsChecked="{x:Bind VAutoReloadTexture,Mode=TwoWay}" Checked="ReloadTextures_Click"/>
                                 <CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadModel" IsChecked="{x:Bind VAutoReloadModel,Mode=TwoWay}" Checked="ReloadModels_Click"/>
                             </StackPanel>

@@ -45,83 +45,6 @@ namespace Coocoo3D.PropertiesPages
             }
         }
 
-
-        private bool IsImageExtName(string extName)
-        {
-            string lower = extName.ToLower();
-            switch (lower)
-            {
-                case ".jpg":
-                case ".jpeg":
-                case ".png":
-                case ".bmp":
-                case ".tif":
-                case ".tiff":
-                case ".gif":
-                //case ".tga":
-                //case ".hdr":
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        private void _img0_DragOver(object sender, DragEventArgs e)
-        {
-            Image image = sender as Image;
-            if (e.DataView.Properties.TryGetValue("ExtName", out object object1))
-            {
-                string extName = object1 as string;
-                if (extName != null && IsImageExtName(extName))
-                {
-                    e.AcceptedOperation = DataPackageOperation.Copy;
-                }
-            }
-        }
-        private async void _img0_Drop(object sender, DragEventArgs e)
-        {
-            Image image = sender as Image;
-            if (e.DataView.Properties.TryGetValue("ExtName", out object object1))
-            {
-                string extName = object1 as string;
-                if (extName != null)
-                {
-                    e.DataView.Properties.TryGetValue("File", out object object2);
-                    StorageFile storageFile = object2 as StorageFile;
-                    e.DataView.Properties.TryGetValue("Folder", out object object3);
-                    StorageFolder storageFolder = object3 as StorageFolder;
-                    if (IsImageExtName(extName))
-                    {
-                        var bitmap = new BitmapImage();
-                        await bitmap.SetSourceAsync(await storageFile.OpenReadAsync());
-                        image.Source = bitmap;
-                        file = storageFile;
-                        imgSize.x = bitmap.PixelWidth;
-                        imgSize.y = bitmap.PixelHeight;
-                    }
-                }
-            }
-        }
-        StorageFile file;
-        int2 imgSize;
-        struct int2
-        {
-            public int x;
-            public int y;
-        }
-
-        private async void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (file == null)
-            {
-                return;
-            }
-            Uploader uploader = new Uploader();
-            uploader.Texture2D(await FileIO.ReadBufferAsync(file), true, true);
-            appBody.ProcessingList.AddObject(new Texture2DUploadPack(appBody.RPContext.postProcessBackground, uploader));
-            appBody.RequireRender();
-        }
-
-
         public float VGammaCorrection
         {
             get => appBody.postProcess.innerStruct.GammaCorrection;
@@ -198,16 +121,6 @@ namespace Coocoo3D.PropertiesPages
             set
             {
                 appBody.postProcess.innerStruct.Transition2 = value;
-                appBody.RequireRender();
-            }
-        }
-
-        public float VBackgroundFactory
-        {
-            get => appBody.postProcess.innerStruct.BackgroundFactory;
-            set
-            {
-                appBody.postProcess.innerStruct.BackgroundFactory = value;
                 appBody.RequireRender();
             }
         }

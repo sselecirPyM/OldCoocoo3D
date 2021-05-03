@@ -149,7 +149,7 @@ namespace Coocoo3D.RenderPipeline
             var rpAssets = context.RPAssetsManager;
             var rsPP = rpAssets.rootSignaturePostProcess;
             graphicsContext.SetCBVR(constantBuffer, 0);
-            graphicsContext.SetSRVT(context.UI1Texture, 1);
+            graphicsContext.SetSRVT(rpAssets.texture2ds["_UI1Texture"], 1);
             graphicsContext.SetMesh(context.ndcQuadMesh);
 
             PSODesc desc;

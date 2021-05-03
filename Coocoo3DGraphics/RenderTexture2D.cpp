@@ -44,3 +44,10 @@ DxgiFormat Coocoo3DGraphics::RenderTexture2D::GetFormat()
 		return (DxgiFormat)m_dsvFormat;
 	return (DxgiFormat)m_format;
 }
+
+void RenderTexture2D::StateTransition(ID3D12GraphicsCommandList* commandList, D3D12_RESOURCE_STATES state)
+{
+	if (prevResourceState != state)
+		commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), prevResourceState, state));
+	prevResourceState = state;
+}

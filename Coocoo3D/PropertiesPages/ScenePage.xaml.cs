@@ -106,12 +106,10 @@ namespace Coocoo3D.PropertiesPages
     public class SceneObjectTemplateSelector : DataTemplateSelector
     {
         public DataTemplate EntityTemplate { get; set; }
-        public DataTemplate LightingTemplate { get; set; }
         public DataTemplate GameObjectTemplate { get; set; }
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
             if (item is MMD3DEntity) return EntityTemplate;
-            if (item is Lighting) return LightingTemplate;
             if (item is GameObject) return GameObjectTemplate;
             else return null;
         }

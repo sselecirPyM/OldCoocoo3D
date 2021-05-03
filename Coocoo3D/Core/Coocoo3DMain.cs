@@ -27,7 +27,7 @@ namespace Coocoo3D.Core
     public class Coocoo3DMain
     {
         public DeviceResources deviceResources { get => RPContext.deviceResources; }
-        public MainCaches mainCaches = new MainCaches();
+        public MainCaches mainCaches { get => RPContext.mainCaches; }
 
         public Scene CurrentScene;
 
@@ -307,7 +307,6 @@ namespace Coocoo3D.Core
             {
                 RPContext.SkinningMeshBufferSize = SceneObjectVertexCount;
                 deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, SceneObjectVertexCount);
-                RPContext.LightCacheBuffer.Initialize(deviceResources, SceneObjectVertexCount * 16);
             }
             if (!_processingList.IsEmpty() || RPContext.gameDriverContext.RequireInterruptRender)
             {
@@ -394,7 +393,13 @@ namespace Coocoo3D.Core
                 if (currentRenderPipelineIndex == 0)
                 {
                     _currentRenderPipeline = forwardRenderPipeline2;
+                    RPContext.SetCurrentPassSetting(RPContext.defaultPassSetting);
                 }
+                //if (currentRenderPipelineIndex == 1)
+                //{
+                //    _currentRenderPipeline = forwardRenderPipeline2;
+                //    RPContext.SetCurrentPassSetting(RPContext.deferredPassSetting);
+                //}
                 if (currentRenderPipelineIndex == 1)
                 {
                     _currentRenderPipeline = deferredRenderPipeline1;
@@ -402,6 +407,14 @@ namespace Coocoo3D.Core
                 if (currentRenderPipelineIndex == 2)
                 {
                     _currentRenderPipeline = rayTracingRenderPipeline1;
+                }
+                else if (currentRenderPipelineIndex == 3)
+                {
+                    if (RPContext.customPassSetting != null)
+                    {
+                        _currentRenderPipeline = forwardRenderPipeline2;
+                        RPContext.SetCurrentPassSetting(RPContext.customPassSetting);
+                    }
                 }
             }
         }

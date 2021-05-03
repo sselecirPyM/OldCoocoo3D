@@ -15,6 +15,7 @@ namespace Coocoo3DGraphics
 		void Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps);
 		void Unload();
 		int GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc);
+		void DelayDestroy(DeviceResources^ deviceResources);
 	internal:
 		VertexShader^ m_vertexShader;
 		PixelShader^ m_pixelShader;
