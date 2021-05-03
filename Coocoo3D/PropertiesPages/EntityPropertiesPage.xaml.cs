@@ -348,6 +348,11 @@ namespace Coocoo3D.PropertiesPages
         {
 
         }
+
+        private void CheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            appBody.RequireRender();
+        }
     }
     public struct Bundle_Main_Entity_Mat
     {

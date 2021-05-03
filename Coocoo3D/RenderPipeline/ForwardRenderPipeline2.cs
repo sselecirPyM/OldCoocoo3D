@@ -145,6 +145,9 @@ namespace Coocoo3D.RenderPipeline
                         case "TextureIndex":
                             ofs += CooUtility.Write(_buffer, ofs, material.texIndex);
                             break;
+                        case "Transparent":
+                            ofs += CooUtility.Write(_buffer, ofs, material.Transparent ? 1 : 0);
+                            break;
                         case "CameraPosition":
                             ofs += CooUtility.Write(_buffer, ofs, camera.Pos);
                             break;
@@ -153,6 +156,9 @@ namespace Coocoo3D.RenderPipeline
                             break;
                         case "DeltaTime":
                             ofs += CooUtility.Write(_buffer, ofs, (float)context.dynamicContextRead.DeltaTime);
+                            break;
+                        case "Time":
+                            ofs += CooUtility.Write(_buffer, ofs, (float)context.dynamicContextRead.Time);
                             break;
                         case "WidthHeight":
                             if (_pass.renderTargets != null && _pass.renderTargets.Length > 0)
@@ -230,6 +236,9 @@ namespace Coocoo3D.RenderPipeline
                             break;
                         case "RandomValue":
                             ofs += CooUtility.Write(_buffer, ofs, (float)randomGenerator.NextDouble());
+                            break;
+                        default:
+                            ofs += CooUtility.Write(_buffer, ofs, 0.0f);
                             break;
                     }
                 }

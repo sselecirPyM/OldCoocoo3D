@@ -252,16 +252,7 @@
     <ClInclude Include="RayTracingInstanceGroup.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\GSParticleStandard.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\GSUIStandard.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\PSMMD.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\GSTest.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VSPostProcess.hlsl">
@@ -274,9 +265,6 @@
       <Filter>RayTracing</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VSMMDTransform.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\GSMMD.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\ImageProcess\G_IrradianceMap0.hlsl">
