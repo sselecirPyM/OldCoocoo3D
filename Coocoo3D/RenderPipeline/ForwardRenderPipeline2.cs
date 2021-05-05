@@ -63,17 +63,16 @@ namespace Coocoo3D.RenderPipeline
             #endregion
 
             int numMaterials = 0;
-            for (int i = 0; i < rendererComponents.Count; i++)
-                numMaterials += rendererComponents[i].Materials.Count;
+            foreach (MMDRendererComponent v in rendererComponents)
+                numMaterials += v.Materials.Count;
+
+            int numofBuffer = 0;
+            foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
+                if (combinedPass.Pass.CBVs != null)
+                    numofBuffer += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
+            context.XBufferGroup.SetSlienceCount(numofBuffer);
 
             int matC = 0;
-            int num2 = 0;
-            foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
-            {
-                if (combinedPass.Pass.CBVs != null)
-                    num2 += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
-            }
-            context.XBufferGroup.SetSlienceCount(num2);
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
                 if (combinedPass.Pass.Camera == "Main")
@@ -91,7 +90,7 @@ namespace Coocoo3D.RenderPipeline
                         {
                             foreach (var cbv in combinedPass.Pass.CBVs)
                             {
-                                int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, material);
+                                int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, material, rendererComponent);
                                 context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
                                 matC++;
                             }
@@ -101,7 +100,7 @@ namespace Coocoo3D.RenderPipeline
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, null);
+                        int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, null, null);
                         context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
                         matC++;
                     }
@@ -109,8 +108,8 @@ namespace Coocoo3D.RenderPipeline
             }
             if (matC > 0)
                 context.XBufferGroup.UpdateSlienceComplete(graphicsContext);
-            //发送到着色器里的数据
-            int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material)
+            //着色器可读取数据
+            int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
                 Array.Clear(_buffer, 0, _buffer.Length);
                 int ofs = 0;
@@ -238,7 +237,17 @@ namespace Coocoo3D.RenderPipeline
                             ofs += CooUtility.Write(_buffer, ofs, (float)randomGenerator.NextDouble());
                             break;
                         default:
-                            ofs += CooUtility.Write(_buffer, ofs, 0.0f);
+                            var st = _rc?.stateComponent;
+                            if (st != null && st.stringMorphIndexMap.TryGetValue(s, out int _i))
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, st.WeightComputed[_i]);
+                            }
+                            if (material != null && material.textures.ContainsKey(s))
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, 1.0f);
+                            }
+                            else
+                                ofs += CooUtility.Write(_buffer, ofs, 0.0f);
                             break;
                     }
                 }
@@ -253,15 +262,23 @@ namespace Coocoo3D.RenderPipeline
             var inShaderSettings = context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
-            Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
+            ITexture2D _Tex(ITexture2D _tex)
+            {
+                if (_tex is Texture2D _tex1)
+                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
+                else if (_tex == null)
+                    return texError;
+                else
+                    return _tex;
+            };
             var rpAssets = context.RPAssetsManager;
             var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
 
-            PSO PSOSkinning = rpAssets.PSOMMDSkinning;
+            PSO PSOSkinning = rpAssets.PSOs["PSOMMDSkinning"];
             PSO psoLoading = rpAssets.PSOs["Loading"];
             PSO psoError = rpAssets.PSOs["Error"];
-
+            #region Skinning
             graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
@@ -278,6 +295,7 @@ namespace Coocoo3D.RenderPipeline
             for (int i = 0; i < rendererComponents.Count; i++)
                 EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
+            #endregion
 
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
@@ -304,15 +322,16 @@ namespace Coocoo3D.RenderPipeline
                 passPsoDesc.depthBias = combinedPass.DepthBias;
                 passPsoDesc.slopeScaledDepthBias = combinedPass.SlopeScaledDepthBias;
                 passPsoDesc.dsvFormat = combinedPass.depthSencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.depthSencil.GetFormat();
-                passPsoDesc.inputLayout = EInputLayout.skinned;
                 passPsoDesc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
                 passPsoDesc.rtvFormat = combinedPass.renderTargets.Length == 0 ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.renderTargets[0].GetFormat();
                 passPsoDesc.renderTargetCount = combinedPass.renderTargets.Length;
                 passPsoDesc.streamOutput = false;
-                passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
-                _PassSetRes(combinedPass);
+                passPsoDesc.wireFrame = false;
+                _PassSetRes1(null, combinedPass);
                 if (combinedPass.DrawObjects)
                 {
+                    passPsoDesc.inputLayout = EInputLayout.skinned;
+                    passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
                     graphicsContext.SetMesh(context.SkinningMeshBuffer);
                     _PassRender(rendererComponents, combinedPass);
                 }
@@ -352,50 +371,19 @@ namespace Coocoo3D.RenderPipeline
                                 context.XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
                                 matC++;
                             }
-                            if (material.innerStruct.DiffuseColor.W > 0)
-                            {
-                                _PassSetRes1(material);
-                                passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
-                                SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
-                                graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
-                            }
+                            _PassSetRes1(material, _combinedPass);
+                            passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
+                            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
+                            graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
                             counterX.material++;
                             indexOffset += material.indexCount;
                         }
                         counterX.vertex += rendererComponent.meshVertexCount;
                     }
-                    void _PassSetRes1(RuntimeMaterial material)
-                    {
-                        if (_combinedPass.Pass.SRVs != null)
-                            foreach (var resd in _combinedPass.Pass.SRVs)
-                            {
-                                if (resd.ResourceType == "TextureCube")
-                                {
-                                    graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
-                                }
-                                if (resd.ResourceType == "Texture2D")
-                                {
-                                    ITexture2D tex2D = null;
-                                    if (material.textures.TryGetValue(resd.Resource, out ITexture2D tex))
-                                        tex2D = tex;
-                                    if (tex2D == null)
-                                        tex2D = context._GetTex2DByName(resd.Resource);
-
-                                    if (tex2D != null)
-                                    {
-                                        if (tex2D is Texture2D _tex2d1)
-                                            graphicsContext.SetSRVTSlot(_Tex(_tex2d1), resd.Index);
-                                        else
-                                            graphicsContext.SetSRVTSlot(tex2D, resd.Index);
-                                    }
-                                }
-                            }
-                    }
                 }
                 void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
                 {
                     if (_rendererComponents.Count == 0) return;
-                    _Counters counterX = new _Counters();
                     var rtso = context.dynamicContextRead.currentPassSetting.RTSO;
                     var rtst = context.RTSTs[_combinedPass.Name];
                     var rtis = context.RTIGroups[_combinedPass.Name];
@@ -404,6 +392,7 @@ namespace Coocoo3D.RenderPipeline
                     var rtasg = context.RTASGroup;
                     graphicsContext.Prepare(rtasg);
                     graphicsContext.Prepare(rtis);
+                    _Counters counterX = new _Counters();
 
                     foreach (var rendererComponent in _rendererComponents)
                     {
@@ -434,7 +423,8 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.DispatchRay(rtst, rtTex1.GetWidth(), rtTex1.GetHeight(), 1);
                 }
             }
-            void _PassSetRes(PassMatch1 _combinedPass)
+
+            void _PassSetRes1(RuntimeMaterial material, PassMatch1 _combinedPass)
             {
                 if (_combinedPass.Pass.SRVs != null)
                     foreach (var resd in _combinedPass.Pass.SRVs)
@@ -443,11 +433,18 @@ namespace Coocoo3D.RenderPipeline
                         {
                             graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
                         }
-                        if (resd.ResourceType == "Texture2D")
+                        else if (resd.ResourceType == "Texture2D")
                         {
-                            var tex2D = context._GetTex2DByName(resd.Resource);
+                            ITexture2D tex2D = null;
+                            if (material != null && material.textures.TryGetValue(resd.Resource, out ITexture2D tex))
+                                tex2D = tex;
+                            if (tex2D == null)
+                                tex2D = context._GetTex2DByName(resd.Resource);
+
                             if (tex2D != null)
-                                graphicsContext.SetSRVTSlot(tex2D, resd.Index);
+                            {
+                                graphicsContext.SetSRVTSlot(_Tex(tex2D), resd.Index);
+                            }
                         }
                     }
             }

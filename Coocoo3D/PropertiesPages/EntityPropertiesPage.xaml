@@ -39,10 +39,10 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="漫反射比率" Grid.ColumnSpan="4"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="R" Value="{x:Bind CurrentMat.innerStruct.DiffuseColor.X,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="G" Value="{x:Bind CurrentMat.innerStruct.DiffuseColor.Y,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="B" Value="{x:Bind CurrentMat.innerStruct.DiffuseColor.Z,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="3" Header="A" Value="{x:Bind CurrentMat.innerStruct.DiffuseColor.W,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="R" Value="{x:Bind SelectedMat.innerStruct.DiffuseColor.X,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="G" Value="{x:Bind SelectedMat.innerStruct.DiffuseColor.Y,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="B" Value="{x:Bind SelectedMat.innerStruct.DiffuseColor.Z,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="3" Header="A" Value="{x:Bind SelectedMat.innerStruct.DiffuseColor.W,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
                         </Grid>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -56,10 +56,10 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="镜面颜色" Grid.ColumnSpan="4"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="R" Value="{x:Bind CurrentMat.innerStruct.SpecularColor.X,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="G" Value="{x:Bind CurrentMat.innerStruct.SpecularColor.Y,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="B" Value="{x:Bind CurrentMat.innerStruct.SpecularColor.Z,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="3" Header="A" Value="{x:Bind CurrentMat.innerStruct.SpecularColor.W,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="R" Value="{x:Bind SelectedMat.innerStruct.SpecularColor.X,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="G" Value="{x:Bind SelectedMat.innerStruct.SpecularColor.Y,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="B" Value="{x:Bind SelectedMat.innerStruct.SpecularColor.Z,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="3" Header="A" Value="{x:Bind SelectedMat.innerStruct.SpecularColor.W,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
                         </Grid>
                         <Grid>
                             <Grid.RowDefinitions>
@@ -73,26 +73,37 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="环境光(自发光)" Grid.ColumnSpan="4"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="R" Value="{x:Bind CurrentMat.innerStruct.AmbientColor.X,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="G" Value="{x:Bind CurrentMat.innerStruct.AmbientColor.Y,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
-                            <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="B" Value="{x:Bind CurrentMat.innerStruct.AmbientColor.Z,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="0" Header="R" Value="{x:Bind SelectedMat.innerStruct.AmbientColor.X,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="1" Header="G" Value="{x:Bind SelectedMat.innerStruct.AmbientColor.Y,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
+                            <mu:NumberBox Grid.Row="1" Grid.Column="2" Header="B" Value="{x:Bind SelectedMat.innerStruct.AmbientColor.Z,Mode=TwoWay}" ValueChanged="NumberBox_ValueChanged"/>
                         </Grid>
                         <TextBlock x:Uid="Page_Entity_Text_Others"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Metallic" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Metallic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Roughness" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Roughness,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Emission" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Emission,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Specular" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Specular,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <CheckBox Content="Transparent" IsChecked="{x:Bind CurrentMat.Transparent,Mode=TwoWay}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked"/>
-                        <ListView>
-                            
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Metallic" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Metallic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Roughness" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Roughness,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Emission" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Emission,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Specular" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Specular,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <CheckBox Content="Transparent" IsChecked="{x:Bind SelectedMat.Transparent,Mode=TwoWay}" Checked="CheckBox_Checked" Unchecked="CheckBox_Checked"/>
+                        <ListView x:Name="viewTex" Height="200" SelectionChanged="viewTex_SelectionChanged">
+
                         </ListView>
-                        <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_Subsurface" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Subsurface,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
-                        <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_SpecularTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.SpecularTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
-                        <!--<Slider Margin="5" StepFrequency="1e-4" Minimum="0" Maximum="1" Header="各向异性" Value="{x:Bind innerStruct.Anisotropic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>--><!--
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Sheen" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Sheen,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_SheenTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.SheenTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Clearcoat" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.Clearcoat,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_ClearcoatGloss" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind CurrentMat.innerStruct.ClearcoatGloss,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Content="Browse" Grid.Column="0" Click="BrowseButton_Click"/>
+                            <TextBox Text="{x:Bind VTextureName,Mode=TwoWay}" Grid.Column="1"/>
+                            <Button Content="Rename" x:Name="RenameButton" Grid.Column="2" Click="RenameButton_Click"/>
+                        </Grid>
+                        <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_Subsurface" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Subsurface,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_SpecularTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.SpecularTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        <!--<Slider Margin="5" StepFrequency="1e-4" Minimum="0" Maximum="1" Header="各向异性" Value="{x:Bind innerStruct.Anisotropic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        <!--
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Sheen" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Sheen,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_SheenTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.SheenTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_Clearcoat" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Clearcoat,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_ClearcoatGloss" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.ClearcoatGloss,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

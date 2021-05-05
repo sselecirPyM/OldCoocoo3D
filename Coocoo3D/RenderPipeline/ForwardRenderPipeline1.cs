@@ -126,13 +126,21 @@ namespace Coocoo3D.RenderPipeline
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
-            Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
+            ITexture2D _Tex(ITexture2D _tex)
+            {
+                if (_tex is Texture2D _tex1)
+                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
+                else if (_tex == null)
+                    return texError;
+                else
+                    return _tex;
+            };
             var rpAssets = context.RPAssetsManager;
             var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
 
-            PObject drawPO = rpAssets.PSOs["PSOMMD"];
-            PObject skinningPO = rpAssets.PSOMMDSkinning;
+            var drawPO = rpAssets.PSOs["PSOMMD"];
+            var PSOSkinning = rpAssets.PSOs["PSOMMDSkinning"];
             var shadowDepth = rpAssets.PSOs["PSOMMDShadowDepth"];
 
             graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
@@ -143,7 +151,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
-                var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, skinningPO, skinningPO, skinningPO);
+                var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
@@ -251,7 +259,7 @@ namespace Coocoo3D.RenderPipeline
 
                 var PODraw = PSOSelect(deviceResources, RSBase, ref desc, null, drawPO, drawPO, drawPO);
                 var Materials = rendererComponent.Materials;
-                List<Texture2D> texs = rendererComponent.textures;
+                //List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
@@ -264,17 +272,16 @@ namespace Coocoo3D.RenderPipeline
                         countIndexLocal += Materials[i].indexCount;
                         continue;
                     }
-                    Texture2D tex1 = null;
-                    if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
-                        tex1 = texs[Materials[i].texIndex];
+                    //Texture2D tex1 = null;
+                    //if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
+                    //    tex1 = texs[Materials[i].texIndex];
                     context.XBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
 
+                    Materials[i].textures.TryGetValue("_Albedo", out ITexture2D tex1);
                     graphicsContext.SetSRVT(_Tex(tex1), 3);
 
                     desc.cullMode = Materials[i].DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
-                    int variant = PODraw.GetVariantIndex(deviceResources, RSBase, desc);
-                    graphicsContext.SetPObject1(PODraw, variant);
-
+                    SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref desc, PODraw);
                     graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
                     counter.material++;
                     countIndexLocal += Materials[i].indexCount;

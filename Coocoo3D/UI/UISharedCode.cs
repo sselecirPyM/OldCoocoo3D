@@ -131,6 +131,19 @@ namespace Coocoo3D.UI
             return textures;
         }
 
+        public static async Task<Texture2D> LoadTexture(Coocoo3DMain appBody, StorageFile file)
+        {
+            Texture2DPack tex;
+            lock (appBody.mainCaches.TextureCaches)
+            {
+                tex = appBody.mainCaches.TextureCaches.GetOrCreate(file.Path);
+                if (tex.Status != GraphicsObjectStatus.loaded)
+                    tex.Mark(GraphicsObjectStatus.loading);
+            }
+            await ReloadTexture2D(tex.texture2D, appBody.ProcessingList, file);
+            return tex.texture2D;
+        }
+
         public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)
         {
             var stream = (await file.OpenReadAsync()).AsStreamForRead();

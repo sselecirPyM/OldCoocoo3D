@@ -99,7 +99,6 @@ namespace Coocoo3D.Core
             {
                 await RPAssetsManager.LoadAssets();
                 RPAssetsManager.InitializeRootSignature(deviceResources);
-                RPAssetsManager.InitializePipelineState();
                 await RPContext.ReloadDefalutResources(miscProcessContext);
                 //forwardRenderPipeline1.Reload(deviceResources);
                 forwardRenderPipeline2.Reload(deviceResources);
@@ -110,7 +109,6 @@ namespace Coocoo3D.Core
                 if (deviceResources.IsRayTracingSupport())
                 {
                     rayTracingRenderPipeline1.Reload(deviceResources);
-                    //await rayTracingRenderPipeline1.ReloadAssets(deviceResources);
                     await rayTracingRenderPipeline1.ReloadAssets(RPContext);
                 }
 
@@ -277,10 +275,10 @@ namespace Coocoo3D.Core
                 _BoneUpdate();
                 _ResetPhysics();
             }
-            if (RPContext.gameDriverContext.Playing)
-            {
+            //if (RPContext.gameDriverContext.Playing)
+            //{
                 _BoneUpdate();
-            }
+            //}
             for (int i = 0; i < rendererComponents.Count; i++)
             {
                 rendererComponents[i].WriteMatriticesData();
@@ -322,8 +320,6 @@ namespace Coocoo3D.Core
                 graphicsContext.EndCommand();
                 graphicsContext.Execute();
                 deviceResources.WaitForGpu();
-
-                _processingList._DealStep2(graphicsContext, deviceResources);
             }
             #endregion
             if (!RPContext.dynamicContextRead.EnableDisplay)

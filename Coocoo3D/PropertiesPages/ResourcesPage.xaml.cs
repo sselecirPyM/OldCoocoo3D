@@ -121,7 +121,7 @@ namespace Coocoo3D.PropertiesPages
                     }
                     catch (Exception exception)
                     {
-                        MessageDialog dialog = new MessageDialog(string.Format("error", exception));
+                        MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
                         await dialog.ShowAsync();
                     }
                     finally

@@ -109,6 +109,18 @@
     <Name>PSMMDTransparent</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSMMDTransparent.cso</Path>
   </PixelShader>
+  <ComputeShader>
+    <Name>G_IrradianceMap0</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso</Path>
+  </ComputeShader>
+  <ComputeShader>
+    <Name>G_PreFilterEnv</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso</Path>
+  </ComputeShader>
+  <ComputeShader>
+    <Name>G_ClearIrradianceMap</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso</Path>
+  </ComputeShader>
   <PipelineState>
     <Name>Loading</Name>
     <VertexShader>VS_Pass1</VertexShader>
@@ -142,6 +154,45 @@
   <PipelineState>
     <Name>PSOMMDShadowDepth</Name>
     <VertexShader>VSMMDTransform</VertexShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PSOMMDSkinning</Name>
+    <VertexShader>VSMMDSkinning.cso</VertexShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectDeferredRenderGBuffer</Name>
+    <VertexShader>VSMMDTransform</VertexShader>
+    <PixelShader>PSDeferredRenderGBuffer.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectDeferredRenderIBL</Name>
+    <VertexShader>VS_SkyBox</VertexShader>
+    <PixelShader>PSDeferredRenderIBL.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectDeferredRenderDirectLight</Name>
+    <VertexShader>VS_SkyBox</VertexShader>
+    <PixelShader>PSDeferredRenderDirectLight.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectDeferredRenderPointLight</Name>
+    <VertexShader>VSDeferredRenderPointLight.cso</VertexShader>
+    <PixelShader>PSDeferredRenderPointLight.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectWidgetUI1</Name>
+    <VertexShader>VSWidgetUI1.cso</VertexShader>
+    <PixelShader>PSWidgetUI1.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectWidgetUI2</Name>
+    <VertexShader>VSWidgetUI2.cso</VertexShader>
+    <PixelShader>PSWidgetUI2.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>PObjectWidgetUILight</Name>
+    <VertexShader>VSWidgetUILight.cso</VertexShader>
+    <PixelShader>PSWidgetUILight.cso</PixelShader>
   </PipelineState>
   <Texture2D>
     <Name>_BRDFLUT</Name>

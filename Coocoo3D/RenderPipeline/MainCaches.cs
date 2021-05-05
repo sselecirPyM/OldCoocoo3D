@@ -35,6 +35,7 @@ namespace Coocoo3D.RenderPipeline
                 for (int i = 0; i < packs.Count; i++)
                 {
                     var tex = packs[i];
+                    if (tex.folder == null) continue;
                     if (tex.loadLocker.GetLocker())
                     {
                         Task.Factory.StartNew(async (object a) =>

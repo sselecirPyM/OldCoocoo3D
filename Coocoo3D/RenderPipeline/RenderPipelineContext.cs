@@ -189,7 +189,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 ScreenSizeDSVs[i] = new RenderTexture2D();
             }
-            XBufferGroup.Reload(deviceResources, 768, 768 * 84);
+            XBufferGroup.Reload(deviceResources, 1024, 1024 * 256);
         }
         ~RenderPipelineContext()
         {
@@ -291,17 +291,20 @@ namespace Coocoo3D.RenderPipeline
                     y = screenHeight;
                     z = 1;
                 }
+                else if (rt.Size.Source == "OutputSize2x")
+                {
+                    x = screenWidth * 2;
+                    y = screenHeight * 2;
+                }
                 else if (rt.Size.Source == "ShadowMapSize")
                 {
                     x = ShadowMapResolution;
                     y = ShadowMapResolution;
-                    z = 1;
                 }
                 else
                 {
                     x = rt.Size.x;
                     y = rt.Size.y;
-                    z = rt.Size.z;
                 }
                 if (tex2d.GetWidth() != x || tex2d.GetHeight() != y)
                 {

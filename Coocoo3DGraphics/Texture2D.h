@@ -13,6 +13,7 @@ namespace Coocoo3DGraphics
 
 		void Reload(Texture2D^ texture);
 		void Unload();
+		virtual Platform::String^ ToString() override;
 	internal:
 		DXGI_FORMAT m_format;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;

@@ -17,6 +17,12 @@ namespace Coocoo3D.RenderPipeline
 {
     public class RPAssetsManager
     {
+        public Dictionary<string, VertexShader> VSAssets = new Dictionary<string, VertexShader>();
+        public Dictionary<string, GeometryShader> GSAssets = new Dictionary<string, GeometryShader>();
+        public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
+        public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
+        public Dictionary<string, Texture2D> texture2ds = new Dictionary<string, Texture2D>();
+
         public GraphicsSignature rootSignature = new GraphicsSignature();
         public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
         public GraphicsSignature rootSignaturePostProcess = new GraphicsSignature();
@@ -24,27 +30,11 @@ namespace Coocoo3D.RenderPipeline
         public GraphicsSignature rtLocal = new GraphicsSignature();
         public GraphicsSignature rtGlobal = new GraphicsSignature();
 
-
-        public Dictionary<string, VertexShader> VSAssets = new Dictionary<string, VertexShader>();
-        public Dictionary<string, GeometryShader> GSAssets = new Dictionary<string, GeometryShader>();
-        public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
-        public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
-        public Dictionary<string, Texture2D> texture2ds = new Dictionary<string, Texture2D>();
-
-
-        public PSO PSOMMDSkinning = new PSO();
-        public PSO PObjectDeferredRenderGBuffer = new PSO();
-        public PSO PObjectDeferredRenderIBL = new PSO();
-        public PSO PObjectDeferredRenderDirectLight = new PSO();
-        public PSO PObjectDeferredRenderPointLight = new PSO();
-        public PSO PObjectWidgetUI1 = new PSO();
-        public PSO PObjectWidgetUI2 = new PSO();
-        public PSO PObjectWidgetUILight = new PSO();
         public DefaultResource defaultResource;
         public bool Ready;
         public void InitializeRootSignature(DeviceResources deviceResources)
         {
-            rootSignature.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV,GSD.CBV,GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable });
+            rootSignature.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable });
             rootSignatureSkinning.ReloadSkinning(deviceResources);
             rootSignaturePostProcess.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.CBV });
             rootSignatureCompute.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRV, GSD.UAV, GSD.UAV });
@@ -56,7 +46,6 @@ namespace Coocoo3D.RenderPipeline
         }
         public async Task LoadAssets()
         {
-
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));
             defaultResource = (DefaultResource)xmlSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DefaultResourceList.xml"));
             foreach (var vertexShader in defaultResource.vertexShaders)
@@ -82,32 +71,7 @@ namespace Coocoo3D.RenderPipeline
                 pso.Initialize(vs, gs, ps);
                 PSOs.Add(pipelineState.Name, pso);
             }
-        }
-        public void InitializePipelineState()
-        {
-            Ready = false;
-
-            PSOMMDSkinning.Initialize(VSAssets["VSMMDSkinning.cso"], null, null);
-
-            PObjectDeferredRenderGBuffer.Initialize(VSAssets["VSMMDTransform"], null, PSAssets["PSDeferredRenderGBuffer.cso"]);
-            PObjectDeferredRenderIBL.Initialize(VSAssets["VS_SkyBox"], null, PSAssets["PSDeferredRenderIBL.cso"]);
-            PObjectDeferredRenderDirectLight.Initialize(VSAssets["VS_SkyBox"], null, PSAssets["PSDeferredRenderDirectLight.cso"]);
-            PObjectDeferredRenderPointLight.Initialize(VSAssets["VSDeferredRenderPointLight.cso"], null, PSAssets["PSDeferredRenderPointLight.cso"]);
-
-
-            PObjectWidgetUI1.Initialize(VSAssets["VSWidgetUI1.cso"], null, PSAssets["PSWidgetUI1.cso"]);
-            PObjectWidgetUI2.Initialize(VSAssets["VSWidgetUI2.cso"], null, PSAssets["PSWidgetUI2.cso"]);
-            PObjectWidgetUILight.Initialize(VSAssets["VSWidgetUILight.cso"], null, PSAssets["PSWidgetUILight.cso"]);
-
             Ready = true;
-        }
-        protected async Task ReloadVertexShader(VertexShader vertexShader, string uri)
-        {
-            vertexShader.Initialize(await ReadFile(uri));
-        }
-        protected async Task ReloadPixelShader(PixelShader pixelShader, string uri)
-        {
-            pixelShader.Initialize(await ReadFile(uri));
         }
         protected async Task RegVSAssets(string name, string path)
         {
@@ -142,6 +106,8 @@ namespace Coocoo3D.RenderPipeline
         public List<_AssetDefine> geometryShaders;
         [XmlElement(ElementName = "PixelShader")]
         public List<_AssetDefine> pixelShaders;
+        [XmlElement(ElementName = "ComputeShader")]
+        public List<_AssetDefine> computeShaders;
         [XmlElement(ElementName = "Texture2D")]
         public List<_AssetDefine> texture2Ds;
         [XmlElement(ElementName = "PipelineState")]

@@ -162,7 +162,15 @@ namespace Coocoo3D.RenderPipeline
             ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
-            Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
+            ITexture2D _Tex(ITexture2D _tex)
+            {
+                if (_tex is Texture2D _tex1)
+                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
+                else if (_tex == null)
+                    return texError;
+                else
+                    return _tex;
+            };
 
             var RPAssetsManager = context.RPAssetsManager;
             var RSBase = RPAssetsManager.rootSignature;
@@ -170,15 +178,15 @@ namespace Coocoo3D.RenderPipeline
 
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
-            PObject mmdSkinning = RPAssetsManager.PSOMMDSkinning;
+            var PSOSkinning = RPAssetsManager.PSOs["PSOMMDSkinning"];
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
-                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, mmdSkinning, mmdSkinning, mmdSkinning);
+                var psoSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
 
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref context.SkinningDesc, POSkinning);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref context.SkinningDesc, psoSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
@@ -194,9 +202,9 @@ namespace Coocoo3D.RenderPipeline
 
             void _RenderEntity(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, CBuffer entityBoneDataBuffer, ref _Counters counter)
             {
-                var PODraw = context.RPAssetsManager.PObjectDeferredRenderGBuffer;
+                var PODraw = context.RPAssetsManager.PSOs["PObjectDeferredRenderGBuffer"];
                 var Materials = rendererComponent.Materials;
-                List<Texture2D> texs = rendererComponent.textures;
+                //List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
@@ -209,9 +217,10 @@ namespace Coocoo3D.RenderPipeline
                         countIndexLocal += Materials[i].indexCount;
                         continue;
                     }
-                    Texture2D tex1 = null;
-                    if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
-                        tex1 = texs[Materials[i].texIndex];
+                    //Texture2D tex1 = null;
+                    //if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
+                    //    tex1 = texs[Materials[i].texIndex];
+                    Materials[i].textures.TryGetValue("_Albedo", out ITexture2D tex1);
                     context.XBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
                     graphicsContext.SetSRVT(_Tex(tex1), 3);
 
@@ -227,7 +236,7 @@ namespace Coocoo3D.RenderPipeline
                     desc.renderTargetCount = 3;
                     desc.streamOutput = false;
                     desc.wireFrame = context.dynamicContextRead.settings.Wireframe;
-                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase,ref desc, PODraw);
+                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref desc, PODraw);
                     graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
                     counter.material++;
                     countIndexLocal += Materials[i].indexCount;
@@ -259,7 +268,7 @@ namespace Coocoo3D.RenderPipeline
             desc1.renderTargetCount = 1;
             desc1.streamOutput = false;
             desc1.wireFrame = false;
-            SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref desc1, RPAssetsManager.PObjectDeferredRenderIBL);
+            SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref desc1, RPAssetsManager.PSOs["PObjectDeferredRenderIBL"]);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
 
@@ -301,7 +310,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetSRVTArray(context.ShadowMapCube, 5);
                     graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 6);
 
-                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref desc1, RPAssetsManager.PObjectDeferredRenderDirectLight);
+                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RSBase, ref desc1, RPAssetsManager.PSOs["PObjectDeferredRenderDirectLight"]);
                     graphicsContext.SetMesh(context.ndcQuadMesh);
                     graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 }
@@ -316,7 +325,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 6);
                     graphicsContext.SetMesh(context.cubeMesh);
 
-                    SetPipelineStateVariant(context.deviceResources, context.graphicsContext, RSBase, ref desc1, RPAssetsManager.PObjectDeferredRenderPointLight);
+                    SetPipelineStateVariant(context.deviceResources, context.graphicsContext, RSBase, ref desc1, RPAssetsManager.PSOs["PObjectDeferredRenderPointLight"]);
                     graphicsContext.DrawIndexed(context.cubeMesh.GetIndexCount(), 0, 0);
                 }
             }
@@ -389,7 +398,7 @@ namespace Coocoo3D.RenderPipeline
 
                 var PODraw = RPAssetsManager.PSOs["PSOMMDTransparent"];
                 var Materials = rendererComponent.Materials;
-                List<Texture2D> texs = rendererComponent.textures;
+                //List<Texture2D> texs = rendererComponent.textures;
                 graphicsContext.SetMeshIndex(rendererComponent.mesh);
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 graphicsContext.SetCBVR(cameraPresentData, 2);
@@ -402,9 +411,10 @@ namespace Coocoo3D.RenderPipeline
                         countIndexLocal += Materials[i].indexCount;
                         continue;
                     }
-                    Texture2D tex1 = null;
-                    if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
-                        tex1 = texs[Materials[i].texIndex];
+                    //Texture2D tex1 = null;
+                    //if (Materials[i].texIndex != -1 && Materials[i].texIndex < Materials.Count)
+                    //    tex1 = texs[Materials[i].texIndex];
+                    Materials[i].textures.TryGetValue("_Albedo", out ITexture2D tex1);
                     context.XBufferGroup.SetCBVR(graphicsContext, counter.material, 1);
                     graphicsContext.SetSRVT(_Tex(tex1), 3);
 

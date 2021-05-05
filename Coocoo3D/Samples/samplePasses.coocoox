@@ -34,9 +34,16 @@
       <Name>_ShadowMap0</Name>
       <!--Size由RenderPipelineContext.cs里的PrepareRenderTarget函数决定-->
       <Size>
+        <!--ShadowMapSize,
+        OutputSize,
+        OutputSize2x-->
         <Source>ShadowMapSize</Source>
       </Size>
-      <!--Direct3D的DXGI格式-->
+      <!--Direct3D的DXGI格式，例如-->
+      <!--DXGI_FORMAT_D32_FLOAT-->
+      <!--DXGI_FORMAT_B8G8R8A8_UNORM-->
+      <!--DXGI_FORMAT_R16G16B16A16_FLOAT-->
+      <!--DXGI_FORMAT_R16G16B16A16_UNORM-->
       <Format>DXGI_FORMAT_D32_FLOAT</Format>
     </RenderTarget>
     <RenderTarget>
@@ -57,6 +64,29 @@
       <Camera>ShadowMap</Camera>
       <VertexShader>VS_ShadowMap</VertexShader>
       <!--请看ForwardRenderPipeline2.cs里的_WriteCBV函数-->
+      <!--可输入到缓冲区的值-->
+      <!--Metallic:float,
+        Roughness:float,
+        Emission:float,
+        Diffuse:float4,
+        SpecularColor:float4,
+        Specular:float,
+        AmbientColor:float3,
+        ToonIndex:int,
+        TextureIndex:int,
+        Transparent:int,
+        CameraPosition:float3,
+        DrawFlags:int,
+        DeltaTime:float,
+        Time:float,
+        WidthHeight:int2,
+        Camera:float4x4 float4x4,
+        DirectionalLight:float4x4 float3 int float4,
+        IndirectMultiplier:float,
+        PointLights4: (float3 int float4)[4],
+        RandomValue:float,-->
+      <!--如果与表情匹配则可以拿到表情值，类型为float-->
+      <!--如果不存在则视为float 0.0-->
       <CBV>
         <Index>0</Index>
         <Datas>
@@ -110,6 +140,7 @@
         <Index>0</Index>
         <ResourceType>Texture2D</ResourceType>
         <!--模型纹理-->
+        <!--可以在材质页面滚动到底添加纹理，如果存在指定名称的纹理还可以在CBV里获得float值1.0，无论是否输入SRV中-->
         <Resource>_Albedo</Resource>
       </SRV>
       <SRV>

@@ -100,11 +100,5 @@ namespace Coocoo3D.RenderPipeline
             MMDMeshLoadList.Clear();
             MMDMeshLoadList2.Clear();
         }
-        public void _DealStep2(GraphicsContext graphicsContext, DeviceResources deviceResources)
-        {
-            //for (int i = 0; i < pobjectList.Count; i++)
-            //    pobjectList[i].pipelineState.Initialize(pobjectList[i].vs, pobjectList[i].gs, pobjectList[i].ps);
-            //pobjectList.Clear();
-        }
     }
 }

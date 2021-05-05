@@ -80,12 +80,11 @@ RaytracingAccelerationStructure Scene : register(t0);
 TextureCube EnvCube : register (t1);
 TextureCube IrradianceCube : register (t2);
 Texture2D BRDFLut : register(t3);
-Texture2D ShadowMap0 : register(t4);
+//Texture2D ShadowMap0 : register(t4);
 RWTexture2D<float4> g_renderTarget : register(u0);
 cbuffer cb0 : register(b0)
 {
 	CAMERA_DATA_DEFINE;//is a macro
-	float4x4 LightSpaceMatrices[1];
 };
 //local
 StructuredBuffer<VertexSkinned> Vertices : register(t0, space1);
@@ -93,7 +92,7 @@ StructuredBuffer<uint> MeshIndexs : register(t1, space1);
 Texture2D diffuseMap :register(t2, space1);
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
-SamplerComparisonState sampleShadowMap0 : register(s2);
+//SamplerComparisonState sampleShadowMap0 : register(s2);
 //
 cbuffer cb3 : register(b3)
 {
@@ -252,10 +251,6 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 		triVert[1].Norm * vertexWeight[1] +
 		triVert[2].Norm * vertexWeight[2];
 
-	//float3 GIVertex = SceneLightRead[meshIndexs[0] + _VertexBegin] * vertexWeight[0] +
-	//	SceneLightRead[meshIndexs[1] + _VertexBegin] * vertexWeight[1] +
-	//	SceneLightRead[meshIndexs[2] + _VertexBegin] * vertexWeight[2];
-
 	float4 diffuseColor = diffuseMap.SampleLevel(s0, uv, 0) * _DiffuseColor;
 
 
@@ -295,14 +290,6 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 					lightStrength = max(Lightings[i].LightColor.rgb * Lightings[i].LightColor.a, 0);
 					if (payload.depth > 1 && i == 0)
 					{
-						float4 sPos = mul(float4(pos, 1), LightSpaceMatrices[0]);
-						float2 shadowTexCoords;
-						shadowTexCoords.x = 0.5f + (sPos.x / sPos.w * 0.5f);
-						shadowTexCoords.y = 0.5f - (sPos.y / sPos.w * 0.5f);
-						if (saturate(shadowTexCoords.x) - shadowTexCoords.x == 0 && saturate(shadowTexCoords.y) - shadowTexCoords.y == 0 && g_enableShadow != 0)
-							inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords, sPos.z / sPos.w).r;
-						else
-						{
 							RayDesc ray2;
 							ray2.Origin = pos;
 							ray2.Direction = Lightings[i].LightDir;
@@ -315,7 +302,6 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 								continue;
 							if (!payload2.miss)
 								inShadow = 0;
-						}
 					}
 					else
 					{
@@ -440,14 +426,11 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 
 			gi += NdotL * payloadGI.color.rgb * (c_diffuse * diffuse_factor / COO_PI);
 		}
-		if (diffuseBudget > 4)
-			outputColor += gi / diffuseBudget;
-		else
 			outputColor += gi / diffuseBudget;
 	}
 	else
 	{
-		outputColor += albedo.rgb * c_diffuse;
+		outputColor += IrradianceCube.SampleLevel(s0, N,0) * c_diffuse;
 	}
 
 	if (payload.depth < 3 && specularBudget > 0)

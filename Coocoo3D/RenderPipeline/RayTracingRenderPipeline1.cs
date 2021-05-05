@@ -9,13 +9,12 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
+using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
     public class RayTracingRenderPipeline1 : RenderPipeline
     {
-        public const int c_tempDataSize = 512;
-        public const int c_entityDataDataSize = 128;
         const int c_materialDataSize = 512;
         const int c_presentDataSize = 512;
         const int c_lightCameraDataSize = 256;
@@ -159,16 +158,15 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];
-
+            
+            var PSOSkinning = RPAssetsManager.PSOs["PSOMMDSkinning"];
 
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
-                var POSkinning = PSOSelect(context.deviceResources, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning, RPAssetsManager.PSOMMDSkinning);
-                int variant3 = POSkinning.GetVariantIndex(context.deviceResources, RPAssetsManager.rootSignatureSkinning, context.SkinningDesc);
-                graphicsContext.SetPObject1(POSkinning, variant3);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, PSOSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;

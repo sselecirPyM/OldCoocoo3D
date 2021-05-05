@@ -89,13 +89,12 @@ namespace Coocoo3D.FileFormat
         {
             entity.ComponentReady = false;
             var modelResource = modelPack.pmx;
-            entity.rendererComponent.textures = textures;
             entity.morphStateComponent.Reload(modelResource);
             entity.rendererComponent.Initialize2(modelResource);
 
-            entity.rendererComponent.ReloadModel(modelPack);
+            entity.rendererComponent.ReloadModel(modelPack,textures);
+            entity.rendererComponent.stateComponent = entity.morphStateComponent;
             processingList.AddObject(new MeshAppendUploadPack(entity.rendererComponent.meshAppend, entity.rendererComponent.meshPosData));
-            //processingList.AddObject(entity.rendererComponent.meshParticleBuffer);
 
             entity.ComponentReady = true;
         }

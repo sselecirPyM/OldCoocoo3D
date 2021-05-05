@@ -164,7 +164,7 @@ namespace Coocoo3D.RenderPipeline
             desc.renderTargetCount = 1;
             desc.streamOutput = false;
             desc.wireFrame = false;
-            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP,ref desc, rpAssets.PObjectWidgetUI1);
+            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP,ref desc, rpAssets.PSOs["PObjectWidgetUI1"]);
             graphicsContext.DrawIndexedInstanced(context.ndcQuadMesh.GetIndexCount(), 0, 0, allocated, 0);
 
             var selectedEntity = context.dynamicContextRead.selectedEntity;
@@ -174,7 +174,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 2);
                 graphicsContext.SetCBVR(bgConstantBuffers[0], 0);
                 graphicsContext.SetCBVR(context.CBs_Bone[indexOfSelectedEntity], 3);
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUI2);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PObjectWidgetUI2"]);
 
                 graphicsContext.DrawIndexedInstanced(context.ndcQuadMesh.GetIndexCount(), 0, 0, selectedEntity.rendererComponent.bones.Count, 0);
             }
@@ -184,7 +184,7 @@ namespace Coocoo3D.RenderPipeline
                 desc.ptt = ED3D12PrimitiveTopologyType.LINE;
                 graphicsContext.SetMesh(context.cubeWireMesh);
                 graphicsContext.SetCBVR(bgConstantBuffers[1], 0);
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PObjectWidgetUILight);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PObjectWidgetUILight"]);
 
                 graphicsContext.DrawIndexedInstanced(context.cubeWireMesh.GetIndexCount(), 0, 0, selectedLight.Count, 0);
             }

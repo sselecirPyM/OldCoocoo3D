@@ -20,3 +20,8 @@ void Texture2D::Unload()
 	m_texture.Reset();
 	Status = GraphicsObjectStatus::unload;
 }
+
+Platform::String^ Coocoo3DGraphics::Texture2D::ToString()
+{
+	return "Texture2D";
+}

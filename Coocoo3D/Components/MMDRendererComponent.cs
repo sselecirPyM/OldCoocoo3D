@@ -21,6 +21,7 @@ namespace Coocoo3D.Components
         public MMDMeshAppend meshAppend = new MMDMeshAppend();
         public Vector3 position;
         public Quaternion rotation;
+        public MMDMorphStateComponent stateComponent;
 
         public int meshVertexCount;
         public int meshIndexCount;
@@ -29,7 +30,7 @@ namespace Coocoo3D.Components
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
         public List<RuntimeMaterial.InnerStruct> materialsBaseData = new List<RuntimeMaterial.InnerStruct>();
         public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();
-        public List<Texture2D> textures = new List<Texture2D>();
+        //public List<Texture2D> textures = new List<Texture2D>();
 
         public Dictionary<string, PSO> shaders = new Dictionary<string, PSO>();
 
@@ -37,12 +38,9 @@ namespace Coocoo3D.Components
         public Vector3[] meshPosData2;
         public bool meshNeedUpdateA;
         public bool meshNeedUpdateB;
+        public float amountAB;
         bool flip;
         bool prevflip;
-        public float amountAB;
-
-        public List<MorphVertexDesc[]> vertexMorphsA;
-        public List<MorphVertexDesc[]> vertexMorphsB;
 
         public void SetPose(MMDMorphStateComponent morphStateComponent)
         {
@@ -60,70 +58,69 @@ namespace Coocoo3D.Components
             {
                 if (morphStateComponent.morphs[i].Type == MorphType.Vertex)
                 {
-                    MorphVertexDesc[] morphVertexStructs2 = morphStateComponent.morphs[i].MorphVertexs;
-
-                    MorphVertexDesc[] morphVertexA = vertexMorphsA[i];
-                    MorphVertexDesc[] morphVertexB = vertexMorphsB[i];
                     if (!flip)
                     {
                         if (morphStateComponent.ComputedWeightNotEqualsPrevA(i, out float computedWeightA))
-                        {
-                            //for optimization
-                            if (computedWeightA != 0)
-                                for (int j = 0; j < morphVertexA.Length; j++)
-                                    morphVertexA[j].Offset = morphVertexStructs2[j].Offset * computedWeightA;
                             meshNeedUpdateA = true;
-                        }
                         if (morphStateComponent.ComputedWeightNotEqualsPrevB(i, out float computedWeightB))
-                        {
-                            if (computedWeightB != 0)
-                                for (int j = 0; j < morphVertexB.Length; j++)
-                                    morphVertexB[j].Offset = morphVertexStructs2[j].Offset * computedWeightB;
                             meshNeedUpdateB = true;
-                        }
                     }
                     else
                     {
                         if (morphStateComponent.ComputedWeightNotEqualsPrevA(i, out float computedWeightA))
-                        {
-                            if (computedWeightA != 0)
-                                for (int j = 0; j < morphVertexB.Length; j++)
-                                    morphVertexB[j].Offset = morphVertexStructs2[j].Offset * computedWeightA;
                             meshNeedUpdateB = true;
-                        }
                         if (morphStateComponent.ComputedWeightNotEqualsPrevB(i, out float computedWeightB))
-                        {
-                            if (computedWeightB != 0)
-                                for (int j = 0; j < morphVertexA.Length; j++)
-                                    morphVertexA[j].Offset = morphVertexStructs2[j].Offset * computedWeightB;
                             meshNeedUpdateA = true;
-                        }
                     }
                 }
             }
             if (meshNeedUpdateA)
             {
                 MMDMesh.CopyPosData(meshPosData1, meshPosData);
-                ComputeMorphVertex(meshPosData1, vertexMorphsA, flip ? morphStateComponent.WeightComputedB : morphStateComponent.WeightComputedA);
             }
             if (meshNeedUpdateB)
             {
                 MMDMesh.CopyPosData(meshPosData2, meshPosData);
-                ComputeMorphVertex(meshPosData2, vertexMorphsB, flip ? morphStateComponent.WeightComputedA : morphStateComponent.WeightComputedB);
             }
-        }
 
-        private static void ComputeMorphVertex(Vector3[] output, List<MorphVertexDesc[]> morphs, float[] weightTest)
-        {
-            for (int i = 0; i < morphs.Count; i++)
+            for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             {
-                if (morphs[i] == null) continue;
-                MorphVertexDesc[] morphVertexStructs = morphs[i];
-                if (weightTest[i] != 0)
-                    for (int j = 0; j < morphVertexStructs.Length; j++)
+                if (morphStateComponent.morphs[i].Type == MorphType.Vertex)
+                {
+                    MorphVertexDesc[] morphVertices = morphStateComponent.morphs[i].MorphVertexs;
+
+                    //for optimization
+                    if (!flip)
                     {
-                        output[morphVertexStructs[j].VertexIndex] += morphVertexStructs[j].Offset;
+                        float computedWeightA = morphStateComponent.WeightComputedA[i];
+                        if (computedWeightA != 0)
+                            for (int j = 0; j < morphVertices.Length; j++)
+                            {
+                                meshPosData1[morphVertices[j].VertexIndex] += morphVertices[j].Offset * computedWeightA;
+                            }
+                        float computedWeightB = morphStateComponent.WeightComputedB[i];
+                        if (computedWeightB != 0)
+                            for (int j = 0; j < morphVertices.Length; j++)
+                            {
+                                meshPosData2[morphVertices[j].VertexIndex] += morphVertices[j].Offset * computedWeightB;
+                            }
                     }
+                    else
+                    {
+                        float computedWeightA = morphStateComponent.WeightComputedA[i];
+                        if (computedWeightA != 0)
+                            for (int j = 0; j < morphVertices.Length; j++)
+                            {
+                                meshPosData2[morphVertices[j].VertexIndex] += morphVertices[j].Offset * computedWeightA;
+                            }
+                        float computedWeightB = morphStateComponent.WeightComputedB[i];
+                        if (computedWeightB != 0)
+                            for (int j = 0; j < morphVertices.Length; j++)
+                            {
+                                meshPosData1[morphVertices[j].VertexIndex] += morphVertices[j].Offset * computedWeightB;
+                            }
+                    }
+                }
             }
         }
 
@@ -978,7 +975,7 @@ namespace Coocoo3D.FileFormat
 {
     public static partial class PMXFormatExtension
     {
-        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack)
+        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<Texture2D> textures)
         {
             rendererComponent.shaders.Clear();
             rendererComponent.Materials.Clear();
@@ -1018,8 +1015,8 @@ namespace Coocoo3D.FileFormat
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
                     toonIndex = mmdMat.ToonIndex,
                 };
-                if (rendererComponent.textures.Count > mat.texIndex && mat.texIndex >= 0)
-                    mat.textures["_Albedo"] = rendererComponent.textures[mat.texIndex];
+                if (textures.Count > mat.texIndex && mat.texIndex >= 0)
+                    mat.textures["_Albedo"] = textures[mat.texIndex];
 
                 rendererComponent.Materials.Add(mat);
                 rendererComponent.materialsBaseData.Add(mat.innerStruct);
@@ -1027,8 +1024,6 @@ namespace Coocoo3D.FileFormat
             }
 
             int morphCount = modelResource.Morphs.Count;
-            rendererComponent.vertexMorphsA = new List<MorphVertexDesc[]>();
-            rendererComponent.vertexMorphsB = new List<MorphVertexDesc[]>();
             for (int i = 0; i < morphCount; i++)
             {
                 if (modelResource.Morphs[i].Type == PMX_MorphType.Vertex)
@@ -1039,13 +1034,9 @@ namespace Coocoo3D.FileFormat
                     {
                         morphVertexStructs[j].VertexIndex = sourceMorph[j].VertexIndex;
                     }
-                    rendererComponent.vertexMorphsA.Add(morphVertexStructs);
-                    rendererComponent.vertexMorphsB.Add(morphVertexStructs);
                 }
                 else
                 {
-                    rendererComponent.vertexMorphsA.Add(null);
-                    rendererComponent.vertexMorphsB.Add(null);
                 }
             }
             //Dictionary<int, int> reportFrequency = new Dictionary<int, int>(10000);
