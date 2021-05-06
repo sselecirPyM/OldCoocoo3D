@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
-using PSO = Coocoo3DGraphics.PObject;
+//using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -88,28 +88,22 @@ namespace Coocoo3D.RenderPipeline
             var cameras = context.dynamicContextRead.cameras;
             var camera = context.dynamicContextRead.cameras[0];
             ref var settings = ref context.dynamicContextRead.settings;
-            ref var inShaderSettings = ref context.dynamicContextRead.inShaderSettings;
             var lightings = context.dynamicContextRead.lightings;
 
             IntPtr pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0);
-            Matrix4x4 lightCameraMatrix = Matrix4x4.Identity;
-            HasMainLight = false;
-            if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
-            {
-                lightCameraMatrix = Matrix4x4.Transpose(lightings[0].GetLightingMatrix(256, camera.LookAtPoint, camera.Distance));
-                Marshal.StructureToPtr(lightCameraMatrix, pBufferData, true);
-                graphicsContext.UpdateResource(LightCameraDataBuffer, context.bigBuffer, c_lightCameraDataSize, 0);
-                HasMainLight = true;
-            }
 
-            PresentData cameraPresentData = new PresentData();
+            int ofs = 0;
+            ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(camera.vpMatrix));
+            ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
+            ofs += CooUtility.Write(context.bigBuffer, ofs, camera.Pos);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, settings.SkyBoxLightMultiplier);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, settings._EnableAO);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, settings._EnableShadow);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, settings.Quality);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, camera.AspectRatio);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, randomGenerator.Next(int.MinValue, int.MaxValue));
+            ofs += CooUtility.Write(context.bigBuffer, ofs, randomGenerator.Next(int.MinValue, int.MaxValue));
 
-            cameraPresentData.UpdateCameraData(cameras[0]);
-            cameraPresentData.RandomValue1 = randomGenerator.Next(int.MinValue, int.MaxValue);
-            cameraPresentData.RandomValue2 = randomGenerator.Next(int.MinValue, int.MaxValue);
-            cameraPresentData.inShaderSettings = inShaderSettings;
-            Marshal.StructureToPtr(cameraPresentData, pBufferData, true);
-            Marshal.StructureToPtr(lightCameraMatrix, pBufferData + 256, true);
             graphicsContext.UpdateResource(CameraDataBuffer, context.bigBuffer, c_presentDataSize, 0);
 
 
@@ -158,7 +152,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];
-            
+
             var PSOSkinning = RPAssetsManager.PSOs["PSOMMDSkinning"];
 
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
@@ -178,47 +172,47 @@ namespace Coocoo3D.RenderPipeline
 
             graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
 
-            if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
-            {
-                graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
-                graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
-                graphicsContext.SetMesh(context.SkinningMeshBuffer);
+            //if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
+            //{
+            //    graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
+            //    graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
+            //    graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
-                void RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, ref _Counters counter)
-                {
-                    Texture2D texLoading = context.TextureLoading;
-                    Texture2D texError = context.TextureError;
-                    var Materials = rendererComponent.Materials;
-                    //graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
-                    //graphicsContext.SetCBVR(entityDataBuffer, 1);
-                    graphicsContext.SetCBVR(cameraPresentData, 2);
+            //    void RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, ref _Counters counter)
+            //    {
+            //        Texture2D texLoading = context.TextureLoading;
+            //        Texture2D texError = context.TextureError;
+            //        var Materials = rendererComponent.Materials;
+            //        //graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
+            //        //graphicsContext.SetCBVR(entityDataBuffer, 1);
+            //        graphicsContext.SetCBVR(cameraPresentData, 2);
 
-                    graphicsContext.SetMeshIndex(rendererComponent.mesh);
-                    SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, shadowDepth);
-                    //List<Texture2D> texs = rendererComponent.textures;
-                    //int countIndexLocal = 0;
-                    //for (int i = 0; i < Materials.Count; i++)
-                    //{
-                    //    if (Materials[i].DrawFlags.HasFlag(DrawFlag.CastSelfShadow))
-                    //    {
-                    //        Texture2D tex1 = null;
-                    //        if (Materials[i].texIndex != -1)
-                    //            tex1 = texs[Materials[i].texIndex];
-                    //        graphicsContext.SetCBVR(materialBuffers[counter.material], 3);
-                    //        graphicsContext.SetSRVT(TextureStatusSelect(tex1, textureLoading, textureError, textureError), 4);
-                    //        graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
-                    //    }
-                    //    counter.material++;
-                    //    countIndexLocal += Materials[i].indexCount;
-                    //}
-                    graphicsContext.DrawIndexed(rendererComponent.meshIndexCount, 0, counter.vertex);
+            //        graphicsContext.SetMeshIndex(rendererComponent.mesh);
+            //        SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, shadowDepth);
+            //        //List<Texture2D> texs = rendererComponent.textures;
+            //        //int countIndexLocal = 0;
+            //        //for (int i = 0; i < Materials.Count; i++)
+            //        //{
+            //        //    if (Materials[i].DrawFlags.HasFlag(DrawFlag.CastSelfShadow))
+            //        //    {
+            //        //        Texture2D tex1 = null;
+            //        //        if (Materials[i].texIndex != -1)
+            //        //            tex1 = texs[Materials[i].texIndex];
+            //        //        graphicsContext.SetCBVR(materialBuffers[counter.material], 3);
+            //        //        graphicsContext.SetSRVT(TextureStatusSelect(tex1, textureLoading, textureError, textureError), 4);
+            //        //        graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
+            //        //    }
+            //        //    counter.material++;
+            //        //    countIndexLocal += Materials[i].indexCount;
+            //        //}
+            //        graphicsContext.DrawIndexed(rendererComponent.meshIndexCount, 0, counter.vertex);
 
-                    counter.vertex += rendererComponent.meshVertexCount;
-                }
-                _Counters counterShadow = new _Counters();
-                for (int i = 0; i < rendererComponents.Count; i++)
-                    RenderEntityShadow(rendererComponents[i], LightCameraDataBuffer, ref counterShadow);
-            }
+            //        counter.vertex += rendererComponent.meshVertexCount;
+            //    }
+            //    _Counters counterShadow = new _Counters();
+            //    for (int i = 0; i < rendererComponents.Count; i++)
+            //        RenderEntityShadow(rendererComponents[i], LightCameraDataBuffer, ref counterShadow);
+            //}
 
 
             if (rendererComponents.Count > 0)
@@ -258,7 +252,6 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetComputeSRVT(context.SkyBox, 3);
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
                 graphicsContext.SetComputeSRVT(RPAssetsManager.texture2ds["_BRDFLUT"], 5);
-                graphicsContext.SetComputeSRVTFace(context.ShadowMapCube, 0, 6);
 
                 graphicsContext.DoRayTracing(RayTracingScene, context.screenWidth, context.screenHeight, 0);
             }
@@ -266,7 +259,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 #region Render Sky box
                 graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
-                graphicsContext.SetRTVDSV(context.outputRTV, context.ScreenSizeDSVs[0], Vector4.Zero, true, true);
+                graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, true);
                 graphicsContext.SetCBVR(CameraDataBuffer, 0);
                 graphicsContext.SetSRVT(context.SkyBox, 6);
                 graphicsContext.SetSRVT(context.IrradianceMap, 7);
@@ -277,7 +270,7 @@ namespace Coocoo3D.RenderPipeline
                 descSkyBox.cullMode = ECullMode.back;
                 descSkyBox.depthBias = 0;
                 descSkyBox.slopeScaledDepthBias = 1.0f;
-                descSkyBox.dsvFormat = context.depthFormat;
+                descSkyBox.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
                 descSkyBox.inputLayout = EInputLayout.postProcess;
                 descSkyBox.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
                 descSkyBox.rtvFormat = context.outputFormat;

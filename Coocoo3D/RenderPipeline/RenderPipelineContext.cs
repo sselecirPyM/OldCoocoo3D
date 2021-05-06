@@ -80,10 +80,8 @@ namespace Coocoo3D.RenderPipeline
         public MainCaches mainCaches = new MainCaches();
 
         public RenderTexture2D outputRTV = new RenderTexture2D();
-        public RenderTexture2D[] ScreenSizeRenderTextures = new RenderTexture2D[4];
-        public RenderTexture2D[] ScreenSizeDSVs = new RenderTexture2D[2];
 
-        public RenderTextureCube ShadowMapCube = new RenderTextureCube();
+        //public RenderTextureCube ShadowMapCube = new RenderTextureCube();
 
         public Dictionary<string, RenderTexture2D> RTs = new Dictionary<string, RenderTexture2D>();
 
@@ -134,25 +132,9 @@ namespace Coocoo3D.RenderPipeline
             wireFrame = false,
         };
 
-        public PSODesc shadowDesc = new PSODesc()
-        {
-            blendState = EBlendState.none,
-            cullMode = ECullMode.none,
-            depthBias = 3000,
-            slopeScaledDepthBias = 1.0f,
-            dsvFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT,
-            inputLayout = EInputLayout.skinned,
-            ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
-            rtvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
-            renderTargetCount = 0,
-            streamOutput = false,
-            wireFrame = false,
-        };
-
         public DxgiFormat gBufferFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
         public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
-        public DxgiFormat depthFormat = DxgiFormat.DXGI_FORMAT_D32_FLOAT;
 
         public XmlSerializer PassSettingSerializer = new XmlSerializer(typeof(PassSetting));
         public PassSetting defaultPassSetting;
@@ -181,14 +163,6 @@ namespace Coocoo3D.RenderPipeline
         public RenderPipelineContext()
         {
             _bigBufferHandle = GCHandle.Alloc(bigBuffer);
-            for (int i = 0; i < ScreenSizeRenderTextures.Length; i++)
-            {
-                ScreenSizeRenderTextures[i] = new RenderTexture2D();
-            }
-            for (int i = 0; i < ScreenSizeDSVs.Length; i++)
-            {
-                ScreenSizeDSVs[i] = new RenderTexture2D();
-            }
             XBufferGroup.Reload(deviceResources, 1024, 1024 * 256);
         }
         ~RenderPipelineContext()
@@ -197,17 +171,15 @@ namespace Coocoo3D.RenderPipeline
         }
         public void Reload()
         {
-            shadowDesc.dsvFormat = depthFormat;
             graphicsContext.Reload(deviceResources);
             graphicsContext1.Reload(deviceResources);
         }
 
-        public void BeginDynamicContext(bool enableDisplay, Settings settings, InShaderSettings inShaderSettings)
+        public void BeginDynamicContext(bool enableDisplay, Settings settings)
         {
             dynamicContextWrite.ClearCollections();
             dynamicContextWrite.EnableDisplay = enableDisplay;
             dynamicContextWrite.settings = settings;
-            dynamicContextWrite.inShaderSettings = inShaderSettings;
             dynamicContextWrite.currentPassSetting = currentPassSetting;
             dynamicContextWrite.frameRenderIndex = frameRenderCount;
             frameRenderCount++;
@@ -283,23 +255,16 @@ namespace Coocoo3D.RenderPipeline
                 }
                 int x;
                 int y;
-                int z;
 
                 if (rt.Size.Source == "OutputSize")
                 {
-                    x = screenWidth;
-                    y = screenHeight;
-                    z = 1;
-                }
-                else if (rt.Size.Source == "OutputSize2x")
-                {
-                    x = screenWidth * 2;
-                    y = screenHeight * 2;
+                    x = (int)(screenWidth * rt.Size.Multiplier);
+                    y = (int)(screenHeight * rt.Size.Multiplier);
                 }
                 else if (rt.Size.Source == "ShadowMapSize")
                 {
-                    x = ShadowMapResolution;
-                    y = ShadowMapResolution;
+                    x = (int)(ShadowMapResolution * rt.Size.Multiplier);
+                    y = (int)(ShadowMapResolution * rt.Size.Multiplier);
                 }
                 else
                 {
@@ -328,16 +293,6 @@ namespace Coocoo3D.RenderPipeline
                 outputRTV.ReloadAsRTVUAV(x, y, outputFormat);
                 graphicsContext.UpdateRenderTexture(outputRTV);
             }
-            for (int i = 0; i < ScreenSizeRenderTextures.Length; i++)
-            {
-                ScreenSizeRenderTextures[i].ReloadAsRTVUAV(x, y, gBufferFormat);
-                graphicsContext.UpdateRenderTexture(ScreenSizeRenderTextures[i]);
-            }
-            for (int i = 0; i < ScreenSizeDSVs.Length; i++)
-            {
-                ScreenSizeDSVs[i].ReloadAsDepthStencil(x, y, depthFormat);
-                graphicsContext.UpdateRenderTexture(ScreenSizeDSVs[i]);
-            }
             ReadBackTexture2D.Reload(x, y, 4);
             graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
             dpi = deviceResources.GetDpi();
@@ -347,18 +302,12 @@ namespace Coocoo3D.RenderPipeline
         const int c_shadowMapResolutionLow = 2048;
         const int c_shadowMapResolutionHigh = 4096;
         int ShadowMapResolution = 2048;
-        public bool HighResolutionShadowNow;
         public void ChangeShadowMapsQuality(bool highQuality)
         {
-            if (HighResolutionShadowNow == highQuality) return;
-            HighResolutionShadowNow = highQuality;
             if (highQuality)
                 ShadowMapResolution = c_shadowMapResolutionHigh;
             else
                 ShadowMapResolution = c_shadowMapResolutionLow;
-
-            ShadowMapCube.ReloadAsDSV(ShadowMapResolution, ShadowMapResolution, depthFormat);
-            graphicsContext.UpdateRenderTexture(ShadowMapCube);
         }
 
         public bool Initilized = false;
@@ -368,7 +317,6 @@ namespace Coocoo3D.RenderPipeline
             deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
             deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
 
-            HighResolutionShadowNow = true;
             ChangeShadowMapsQuality(false);
 
             Uploader upTexLoading = new Uploader();
@@ -457,6 +405,12 @@ namespace Coocoo3D.RenderPipeline
                 foreach (var renderTarget in pass.RenderTargets)
                     t1.Add((RenderTexture2D)_GetTex2DByName(renderTarget));
                 pass.renderTargets = t1.ToArray();
+                pass.passParameters1 = new Dictionary<string, float>();
+                if (pass.passParameters != null)
+                    foreach (var v in pass.passParameters)
+                    {
+                        pass.passParameters1[v.Name] = v.Value;
+                    }
                 VertexShader vs = null;
                 GeometryShader gs = null;
                 PixelShader ps = null;

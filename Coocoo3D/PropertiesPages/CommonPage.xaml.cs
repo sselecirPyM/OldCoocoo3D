@@ -315,17 +315,17 @@ namespace Coocoo3D.PropertiesPages
         }
         public bool VEnableAO
         {
-            get => appBody.inShaderSettings.EnableAO; set
+            get => appBody.settings.EnableAO; set
             {
-                appBody.inShaderSettings.EnableAO = value;
+                appBody.settings.EnableAO = value;
                 appBody.RequireRender();
             }
         }
         public bool VEnableShadow
         {
-            get => appBody.inShaderSettings.EnableShadow; set
+            get => appBody.settings.EnableShadow; set
             {
-                appBody.inShaderSettings.EnableShadow = value;
+                appBody.settings.EnableShadow = value;
                 appBody.RequireRender();
             }
         }
@@ -381,7 +381,7 @@ namespace Coocoo3D.PropertiesPages
 
         private void VQuality_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            appBody.inShaderSettings.Quality = (uint)(sender as ComboBox).SelectedValue;
+            appBody.settings.Quality = (uint)(sender as ComboBox).SelectedValue;
             appBody.RequireRender();
         }
 

@@ -1816,6 +1816,25 @@ void GraphicsContext::SetRenderTargetScreen(Windows::Foundation::Numerics::float
 	m_commandList->OMSetRenderTargets(1, &renderTargetView, false, &depthStencilView);
 }
 
+void GraphicsContext::SetRenderTargetScreen(Windows::Foundation::Numerics::float4 color, bool clearScreen)
+{
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	// 设置视区和剪刀矩形。
+	D3D12_VIEWPORT viewport = m_deviceResources->GetScreenViewport();
+	D3D12_RECT scissorRect = { 0, 0, static_cast<LONG>(viewport.Width), static_cast<LONG>(viewport.Height) };
+	m_commandList->RSSetViewports(1, &viewport);
+	m_commandList->RSSetScissorRects(1, &scissorRect);
+
+
+	float _color[4] = { color.x,color.y,color.z,color.w };
+	D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView = m_deviceResources->GetRenderTargetView();
+	if (clearScreen)
+		m_commandList->ClearRenderTargetView(renderTargetView, _color, 0, nullptr);
+	m_commandList->OMSetRenderTargets(1, &renderTargetView, false, nullptr);
+}
+
 void GraphicsContext::BeginAlloctor(DeviceResources^ deviceResources)
 {
 	DX::ThrowIfFailed(deviceResources->GetCommandAllocator()->Reset());

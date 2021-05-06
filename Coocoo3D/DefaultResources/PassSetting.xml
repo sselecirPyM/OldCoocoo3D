@@ -8,6 +8,7 @@
     </Pass>
     <Pass>
       <Name>ShadowMapPass</Name>
+      <Filter>Opaque</Filter>
       <ClearDepth>1</ClearDepth>
       <DepthBias>3000</DepthBias>
       <SlopeScaledDepthBias>1.0</SlopeScaledDepthBias>

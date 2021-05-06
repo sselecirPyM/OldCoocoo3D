@@ -53,7 +53,7 @@ MRTOutput main(PSSkinnedIn input) : SV_TARGET
 	float2 encodedNormal = NormalEncode(N);
 	MRTOutput output;
 	float4 color = texture0.Sample(s1, input.uv) * _DiffuseColor;
-	clip(color.a - 0.98f);
+	//clip(color.a - 0.98f);
 	float roughness = max(_Roughness, 0.002);
 	float alpha = roughness * roughness;
 

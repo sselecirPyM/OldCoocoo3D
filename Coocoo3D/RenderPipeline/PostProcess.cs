@@ -48,9 +48,9 @@ namespace Coocoo3D.RenderPipeline
         {
             var rsPostProcess = context.RPAssetsManager.rootSignaturePostProcess;
             graphicsContext.SetRootSignature(rsPostProcess);
-            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, context.ScreenSizeDSVs[1], true, true);
+            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
             graphicsContext.SetCBVR(postProcessDataBuffer, 0);
-            graphicsContext.SetSRVT(context.outputRTV, 1);
+            graphicsContext.SetSRVTSlot(context.outputRTV, 0);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             PSODesc desc = new PSODesc
             {

@@ -47,6 +47,11 @@ namespace Coocoo3D.PropertiesPages
             UI.UISharedCode.NewLighting(appBody);
         }
 
+        private void NewVolume_Click(object sender, RoutedEventArgs e)
+        {
+            UI.UISharedCode.NewVolume(appBody);
+        }
+
         private void Remove_Click(object sender, RoutedEventArgs e)
         {
             var selectedItems = viewSceneObjects.SelectedItems;

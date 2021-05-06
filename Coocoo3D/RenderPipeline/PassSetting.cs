@@ -78,9 +78,14 @@ namespace Coocoo3D.RenderPipeline
         public string Type;
         [XmlElement("RenderTarget")]
         public List<string> RenderTargets;
+
+        [XmlElement("Parameter")]
+        public List<PassParameter> passParameters;
         public string DepthStencil;
         public EBlendState BlendMode;
         public bool ClearDepth;
+        public ECullMode CullMode;
+        public string Filter;
 
         //public string Foreach;
         //[XmlElement("Pass")]
@@ -98,6 +103,8 @@ namespace Coocoo3D.RenderPipeline
         public PObject PSODefault;
         [XmlIgnore]
         public bool DrawObjects;
+        [XmlIgnore]
+        public Dictionary<string, float> passParameters1;
         [XmlIgnore]
         public Pass Pass;
     }
@@ -142,6 +149,9 @@ namespace Coocoo3D.RenderPipeline
     public class VarSize
     {
         public string Source;
+
+        [DefaultValue(1.0f)]
+        public float Multiplier = 1.0f;
         [DefaultValue(1)]
         public int x = 1;
         [DefaultValue(1)]
@@ -178,5 +188,10 @@ namespace Coocoo3D.RenderPipeline
     {
         public string Name;
         public string Path;
+    }
+    public struct PassParameter
+    {
+        public string Name;
+        public float Value;
     }
 }

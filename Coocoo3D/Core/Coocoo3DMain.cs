@@ -65,15 +65,20 @@ namespace Coocoo3D.Core
             //ZPrepass = false,
             ViewerUI = true,
             Wireframe = false,
-        };
-        public InShaderSettings inShaderSettings = new InShaderSettings()
-        {
-            //backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
-            SkyBoxLightMultiple = 1.0f,
+
+            SkyBoxLightMultiplier = 1.0f,
             EnableAO = true,
             EnableShadow = true,
             Quality = 0,
         };
+        //public InShaderSettings inShaderSettings = new InShaderSettings()
+        //{
+        //    //backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
+        //    SkyBoxLightMultiple = 1.0f,
+        //    EnableAO = true,
+        //    EnableShadow = true,
+        //    Quality = 0,
+        //};
         public PerformaceSettings performaceSettings = new PerformaceSettings()
         {
             MultiThreadRendering = true,
@@ -102,7 +107,7 @@ namespace Coocoo3D.Core
                 await RPContext.ReloadDefalutResources(miscProcessContext);
                 //forwardRenderPipeline1.Reload(deviceResources);
                 forwardRenderPipeline2.Reload(deviceResources);
-                deferredRenderPipeline1.Reload(deviceResources);
+                //deferredRenderPipeline1.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
                 widgetRenderer.Reload(deviceResources);
                 deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, 0);
@@ -143,9 +148,7 @@ namespace Coocoo3D.Core
         }
         #region Rendering
         public RPAssetsManager RPAssetsManager { get => RPContext.RPAssetsManager; }
-        //ForwardRenderPipeline1 forwardRenderPipeline1 = new ForwardRenderPipeline1();
         ForwardRenderPipeline2 forwardRenderPipeline2 = new ForwardRenderPipeline2();
-        DeferredRenderPipeline1 deferredRenderPipeline1 = new DeferredRenderPipeline1();
         RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
         public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
@@ -181,7 +184,7 @@ namespace Coocoo3D.Core
             }
             #region Render Preparing
 
-            RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings, inShaderSettings);
+            RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
             if (RPContext.gameDriverContext.Playing)
                 RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
@@ -391,14 +394,10 @@ namespace Coocoo3D.Core
                     _currentRenderPipeline = forwardRenderPipeline2;
                     RPContext.SetCurrentPassSetting(RPContext.defaultPassSetting);
                 }
-                //if (currentRenderPipelineIndex == 1)
-                //{
-                //    _currentRenderPipeline = forwardRenderPipeline2;
-                //    RPContext.SetCurrentPassSetting(RPContext.deferredPassSetting);
-                //}
                 if (currentRenderPipelineIndex == 1)
                 {
-                    _currentRenderPipeline = deferredRenderPipeline1;
+                    _currentRenderPipeline = forwardRenderPipeline2;
+                    RPContext.SetCurrentPassSetting(RPContext.deferredPassSetting);
                 }
                 if (currentRenderPipelineIndex == 2)
                 {
@@ -446,10 +445,16 @@ namespace Coocoo3D.Core
         public bool viewSelectedEntityBone;
         public Vector4 backgroundColor;
         public float ExtendShadowMapRange;
-        //public bool ZPrepass;
         public uint RenderStyle;
         public bool ViewerUI;
         public bool Wireframe;
-        //public float SkyBoxLightMultiple;
+
+        public float SkyBoxLightMultiplier;
+        public uint _EnableAO;
+        public uint _EnableShadow;
+        public uint Quality;
+
+        public bool EnableAO { get => _EnableAO != 0; set => _EnableAO = Convert.ToUInt32(value); }
+        public bool EnableShadow { get => _EnableShadow != 0; set => _EnableShadow = Convert.ToUInt32(value); }
     }
 }

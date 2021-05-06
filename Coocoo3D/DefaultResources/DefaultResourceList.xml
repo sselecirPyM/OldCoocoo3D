@@ -4,10 +4,10 @@
     <Name>VSMMDSkinning.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSMMDSkinning.cso</Path>
   </VertexShader>
-  <VertexShader>
+  <!--<VertexShader>
     <Name>VSDeferredRenderPointLight.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSDeferredRenderPointLight.cso</Path>
-  </VertexShader>
+  </VertexShader>-->
   <VertexShader>
     <Name>VSPostProcess.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSPostProcess.cso</Path>
@@ -41,7 +41,7 @@
     <Path>ms-appx:///Coocoo3DGraphics/VSMMDTransform.cso</Path>
   </VertexShader>
   <!--pixelshaders-->
-  <PixelShader>
+  <!--<PixelShader>
     <Name>PSDeferredRenderGBuffer.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderGBuffer.cso</Path>
   </PixelShader>
@@ -56,7 +56,7 @@
   <PixelShader>
     <Name>PSDeferredRenderPointLight.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderPointLight.cso</Path>
-  </PixelShader>
+  </PixelShader>-->
   <PixelShader>
     <Name>PSPostProcess.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSPostProcess.cso</Path>
@@ -159,7 +159,7 @@
     <Name>PSOMMDSkinning</Name>
     <VertexShader>VSMMDSkinning.cso</VertexShader>
   </PipelineState>
-  <PipelineState>
+  <!--<PipelineState>
     <Name>PObjectDeferredRenderGBuffer</Name>
     <VertexShader>VSMMDTransform</VertexShader>
     <PixelShader>PSDeferredRenderGBuffer.cso</PixelShader>
@@ -178,7 +178,7 @@
     <Name>PObjectDeferredRenderPointLight</Name>
     <VertexShader>VSDeferredRenderPointLight.cso</VertexShader>
     <PixelShader>PSDeferredRenderPointLight.cso</PixelShader>
-  </PipelineState>
+  </PipelineState>-->
   <PipelineState>
     <Name>PObjectWidgetUI1</Name>
     <VertexShader>VSWidgetUI1.cso</VertexShader>

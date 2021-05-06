@@ -291,18 +291,6 @@
     <FxCompile Include="Shaders\PSWidgetUI2.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PSDeferredRenderGBuffer.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSDeferredRenderIBL.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSDeferredRenderDirectLight.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSDeferredRenderPointLight.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\VSDeferredRenderPointLight.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>

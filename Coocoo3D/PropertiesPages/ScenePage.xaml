@@ -39,9 +39,14 @@
                     <Setter Property="Padding" Value="1"/>
                 </Style>
             </StackPanel.Resources>
-            <Button ToolTipService.ToolTip="光源"
+            <Button ToolTipService.ToolTip="新建光源"
                             Content="&#xE82F;"
                             Click="NewLighting_Click"/>
+            <!--<Button ToolTipService.ToolTip="新建体积"
+                            Content="&#x25A9;"
+                    FontFamily="Segoe UI Emoji"
+                            Click="NewVolume_Click"/>-->
+            
             <Button ToolTipService.ToolTip="移除物体"
                             Content="&#xE107;"
                             Click="Remove_Click"/>

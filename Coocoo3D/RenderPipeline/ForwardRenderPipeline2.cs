@@ -20,7 +20,7 @@ namespace Coocoo3D.RenderPipeline
             Ready = true;
         }
 
-        Random randomGenerator = new Random();
+        Random random = new Random();
 
         struct _Counters
         {
@@ -34,7 +34,6 @@ namespace Coocoo3D.RenderPipeline
             var deviceResources = context.deviceResources;
             //var cameras = context.dynamicContextRead.cameras;
             var settings = context.dynamicContextRead.settings;
-            var inShaderSettings = context.dynamicContextRead.inShaderSettings;
             var rendererComponents = context.dynamicContextRead.rendererComponents;
             var lightings = context.dynamicContextRead.lightings;
             var camera = context.dynamicContextRead.cameras[0];
@@ -80,7 +79,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Pass.Camera == "ShadowMap")
                 {
-                    if (!(HasMainLight && inShaderSettings.EnableShadow)) continue;
+                    if (!(HasMainLight && settings.EnableShadow)) continue;
                 }
                 if (combinedPass.Pass.CBVs.Count == 0) continue;
                 if (combinedPass.DrawObjects)
@@ -88,6 +87,10 @@ namespace Coocoo3D.RenderPipeline
                     foreach (var rendererComponent in rendererComponents)
                         foreach (var material in rendererComponent.Materials)
                         {
+                            if (!FilterObj(context, combinedPass.Filter, rendererComponent, material))
+                            {
+                                continue;
+                            }
                             foreach (var cbv in combinedPass.Pass.CBVs)
                             {
                                 int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, material, rendererComponent);
@@ -231,10 +234,10 @@ namespace Coocoo3D.RenderPipeline
                             }
                             break;
                         case "IndirectMultiplier":
-                            ofs += CooUtility.Write(_buffer, ofs, inShaderSettings.SkyBoxLightMultiple);
+                            ofs += CooUtility.Write(_buffer, ofs, settings.SkyBoxLightMultiplier);
                             break;
                         case "RandomValue":
-                            ofs += CooUtility.Write(_buffer, ofs, (float)randomGenerator.NextDouble());
+                            ofs += CooUtility.Write(_buffer, ofs, (float)random.NextDouble());
                             break;
                         default:
                             var st = _rc?.stateComponent;
@@ -242,7 +245,11 @@ namespace Coocoo3D.RenderPipeline
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, st.WeightComputed[_i]);
                             }
-                            if (material != null && material.textures.ContainsKey(s))
+                            else if (_pass.passParameters1.TryGetValue(s, out float _f1))
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, _f1);
+                            }
+                            else if (material != null && material.textures.ContainsKey(s))
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, 1.0f);
                             }
@@ -259,7 +266,6 @@ namespace Coocoo3D.RenderPipeline
         {
             var rendererComponents = context.dynamicContextRead.rendererComponents;
             var settings = context.dynamicContextRead.settings;
-            var inShaderSettings = context.dynamicContextRead.inShaderSettings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
             ITexture2D _Tex(ITexture2D _tex)
@@ -305,7 +311,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Pass.Camera == "ShadowMap")
                 {
-                    if (!(HasMainLight && inShaderSettings.EnableShadow)) continue;
+                    if (!(HasMainLight && settings.EnableShadow)) continue;
                 }
                 graphicsContext.SetRootSignature(RSBase);
 
@@ -318,7 +324,7 @@ namespace Coocoo3D.RenderPipeline
 
                 PSODesc passPsoDesc;
                 passPsoDesc.blendState = combinedPass.BlendMode;
-                passPsoDesc.cullMode = ECullMode.none;
+                passPsoDesc.cullMode = combinedPass.CullMode;
                 passPsoDesc.depthBias = combinedPass.DepthBias;
                 passPsoDesc.slopeScaledDepthBias = combinedPass.SlopeScaledDepthBias;
                 passPsoDesc.dsvFormat = combinedPass.depthSencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.depthSencil.GetFormat();
@@ -366,13 +372,20 @@ namespace Coocoo3D.RenderPipeline
                         int indexOffset = 0;
                         foreach (var material in Materials)
                         {
+                            if (!FilterObj(context, combinedPass.Filter, rendererComponent, material))
+                            {
+                                counterX.material++;
+                                indexOffset += material.indexCount;
+                                continue;
+                            }
                             foreach (var cbv in _combinedPass.Pass.CBVs)
                             {
                                 context.XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
                                 matC++;
                             }
                             _PassSetRes1(material, _combinedPass);
-                            passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
+                            if (passPsoDesc.cullMode == ECullMode.notSpecial)
+                                passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
                             SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
                             graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
                             counterX.material++;
@@ -381,47 +394,47 @@ namespace Coocoo3D.RenderPipeline
                         counterX.vertex += rendererComponent.meshVertexCount;
                     }
                 }
-                void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
+            }
+            void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
+            {
+                if (_rendererComponents.Count == 0) return;
+                var rtso = context.dynamicContextRead.currentPassSetting.RTSO;
+                var rtst = context.RTSTs[_combinedPass.Name];
+                var rtis = context.RTIGroups[_combinedPass.Name];
+                var rttas = context.RTTASs[_combinedPass.Name];
+                var rtTex1 = _combinedPass.renderTargets[0];
+                var rtasg = context.RTASGroup;
+                graphicsContext.Prepare(rtasg);
+                graphicsContext.Prepare(rtis);
+                _Counters counterX = new _Counters();
+
+                foreach (var rendererComponent in _rendererComponents)
                 {
-                    if (_rendererComponents.Count == 0) return;
-                    var rtso = context.dynamicContextRead.currentPassSetting.RTSO;
-                    var rtst = context.RTSTs[_combinedPass.Name];
-                    var rtis = context.RTIGroups[_combinedPass.Name];
-                    var rttas = context.RTTASs[_combinedPass.Name];
-                    var rtTex1 = combinedPass.renderTargets[0];
-                    var rtasg = context.RTASGroup;
-                    graphicsContext.Prepare(rtasg);
-                    graphicsContext.Prepare(rtis);
-                    _Counters counterX = new _Counters();
-
-                    foreach (var rendererComponent in _rendererComponents)
+                    int indexOffset = 0;
+                    foreach (var material in rendererComponent.Materials)
                     {
-                        int indexOffset = 0;
-                        foreach (var material in rendererComponent.Materials)
-                        {
-                            graphicsContext.BuildBTAS(rtasg, context.SkinningMeshBuffer, rendererComponent.mesh, counterX.vertex, indexOffset, material.indexCount);
-                            graphicsContext.BuildInst(rtis, rtasg, counterX.material, counterX.material, uint.MaxValue);
+                        graphicsContext.BuildBTAS(rtasg, context.SkinningMeshBuffer, rendererComponent.mesh, counterX.vertex, indexOffset, material.indexCount);
+                        graphicsContext.BuildInst(rtis, rtasg, counterX.material, counterX.material, uint.MaxValue);
 
-                            counterX.material++;
-                            indexOffset += material.indexCount;
-                        }
-                        counterX.vertex += rendererComponent.meshVertexCount;
+                        counterX.material++;
+                        indexOffset += material.indexCount;
                     }
-                    graphicsContext.TestShaderTable(rtst, rtso, _combinedPass.RayGenShaders, _combinedPass.MissShaders);
-                    graphicsContext.TestShaderTable2(rtst, rtso, rtasg, new string[] { "Test" });
-                    graphicsContext.BuildTPAS(rtis, rttas, rtasg);
-                    graphicsContext.SetRayTracingStateObject(rtso);
-                    graphicsContext.SetTPAS(rttas, rtso, 0);
-
-
-                    foreach (var cbv in combinedPass.Pass.CBVs)
-                    {
-                        context.XBufferGroup.SetComputeCBVR(graphicsContext, matC, cbv.Index);
-                        matC++;
-                    }
-                    graphicsContext.SetComputeUAVTSlot(context.outputRTV, 0);
-                    graphicsContext.DispatchRay(rtst, rtTex1.GetWidth(), rtTex1.GetHeight(), 1);
+                    counterX.vertex += rendererComponent.meshVertexCount;
                 }
+                graphicsContext.TestShaderTable(rtst, rtso, _combinedPass.RayGenShaders, _combinedPass.MissShaders);
+                graphicsContext.TestShaderTable2(rtst, rtso, rtasg, new string[] { "Test" });
+                graphicsContext.BuildTPAS(rtis, rttas, rtasg);
+                graphicsContext.SetRayTracingStateObject(rtso);
+                graphicsContext.SetTPAS(rttas, rtso, 0);
+
+
+                foreach (var cbv in _combinedPass.Pass.CBVs)
+                {
+                    context.XBufferGroup.SetComputeCBVR(graphicsContext, matC, cbv.Index);
+                    matC++;
+                }
+                graphicsContext.SetComputeUAVTSlot(context.outputRTV, 0);
+                graphicsContext.DispatchRay(rtst, rtTex1.GetWidth(), rtTex1.GetHeight(), 1);
             }
 
             void _PassSetRes1(RuntimeMaterial material, PassMatch1 _combinedPass)
@@ -465,6 +478,19 @@ namespace Coocoo3D.RenderPipeline
             //            }
             //        }
             //}
+        }
+        bool FilterObj(RenderPipelineContext context, string filter, MMDRendererComponent renderer, RuntimeMaterial material)
+        {
+            if (string.IsNullOrEmpty(filter)) return true;
+            if (filter == "SelectedObject")
+                return context.dynamicContextRead.selectedEntity.rendererComponent == renderer;
+            if (filter == "Transparent")
+                return material.Transparent;
+            if (filter == "Opaque")
+                return !material.Transparent;
+            if (material.textures.ContainsKey(filter))
+                return true;
+            return false;
         }
     }
 }

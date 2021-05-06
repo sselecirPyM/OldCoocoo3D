@@ -145,6 +145,7 @@ namespace Coocoo3DGraphics
 		void SetRootSignatureRayTracing(GraphicsSignature^ rootSignature);
 		void ResourceBarrierScreen(D3D12ResourceStates before, D3D12ResourceStates after);
 		void SetRenderTargetScreen(Windows::Foundation::Numerics::float4 color, RenderTexture2D^ DSV, bool clearScreen, bool clearDSV);
+		void SetRenderTargetScreen(Windows::Foundation::Numerics::float4 color, bool clearScreen);
 		static void BeginAlloctor(DeviceResources^ deviceResources);
 		void SetDescriptorHeapDefault();
 		void BeginCommand();

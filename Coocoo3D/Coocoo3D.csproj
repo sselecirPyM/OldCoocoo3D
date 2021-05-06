@@ -126,6 +126,7 @@
     <Compile Include="Components\MMDMorphStateComponent.cs" />
     <Compile Include="Components\MMDMotionComponent.cs" />
     <Compile Include="Components\MMDRendererComponent.cs" />
+    <Compile Include="Components\VolumeComponent.cs" />
     <Compile Include="Controls\C2Control.cs" />
     <Compile Include="Controls\CLightingComponent.xaml.cs">
       <DependentUpon>CLightingComponent.xaml</DependentUpon>
@@ -138,7 +139,6 @@
     <Compile Include="PropertiesPages\GameObjectPage.xaml.cs">
       <DependentUpon>GameObjectPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="RenderPipeline\DeferredRenderPipeline1.cs" />
     <Compile Include="RenderPipeline\ForwardRenderPipeline2.cs" />
     <Compile Include="RenderPipeline\PassSetting.cs" />
     <Compile Include="RenderPipeline\ProcessingList.cs" />
@@ -160,7 +160,6 @@
     <Compile Include="Present\ISceneObject.cs" />
     <Compile Include="Present\Lighting.cs" />
     <Compile Include="Present\MMD3DEntity.cs" />
-    <Compile Include="RenderPipeline\PresentData.cs" />
     <Compile Include="PropertiesPages\CommonPage.xaml.cs">
       <DependentUpon>CommonPage.xaml</DependentUpon>
     </Compile>
@@ -172,9 +171,6 @@
     </Compile>
     <Compile Include="PropertiesPages\ErrorPropertiesPage.xaml.cs">
       <DependentUpon>ErrorPropertiesPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="PropertiesPages\LightingPropertiesPage.xaml.cs">
-      <DependentUpon>LightingPropertiesPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="PropertiesPages\PostProcessPage.xaml.cs">
       <DependentUpon>PostProcessPage.xaml</DependentUpon>
@@ -195,8 +191,6 @@
       <DependentUpon>SoftwareInfoPropertiesPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RenderPipeline\ForwardRenderPipeline1.cs" />
-    <Compile Include="RenderPipeline\InShaderSettings.cs" />
     <Compile Include="RenderPipeline\MiscProcess.cs" />
     <Compile Include="RenderPipeline\PostProcess.cs" />
     <Compile Include="RenderPipeline\RayTracingRenderPipeline1.cs" />
@@ -225,7 +219,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
-    <None Include="Samples\sampleDeferredPasses.coocoox" />
+    <Content Include="Samples\sampleDeferredPasses.coocoox" />
     <Content Include="Samples\VS_Pass1.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
     <Content Include="Samples\PS_Pass1.hlsl" />
@@ -288,10 +282,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="PropertiesPages\GameObjectPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="PropertiesPages\LightingPropertiesPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

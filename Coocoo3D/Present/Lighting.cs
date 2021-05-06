@@ -104,25 +104,4 @@ namespace Coocoo3D.Present
             public Vector4 Color;
         }
     }
-
-    public class Lighting : ISceneObject, INotifyPropertyChanged
-    {
-        public string Name = "";
-        public Vector3 Position;
-        public Quaternion Rotation = Quaternion.Identity;
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public LightingComponent lightingComponent = new LightingComponent();
-
-        public void PropChange(PropertyChangedEventArgs e)
-        {
-            PropertyChanged?.Invoke(this, e);
-        }
-
-        public override string ToString()
-        {
-            return Name;
-        }
-    }
 }

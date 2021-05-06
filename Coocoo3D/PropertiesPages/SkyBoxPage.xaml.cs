@@ -168,10 +168,10 @@ namespace Coocoo3D.PropertiesPages
 
         public float VSkyBoxMultiple
         {
-            get => appBody.inShaderSettings.SkyBoxLightMultiple;
+            get => appBody.settings.SkyBoxLightMultiplier;
             set
             {
-                appBody.inShaderSettings.SkyBoxLightMultiple = value;
+                appBody.settings.SkyBoxLightMultiplier = value;
                 appBody.RequireRender();
             }
         }

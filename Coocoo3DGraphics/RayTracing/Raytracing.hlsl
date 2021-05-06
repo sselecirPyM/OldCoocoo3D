@@ -1,7 +1,6 @@
 #ifndef RAYTRACING_HLSL
 #define RAYTRACING_HLSL
 #include "../Shaders/BRDF/PBR.hlsli"
-#include "../Shaders/CameraDataDefine.hlsli"
 #include "../Shaders/RandomNumberGenerator.hlsli"
 
 float4 Pow4(float4 x)
@@ -80,11 +79,19 @@ RaytracingAccelerationStructure Scene : register(t0);
 TextureCube EnvCube : register (t1);
 TextureCube IrradianceCube : register (t2);
 Texture2D BRDFLut : register(t3);
-//Texture2D ShadowMap0 : register(t4);
 RWTexture2D<float4> g_renderTarget : register(u0);
 cbuffer cb0 : register(b0)
 {
-	CAMERA_DATA_DEFINE;//is a macro
+	float4x4 g_mWorldToProj;
+	float4x4 g_mProjToWorld;
+	float3   g_vCamPos;
+	float g_skyBoxMultiple;
+	uint g_enableAO;
+	uint g_enableShadow;
+	uint g_quality;
+	float g_aspectRatio;
+	uint2 g_camera_randomValue;
+	float4 g_camera_preserved2[5];
 };
 //local
 StructuredBuffer<VertexSkinned> Vertices : register(t0, space1);
@@ -92,7 +99,6 @@ StructuredBuffer<uint> MeshIndexs : register(t1, space1);
 Texture2D diffuseMap :register(t2, space1);
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
-//SamplerComparisonState sampleShadowMap0 : register(s2);
 //
 cbuffer cb3 : register(b3)
 {
@@ -290,18 +296,18 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 					lightStrength = max(Lightings[i].LightColor.rgb * Lightings[i].LightColor.a, 0);
 					if (payload.depth > 1 && i == 0)
 					{
-							RayDesc ray2;
-							ray2.Origin = pos;
-							ray2.Direction = Lightings[i].LightDir;
-							ray2.TMin = 0.001;
-							ray2.TMax = 10000.0;
-							TestRayPayload payload2 = { false, float3(0,0,0), float4(0,0,0,0) };
-							if (payload.depth < 4 && dot(lightStrength, lightStrength)>1e-3)
-								TraceRay(Scene, RAY_FLAG_NONE, ~0, c_testRayIndex, 2, c_testRayIndex, ray2, payload2);
-							else
-								continue;
-							if (!payload2.miss)
-								inShadow = 0;
+						RayDesc ray2;
+						ray2.Origin = pos;
+						ray2.Direction = Lightings[i].LightDir;
+						ray2.TMin = 0.001;
+						ray2.TMax = 10000.0;
+						TestRayPayload payload2 = { false, float3(0,0,0), float4(0,0,0,0) };
+						if (payload.depth < 4 && dot(lightStrength, lightStrength)>1e-3)
+							TraceRay(Scene, RAY_FLAG_NONE, ~0, c_testRayIndex, 2, c_testRayIndex, ray2, payload2);
+						else
+							continue;
+						if (!payload2.miss)
+							inShadow = 0;
 					}
 					else
 					{
@@ -426,11 +432,11 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 
 			gi += NdotL * payloadGI.color.rgb * (c_diffuse * diffuse_factor / COO_PI);
 		}
-			outputColor += gi / diffuseBudget;
+		outputColor += gi / diffuseBudget;
 	}
 	else
 	{
-		outputColor += IrradianceCube.SampleLevel(s0, N,0) * c_diffuse;
+		outputColor += IrradianceCube.SampleLevel(s0, N, 0) * c_diffuse;
 	}
 
 	if (payload.depth < 3 && specularBudget > 0)

@@ -149,7 +149,7 @@ namespace Coocoo3D.RenderPipeline
             var rpAssets = context.RPAssetsManager;
             var rsPP = rpAssets.rootSignaturePostProcess;
             graphicsContext.SetCBVR(constantBuffer, 0);
-            graphicsContext.SetSRVT(rpAssets.texture2ds["_UI1Texture"], 1);
+            graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
             graphicsContext.SetMesh(context.ndcQuadMesh);
 
             PSODesc desc;
@@ -164,14 +164,13 @@ namespace Coocoo3D.RenderPipeline
             desc.renderTargetCount = 1;
             desc.streamOutput = false;
             desc.wireFrame = false;
-            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP,ref desc, rpAssets.PSOs["PObjectWidgetUI1"]);
+            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PObjectWidgetUI1"]);
             graphicsContext.DrawIndexedInstanced(context.ndcQuadMesh.GetIndexCount(), 0, 0, allocated, 0);
 
             var selectedEntity = context.dynamicContextRead.selectedEntity;
             if (selectedEntity != null)
             {
                 desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                graphicsContext.SetSRVT(context.ScreenSizeDSVs[0], 2);
                 graphicsContext.SetCBVR(bgConstantBuffers[0], 0);
                 graphicsContext.SetCBVR(context.CBs_Bone[indexOfSelectedEntity], 3);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PObjectWidgetUI2"]);

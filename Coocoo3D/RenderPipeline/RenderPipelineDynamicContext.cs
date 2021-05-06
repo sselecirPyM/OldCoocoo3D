@@ -12,7 +12,6 @@ namespace Coocoo3D.RenderPipeline
     public class RenderPipelineDynamicContext
     {
         public Settings settings;
-        public InShaderSettings inShaderSettings;
         public List<MMD3DEntity> entities = new List<MMD3DEntity>();
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<Components.MMDRendererComponent> rendererComponents = new List<Components.MMDRendererComponent>();

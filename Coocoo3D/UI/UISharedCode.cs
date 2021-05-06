@@ -68,6 +68,19 @@ namespace Coocoo3D.UI
             appBody.CurrentScene.AddGameObject(lighting);
             appBody.RequireRender();
         }
+        public static void NewVolume(Coocoo3DMain appBody)
+        {
+            var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+            GameObject volume = new GameObject();
+            Components.VolumeComponent volumeComponent = new Components.VolumeComponent();
+            volume.AddComponent(volumeComponent);
+            volume.Name = resourceLoader.GetString("Object_Name_Lighting");
+            volume.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
+            volume.Position = new Vector3(0, 1, 0);
+            volumeComponent.Size = new Vector3(50, 50, 50);
+            appBody.CurrentScene.AddGameObject(volume);
+            appBody.RequireRender();
+        }
         public static void RemoveSceneObject(Coocoo3DMain appBody, Scene scene, ISceneObject sceneObject)
         {
             if (scene.sceneObjects.Remove(sceneObject))

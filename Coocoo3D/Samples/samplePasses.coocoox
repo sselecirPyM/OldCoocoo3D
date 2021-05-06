@@ -4,16 +4,20 @@
 <!--加入vertex shader/geometry shader/pixel shader来直接使用或者覆盖默认资源-->
 <PassSetting>
   <RenderSequence>
-    <!--取消注释skybox pass即可正常渲染，这里是为了演示不清屏效果-->
-    <!--Type为DrawScreen时会绘制一个正方形，否则绘制场景里的所有物体-->
-    <!-- <Pass>
+    <!--Type为DrawScreen时会绘制一个正方形，为空时绘制场景里的所有物体-->
+     <Pass>
       <Name>DrawSkyBox</Name>
       <Type>DrawScreen</Type>
       <ClearDepth>1</ClearDepth>
       <RenderTarget>_Output0</RenderTarget>
-    </Pass> -->
+    </Pass> 
     <Pass>
       <Name>ShadowMapPass</Name>
+      <!--Filter可以指定为以下值-->
+      <!--Opaque,Transparent,SelectedObject-->
+      <!--仅当渲染物体时生效-->
+      <!--当存在指定名称纹理时Filter也为真-->
+      <Filter>Opaque</Filter>
       <ClearDepth>1</ClearDepth>
       <DepthBias>3000</DepthBias>
       <SlopeScaledDepthBias>1.0</SlopeScaledDepthBias>
