@@ -102,6 +102,7 @@
     <Pass>
       <Name>DrawSkyBox</Name>
       <Camera>Main</Camera>
+      <!--默认资源在Coocoo3D/DefaultResources/DefaultResourceList.xml定义-->
       <VertexShader>VS_SkyBox</VertexShader>
       <PixelShader>PS_SkyBox</PixelShader>
       <CBV>
@@ -172,7 +173,7 @@
       <SRV>
         <Index>5</Index>
         <ResourceType>Texture2D</ResourceType>
-        <!--环境光高光预积分表-->
+        <!--环境光高光预过滤积分表-->
         <Resource>_BRDFLUT</Resource>
       </SRV>
     </Pass>

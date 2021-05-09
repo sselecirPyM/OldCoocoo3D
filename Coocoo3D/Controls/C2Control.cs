@@ -11,7 +11,8 @@ namespace Coocoo3D.Controls
     {
         public static Dictionary<Type, Type> componentToControl = new Dictionary<Type, Type>()
         {
-            {typeof(LightingComponent),typeof(CLightingComponent) }
+            {typeof(LightingComponent),typeof(CLightingComponent) },
+            {typeof(VolumeComponent),typeof(CVolumeComponent) }
         };
     }
 }

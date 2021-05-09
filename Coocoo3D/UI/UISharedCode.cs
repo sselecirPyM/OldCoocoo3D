@@ -74,10 +74,11 @@ namespace Coocoo3D.UI
             GameObject volume = new GameObject();
             Components.VolumeComponent volumeComponent = new Components.VolumeComponent();
             volume.AddComponent(volumeComponent);
-            volume.Name = resourceLoader.GetString("Object_Name_Lighting");
-            volume.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
-            volume.Position = new Vector3(0, 1, 0);
-            volumeComponent.Size = new Vector3(50, 50, 50);
+            //volume.Name = resourceLoader.GetString("Object_Name_Lighting");
+            volume.Name = "Volume";
+            volume.Rotation = Quaternion.Identity;
+            volume.Position = new Vector3(0, 25, 0);
+            volumeComponent.Size = new Vector3(100, 50, 100);
             appBody.CurrentScene.AddGameObject(volume);
             appBody.RequireRender();
         }

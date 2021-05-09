@@ -34,21 +34,31 @@ namespace Coocoo3D.RenderPipeline
             var deviceResources = context.deviceResources;
             //var cameras = context.dynamicContextRead.cameras;
             var settings = context.dynamicContextRead.settings;
-            var rendererComponents = context.dynamicContextRead.rendererComponents;
+            var rendererComponents = context.dynamicContextRead.renderers;
             var lightings = context.dynamicContextRead.lightings;
             var camera = context.dynamicContextRead.cameras[0];
             var bigBuffer = context.bigBuffer;
             List<LightingData> pointLights = new List<LightingData>();
 
             #region Lighting
+            VolumeComponent volume = null;
+            if (context.dynamicContextRead.volumes.Count > 0)
+                volume = context.dynamicContextRead.volumes[0];
+
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
             Matrix4x4 invLightCameraMatrix0 = Matrix4x4.Identity;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
-                lightCameraMatrix0 = lightings[0].GetLightingMatrix(settings.ExtendShadowMapRange, camera.LookAtPoint, camera.Angle, camera.Distance);
+                if (volume == null)
+                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(settings.ExtendShadowMapRange, camera.LookAtPoint, camera.Angle, camera.Distance);
+                else
+                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(new BoundingBox() { position = volume.Position, extension = volume.Size });
+
+
                 Matrix4x4.Invert(lightCameraMatrix0, out invLightCameraMatrix0);
                 lightCameraMatrix0 = Matrix4x4.Transpose(lightCameraMatrix0);
                 invLightCameraMatrix0 = Matrix4x4.Transpose(invLightCameraMatrix0);
+
                 HasMainLight = true;
             }
             else
@@ -109,8 +119,7 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
             }
-            if (matC > 0)
-                context.XBufferGroup.UpdateSlienceComplete(graphicsContext);
+            context.XBufferGroup.UpdateSlienceComplete(graphicsContext);
             //着色器可读取数据
             int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
@@ -236,6 +245,17 @@ namespace Coocoo3D.RenderPipeline
                         case "IndirectMultiplier":
                             ofs += CooUtility.Write(_buffer, ofs, settings.SkyBoxLightMultiplier);
                             break;
+                        case "ShadowVolume":
+                            if (volume != null)
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, volume.Position);
+                                ofs += 4;
+                                ofs += CooUtility.Write(_buffer, ofs, volume.Size);
+                                ofs += 4;
+                            }
+                            else
+                                ofs += 32;
+                            break;
                         case "RandomValue":
                             ofs += CooUtility.Write(_buffer, ofs, (float)random.NextDouble());
                             break;
@@ -264,7 +284,7 @@ namespace Coocoo3D.RenderPipeline
         //you can fold local function in your editor
         public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var rendererComponents = context.dynamicContextRead.rendererComponents;
+            var rendererComponents = context.dynamicContextRead.renderers;
             var settings = context.dynamicContextRead.settings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;

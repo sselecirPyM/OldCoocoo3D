@@ -131,6 +131,9 @@
     <Compile Include="Controls\CLightingComponent.xaml.cs">
       <DependentUpon>CLightingComponent.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\CVolumeComponent.xaml.cs">
+      <DependentUpon>CVolumeComponent.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Core\ModelReloader.cs" />
     <Compile Include="Present\CameraMotion.cs" />
     <Compile Include="Core\GameDriver.cs" />
@@ -219,6 +222,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="DefaultResources\DrawGizmo.xml" />
     <Content Include="Samples\sampleDeferredPasses.coocoox" />
     <Content Include="Samples\VS_Pass1.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
@@ -254,6 +258,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="Controls\CLightingComponent.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Controls\CVolumeComponent.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

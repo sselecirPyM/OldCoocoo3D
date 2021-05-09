@@ -77,7 +77,7 @@ namespace Coocoo3D.RenderPipeline
         int renderMatCount = 0;
         public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var rendererComponents = context.dynamicContextRead.rendererComponents;
+            var rendererComponents = context.dynamicContextRead.renderers;
             var deviceResources = context.deviceResources;
             int countMaterials = 0;
             for (int i = 0; i < rendererComponents.Count; i++)
@@ -148,7 +148,7 @@ namespace Coocoo3D.RenderPipeline
         {
             var RPAssetsManager = context.RPAssetsManager;
 
-            var rendererComponents = context.dynamicContextRead.rendererComponents;
+            var rendererComponents = context.dynamicContextRead.renderers;
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
             var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];

@@ -211,7 +211,7 @@ namespace Coocoo3D.Core
             }
 
             var entities = RPContext.dynamicContextWrite.entities;
-            var rendererComponents = RPContext.dynamicContextWrite.rendererComponents;
+            var rendererComponents = RPContext.dynamicContextWrite.renderers;
             for (int i = 0; i < entities.Count; i++)
             {
                 var entity = entities[i];

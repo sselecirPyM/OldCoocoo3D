@@ -14,7 +14,8 @@ namespace Coocoo3D.RenderPipeline
         public Settings settings;
         public List<MMD3DEntity> entities = new List<MMD3DEntity>();
         public List<GameObject> gameObjects = new List<GameObject>();
-        public List<Components.MMDRendererComponent> rendererComponents = new List<Components.MMDRendererComponent>();
+        public List<Components.MMDRendererComponent> renderers = new List<Components.MMDRendererComponent>();
+        public List<Components.VolumeComponent> volumes = new List<VolumeComponent>();
         public MMD3DEntity selectedEntity;
         public List<LightingData> lightings = new List<LightingData>();
         public List<LightingData> selectedLightings = new List<LightingData>();
@@ -30,9 +31,9 @@ namespace Coocoo3D.RenderPipeline
         public int GetSceneObjectVertexCount()
         {
             int count = 0;
-            for (int i = 0; i < rendererComponents.Count; i++)
+            for (int i = 0; i < renderers.Count; i++)
             {
-                count += rendererComponents[i].meshVertexCount;
+                count += renderers[i].meshVertexCount;
             }
             VertexCount = count;
             return count;
@@ -40,22 +41,26 @@ namespace Coocoo3D.RenderPipeline
 
         public void Preprocess()
         {
-            for (int i = 0; i < entities.Count; i++)
+            foreach (MMD3DEntity entity in entities)
             {
-                MMD3DEntity entity = entities[i];
                 entity.rendererComponent.position = entity.Position;
                 entity.rendererComponent.rotation = entity.Rotation;
-                rendererComponents.Add(entity.rendererComponent);
+                renderers.Add(entity.rendererComponent);
             }
-            for (int i = 0; i < gameObjects.Count; i++)
+            foreach (GameObject gameObject in gameObjects)
             {
-                GameObject gameObject = gameObjects[i];
                 LightingComponent lightingComponent = gameObject.GetComponent<LightingComponent>();
                 if (lightingComponent != null)
                 {
                     lightingComponent.Position = gameObject.Position;
                     lightingComponent.Rotation = gameObject.Rotation;
                     lightings.Add(lightingComponent.GetLightingData());
+                }
+                VolumeComponent volume = gameObject.GetComponent<VolumeComponent>();
+                if (volume != null)
+                {
+                    volume.Position = gameObject.Position;
+                    volumes.Add(volume);
                 }
             }
             lightings.Sort();
@@ -66,7 +71,8 @@ namespace Coocoo3D.RenderPipeline
             entities.Clear();
             gameObjects.Clear();
             lightings.Clear();
-            rendererComponents.Clear();
+            volumes.Clear();
+            renderers.Clear();
             selectedLightings.Clear();
             cameras.Clear();
         }

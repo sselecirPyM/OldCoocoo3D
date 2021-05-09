@@ -196,7 +196,7 @@ namespace Coocoo3D.RenderPipeline
         public void UpdateGPUResource()
         {
             #region Update bone data
-            int count = dynamicContextRead.rendererComponents.Count;
+            int count = dynamicContextRead.renderers.Count;
             while (CBs_Bone.Count < count)
             {
                 CBuffer constantBuffer = new CBuffer();
@@ -207,7 +207,7 @@ namespace Coocoo3D.RenderPipeline
             Vector3 camPos = dynamicContextRead.cameras[0].Pos;
             for (int i = 0; i < count; i++)
             {
-                var rendererComponent = dynamicContextRead.rendererComponents[i];
+                var rendererComponent = dynamicContextRead.renderers[i];
                 data1.vertexCount = rendererComponent.meshVertexCount;
                 data1.indexCount = rendererComponent.meshIndexCount;
                 IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);

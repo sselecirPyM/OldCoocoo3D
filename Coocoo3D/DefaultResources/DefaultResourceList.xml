@@ -4,10 +4,6 @@
     <Name>VSMMDSkinning.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSMMDSkinning.cso</Path>
   </VertexShader>
-  <!--<VertexShader>
-    <Name>VSDeferredRenderPointLight.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSDeferredRenderPointLight.cso</Path>
-  </VertexShader>-->
   <VertexShader>
     <Name>VSPostProcess.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSPostProcess.cso</Path>
@@ -41,22 +37,6 @@
     <Path>ms-appx:///Coocoo3DGraphics/VSMMDTransform.cso</Path>
   </VertexShader>
   <!--pixelshaders-->
-  <!--<PixelShader>
-    <Name>PSDeferredRenderGBuffer.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderGBuffer.cso</Path>
-  </PixelShader>
-  <PixelShader>
-    <Name>PSDeferredRenderIBL.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderIBL.cso</Path>
-  </PixelShader>
-  <PixelShader>
-    <Name>PSDeferredRenderDirectLight.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderDirectLight.cso</Path>
-  </PixelShader>
-  <PixelShader>
-    <Name>PSDeferredRenderPointLight.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSDeferredRenderPointLight.cso</Path>
-  </PixelShader>-->
   <PixelShader>
     <Name>PSPostProcess.cso</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PSPostProcess.cso</Path>
@@ -159,38 +139,18 @@
     <Name>PSOMMDSkinning</Name>
     <VertexShader>VSMMDSkinning.cso</VertexShader>
   </PipelineState>
-  <!--<PipelineState>
-    <Name>PObjectDeferredRenderGBuffer</Name>
-    <VertexShader>VSMMDTransform</VertexShader>
-    <PixelShader>PSDeferredRenderGBuffer.cso</PixelShader>
-  </PipelineState>
   <PipelineState>
-    <Name>PObjectDeferredRenderIBL</Name>
-    <VertexShader>VS_SkyBox</VertexShader>
-    <PixelShader>PSDeferredRenderIBL.cso</PixelShader>
-  </PipelineState>
-  <PipelineState>
-    <Name>PObjectDeferredRenderDirectLight</Name>
-    <VertexShader>VS_SkyBox</VertexShader>
-    <PixelShader>PSDeferredRenderDirectLight.cso</PixelShader>
-  </PipelineState>
-  <PipelineState>
-    <Name>PObjectDeferredRenderPointLight</Name>
-    <VertexShader>VSDeferredRenderPointLight.cso</VertexShader>
-    <PixelShader>PSDeferredRenderPointLight.cso</PixelShader>
-  </PipelineState>-->
-  <PipelineState>
-    <Name>PObjectWidgetUI1</Name>
+    <Name>PSOWidgetUI1</Name>
     <VertexShader>VSWidgetUI1.cso</VertexShader>
     <PixelShader>PSWidgetUI1.cso</PixelShader>
   </PipelineState>
   <PipelineState>
-    <Name>PObjectWidgetUI2</Name>
+    <Name>PSOWidgetUI2</Name>
     <VertexShader>VSWidgetUI2.cso</VertexShader>
     <PixelShader>PSWidgetUI2.cso</PixelShader>
   </PipelineState>
   <PipelineState>
-    <Name>PObjectWidgetUILight</Name>
+    <Name>PSOWidgetUILight</Name>
     <VertexShader>VSWidgetUILight.cso</VertexShader>
     <PixelShader>PSWidgetUILight.cso</PixelShader>
   </PipelineState>

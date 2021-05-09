@@ -29,30 +29,6 @@ namespace Coocoo3D.Present
             return ((int)LightingType).CompareTo((int)other.LightingType);
         }
 
-        public Matrix4x4 GetLightingMatrix(float ExtendRange, Vector3 cameraLookAt, float cameraDistance)
-        {
-            Matrix4x4 vp = Matrix4x4.Identity;
-            if (LightingType == LightingType.Directional)
-            {
-                Vector3 lookat = cameraLookAt + Vector3.UnitY * 4;
-
-
-                Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
-                var pos = Vector3.Transform(-Vector3.UnitZ * 512, rotateMatrix);
-                var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
-                Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos + lookat, lookat, up);
-                Matrix4x4 pMatrix;
-                float dist = MathF.Abs(cameraDistance);
-                pMatrix = Matrix4x4.CreateOrthographic(dist + ExtendRange, dist + ExtendRange, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
-                vp = Matrix4x4.Multiply(vMatrix, pMatrix);
-
-            }
-            else if (LightingType == LightingType.Point)
-            {
-
-            }
-            return vp;
-        }
         public Matrix4x4 GetLightingMatrix(float ExtendRange, Vector3 cameraLookAt, Vector3 cameraRotation, float cameraDistance)
         {
             Matrix4x4 vp = Matrix4x4.Identity;
@@ -85,6 +61,33 @@ namespace Coocoo3D.Present
             else if (LightingType == LightingType.Point)
             {
 
+            }
+            return vp;
+        }
+        public Matrix4x4 GetLightingMatrix(BoundingBox bb)
+        {
+            Matrix4x4 vp = Matrix4x4.Identity;
+            if (LightingType == LightingType.Directional)
+            {
+                Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
+                Matrix4x4.Invert(rotateMatrix, out Matrix4x4 iRot);
+                var pos = Vector3.Transform(-Vector3.UnitZ * 512, rotateMatrix);
+                var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
+                Matrix4x4 v = Matrix4x4.CreateLookAt(pos + bb.position, bb.position, up);
+                Vector3 whMin = Vector3.Zero;
+                Vector3 whMax = Vector3.Zero;
+                for (int i = -1; i <= 1; i += 2)
+                    for (int j = -1; j <= 1; j += 2)
+                        for (int k = -1; k <= 1; k += 2)
+                        {
+                            Vector3 v1 = Vector3.Transform(bb.extension * new Vector3(i, j, k) * 0.5f, iRot);
+                            whMin = Vector3.Min(v1, whMin);
+                            whMax = Vector3.Max(v1, whMax);
+                        }
+
+                whMax = whMax - whMin;
+                Matrix4x4 p = Matrix4x4.CreateOrthographic(whMax.X, whMax.Y, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
+                vp = v * p;
             }
             return vp;
         }
