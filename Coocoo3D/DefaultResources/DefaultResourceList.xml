@@ -74,20 +74,16 @@
     <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredGBuffer.cso</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PS_DeferredIndirect</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredIndirect.cso</Path>
-  </PixelShader>
-  <PixelShader>
     <Name>PS_DeferredFinal</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredFinal.cso</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSMMD</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSMMD.cso</Path>
+    <Name>PS_BloomBlur1</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_BloomBlur1.cso</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSMMDTransparent</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSMMDTransparent.cso</Path>
+    <Name>PS_BloomBlur2</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/PS_BloomBlur2.cso</Path>
   </PixelShader>
   <ComputeShader>
     <Name>G_IrradianceMap0</Name>
@@ -120,16 +116,6 @@
     <Name>SkyBox</Name>
     <VertexShader>VS_SkyBox</VertexShader>
     <PixelShader>PS_SkyBox</PixelShader>
-  </PipelineState>
-  <PipelineState>
-    <Name>PSOMMD</Name>
-    <VertexShader>VSMMDTransform</VertexShader>
-    <PixelShader>PSMMD</PixelShader>
-  </PipelineState>
-  <PipelineState>
-    <Name>PSOMMDTransparent</Name>
-    <VertexShader>VSMMDTransform</VertexShader>
-    <PixelShader>PSMMDTransparent</PixelShader>
   </PipelineState>
   <PipelineState>
     <Name>PSOMMDShadowDepth</Name>

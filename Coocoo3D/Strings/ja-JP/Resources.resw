@@ -162,13 +162,16 @@
     <value>オープンフォルダ</value>
   </data>
   <data name="M_MenuBarItem_ShaderFileSample.Text" xml:space="preserve">
-    <value>Save Sample Shader File</value>
+    <value>View Sample Shader File</value>
   </data>
   <data name="M_MenuBarItem_View.Title" xml:space="preserve">
     <value>ビュー</value>
   </data>
   <data name="Object_Name_Lighting" xml:space="preserve">
     <value>光源</value>
+  </data>
+  <data name="Object_Name_Volume" xml:space="preserve">
+    <value>Volume</value>
   </data>
   <data name="Page_Common_Button_RefreshCache.Content" xml:space="preserve">
     <value>キャッシュを更新する</value>

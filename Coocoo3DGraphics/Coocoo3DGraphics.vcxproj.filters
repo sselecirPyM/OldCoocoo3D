@@ -252,9 +252,6 @@
     <ClInclude Include="RayTracingInstanceGroup.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\PSMMD.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\VSPostProcess.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
@@ -291,16 +288,10 @@
     <FxCompile Include="Shaders\PSWidgetUI2.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\VSDeferredRenderPointLight.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\PSWidgetUILight.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\VSWidgetUILight.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSMMDTransparent.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PSError.hlsl">
@@ -324,14 +315,17 @@
     <FxCompile Include="Shaders\PS_DeferredGBuffer.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\PS_DeferredIndirect.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="Shaders\PS_DeferredFinal.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="RayTracing\RayTracing2.hlsl">
       <Filter>RayTracing</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PS_BloomBlur1.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PS_BloomBlur2.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -74,8 +74,7 @@ namespace Coocoo3D.UI
             GameObject volume = new GameObject();
             Components.VolumeComponent volumeComponent = new Components.VolumeComponent();
             volume.AddComponent(volumeComponent);
-            //volume.Name = resourceLoader.GetString("Object_Name_Lighting");
-            volume.Name = "Volume";
+            volume.Name = resourceLoader.GetString("Object_Name_Volume");
             volume.Rotation = Quaternion.Identity;
             volume.Position = new Vector3(0, 25, 0);
             volumeComponent.Size = new Vector3(100, 50, 100);
@@ -167,21 +166,21 @@ namespace Coocoo3D.UI
                 foreach (var v1 in passSetting.VertexShaders)
                 {
                     VertexShader vertexShader = new VertexShader();
-                    vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), "main", new MacroEntry[0]);
+                    vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), v1.EntryPoint == null ? "main" : v1.EntryPoint, new MacroEntry[0]);
                     rpc.RPAssetsManager.VSAssets[v1.Name] = vertexShader;
                 }
             if (passSetting.GeometryShaders != null)
                 foreach (var g1 in passSetting.GeometryShaders)
                 {
                     GeometryShader geometryShader = new GeometryShader();
-                    geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), "main", new MacroEntry[0]);
+                    geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), g1.EntryPoint == null ? "main" : g1.EntryPoint, new MacroEntry[0]);
                     rpc.RPAssetsManager.GSAssets[g1.Name] = geometryShader;
                 }
             if (passSetting.PixelShaders != null)
                 foreach (var p1 in passSetting.PixelShaders)
                 {
                     PixelShader pixelShader = new PixelShader();
-                    pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), "main", new MacroEntry[0]);
+                    pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), p1.EntryPoint == null ? "main" : p1.EntryPoint, new MacroEntry[0]);
                     rpc.RPAssetsManager.PSAssets[p1.Name] = pixelShader;
                 }
             if (passSetting.Texture2Ds != null)

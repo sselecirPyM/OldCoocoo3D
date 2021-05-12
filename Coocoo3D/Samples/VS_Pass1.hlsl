@@ -1,7 +1,6 @@
 ﻿cbuffer cb0 : register(b0)
 {
 	float4x4 g_mWorldToProj;
-	float4x4 g_mProjToWorld;
 };
 
 struct VSSkinnedIn

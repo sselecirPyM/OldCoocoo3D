@@ -81,8 +81,6 @@ namespace Coocoo3D.RenderPipeline
 
         public RenderTexture2D outputRTV = new RenderTexture2D();
 
-        //public RenderTextureCube ShadowMapCube = new RenderTextureCube();
-
         public Dictionary<string, RenderTexture2D> RTs = new Dictionary<string, RenderTexture2D>();
 
         public RayTracingASGroup RTASGroup = new RayTracingASGroup();
@@ -350,8 +348,8 @@ namespace Coocoo3D.RenderPipeline
                 RPAssetsManager.texture2ds.Add(tex2dDef.Name, tex2d);
             }
 
-            defaultPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/PassSetting.xml"));
-            deferredPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredPassSetting.xml"));
+            defaultPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///Samples/samplePasses.coocoox"));
+            deferredPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///Samples/sampleDeferredPasses.coocoox"));
             RTPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredRayTracingPassSetting.xml"));
             try
             {

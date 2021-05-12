@@ -16,7 +16,6 @@ struct PointLightInfo
 cbuffer cb0 : register(b0)
 {
 	float4x4 _worldToProj;
-	float4x4 _projToWorld;
 	LightInfo Lightings[1];
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 	float _Metallic;

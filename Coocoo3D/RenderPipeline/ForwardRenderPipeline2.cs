@@ -189,17 +189,30 @@ namespace Coocoo3D.RenderPipeline
                             if (_pass.Pass.Camera == "Main")
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.vpMatrix));
-                                ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
                             }
                             else if (_pass.Pass.Camera == "ShadowMap")
                             {
                                 if (lightings.Count > 0)
                                 {
                                     ofs += CooUtility.Write(_buffer, ofs, lightCameraMatrix0);
+                                }
+                                else
+                                    ofs += 64;
+                            }
+                            break;
+                        case "CameraInvert":
+                            if (_pass.Pass.Camera == "Main")
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
+                            }
+                            else if (_pass.Pass.Camera == "ShadowMap")
+                            {
+                                if (lightings.Count > 0)
+                                {
                                     ofs += CooUtility.Write(_buffer, ofs, invLightCameraMatrix0);
                                 }
                                 else
-                                    ofs += 128;
+                                    ofs += 64;
                             }
                             break;
                         case "DirectionalLight":

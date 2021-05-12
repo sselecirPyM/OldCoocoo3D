@@ -114,7 +114,6 @@ struct PointLightInfo
 cbuffer cb0 : register(b0)
 {
 	float4x4 _worldToProj;
-	float4x4 _projToWorld;
 	LightInfo Lightings[1];
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 	float _Metallic;
@@ -234,6 +233,6 @@ float4 main(PSSkinnedIn input) : SV_TARGET
 	outputColor += IrradianceCube.Sample(s0, N) * g_skyBoxMultiple * c_diffuse;
 	outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness,1e-5)) * 6) * g_skyBoxMultiple * GF;
 	outputColor += _Emission * albedo;
-	outputColor *= float4(1, 0.5, 0.5, 1);
+	//outputColor *= float4(1, 0.5, 0.5, 1);
 	return float4(outputColor, texColor.a);
 }

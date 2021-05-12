@@ -116,7 +116,7 @@ namespace Coocoo3D.RenderPipeline
         public string GeometryShader;
         public string PixelShader;
         [XmlElement(ElementName = "SRV")]
-        public List<ShaderSlotRes> SRVs;
+        public List<SRVSlotRes> SRVs;
         [XmlElement(ElementName = "CBV")]
         public List<CBVSlotRes> CBVs;
     }
@@ -128,7 +128,7 @@ namespace Coocoo3D.RenderPipeline
         public string PixelShader;
     }
 
-    public struct ShaderSlotRes
+    public struct SRVSlotRes
     {
         public int Index;
         public string ResourceType;
@@ -145,6 +145,20 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public VarSize Size;
         public DxgiFormat Format;
+    }
+    public struct PParameter
+    {
+        public string Name;
+        public float Value;
+    }
+    public class PTopAccelerateStructure
+    {
+        public string Name;
+        public string Filter;
+        [XmlElement(ElementName = "SRV")]
+        public List<SRVSlotRes> SRVs;
+        [XmlElement(ElementName = "CBV")]
+        public List<CBVSlotRes> CBVs;
     }
     public class VarSize
     {
@@ -188,6 +202,7 @@ namespace Coocoo3D.RenderPipeline
     {
         public string Name;
         public string Path;
+        public string EntryPoint;
     }
     public struct PassParameter
     {

@@ -162,13 +162,16 @@
     <value>打开文件夹</value>
   </data>
   <data name="M_MenuBarItem_ShaderFileSample.Text" xml:space="preserve">
-    <value>保存示例着色器文件</value>
+    <value>查看示例着色器文件</value>
   </data>
   <data name="M_MenuBarItem_View.Title" xml:space="preserve">
     <value>视图</value>
   </data>
   <data name="Object_Name_Lighting" xml:space="preserve">
     <value>光源</value>
+  </data>
+  <data name="Object_Name_Volume" xml:space="preserve">
+    <value>体积</value>
   </data>
   <data name="Page_Common_Button_RefreshCache.Content" xml:space="preserve">
     <value>刷新缓存</value>

@@ -32,6 +32,17 @@
       <DepthStencil>_ScreenDepth0</DepthStencil>
       <RenderTarget>_Output0</RenderTarget>
     </Pass>
+    <Pass>
+      <Name>BloomBlur1</Name>
+      <Type>DrawScreen</Type>
+      <RenderTarget>_Blur0</RenderTarget>
+    </Pass>
+    <Pass>
+      <Name>BloomBlur2</Name>
+      <Type>DrawScreen</Type>
+      <BlendMode>Add</BlendMode>
+      <RenderTarget>_Output0</RenderTarget>
+    </Pass>
   </RenderSequence>
   <RenderTargets>
     <RenderTarget>
@@ -70,11 +81,12 @@
       <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
     </RenderTarget>
     <RenderTarget>
-      <Name>_ScreenColor3</Name>
+      <Name>_Blur0</Name>
       <Size>
+        <Multiplier>0.5</Multiplier>
         <Source>OutputSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+      <Format>DXGI_FORMAT_R16G16B16A16_FLOAT</Format>
     </RenderTarget>
   </RenderTargets>
   <Passes>
@@ -148,6 +160,7 @@
         <Index>0</Index>
         <Datas>
           <Data>Camera</Data>
+          <Data>CameraInvert</Data>
           <Data>CameraPosition</Data>
           <Data>IndirectMultiplier</Data>
           <Data>DirectionalLight</Data>
@@ -246,5 +259,68 @@
         <Resource>_BRDFLUT</Resource>
       </SRV>
     </Pass>
+    <Pass>
+      <Name>BloomBlur1</Name>
+      <Camera>Main</Camera>
+      <VertexShader>VS_SkyBox</VertexShader>
+      <PixelShader>PS_BloomBlur1</PixelShader>
+      <CBV>
+        <Index>0</Index>
+        <Datas>
+          <Data>WidthHeight</Data>
+        </Datas>
+      </CBV>
+      <SRV>
+        <Index>0</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_Output0</Resource>
+      </SRV>
+    </Pass>
+    <Pass>
+      <Name>BloomBlur2</Name>
+      <Camera>Main</Camera>
+      <VertexShader>VS_SkyBox</VertexShader>
+      <PixelShader>PS_BloomBlur2</PixelShader>
+      <CBV>
+        <Index>0</Index>
+        <Datas>
+          <Data>WidthHeight</Data>
+        </Datas>
+      </CBV>
+      <SRV>
+        <Index>0</Index>
+        <ResourceType>Texture2D</ResourceType>
+        <Resource>_Blur0</Resource>
+      </SRV>
+    </Pass>
   </Passes>
+  <VertexShaders>
+    <VertexShader>
+      <!--<EntryPoint>main</EntryPoint>-->
+      <Name>VS_Pass1</Name>
+      <Path>VS_Pass1.hlsl</Path>
+    </VertexShader>
+  </VertexShaders>
+  <PixelShaders>
+    <PixelShader>
+      <Name>PS_DeferredFinal</Name>
+      <Path>PS_DeferredFinal.hlsl</Path>
+    </PixelShader>
+    <PixelShader>
+      <Name>PS_DeferredGBuffer</Name>
+      <Path>PS_DeferredGBuffer.hlsl</Path>
+    </PixelShader>
+    <PixelShader>
+      <Name>PS_BloomBlur1</Name>
+      <Path>PS_BloomBlur1.hlsl</Path>
+    </PixelShader>
+    <PixelShader>
+      <Name>PS_BloomBlur2</Name>
+      <Path>PS_BloomBlur2.hlsl</Path>
+    </PixelShader>
+    <PixelShader>
+      <Name>PS_Pass1</Name>
+      <Path>PS_Pass1.hlsl</Path>
+    </PixelShader>
+  </PixelShaders>
 </PassSetting>

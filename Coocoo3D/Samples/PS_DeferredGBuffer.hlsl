@@ -1,4 +1,4 @@
-struct LightInfo2
+﻿struct LightInfo2
 {
 	float4x4 LightMapVP;
 	float3 LightDir;

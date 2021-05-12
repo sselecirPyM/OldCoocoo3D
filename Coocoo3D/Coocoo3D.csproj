@@ -223,6 +223,10 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <Content Include="DefaultResources\DrawGizmo.xml" />
+    <Content Include="Samples\PS_BloomBlur2.hlsl" />
+    <Content Include="Samples\PS_BloomBlur1.hlsl" />
+    <Content Include="Samples\PS_DeferredFinal.hlsl" />
+    <Content Include="Samples\PS_DeferredGBuffer.hlsl" />
     <Content Include="Samples\sampleDeferredPasses.coocoox" />
     <Content Include="Samples\VS_Pass1.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
@@ -237,9 +241,7 @@
     <Content Include="Assets\Textures\UI_1.png" />
     <Content Include="Assets\Textures\UI_0.png" />
     <Content Include="DefaultResources\DefaultResourceList.xml" />
-    <Content Include="DefaultResources\DeferredPassSetting.xml" />
     <Content Include="DefaultResources\DeferredRayTracingPassSetting.xml" />
-    <Content Include="DefaultResources\PassSetting.xml" />
     <Content Include="PhysXCommon_64.dll" />
     <Content Include="PhysXFoundation_64.dll" />
     <Content Include="PhysX_64.dll" />
