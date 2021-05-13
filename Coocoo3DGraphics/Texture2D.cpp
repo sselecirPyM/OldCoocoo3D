@@ -8,7 +8,7 @@ void Texture2D::Reload(Texture2D^ texture)
 	m_width = texture->m_width;
 	m_height = texture->m_height;
 	m_texture = texture->m_texture;
-	m_heapRefIndex = texture->m_heapRefIndex;
+	//m_heapRefIndex = texture->m_heapRefIndex;
 	m_mipLevels = texture->m_mipLevels;
 	Status = texture->Status;
 }

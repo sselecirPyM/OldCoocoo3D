@@ -290,7 +290,6 @@
     <ClInclude Include="DirectXTex\DirectXTexP.h" />
     <ClInclude Include="DirectXTex\Filters.h" />
     <ClInclude Include="DirectXTex\scoped.h" />
-    <ClInclude Include="Extension\CooGExtension.h" />
     <ClInclude Include="GPUProgram\ComputePO.h" />
     <ClInclude Include="GPUProgram\GeometryShader.h" />
     <ClInclude Include="GPUProgram\PixelShader.h" />
@@ -351,7 +350,6 @@
     <ClCompile Include="DirectXTex\DirectXTexTGA.cpp" />
     <ClCompile Include="DirectXTex\DirectXTexUtil.cpp" />
     <ClCompile Include="DirectXTex\DirectXTexWIC.cpp" />
-    <ClCompile Include="Extension\CooGExtension.cpp" />
     <ClCompile Include="GPUProgram\ComputePO.cpp" />
     <ClCompile Include="GPUProgram\GeometryShader.cpp" />
     <ClCompile Include="GPUProgram\PixelShader.cpp" />

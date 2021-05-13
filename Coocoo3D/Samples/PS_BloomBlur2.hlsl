@@ -14,10 +14,10 @@ struct PSIn
 float4 main(PSIn input) : SV_TARGET
 {
 	const float weights[9] = { 0.048297,0.08393,0.124548,0.157829,0.170793,0.157829,0.124548,0.08393,0.048297 };
-	float2 offset = float2(0, 1) / textureSize;
+	float2 offset = float2(0, 2) / textureSize;
 	float2 coords = (-input.uv * 0.5 + 0.5);
 	coords.x = 1 - coords.x;
-	coords -= offset * 4.0 * 2.0;
+	coords -= offset * 4.0;
 
 	float4 color = 0;
 	for (int i = 0; i < 9; i++)
@@ -25,5 +25,5 @@ float4 main(PSIn input) : SV_TARGET
 		color += texture0.SampleLevel(s0, coords, 0) * weights[i]; coords += offset;
 	}
 
-	return color;
+	return color * 0.25f;
 }

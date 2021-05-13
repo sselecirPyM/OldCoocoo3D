@@ -15,8 +15,6 @@ namespace Coocoo3DGraphics
 	internal:
 		void StateTransition(ID3D12GraphicsCommandList* commandList, D3D12_RESOURCE_STATES state);
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
-		UINT m_srvRefIndex;
-		UINT m_uavRefIndex;
 		UINT m_dsvHeapRefIndex;
 		UINT m_rtvHeapRefIndex;
 		UINT m_width;

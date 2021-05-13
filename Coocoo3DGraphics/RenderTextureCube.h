@@ -13,8 +13,6 @@ namespace Coocoo3DGraphics
 		property UINT m_mipLevels;
 	internal:
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_texture;
-		UINT m_srvRefIndex;
-		UINT m_uavRefIndex;
 		UINT m_dsvHeapRefIndex;
 		UINT m_rtvHeapRefIndex;
 		DXGI_FORMAT m_format;

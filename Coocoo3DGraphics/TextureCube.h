@@ -11,7 +11,6 @@ namespace Coocoo3DGraphics
 		property UINT m_height;
 	internal:
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
-		UINT m_heapRefIndex;
 		DXGI_FORMAT m_format;
 		UINT m_mipLevels;
 	};

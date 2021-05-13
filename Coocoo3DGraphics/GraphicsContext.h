@@ -71,8 +71,7 @@ namespace Coocoo3DGraphics
 		void SetSRVT(ITextureCube^ texture, int index);
 		void SetSRVTSlot(ITexture2D^ texture, int slot);
 		void SetSRVTSlot(ITextureCube^ texture, int slot);
-		void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
-		void SetSRVTArray(RenderTextureCube^ texture, int index);
+		//void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetCBVR(CBuffer^ buffer, int index);
 		void SetCBVR(SBuffer^ buffer, int index);
 		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
@@ -82,7 +81,7 @@ namespace Coocoo3DGraphics
 		void SetUAVT(RenderTexture2D^ texture, int index);
 		void SetComputeSRVT(ITexture2D^ texture, int index);
 		void SetComputeSRVT(ITextureCube^ texture, int index);
-		void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
+		//void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
 		void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);

@@ -127,9 +127,6 @@
     <ClCompile Include="DirectXTex\DirectXTexWIC.cpp">
       <Filter>DirectXTex</Filter>
     </ClCompile>
-    <ClCompile Include="Extension\CooGExtension.cpp">
-      <Filter>Extension</Filter>
-    </ClCompile>
     <ClCompile Include="MeshBuffer.cpp" />
     <ClCompile Include="Uploader.cpp" />
     <ClCompile Include="MMDMeshAppend.cpp" />
@@ -215,9 +212,6 @@
     </ClInclude>
     <ClInclude Include="DirectXTex\scoped.h">
       <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="Extension\CooGExtension.h">
-      <Filter>Extension</Filter>
     </ClInclude>
     <ClInclude Include="TextUtil.h">
       <Filter>Utility</Filter>
