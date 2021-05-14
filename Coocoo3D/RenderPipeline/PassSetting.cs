@@ -84,6 +84,7 @@ namespace Coocoo3D.RenderPipeline
         public string DepthStencil;
         public EBlendState BlendMode;
         public bool ClearDepth;
+        public bool ClearRenderTarget;
         public ECullMode CullMode;
         public string Filter;
 

@@ -50,7 +50,7 @@ namespace Coocoo3D.RenderPipeline
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
                 if (volume == null)
-                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(settings.ExtendShadowMapRange, camera.LookAtPoint, camera.Angle, camera.Distance);
+                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(camera.pvMatrix);
                 else
                     lightCameraMatrix0 = lightings[0].GetLightingMatrix(new BoundingBox() { position = volume.Position, extension = volume.Size });
 
@@ -269,6 +269,17 @@ namespace Coocoo3D.RenderPipeline
                             else
                                 ofs += 32;
                             break;
+                        case "ReflectVolume":
+                            if (volume != null)
+                            {
+                                ofs += CooUtility.Write(_buffer, ofs, volume.Position);
+                                ofs += 4;
+                                ofs += CooUtility.Write(_buffer, ofs, volume.Size);
+                                ofs += 4;
+                            }
+                            else
+                                ofs += 32;
+                            break;
                         case "RandomValue":
                             ofs += CooUtility.Write(_buffer, ofs, (float)random.NextDouble());
                             break;
@@ -349,11 +360,11 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetRootSignature(RSBase);
 
                 if (combinedPass.renderTargets.Length == 0)
-                    graphicsContext.SetDSV(combinedPass.depthSencil, true);
+                    graphicsContext.SetDSV(combinedPass.depthSencil, combinedPass.ClearDepth);
                 else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthSencil != null)
-                    graphicsContext.SetRTVDSV(combinedPass.renderTargets, combinedPass.depthSencil, Vector4.Zero, false, combinedPass.ClearDepth);
+                    graphicsContext.SetRTVDSV(combinedPass.renderTargets, combinedPass.depthSencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
                 else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthSencil == null)
-                    graphicsContext.SetRTV(combinedPass.renderTargets, Vector4.Zero, false);
+                    graphicsContext.SetRTV(combinedPass.renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
 
                 PSODesc passPsoDesc;
                 passPsoDesc.blendState = combinedPass.BlendMode;

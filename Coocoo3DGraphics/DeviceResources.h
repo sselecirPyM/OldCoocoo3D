@@ -47,17 +47,19 @@ namespace Coocoo3DGraphics
 		ID3D12Device2*				GetD3DDevice() const { return m_d3dDevice.Get(); }
 		ID3D12Device5*				GetD3DDevice5() const { return m_d3dDevice5.Get(); }
 		IDXGISwapChain3*			GetSwapChain() const { return m_swapChain.Get(); }
-		ID3D12Resource*				GetRenderTarget() const { return m_renderTargets[m_frameIndex].Get(); }
+		ID3D12Resource*				GetRenderTarget() const { return m_renderTargets[m_swapChain->GetCurrentBackBufferIndex()].Get(); }
 		ID3D12CommandQueue*			GetCommandQueue() const { return m_commandQueue.Get(); }
 		ID3D12CommandAllocator*		GetCommandAllocator() const { return m_commandAllocators[m_executeIndex].Get(); }
 		DXGI_FORMAT					GetBackBufferFormat() const { return m_backBufferFormat; }
 		D3D12_VIEWPORT				GetScreenViewport() const { return m_screenViewport; }
-		UINT						GetCurrentFrameIndex() const { return m_frameIndex; }
 		UINT						GetCurrentExecuteIndex() const { return m_executeIndex; }
+
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GetCommandList();
+		void ReturnCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList);
 
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const
 		{
-			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_swapChain->GetCurrentBackBufferIndex(), m_rtvDescriptorSize);
 		}
 
 		static UINT BitsPerPixel(DXGI_FORMAT format);
@@ -77,9 +79,12 @@ namespace Coocoo3DGraphics
 		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res);
 		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12PipelineState> res2);
 		std::vector<d3d12RecycleResource> m_recycleList;
+		std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>>	m_commandLists;
+		std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>>	m_commandLists1;
 	private:
 		void CreateWindowSizeDependentResources();
 		void UpdateRenderTargetSize();
+		void Recycle();
 
 
 		// Direct3D 对象。
@@ -100,7 +105,6 @@ namespace Coocoo3DGraphics
 		// CPU/GPU 同步。
 		Microsoft::WRL::ComPtr<ID3D12Fence>				m_fence;
 		HANDLE											m_fenceEvent;
-		UINT											m_frameIndex;
 		UINT											m_executeIndex;
 
 		// 对窗口的缓存引用。

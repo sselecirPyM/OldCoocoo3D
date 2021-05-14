@@ -12,6 +12,152 @@ using namespace Windows::UI::Xaml::Controls;
 using namespace Platform;
 using namespace Coocoo3DGraphics;
 
+
+inline bool IsDirectXRaytracingSupported(ID3D12Device* testDevice)
+{
+	D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportData = {};
+
+	return SUCCEEDED(testDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportData, sizeof(featureSupportData)))
+		&& featureSupportData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
+}
+
+// 配置 Direct3D 设备，并存储设备句柄和设备上下文。
+void DeviceResources::CreateDeviceResources()
+{
+#if defined(_DEBUG)
+	// 如果项目处于调试生成阶段，请通过 SDK 层启用调试。
+	{
+		ComPtr<ID3D12Debug> debugController;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+		{
+			debugController->EnableDebugLayer();
+		}
+	}
+#endif
+
+	DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory)));
+
+	ComPtr<IDXGIAdapter1> adapter;
+	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter); adapterIndex++)
+	{
+		DXGI_ADAPTER_DESC1 desc;
+		adapter->GetDesc1(&desc);
+
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		{
+			// 不要选择基本呈现驱动程序适配器。
+			continue;
+		}
+
+		// 检查适配器是否支持 Direct3D 12，但不要创建
+		// 仍为实际设备。
+		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			memcpy(m_deviceDescription, desc.Description, sizeof(desc.Description));
+			m_deviceVideoMem = desc.DedicatedVideoMemory;
+			break;
+		}
+	}
+
+	// 创建 Direct3D 12 API 设备对象
+	HRESULT hr = D3D12CreateDevice(
+		adapter.Get(),					// 硬件适配器。
+		D3D_FEATURE_LEVEL_11_0,			// 此应用可以支持的最低功能级别。
+		IID_PPV_ARGS(&m_d3dDevice)		// 返回创建的 Direct3D 设备。
+	);
+
+#if defined(_DEBUG)
+	if (FAILED(hr))
+	{
+		// 如果初始化失败，则回退到 WARP 设备。
+		// 有关 WARP 的详细信息，请参阅: 
+		// https://go.microsoft.com/fwlink/?LinkId=286690
+
+		ComPtr<IDXGIAdapter> warpAdapter;
+		DX::ThrowIfFailed(m_dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
+
+		hr = D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_d3dDevice));
+	}
+#endif
+
+	DX::ThrowIfFailed(hr);
+
+	m_isRayTracingSupport = IsDirectXRaytracingSupported(m_d3dDevice.Get());
+	m_d3dDevice->QueryInterface(IID_PPV_ARGS(&m_d3dDevice5));
+
+	// 创建命令队列。
+	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+	DX::ThrowIfFailed(m_d3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+	NAME_D3D12_OBJECT(m_commandQueue);
+
+	// 为呈现器目标视图和深度模具视图创建描述符堆。
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = 2048;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
+	NAME_D3D12_OBJECT(m_rtvHeap);
+	m_rtvHeapAllocCount = 3;
+	m_rtvDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.NumDescriptors = 2048;
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
+	NAME_D3D12_OBJECT(m_dsvHeap);
+	m_dsvHeapAllocCount = 0;
+
+	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+	heapDesc.NumDescriptors = c_graphicsPipelineHeapMaxCount;
+	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_cbvSrvUavHeap)));
+	NAME_D3D12_OBJECT(m_cbvSrvUavHeap);
+	m_cbvSrvUavHeapAllocCount = 0;
+
+	for (UINT n = 0; n < c_frameCount; n++)
+	{
+		DX::ThrowIfFailed(m_d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
+	}
+
+	// 创建同步对象。
+	DX::ThrowIfFailed(m_d3dDevice->CreateFence(m_currentFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+	m_currentFenceValue++;
+
+	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (m_fenceEvent == nullptr)
+	{
+		DX::ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
+}
+
+Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> DeviceResources::GetCommandList()
+{
+	if (m_commandLists.size())
+	{
+		auto commandList = m_commandLists[m_commandLists.size() - 1];
+		m_commandLists.pop_back();
+		return commandList;
+	}
+	else
+	{
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList;
+		DX::ThrowIfFailed(GetD3DDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, GetCommandAllocator(), nullptr, IID_PPV_ARGS(&commandList)));
+		NAME_D3D12_OBJECT(commandList);
+		DX::ThrowIfFailed(commandList->Close());
+		return commandList;
+	}
+}
+
+void DeviceResources::ReturnCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList)
+{
+	m_commandLists1.push_back(commandList);
+}
+
 UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
 {
 	switch (static_cast<int>(format))
@@ -159,129 +305,6 @@ UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
 	}
 }
 
-
-inline bool IsDirectXRaytracingSupported(ID3D12Device* testDevice)
-{
-	D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureSupportData = {};
-
-	return SUCCEEDED(testDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureSupportData, sizeof(featureSupportData)))
-		&& featureSupportData.RaytracingTier != D3D12_RAYTRACING_TIER_NOT_SUPPORTED;
-}
-
-// 配置 Direct3D 设备，并存储设备句柄和设备上下文。
-void DeviceResources::CreateDeviceResources()
-{
-#if defined(_DEBUG)
-	// 如果项目处于调试生成阶段，请通过 SDK 层启用调试。
-	{
-		ComPtr<ID3D12Debug> debugController;
-		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-		{
-			debugController->EnableDebugLayer();
-		}
-	}
-#endif
-
-	DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&m_dxgiFactory)));
-
-	ComPtr<IDXGIAdapter1> adapter;
-	for (UINT adapterIndex = 0; DXGI_ERROR_NOT_FOUND != m_dxgiFactory->EnumAdapters1(adapterIndex, &adapter); adapterIndex++)
-	{
-		DXGI_ADAPTER_DESC1 desc;
-		adapter->GetDesc1(&desc);
-
-		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-		{
-			// 不要选择基本呈现驱动程序适配器。
-			continue;
-		}
-
-		// 检查适配器是否支持 Direct3D 12，但不要创建
-		// 仍为实际设备。
-		if (SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
-		{
-			memcpy(m_deviceDescription, desc.Description, sizeof(desc.Description));
-			m_deviceVideoMem = desc.DedicatedVideoMemory;
-			break;
-		}
-	}
-
-	// 创建 Direct3D 12 API 设备对象
-	HRESULT hr = D3D12CreateDevice(
-		adapter.Get(),					// 硬件适配器。
-		D3D_FEATURE_LEVEL_11_0,			// 此应用可以支持的最低功能级别。
-		IID_PPV_ARGS(&m_d3dDevice)		// 返回创建的 Direct3D 设备。
-	);
-
-#if defined(_DEBUG)
-	if (FAILED(hr))
-	{
-		// 如果初始化失败，则回退到 WARP 设备。
-		// 有关 WARP 的详细信息，请参阅: 
-		// https://go.microsoft.com/fwlink/?LinkId=286690
-
-		ComPtr<IDXGIAdapter> warpAdapter;
-		DX::ThrowIfFailed(m_dxgiFactory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
-
-		hr = D3D12CreateDevice(warpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_d3dDevice));
-	}
-#endif
-
-	DX::ThrowIfFailed(hr);
-
-	m_isRayTracingSupport = IsDirectXRaytracingSupported(m_d3dDevice.Get());
-	m_d3dDevice->QueryInterface(IID_PPV_ARGS(&m_d3dDevice5));
-
-	// 创建命令队列。
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-	DX::ThrowIfFailed(m_d3dDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
-	NAME_D3D12_OBJECT(m_commandQueue);
-
-	// 为呈现器目标视图和深度模具视图创建描述符堆。
-	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-	rtvHeapDesc.NumDescriptors = 2048;
-	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
-	NAME_D3D12_OBJECT(m_rtvHeap);
-	m_rtvHeapAllocCount = 3;
-	m_rtvDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
-	dsvHeapDesc.NumDescriptors = 2048;
-	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&m_dsvHeap)));
-	NAME_D3D12_OBJECT(m_dsvHeap);
-	m_dsvHeapAllocCount = 0;
-
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = c_graphicsPipelineHeapMaxCount;
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	DX::ThrowIfFailed(m_d3dDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&m_cbvSrvUavHeap)));
-	NAME_D3D12_OBJECT(m_cbvSrvUavHeap);
-	m_cbvSrvUavHeapAllocCount = 0;
-
-	for (UINT n = 0; n < c_frameCount; n++)
-	{
-		DX::ThrowIfFailed(m_d3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[n])));
-	}
-
-	// 创建同步对象。
-	DX::ThrowIfFailed(m_d3dDevice->CreateFence(m_currentFenceValue, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-	m_currentFenceValue++;
-
-	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (m_fenceEvent == nullptr)
-	{
-		DX::ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-	}
-}
-
 void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res)
 {
 	if (res != nullptr)
@@ -384,7 +407,6 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
 	// 创建交换链后台缓冲区的呈现目标视图。
 	{
-		m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescriptor(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
 		for (UINT n = 0; n < c_frameCount; n++)
 		{
@@ -404,22 +426,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
 	m_screenViewport = { 0.0f, 0.0f, m_d3dRenderTargetSize.Width, m_d3dRenderTargetSize.Height, 0.0f, 1.0f };
 }
 
-// 确定呈现器目标的尺寸及其是否将缩小。
-void DeviceResources::UpdateRenderTargetSize()
-{
-	m_effectiveDpi = m_dpi;
-
-	// 计算必要的呈现目标大小(以像素为单位)。
-	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_effectiveDpi);
-	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_effectiveDpi);
-
-	// 防止创建大小为零的 DirectX 内容。
-	m_outputSize.Width = max(m_outputSize.Width, 1);
-	m_outputSize.Height = max(m_outputSize.Height, 1);
-}
-
 DeviceResources::DeviceResources() :
-	m_frameIndex(0),
 	m_executeIndex(0),
 	m_screenViewport(),
 	m_rtvDescriptorSize(0),
@@ -546,7 +553,6 @@ void DeviceResources::Present(bool vsync)
 		DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
 
 		// 提高帧索引。
-		m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 		m_executeIndex = (m_executeIndex < (c_frameCount - 1)) ? (m_executeIndex + 1) : 0;
 
 
@@ -556,11 +562,7 @@ void DeviceResources::Present(bool vsync)
 			DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_executeIndex], m_fenceEvent));
 			WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
 		}
-		std::vector<d3d12RecycleResource> temp;
-		for (int i = 0; i < m_recycleList.size(); i++)
-			if (m_recycleList[i].m_removeFrame > m_fenceValues[m_executeIndex])
-				temp.push_back(m_recycleList[i]);
-		m_recycleList = temp;
+		Recycle();
 
 		// 为下一帧设置围栏值。
 		m_currentFenceValue++;
@@ -578,11 +580,7 @@ void DeviceResources::WaitForGpu()
 	DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue, m_fenceEvent));
 	WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
 
-	std::vector<d3d12RecycleResource> temp;
-	for (int i = 0; i < m_recycleList.size(); i++)
-		if (m_recycleList[i].m_removeFrame > m_currentFenceValue)
-			temp.push_back(m_recycleList[i]);
-	m_recycleList = temp;
+	Recycle();
 
 	// 对当前帧递增围栏值。
 	m_currentFenceValue++;
@@ -681,4 +679,31 @@ void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCou
 	NAME_D3D12_OBJECT(meshBuffer->m_buffer);
 
 	meshBuffer->m_prevState = D3D12_RESOURCE_STATE_GENERIC_READ;
+}
+
+
+// 确定呈现器目标的尺寸及其是否将缩小。
+void DeviceResources::UpdateRenderTargetSize()
+{
+	m_effectiveDpi = m_dpi;
+
+	// 计算必要的呈现目标大小(以像素为单位)。
+	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_effectiveDpi);
+	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_effectiveDpi);
+
+	// 防止创建大小为零的 DirectX 内容。
+	m_outputSize.Width = max(m_outputSize.Width, 1);
+	m_outputSize.Height = max(m_outputSize.Height, 1);
+}
+
+void DeviceResources::Recycle()
+{
+	std::vector<d3d12RecycleResource> temp;
+	for (int i = 0; i < m_recycleList.size(); i++)
+		if (m_recycleList[i].m_removeFrame > m_fenceValues[m_executeIndex])
+			temp.push_back(m_recycleList[i]);
+	m_recycleList = temp;
+	for (int i = 0; i < m_commandLists1.size(); i++)
+		m_commandLists.push_back(m_commandLists1[i]);
+	m_commandLists1.clear();
 }

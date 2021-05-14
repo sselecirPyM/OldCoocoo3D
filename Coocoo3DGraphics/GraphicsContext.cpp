@@ -127,10 +127,10 @@ GraphicsContext^ GraphicsContext::Load(DeviceResources^ deviceResources)
 void GraphicsContext::Reload(DeviceResources^ deviceResources)
 {
 	m_deviceResources = deviceResources;
-	auto d3dDevice = deviceResources->GetD3DDevice();
-	DX::ThrowIfFailed(d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_deviceResources->GetCommandAllocator(), nullptr, IID_PPV_ARGS(&m_commandList)));
-	NAME_D3D12_OBJECT(m_commandList);
-	DX::ThrowIfFailed(m_commandList->Close());
+	//auto d3dDevice = deviceResources->GetD3DDevice();
+	//DX::ThrowIfFailed(d3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_deviceResources->GetCommandAllocator(), nullptr, IID_PPV_ARGS(&m_commandList)));
+	//NAME_D3D12_OBJECT(m_commandList);
+	//DX::ThrowIfFailed(m_commandList->Close());
 }
 
 void GraphicsContext::ClearTextureRTV(RenderTextureCube^ texture)
@@ -1836,6 +1836,7 @@ void GraphicsContext::SetDescriptorHeapDefault()
 
 void GraphicsContext::BeginCommand()
 {
+	m_commandList = m_deviceResources->GetCommandList();
 	DX::ThrowIfFailed(m_commandList->Reset(m_deviceResources->GetCommandAllocator(), nullptr));
 }
 
@@ -1858,4 +1859,5 @@ void GraphicsContext::Execute()
 {
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_deviceResources->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+	m_deviceResources->ReturnCommandList(m_commandList);
 }
