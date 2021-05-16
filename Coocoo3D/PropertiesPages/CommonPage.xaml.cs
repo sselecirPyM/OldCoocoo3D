@@ -282,10 +282,10 @@ namespace Coocoo3D.PropertiesPages
 
         public bool VHighResolutionShadow
         {
-            get => appBody.performaceSettings.HighResolutionShadow;
+            get => appBody.settings.HighResolutionShadow;
             set
             {
-                appBody.performaceSettings.HighResolutionShadow = value;
+                appBody.settings.HighResolutionShadow = value;
                 appBody.RequireRender();
             }
         }

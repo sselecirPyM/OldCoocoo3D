@@ -11,7 +11,6 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
 using GSD = Coocoo3DGraphics.GraphicSignatureDesc;
-using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -20,10 +19,11 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, VertexShader> VSAssets = new Dictionary<string, VertexShader>();
         public Dictionary<string, GeometryShader> GSAssets = new Dictionary<string, GeometryShader>();
         public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
+        public Dictionary<string, ComputeShader> CSAssets = new Dictionary<string, ComputeShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
         public Dictionary<string, Texture2D> texture2ds = new Dictionary<string, Texture2D>();
+        public Dictionary<string, GraphicsSignature> signaturePass = new Dictionary<string, GraphicsSignature>();
 
-        public GraphicsSignature rootSignature = new GraphicsSignature();
         public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
         public GraphicsSignature rootSignaturePostProcess = new GraphicsSignature();
         public GraphicsSignature rootSignatureCompute = new GraphicsSignature();
@@ -34,7 +34,6 @@ namespace Coocoo3D.RenderPipeline
         public bool Ready;
         public void InitializeRootSignature(DeviceResources deviceResources)
         {
-            rootSignature.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable });
             rootSignatureSkinning.ReloadSkinning(deviceResources);
             rootSignaturePostProcess.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.CBV });
             rootSignatureCompute.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRV, GSD.UAV, GSD.UAV });
@@ -96,7 +95,48 @@ namespace Coocoo3D.RenderPipeline
             StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
             return (await file.OpenAsync(FileAccessMode.Read)).AsStreamForRead();
         }
-
+        public GraphicsSignature GetRootSignature(DeviceResources deviceResources, string s)
+        {
+            if (signaturePass.TryGetValue(s, out GraphicsSignature g))
+                return g;
+            g = new GraphicsSignature();
+            g.Reload(deviceResources, fromString(s));
+            signaturePass[s] = g;
+            return g;
+        }
+        public GraphicSignatureDesc[] fromString(string s)
+        {
+            GraphicSignatureDesc[] desc = new GraphicSignatureDesc[s.Length];
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                switch (c)
+                {
+                    case 'C':
+                        desc[i] = GraphicSignatureDesc.CBV;
+                        break;
+                    case 'c':
+                        desc[i] = GraphicSignatureDesc.CBVTable;
+                        break;
+                    case 'S':
+                        desc[i] = GraphicSignatureDesc.SRV;
+                        break;
+                    case 's':
+                        desc[i] = GraphicSignatureDesc.SRVTable;
+                        break;
+                    case 'U':
+                        desc[i] = GraphicSignatureDesc.UAV;
+                        break;
+                    case 'u':
+                        desc[i] = GraphicSignatureDesc.UAVTable;
+                        break;
+                    default:
+                        throw new NotImplementedException("error root signature desc.");
+                        break;
+                }
+            }
+            return desc;
+        }
     }
     public class DefaultResource
     {

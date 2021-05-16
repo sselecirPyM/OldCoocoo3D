@@ -9,7 +9,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -77,13 +76,15 @@ namespace Coocoo3D.RenderPipeline
 
             int numofBuffer = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
-                if (combinedPass.Pass.CBVs != null)
+                if (combinedPass.Pass?.CBVs != null)
                     numofBuffer += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
             context.XBufferGroup.SetSlienceCount(numofBuffer);
 
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
+                if (combinedPass.Type == "Swap") continue;
+
                 if (combinedPass.Pass.Camera == "Main")
                 {
                 }
@@ -109,7 +110,7 @@ namespace Coocoo3D.RenderPipeline
                             }
                         }
                 }
-                else
+                else if (combinedPass.Pass != null)
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
@@ -177,10 +178,10 @@ namespace Coocoo3D.RenderPipeline
                                 ofs += CooUtility.Write(_buffer, ofs, _pass.renderTargets[0].GetWidth());
                                 ofs += CooUtility.Write(_buffer, ofs, _pass.renderTargets[0].GetHeight());
                             }
-                            else if (_pass.depthSencil != null)
+                            else if (_pass.depthStencil != null)
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthSencil.GetWidth());
-                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthSencil.GetHeight());
+                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthStencil.GetWidth());
+                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthStencil.GetHeight());
                             }
                             else
                                 ofs += sizeof(int) * 2;
@@ -289,7 +290,7 @@ namespace Coocoo3D.RenderPipeline
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, st.WeightComputed[_i]);
                             }
-                            else if (_pass.passParameters1.TryGetValue(s, out float _f1))
+                            else if (_pass.passParameters1 != null && _pass.passParameters1.TryGetValue(s, out float _f1))
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, _f1);
                             }
@@ -322,7 +323,7 @@ namespace Coocoo3D.RenderPipeline
                     return _tex;
             };
             var rpAssets = context.RPAssetsManager;
-            var RSBase = rpAssets.rootSignature;
+            //var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
 
             PSO PSOSkinning = rpAssets.PSOs["PSOMMDSkinning"];
@@ -350,6 +351,19 @@ namespace Coocoo3D.RenderPipeline
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
+                if (combinedPass.Type == "Swap")
+                {
+                    //swap all render target
+                    var a = context.RTs[combinedPass.RenderTargets[0]];
+                    for (int i = 0; i < combinedPass.RenderTargets.Count - 1; i++)
+                    {
+                        context.RTs[combinedPass.RenderTargets[i]] = context.RTs[combinedPass.RenderTargets[i + 1]];
+                    }
+                    context.RTs[combinedPass.RenderTargets[combinedPass.RenderTargets.Count - 1]] = a;
+                    context.RefreshPassesRenderTarget(context.dynamicContextRead.currentPassSetting);
+
+                    continue;
+                }
                 if (combinedPass.Pass.Camera == "Main")
                 {
                 }
@@ -357,13 +371,14 @@ namespace Coocoo3D.RenderPipeline
                 {
                     if (!(HasMainLight && settings.EnableShadow)) continue;
                 }
-                graphicsContext.SetRootSignature(RSBase);
+                GraphicsSignature rootSignature = rpAssets.GetRootSignature(deviceResources, combinedPass.rootSignatureKey);
 
+                graphicsContext.SetRootSignature(rootSignature);
                 if (combinedPass.renderTargets.Length == 0)
-                    graphicsContext.SetDSV(combinedPass.depthSencil, combinedPass.ClearDepth);
-                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthSencil != null)
-                    graphicsContext.SetRTVDSV(combinedPass.renderTargets, combinedPass.depthSencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
-                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthSencil == null)
+                    graphicsContext.SetDSV(combinedPass.depthStencil, combinedPass.ClearDepth);
+                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthStencil != null)
+                    graphicsContext.SetRTVDSV(combinedPass.renderTargets, combinedPass.depthStencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
+                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthStencil == null)
                     graphicsContext.SetRTV(combinedPass.renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
 
                 PSODesc passPsoDesc;
@@ -371,7 +386,7 @@ namespace Coocoo3D.RenderPipeline
                 passPsoDesc.cullMode = combinedPass.CullMode;
                 passPsoDesc.depthBias = combinedPass.DepthBias;
                 passPsoDesc.slopeScaledDepthBias = combinedPass.SlopeScaledDepthBias;
-                passPsoDesc.dsvFormat = combinedPass.depthSencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.depthSencil.GetFormat();
+                passPsoDesc.dsvFormat = combinedPass.depthStencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.depthStencil.GetFormat();
                 passPsoDesc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
                 passPsoDesc.rtvFormat = combinedPass.renderTargets.Length == 0 ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.renderTargets[0].GetFormat();
                 passPsoDesc.renderTargetCount = combinedPass.renderTargets.Length;
@@ -389,7 +404,7 @@ namespace Coocoo3D.RenderPipeline
                 {
                     _RayTracing(rendererComponents, combinedPass);
                 }
-                else
+                else if (combinedPass.Type == "DrawScreen")
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
@@ -397,7 +412,7 @@ namespace Coocoo3D.RenderPipeline
                         matC++;
                     }
                     passPsoDesc.inputLayout = EInputLayout.postProcess;
-                    SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, combinedPass.PSODefault);
+                    SetPipelineStateVariant(deviceResources, graphicsContext, rootSignature, ref passPsoDesc, combinedPass.PSODefault);
                     graphicsContext.SetMesh(context.ndcQuadMesh);
                     graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 }
@@ -411,7 +426,7 @@ namespace Coocoo3D.RenderPipeline
                         if (rendererComponent.shaders != null)
                             rendererComponent.shaders.TryGetValue(_combinedPass.Name, out pso);
 
-                        var PSODraw = PSOSelect(deviceResources, RSBase, ref passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);
+                        var PSODraw = PSOSelect(deviceResources, rootSignature, ref passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);
                         var Materials = rendererComponent.Materials;
                         int indexOffset = 0;
                         foreach (var material in Materials)
@@ -428,9 +443,9 @@ namespace Coocoo3D.RenderPipeline
                                 matC++;
                             }
                             _PassSetRes1(material, _combinedPass);
-                            if (passPsoDesc.cullMode == ECullMode.notSpecial)
+                            if (passPsoDesc.cullMode == ECullMode.notSpecific)
                                 passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
-                            SetPipelineStateVariant(deviceResources, graphicsContext, RSBase, ref passPsoDesc, PSODraw);
+                            SetPipelineStateVariant(deviceResources, graphicsContext, rootSignature, ref passPsoDesc, PSODraw);
                             graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
                             counterX.material++;
                             indexOffset += material.indexCount;

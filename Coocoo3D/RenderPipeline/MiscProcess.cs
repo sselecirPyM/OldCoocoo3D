@@ -45,9 +45,9 @@ namespace Coocoo3D.RenderPipeline
     {
         const int c_bufferSize = 65536;
         const int c_splitSize = 256;
-        public ComputePO IrradianceMap0 = new ComputePO();
-        public ComputePO EnvironmentMap0 = new ComputePO();
-        public ComputePO ClearIrradianceMap = new ComputePO();
+        public ComputeShader IrradianceMap0 = new ComputeShader();
+        public ComputeShader EnvironmentMap0 = new ComputeShader();
+        public ComputeShader ClearIrradianceMap = new ComputeShader();
         GraphicsSignature rootSignature = new GraphicsSignature();
         public bool Ready = false;
         public const int c_maxIteration = 32;
@@ -63,9 +63,9 @@ namespace Coocoo3D.RenderPipeline
                 GraphicSignatureDesc.UAVTable,
             });
             deviceResources.InitializeCBuffer(constantBuffers, c_bufferSize);
-            IrradianceMap0.Initialize(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso"));
-            EnvironmentMap0.Initialize(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso"));
-            ClearIrradianceMap.Initialize(deviceResources, rootSignature, await ReadFile("ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso"));
+            IrradianceMap0.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso"));
+            EnvironmentMap0.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso"));
+            ClearIrradianceMap.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso"));
 
             Ready = true;
         }
@@ -102,7 +102,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetRootSignatureCompute(rootSignature);
                 graphicsContext.SetComputeCBVR(constantBuffers, 0);
                 graphicsContext.SetComputeSRVT(texture0, 2);
-                graphicsContext.SetPObject(ClearIrradianceMap);
+                graphicsContext.SetPSO(ClearIrradianceMap);
 
                 int pow2a = 1;
                 for (int j = 0; j < texture1.m_mipLevels; j++)
@@ -118,7 +118,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.Dispatch((int)(texture2.m_width + 7) / 8 / pow2a, (int)(texture2.m_height + 7) / 8 / pow2a, 6);
                     pow2a *= 2;
                 }
-                graphicsContext.SetPObject(IrradianceMap0);
+                graphicsContext.SetPSO(IrradianceMap0);
 
                 pow2a = 1;
                 for (int j = 0; j < texture1.m_mipLevels; j++)
@@ -133,7 +133,7 @@ namespace Coocoo3D.RenderPipeline
                 }
 
                 graphicsContext.SetComputeSRVT(texture0, 2);
-                graphicsContext.SetPObject(EnvironmentMap0);
+                graphicsContext.SetPSO(EnvironmentMap0);
                 pow2a = 1;
                 for (int j = 0; j < texture2.m_mipLevels; j++)
                 {

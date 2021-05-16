@@ -4,11 +4,11 @@ namespace Coocoo3DGraphics
 {
 	public enum struct ECullMode
 	{
-		notSpecial = 0,
+		notSpecific = 0,
 		none = 1,
 		front = 2,
 		back = 3,
-		NotSpecial = 0,
+		NotSpecific = 0,
 		None = 1,
 		Front = 2,
 		Back = 3,

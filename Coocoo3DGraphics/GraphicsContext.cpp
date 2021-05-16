@@ -148,12 +148,34 @@ void GraphicsContext::ClearTextureRTV(RenderTextureCube^ texture)
 	}
 }
 
-void GraphicsContext::SetPObject(ComputePO^ pObject)
+void GraphicsContext::SetPSO(ComputeShader^ computeShader)
 {
-	m_commandList->SetPipelineState(pObject->m_pipelineState.Get());
+	ID3D12PipelineState* pipelineState = nullptr;
+	for (int i = 0; i < computeShader->m_pipelineStates.size(); i++)
+	{
+		if (computeShader->m_pipelineStates[i].rootSignature == m_currentSign->m_rootSignature.Get())
+		{
+			pipelineState = computeShader->m_pipelineStates[i].pipelineState.Get();
+			break;
+		}
+	}
+	if (pipelineState == nullptr)
+	{
+		Microsoft::WRL::ComPtr< ID3D12PipelineState> pipelineState1;
+		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {};
+		desc.CS.pShaderBytecode = computeShader->m_byteCode->GetBufferPointer();
+		desc.CS.BytecodeLength = computeShader->m_byteCode->GetBufferSize();
+		desc.pRootSignature = m_currentSign->m_rootSignature.Get();
+		DX::ThrowIfFailed(m_deviceResources->GetD3DDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&pipelineState1)));
+
+		computeShader->m_pipelineStates.push_back(_computeShaderDesc{ m_currentSign->m_rootSignature.Get(), pipelineState1 });
+		pipelineState = pipelineState1.Get();
+	}
+
+	m_commandList->SetPipelineState(pipelineState);
 }
 
-void GraphicsContext::SetPObject1(PObject^ pObject, int variantIndex)
+void GraphicsContext::SetPSO(PSO^ pObject, int variantIndex)
 {
 	m_commandList->SetPipelineState(pObject->m_pipelineStates[variantIndex].Get());
 }

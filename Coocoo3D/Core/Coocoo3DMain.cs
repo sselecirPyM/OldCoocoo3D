@@ -61,29 +61,19 @@ namespace Coocoo3D.Core
         {
             viewSelectedEntityBone = true,
             backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
-            ExtendShadowMapRange = 64,
-            //ZPrepass = false,
             ViewerUI = true,
             Wireframe = false,
+            HighResolutionShadow = false,
 
             SkyBoxLightMultiplier = 1.0f,
             EnableAO = true,
             EnableShadow = true,
             Quality = 0,
         };
-        //public InShaderSettings inShaderSettings = new InShaderSettings()
-        //{
-        //    //backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
-        //    SkyBoxLightMultiple = 1.0f,
-        //    EnableAO = true,
-        //    EnableShadow = true,
-        //    Quality = 0,
-        //};
         public PerformaceSettings performaceSettings = new PerformaceSettings()
         {
             MultiThreadRendering = true,
             SaveCpuPower = true,
-            HighResolutionShadow = false,
             AutoReloadShaders = true,
             AutoReloadTextures = true,
             AutoReloadModels = true,
@@ -105,9 +95,7 @@ namespace Coocoo3D.Core
                 await RPAssetsManager.LoadAssets();
                 RPAssetsManager.InitializeRootSignature(deviceResources);
                 await RPContext.ReloadDefalutResources(miscProcessContext);
-                //forwardRenderPipeline1.Reload(deviceResources);
                 forwardRenderPipeline2.Reload(deviceResources);
-                //deferredRenderPipeline1.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
                 widgetRenderer.Reload(deviceResources);
                 deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, 0);
@@ -143,6 +131,7 @@ namespace Coocoo3D.Core
                         System.Threading.Thread.Sleep(1);
                 }
             });
+            renderWorkThread.IsBackground = true;
             renderWorkThread.Start();
 
         }
@@ -280,13 +269,14 @@ namespace Coocoo3D.Core
             }
             //if (RPContext.gameDriverContext.Playing)
             //{
-                _BoneUpdate();
+            _BoneUpdate();
             //}
             for (int i = 0; i < rendererComponents.Count; i++)
             {
                 rendererComponents[i].WriteMatriticesData();
             }
 
+            #endregion
             if (RenderTask1 != null && RenderTask1.Status != TaskStatus.RanToCompletion) RenderTask1.Wait();
             #region Render preparing
             var temp1 = RPContext.dynamicContextWrite;
@@ -296,27 +286,19 @@ namespace Coocoo3D.Core
             if (RPContext.gameDriverContext.RequireResize)
             {
                 RPContext.gameDriverContext.RequireResize = false;
-                deviceResources.WaitForGpu();
                 deviceResources.SetLogicalSize(RPContext.gameDriverContext.NewSize);
+                deviceResources.WaitForGpu();
                 RPContext.ReloadTextureSizeResources();
             }
-            RPContext.ChangeShadowMapsQuality(performaceSettings.HighResolutionShadow);
             RPContext.PreConfig();
-            ProcessingList.MoveToAnother(_processingList);
-            int SceneObjectVertexCount = RPContext.dynamicContextRead.GetSceneObjectVertexCount();
-            if (SceneObjectVertexCount > RPContext.SkinningMeshBufferSize)
+            if (RPContext.gameDriverContext.NeedReloadModel)
             {
-                RPContext.SkinningMeshBufferSize = SceneObjectVertexCount;
-                deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, SceneObjectVertexCount);
+                RPContext.gameDriverContext.NeedReloadModel = false;
+                ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
             }
-            if (!_processingList.IsEmpty() || RPContext.gameDriverContext.RequireInterruptRender)
+            ProcessingList.MoveToAnother(_processingList);
+            if (!_processingList.IsEmpty())
             {
-                RPContext.gameDriverContext.RequireInterruptRender = false;
-                if (RPContext.gameDriverContext.NeedReloadModel)
-                {
-                    RPContext.gameDriverContext.NeedReloadModel = false;
-                    ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
-                }
                 GraphicsContext.BeginAlloctor(deviceResources);
                 graphicsContext.BeginCommand();
                 _processingList._DealStep1(graphicsContext);
@@ -328,25 +310,22 @@ namespace Coocoo3D.Core
             if (!RPContext.dynamicContextRead.EnableDisplay)
             {
                 VirtualRenderCount++;
-                return true;
             }
-            #endregion
 
-            GraphicsContext.BeginAlloctor(deviceResources);
-
-            miscProcessContext.MoveToAnother(_miscProcessContext);
-            miscProcess.Process(RPContext, _miscProcessContext);
 
             if (swapChainReady)
             {
-                graphicsContext.BeginCommand();
-                graphicsContext.SetDescriptorHeapDefault();
+                GraphicsContext.BeginAlloctor(deviceResources);
 
+                miscProcessContext.MoveToAnother(_miscProcessContext);
+                miscProcess.Process(RPContext, _miscProcessContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
                 bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready;
-                if (thisFrameReady)
+                if (thisFrameReady && RPContext.dynamicContextRead.EnableDisplay)
                 {
+                    graphicsContext.BeginCommand();
+                    graphicsContext.SetDescriptorHeapDefault();
                     currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);
                     postProcess.PrepareRenderData(RPContext, graphicsContext);
                     widgetRenderer.PrepareRenderData(RPContext, graphicsContext);
@@ -359,8 +338,6 @@ namespace Coocoo3D.Core
                 }
                 else
                 {
-                    graphicsContext.EndCommand();
-                    graphicsContext.Execute();
                     deviceResources.Present(performaceSettings.VSync);
                 }
 
@@ -433,7 +410,6 @@ namespace Coocoo3D.Core
     {
         public bool MultiThreadRendering;
         public bool SaveCpuPower;
-        public bool HighResolutionShadow;
         public bool AutoReloadShaders;
         public bool AutoReloadTextures;
         public bool AutoReloadModels;
@@ -444,17 +420,16 @@ namespace Coocoo3D.Core
     {
         public bool viewSelectedEntityBone;
         public Vector4 backgroundColor;
-        public float ExtendShadowMapRange;
         public uint RenderStyle;
         public bool ViewerUI;
         public bool Wireframe;
+        public bool HighResolutionShadow;
 
         public float SkyBoxLightMultiplier;
-        public uint _EnableAO;
-        public uint _EnableShadow;
+
         public uint Quality;
 
-        public bool EnableAO { get => _EnableAO != 0; set => _EnableAO = Convert.ToUInt32(value); }
-        public bool EnableShadow { get => _EnableShadow != 0; set => _EnableShadow = Convert.ToUInt32(value); }
+        public bool EnableAO;
+        public bool EnableShadow;
     }
 }

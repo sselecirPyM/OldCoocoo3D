@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Windows.Storage;
 using Windows.Storage.Streams;
-using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -42,7 +41,6 @@ namespace Coocoo3D.RenderPipeline
         public bool RequireResizeOuter;
         public Windows.Foundation.Size NewSize;
         public float AspectRatio;
-        public bool RequireInterruptRender;
         public WICFactory WICFactory = new WICFactory();
         public RecordSettings recordSettings;
 
@@ -51,7 +49,6 @@ namespace Coocoo3D.RenderPipeline
         public void ReqireReloadModel()
         {
             NeedReloadModel = true;
-            RequireInterruptRender = true;
             NeedRender = true;
         }
 
@@ -239,11 +236,29 @@ namespace Coocoo3D.RenderPipeline
         public void PreConfig()
         {
             if (!Initilized) return;
-            PrepareRenderTarget(currentPassSetting);
+            ConfigPassSettings(dynamicContextRead.currentPassSetting);
+            PrepareRenderTarget(dynamicContextRead.currentPassSetting);
+            int SceneObjectVertexCount = dynamicContextRead.GetSceneObjectVertexCount();
+            if (SceneObjectVertexCount > SkinningMeshBufferSize)
+            {
+                SkinningMeshBufferSize = SceneObjectVertexCount;
+                deviceResources.InitializeMeshBuffer(SkinningMeshBuffer, SceneObjectVertexCount);
+            }
+        }
+        public void PrepareRootSignature(PassSetting passSetting)
+        {
+            if (passSetting == null) return;
+
         }
         public void PrepareRenderTarget(PassSetting passSetting)
         {
             if (passSetting == null) return;
+
+            if (dynamicContextRead.settings.HighResolutionShadow)
+                ShadowMapResolution = c_shadowMapResolutionHigh;
+            else
+                ShadowMapResolution = c_shadowMapResolutionLow;
+
             foreach (var rt in passSetting.RenderTargets)
             {
                 if (!RTs.TryGetValue(rt.Name, out var tex2d))
@@ -300,13 +315,6 @@ namespace Coocoo3D.RenderPipeline
         const int c_shadowMapResolutionLow = 2048;
         const int c_shadowMapResolutionHigh = 4096;
         int ShadowMapResolution = 2048;
-        public void ChangeShadowMapsQuality(bool highQuality)
-        {
-            if (highQuality)
-                ShadowMapResolution = c_shadowMapResolutionHigh;
-            else
-                ShadowMapResolution = c_shadowMapResolutionLow;
-        }
 
         public bool Initilized = false;
         public Task LoadTask;
@@ -314,8 +322,6 @@ namespace Coocoo3D.RenderPipeline
         {
             deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
             deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
-
-            ChangeShadowMapsQuality(false);
 
             Uploader upTexLoading = new Uploader();
             Uploader upTexError = new Uploader();
@@ -369,7 +375,6 @@ namespace Coocoo3D.RenderPipeline
 
         public void SetCurrentPassSetting(PassSetting passSetting)
         {
-            ConfigPassSettings(passSetting);
             currentPassSetting = passSetting;
         }
 
@@ -396,19 +401,63 @@ namespace Coocoo3D.RenderPipeline
                 pso.Initialize(vs, gs, ps);
                 RPAssetsManager.PSOs[pipelineState.Name] = pso;
             }
+            RefreshPassesRenderTarget(passSetting);
             foreach (var pass in passSetting.RenderSequence)
             {
-                pass.depthSencil = (RenderTexture2D)_GetTex2DByName(pass.DepthStencil);
-                var t1 = new List<RenderTexture2D>();
-                foreach (var renderTarget in pass.RenderTargets)
-                    t1.Add((RenderTexture2D)_GetTex2DByName(renderTarget));
-                pass.renderTargets = t1.ToArray();
-                pass.passParameters1 = new Dictionary<string, float>();
+                if (pass.Type == "Swap") continue;
+
                 if (pass.passParameters != null)
+                {
+                    pass.passParameters1 = new Dictionary<string, float>();
                     foreach (var v in pass.passParameters)
-                    {
                         pass.passParameters1[v.Name] = v.Value;
+                }
+
+                int SlotComparison(SRVUAVSlotRes x1, SRVUAVSlotRes y1)
+                {
+                    return x1.Index.CompareTo(y1.Index);
+                }
+                int SlotComparison1(CBVSlotRes x1, CBVSlotRes y1)
+                {
+                    return x1.Index.CompareTo(y1.Index);
+                }
+                StringBuilder stringBuilder = new StringBuilder();
+                pass.Pass.CBVs?.Sort(SlotComparison1);
+                pass.Pass.SRVs?.Sort(SlotComparison);
+                pass.Pass.UAVs?.Sort(SlotComparison);
+
+                if (pass.Pass.CBVs != null)
+                {
+                    int count = 0;
+                    foreach (var cbv in pass.Pass.CBVs)
+                    {
+                        for (int i = count; i < cbv.Index + 1; i++)
+                            stringBuilder.Append("C");
+                        count = cbv.Index + 1;
                     }
+                }
+                if (pass.Pass.SRVs != null)
+                {
+                    int count = 0;
+                    foreach (var srv in pass.Pass.SRVs)
+                    {
+                        for (int i = count; i < srv.Index + 1; i++)
+                            stringBuilder.Append("s");
+                        count = srv.Index + 1;
+                    }
+                }
+                if (pass.Pass.UAVs != null)
+                {
+                    int count = 0;
+                    foreach (var uav in pass.Pass.UAVs)
+                    {
+                        for (int i = count; i < uav.Index + 1; i++)
+                            stringBuilder.Append("u");
+                        count = uav.Index + 1;
+                    }
+                }
+                pass.rootSignatureKey = stringBuilder.ToString();
+
                 VertexShader vs = null;
                 GeometryShader gs = null;
                 PixelShader ps = null;
@@ -426,6 +475,23 @@ namespace Coocoo3D.RenderPipeline
             passSetting.configured = true;
             return true;
 
+        }
+
+        public void RefreshPassesRenderTarget(PassSetting passSetting)
+        {
+            foreach (var _pass1 in passSetting.RenderSequence)
+            {
+                if (_pass1.Type == "Swap") continue;
+
+                _pass1.depthStencil = (RenderTexture2D)_GetTex2DByName(_pass1.DepthStencil);
+                var t1 = new RenderTexture2D[_pass1.RenderTargets.Count];
+                for (int i = 0; i < _pass1.RenderTargets.Count; i++)
+                {
+                    string renderTarget = _pass1.RenderTargets[i];
+                    t1[i] = (RenderTexture2D)_GetTex2DByName(renderTarget);
+                }
+                _pass1.renderTargets = t1;
+            }
         }
         public async Task ConfigRayTracing(PassSetting passSetting)
         {

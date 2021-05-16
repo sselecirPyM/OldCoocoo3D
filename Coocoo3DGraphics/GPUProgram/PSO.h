@@ -7,7 +7,12 @@
 #include "PSODesc.h"
 namespace Coocoo3DGraphics
 {
-	public ref class PObject sealed
+	struct _PSODesc1
+	{
+		PSODesc desc;
+		ID3D12RootSignature* rootSignature;
+	};
+	public ref class PSO sealed
 	{
 	public:
 		property GraphicsObjectStatus Status;
@@ -23,7 +28,7 @@ namespace Coocoo3DGraphics
 		static const UINT c_indexPipelineStateSkinning = 0;
 
 		std::vector<Microsoft::WRL::ComPtr<ID3D12PipelineState>> m_pipelineStates;
-		std::vector<PSODesc> m_psoDescs;
+		std::vector<_PSODesc1> m_psoDescs;
 
 		inline void ClearState()
 		{

@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
-//using PSO = Coocoo3DGraphics.PObject;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -97,8 +96,8 @@ namespace Coocoo3D.RenderPipeline
             ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
             ofs += CooUtility.Write(context.bigBuffer, ofs, camera.Pos);
             ofs += CooUtility.Write(context.bigBuffer, ofs, settings.SkyBoxLightMultiplier);
-            ofs += CooUtility.Write(context.bigBuffer, ofs, settings._EnableAO);
-            ofs += CooUtility.Write(context.bigBuffer, ofs, settings._EnableShadow);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, settings.EnableAO ? 1 : 0);
+            ofs += CooUtility.Write(context.bigBuffer, ofs, settings.EnableShadow ? 1 : 0);
             ofs += CooUtility.Write(context.bigBuffer, ofs, settings.Quality);
             ofs += CooUtility.Write(context.bigBuffer, ofs, camera.AspectRatio);
             ofs += CooUtility.Write(context.bigBuffer, ofs, randomGenerator.Next(int.MinValue, int.MaxValue));
@@ -151,8 +150,7 @@ namespace Coocoo3D.RenderPipeline
             var rendererComponents = context.dynamicContextRead.renderers;
             graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
             graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
-            var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];
-
+            //var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];
             var PSOSkinning = RPAssetsManager.PSOs["PSOMMDSkinning"];
 
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
@@ -257,13 +255,12 @@ namespace Coocoo3D.RenderPipeline
             }
             else
             {
+                var rootSignature = RPAssetsManager.GetRootSignature(context.deviceResources, "Cssss");
                 #region Render Sky box
-                graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
+                graphicsContext.SetRootSignature(rootSignature);
                 graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, true);
-                graphicsContext.SetCBVR(CameraDataBuffer, 0);
-                graphicsContext.SetSRVT(context.SkyBox, 6);
-                graphicsContext.SetSRVT(context.IrradianceMap, 7);
-                graphicsContext.SetSRVT(RPAssetsManager.texture2ds["_BRDFLUT"], 8);
+                graphicsContext.SetCBVRSlot(CameraDataBuffer, 0, 0, 0);
+                graphicsContext.SetSRVTSlot(context.SkyBox, 3);
                 graphicsContext.SetMesh(context.ndcQuadMesh);
                 PSODesc descSkyBox;
                 descSkyBox.blendState = EBlendState.none;
@@ -277,7 +274,7 @@ namespace Coocoo3D.RenderPipeline
                 descSkyBox.renderTargetCount = 1;
                 descSkyBox.streamOutput = false;
                 descSkyBox.wireFrame = false;
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref descSkyBox, RPAssetsManager.PSOs["SkyBox"]);
+                SetPipelineStateVariant(context.deviceResources, graphicsContext, rootSignature, ref descSkyBox, RPAssetsManager.PSOs["SkyBox"]);
 
                 graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 #endregion

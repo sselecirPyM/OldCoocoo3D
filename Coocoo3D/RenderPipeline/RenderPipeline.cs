@@ -32,28 +32,28 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected PObject PSOSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject, PObject loading, PObject unload, PObject error)
+        protected PSO PSOSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
         {
-            if (pObject == null) return unload;
-            if (pObject.Status == GraphicsObjectStatus.unload)
+            if (pso == null) return unload;
+            if (pso.Status == GraphicsObjectStatus.unload)
                 return unload;
-            else if (pObject.Status == GraphicsObjectStatus.loaded)
+            else if (pso.Status == GraphicsObjectStatus.loaded)
             {
-                if (pObject.GetVariantIndex(deviceResources, graphicsSignature, desc) != -1)
-                    return pObject;
+                if (pso.GetVariantIndex(deviceResources, graphicsSignature, desc) != -1)
+                    return pso;
                 else
                     return error;
             }
-            else if (pObject.Status == GraphicsObjectStatus.loading)
+            else if (pso.Status == GraphicsObjectStatus.loading)
                 return loading;
             else
                 return error;
         }
 
-        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PObject pObject)
+        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
         {
-            int variant = pObject.GetVariantIndex(deviceResources, graphicsSignature, desc);
-            graphicsContext.SetPObject1(pObject, variant);
+            int variant = pso.GetVariantIndex(deviceResources, graphicsSignature, desc);
+            graphicsContext.SetPSO(pso, variant);
         }
 
         protected async Task ReloadPixelShader(PixelShader pixelShader, string uri)

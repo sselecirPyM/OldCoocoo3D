@@ -31,7 +31,6 @@ namespace Coocoo3D.Core
                 float logicSizeScale = rpContext.deviceResources.GetDpi() / 96.0f;
                 context.NewSize = new Windows.Foundation.Size(recordSettings.Width / logicSizeScale, recordSettings.Height / logicSizeScale);
                 context.RequireResize = true;
-                context.RequireInterruptRender = true;
                 context.RequireResetPhysics = true;
                 StartTime = recordSettings.StartTime;
                 StopTime = recordSettings.StopTime;

@@ -166,21 +166,21 @@ namespace Coocoo3D.UI
                 foreach (var v1 in passSetting.VertexShaders)
                 {
                     VertexShader vertexShader = new VertexShader();
-                    vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), v1.EntryPoint == null ? "main" : v1.EntryPoint, new MacroEntry[0]);
+                    if (!vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), v1.EntryPoint == null ? "main" : v1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile vertex shader failed.");
                     rpc.RPAssetsManager.VSAssets[v1.Name] = vertexShader;
                 }
             if (passSetting.GeometryShaders != null)
                 foreach (var g1 in passSetting.GeometryShaders)
                 {
                     GeometryShader geometryShader = new GeometryShader();
-                    geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), g1.EntryPoint == null ? "main" : g1.EntryPoint, new MacroEntry[0]);
+                    if (!geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), g1.EntryPoint == null ? "main" : g1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile gemoetry shader failed.");
                     rpc.RPAssetsManager.GSAssets[g1.Name] = geometryShader;
                 }
             if (passSetting.PixelShaders != null)
                 foreach (var p1 in passSetting.PixelShaders)
                 {
                     PixelShader pixelShader = new PixelShader();
-                    pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), p1.EntryPoint == null ? "main" : p1.EntryPoint, new MacroEntry[0]);
+                    if (!pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), p1.EntryPoint == null ? "main" : p1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile pixel shader failed.");
                     rpc.RPAssetsManager.PSAssets[p1.Name] = pixelShader;
                 }
             if (passSetting.Texture2Ds != null)

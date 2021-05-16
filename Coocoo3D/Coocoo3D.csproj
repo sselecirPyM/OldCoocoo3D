@@ -216,6 +216,7 @@
     <Compile Include="RenderPipeline\MainCaches.cs" />
     <Compile Include="Utility\DoubleVector3.cs" />
     <Compile Include="Utility\IListExt.cs" />
+    <Compile Include="Utility\MathHelper.cs" />
     <Compile Include="Utility\SingleLocker.cs" />
   </ItemGroup>
   <ItemGroup>

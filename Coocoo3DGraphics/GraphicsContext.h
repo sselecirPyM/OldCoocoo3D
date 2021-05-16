@@ -9,8 +9,8 @@
 #include "SBuffer.h"
 #include "GraphicsSignature.h"
 #include "RayTracingScene.h"
-#include "GPUProgram/ComputePO.h"
-#include "GPUProgram/PObject.h"
+#include "GPUProgram/ComputeShader.h"
+#include "GPUProgram/PSO.h"
 #include "ReadBackTexture2D.h"
 #include "TwinBuffer.h"
 #include "MeshBuffer.h"
@@ -58,8 +58,8 @@ namespace Coocoo3DGraphics
 		static GraphicsContext^ Load(DeviceResources^ deviceResources);
 		void Reload(DeviceResources^ deviceResources);
 		void ClearTextureRTV(RenderTextureCube^ texture);
-		void SetPObject(ComputePO^ pObject);
-		void SetPObject1(PObject^ pObject, int variantIndex);
+		void SetPSO(ComputeShader^ computeShader);
+		void SetPSO(PSO^ pObject, int variantIndex);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResource(SBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);

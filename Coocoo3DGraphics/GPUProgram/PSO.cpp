@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "PObject.h"
+#include "PSO.h"
 #include "DirectXHelper.h"
 using namespace Coocoo3DGraphics;
 static const D3D12_INPUT_ELEMENT_DESC inputLayoutMMD[] =
@@ -66,7 +66,7 @@ inline const D3D12_INPUT_LAYOUT_DESC& inputLayoutSelect()
 	return D3D12_INPUT_LAYOUT_DESC{ inputLayoutSkinned,_countof(inputLayoutSkinned) };
 }
 
-void PObject::Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps)
+void PSO::Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps)
 {
 	ClearState();
 	m_vertexShader = vs;
@@ -75,18 +75,21 @@ void PObject::Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps)
 	Status = GraphicsObjectStatus::loaded;
 }
 
-void PObject::Unload()
+void PSO::Unload()
 {
 	ClearState();
 	Status = GraphicsObjectStatus::unload;
 }
 
-int PObject::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc)
+int PSO::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc)
 {
+	_PSODesc1 _psoDesc1;
+	_psoDesc1.desc = psoDesc;
+	_psoDesc1.rootSignature = graphicsSignature->m_rootSignature.Get();
 	int index = -1;
 	for (int i = 0; i < m_psoDescs.size(); i++)
 	{
-		if (memcmp(&m_psoDescs[i], &psoDesc, sizeof(PSODesc)) == 0)
+		if (memcmp(&m_psoDescs[i], &_psoDesc1, sizeof(_psoDesc1)) == 0)
 		{
 			index = i;
 		}
@@ -151,14 +154,14 @@ int PObject::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature
 			Status = GraphicsObjectStatus::error;
 			return -1;
 		}
-		m_psoDescs.push_back(psoDesc);
+		m_psoDescs.push_back(_psoDesc1);
 		m_pipelineStates.push_back(pipelineState);
 		return (int)m_psoDescs.size() - 1;
 	}
 	return index;
 }
 
-void PObject::DelayDestroy(DeviceResources^ deviceResources)
+void PSO::DelayDestroy(DeviceResources^ deviceResources)
 {
 	for (int i = 0; i < m_pipelineStates.size(); i++)
 	{

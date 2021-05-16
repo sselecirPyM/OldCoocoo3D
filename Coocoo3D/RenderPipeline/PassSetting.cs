@@ -25,6 +25,8 @@ namespace Coocoo3D.RenderPipeline
         public List<_AssetDefine> GeometryShaders;
         [XmlArrayItem("PixelShader")]
         public List<_AssetDefine> PixelShaders;
+        [XmlArrayItem("ComputeShader")]
+        public List<_AssetDefine> ComputeShaders;
         [XmlArrayItem("Texture2D")]
         public List<_AssetDefine> Texture2Ds;
 
@@ -59,6 +61,10 @@ namespace Coocoo3D.RenderPipeline
                     }
                     if (passMatch.Pass == null)
                         return false;
+                }
+                else if (passMatch.Type == "Swap")
+                {
+
                 }
                 //else if (passMatch.Foreach != null)
                 //{
@@ -99,15 +105,17 @@ namespace Coocoo3D.RenderPipeline
         [XmlIgnore]
         public RenderTexture2D[] renderTargets;
         [XmlIgnore]
-        public RenderTexture2D depthSencil;
+        public RenderTexture2D depthStencil;
         [XmlIgnore]
-        public PObject PSODefault;
+        public PSO PSODefault;
         [XmlIgnore]
         public bool DrawObjects;
         [XmlIgnore]
         public Dictionary<string, float> passParameters1;
         [XmlIgnore]
         public Pass Pass;
+        [XmlIgnore]
+        public string rootSignatureKey;
     }
     public class Pass
     {
@@ -116,10 +124,13 @@ namespace Coocoo3D.RenderPipeline
         public string VertexShader;
         public string GeometryShader;
         public string PixelShader;
+        public string ComputeShader;
         [XmlElement(ElementName = "SRV")]
-        public List<SRVSlotRes> SRVs;
+        public List<SRVUAVSlotRes> SRVs;
         [XmlElement(ElementName = "CBV")]
         public List<CBVSlotRes> CBVs;
+        [XmlElement(ElementName = "UAV")]
+        public List<SRVUAVSlotRes> UAVs;
     }
     public class PSPS
     {
@@ -129,7 +140,7 @@ namespace Coocoo3D.RenderPipeline
         public string PixelShader;
     }
 
-    public struct SRVSlotRes
+    public struct SRVUAVSlotRes
     {
         public int Index;
         public string ResourceType;
@@ -157,7 +168,7 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public string Filter;
         [XmlElement(ElementName = "SRV")]
-        public List<SRVSlotRes> SRVs;
+        public List<SRVUAVSlotRes> SRVs;
         [XmlElement(ElementName = "CBV")]
         public List<CBVSlotRes> CBVs;
     }

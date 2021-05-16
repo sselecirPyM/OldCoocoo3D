@@ -49,7 +49,7 @@
     <ClCompile Include="RenderTextureCube.cpp" />
     <ClCompile Include="ReadBackTexture2D.cpp" />
     <ClCompile Include="TwinBuffer.cpp" />
-    <ClCompile Include="GPUProgram\ComputePO.cpp">
+    <ClCompile Include="GPUProgram\ComputeShader.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
     <ClCompile Include="GPUProgram\VertexShader.cpp">
@@ -61,7 +61,7 @@
     <ClCompile Include="GPUProgram\PixelShader.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
-    <ClCompile Include="GPUProgram\PObject.cpp">
+    <ClCompile Include="GPUProgram\PSO.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
     <ClCompile Include="DirectXTex\DirectXTexTGA.cpp">
@@ -174,7 +174,7 @@
     <ClInclude Include="ITexture.h" />
     <ClInclude Include="ReadBackTexture2D.h" />
     <ClInclude Include="TwinBuffer.h" />
-    <ClInclude Include="GPUProgram\ComputePO.h">
+    <ClInclude Include="GPUProgram\ComputeShader.h">
       <Filter>GPUProgram</Filter>
     </ClInclude>
     <ClInclude Include="GPUProgram\VertexShader.h">
@@ -186,7 +186,7 @@
     <ClInclude Include="GPUProgram\PixelShader.h">
       <Filter>GPUProgram</Filter>
     </ClInclude>
-    <ClInclude Include="GPUProgram\PObject.h">
+    <ClInclude Include="GPUProgram\PSO.h">
       <Filter>GPUProgram</Filter>
     </ClInclude>
     <ClInclude Include="GPUProgram\ShaderMacro.h">
@@ -319,6 +319,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\PS_BloomBlur2.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\PSCompileTest.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
