@@ -5,6 +5,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Coocoo3D.Components;
+using Coocoo3DPhysics;
 
 namespace Coocoo3D.Core
 {
@@ -18,6 +20,7 @@ namespace Coocoo3D.Core
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<GameObject> gameObjectLoadList = new List<GameObject>();
         public List<GameObject> gameObjectRemoveList = new List<GameObject>();
+        public Physics3DScene physics3DScene = new Physics3DScene();
 
         public void AddGameObject(GameObject gameObject)
         {
@@ -51,7 +54,7 @@ namespace Coocoo3D.Core
                 EntityRemoveList.Add(entity);
             }
         }
-        public void DealProcessList(Coocoo3DPhysics.Physics3DScene physics3DScene)
+        public void DealProcessList()
         {
             lock (this)
             {
@@ -91,14 +94,69 @@ namespace Coocoo3D.Core
             lock (this)
             {
                 Entities.Clear();
+                gameObjects.Clear();
                 for (int i = 0; i < sceneObjects.Count; i++)
                 {
                     if (sceneObjects[i] is MMD3DEntity entity)
                     {
                         Entities.Add(entity);
                     }
+                    else if ((sceneObjects[i] is GameObject gameObject))
+                    {
+                        gameObjects.Add(gameObject);
+                    }
                 }
             }
+        }
+
+        public void _ResetPhysics(IList<MMDRendererComponent> rendererComponents)
+        {
+            for (int i = 0; i < rendererComponents.Count; i++)
+            {
+                rendererComponents[i].ResetPhysics(physics3DScene);
+            }
+            physics3DScene.Simulate(1 / 60.0);
+            physics3DScene.FetchResults();
+        }
+
+        public void _BoneUpdate(double playTime, float deltaTime, IList<MMDRendererComponent> rendererComponents, IList<MMD3DEntity> entities)
+        {
+            void UpdateEntities(float playTime1)
+            {
+                int threshold = 1;
+                if (entities.Count > threshold)
+                {
+                    Parallel.ForEach(entities, (MMD3DEntity e) => { e.SetMotionTime(playTime1); });
+                }
+                else for (int i = 0; i < entities.Count; i++)
+                    {
+                        entities[i].SetMotionTime(playTime1);
+                    }
+            }
+            UpdateEntities((float)playTime);
+            float t1 = Math.Clamp(deltaTime, -0.17f, 0.17f);
+            for (int i = 0; i < rendererComponents.Count; i++)
+            {
+                rendererComponents[i].SetPhysicsPose(physics3DScene);
+            }
+            physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
+
+            physics3DScene.FetchResults();
+            for (int i = 0; i < rendererComponents.Count; i++)
+            {
+                rendererComponents[i].SetPoseAfterPhysics(physics3DScene);
+            }
+        }
+
+        public void Simulation(double playTime, double deltaTime, IList<MMDRendererComponent> rendererComponents, IList<MMD3DEntity> entities,bool resetPhysics)
+        {
+            if (resetPhysics)
+            {
+                _ResetPhysics(rendererComponents);
+                _BoneUpdate(playTime, (float)deltaTime, rendererComponents, entities);
+                _ResetPhysics(rendererComponents);
+            }
+            _BoneUpdate(playTime, (float)deltaTime, rendererComponents, entities);
         }
     }
 }

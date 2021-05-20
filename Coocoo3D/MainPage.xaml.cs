@@ -97,7 +97,6 @@ namespace Coocoo3D
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_SkyBox"), typeof(PropertiesPages.SkyBoxPage), appBody);
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Record"), typeof(PropertiesPages.RecordPage), appBody);
             AddPage(tabViewR1, resourceLoader.GetString("Tab_Title_Scene"), typeof(PropertiesPages.ScenePage), appBody);
-            AddPage(tabViewR1, resourceLoader.GetString("Tab_Title_PostProcess"), typeof(PropertiesPages.PostProcessPage), appBody);
             AddPage(tabViewB1, resourceLoader.GetString("Tab_Title_Resources"), typeof(PropertiesPages.ResourcesPage), appBody);
 
             Frame frame1 = new Frame();

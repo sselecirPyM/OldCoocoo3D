@@ -83,7 +83,7 @@ namespace Coocoo3D.RenderPipeline
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
-                if (combinedPass.Type == "Swap") continue;
+                if (!combinedPass.isRenderPass) continue;
 
                 if (combinedPass.Pass.Camera == "Main")
                 {
@@ -288,7 +288,7 @@ namespace Coocoo3D.RenderPipeline
                             var st = _rc?.stateComponent;
                             if (st != null && st.stringMorphIndexMap.TryGetValue(s, out int _i))
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, st.WeightComputed[_i]);
+                                ofs += CooUtility.Write(_buffer, ofs, st.Weights.Computed[_i]);
                             }
                             else if (_pass.passParameters1 != null && _pass.passParameters1.TryGetValue(s, out float _f1))
                             {

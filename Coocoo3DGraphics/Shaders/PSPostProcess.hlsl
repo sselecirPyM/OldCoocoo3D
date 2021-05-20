@@ -33,28 +33,12 @@ float3 TonemapHable(float3 x)
 Texture2D texture0 :register(t0);
 SamplerState s0 : register(s0);
 SamplerState s3 : register(s3);
-cbuffer cb0 : register(b0)
-{
-	float _GammaCorrection;
-	float _ColorSaturation1;
-	float _Threshold1;
-	float _Transition1;
-	float _ColorSaturation2;
-	float _Threshold2;
-	float _Transition2;
-	float _ColorSaturation3;
-	float _BackgroundFactory;
-};
+
 float4 main(PSSkinnedIn input) : SV_TARGET
 {
 	float4 sourceColor = texture0.Sample(s3, input.uv);
 	float3 color = sourceColor.rgb;
-	float3 lum = luminance(color);
-	float3 color1 = lerp(lum, color, _ColorSaturation1);
-	float3 color2 = lerp(lum, color, _ColorSaturation2);
-	float3 color3 = lerp(lum, color, _ColorSaturation3);
-	color = lerp(color3, lerp(color2, color1, smoothstep(_Threshold1 - _Transition1, _Threshold1, lum)), smoothstep(_Threshold2 - _Transition2, _Threshold2, lum));
-	color = max(0, color);
-	color = pow(color.rgb, 1 / _GammaCorrection);
+	color = max(0.001, color);
+	color = pow(color.rgb, 1 / 2.2);
 	return float4(color, sourceColor.a);
 }

@@ -1,5 +1,3 @@
-#include "CameraDataDefine.hlsli"
-
 struct PSIn
 {
 	float4 Pos	: SV_POSITION;		//Position

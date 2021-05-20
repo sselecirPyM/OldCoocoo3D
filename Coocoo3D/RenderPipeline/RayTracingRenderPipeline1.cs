@@ -89,8 +89,6 @@ namespace Coocoo3D.RenderPipeline
             ref var settings = ref context.dynamicContextRead.settings;
             var lightings = context.dynamicContextRead.lightings;
 
-            IntPtr pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0);
-
             int ofs = 0;
             ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(camera.vpMatrix));
             ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
@@ -122,15 +120,40 @@ namespace Coocoo3D.RenderPipeline
                         break;
                 }
             }
+
+            IntPtr pBufferData = Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0);
             _Counters counterMaterial = new _Counters();
             for (int i = 0; i < rendererComponents.Count; i++)
             {
                 var Materials = rendererComponents[i].Materials;
                 for (int j = 0; j < Materials.Count; j++)
                 {
+                    int ofs1 = 0;
                     Array.Clear(context.bigBuffer, 0, c_materialDataSize);
-                    Marshal.StructureToPtr(Materials[j].innerStruct, pBufferData, true);
-                    Marshal.StructureToPtr(counterMaterial.vertex, pBufferData + 240, true);
+                    //Marshal.StructureToPtr(Materials[j].innerStruct, pBufferData, true);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.DiffuseColor);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.SpecularColor);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.AmbientColor);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.EdgeSize);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.EdgeColor);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Texture);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.SubTexture);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.ToonTexture);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.IsTransparent);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Metallic);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Roughness);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Emission);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Subsurface);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Specular);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.SpecularTint);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Anisotropic);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Sheen);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.SheenTint);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.Clearcoat);
+                    ofs1 += CooUtility.Write(context.bigBuffer, ofs1, Materials[j].innerStruct.ClearcoatGloss);
+
+
+                    CooUtility.Write(context.bigBuffer, 240, counterMaterial.vertex);
                     WriteLightData(lightings, pBufferData + RuntimeMaterial.c_materialDataSize);
                     materialBuffers1.UpdateSlience(graphicsContext, context.bigBuffer, 0, c_materialDataSize, counterMaterial.material);
                     counterMaterial.material++;
@@ -167,51 +190,6 @@ namespace Coocoo3D.RenderPipeline
             for (int i = 0; i < rendererComponents.Count; i++)
                 EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
             graphicsContext.SetSOMeshNone();
-
-            graphicsContext.SetRootSignatureCompute(RPAssetsManager.rootSignatureCompute);
-
-            //if (HasMainLight && context.dynamicContextRead.inShaderSettings.EnableShadow)
-            //{
-            //    graphicsContext.SetRootSignature(RPAssetsManager.rootSignature);
-            //    graphicsContext.SetDSV(context.ShadowMapCube, 0, true);
-            //    graphicsContext.SetMesh(context.SkinningMeshBuffer);
-
-            //    void RenderEntityShadow(MMDRendererComponent rendererComponent, CBuffer cameraPresentData, ref _Counters counter)
-            //    {
-            //        Texture2D texLoading = context.TextureLoading;
-            //        Texture2D texError = context.TextureError;
-            //        var Materials = rendererComponent.Materials;
-            //        //graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
-            //        //graphicsContext.SetCBVR(entityDataBuffer, 1);
-            //        graphicsContext.SetCBVR(cameraPresentData, 2);
-
-            //        graphicsContext.SetMeshIndex(rendererComponent.mesh);
-            //        SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignature, ref context.shadowDesc, shadowDepth);
-            //        //List<Texture2D> texs = rendererComponent.textures;
-            //        //int countIndexLocal = 0;
-            //        //for (int i = 0; i < Materials.Count; i++)
-            //        //{
-            //        //    if (Materials[i].DrawFlags.HasFlag(DrawFlag.CastSelfShadow))
-            //        //    {
-            //        //        Texture2D tex1 = null;
-            //        //        if (Materials[i].texIndex != -1)
-            //        //            tex1 = texs[Materials[i].texIndex];
-            //        //        graphicsContext.SetCBVR(materialBuffers[counter.material], 3);
-            //        //        graphicsContext.SetSRVT(TextureStatusSelect(tex1, textureLoading, textureError, textureError), 4);
-            //        //        graphicsContext.DrawIndexed(Materials[i].indexCount, countIndexLocal, counter.vertex);
-            //        //    }
-            //        //    counter.material++;
-            //        //    countIndexLocal += Materials[i].indexCount;
-            //        //}
-            //        graphicsContext.DrawIndexed(rendererComponent.meshIndexCount, 0, counter.vertex);
-
-            //        counter.vertex += rendererComponent.meshVertexCount;
-            //    }
-            //    _Counters counterShadow = new _Counters();
-            //    for (int i = 0; i < rendererComponents.Count; i++)
-            //        RenderEntityShadow(rendererComponents[i], LightCameraDataBuffer, ref counterShadow);
-            //}
-
 
             if (rendererComponents.Count > 0)
             {

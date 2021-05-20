@@ -61,10 +61,11 @@ namespace Coocoo3D.RenderPipeline
                     }
                     if (passMatch.Pass == null)
                         return false;
+                    passMatch.isRenderPass = true;
                 }
                 else if (passMatch.Type == "Swap")
                 {
-
+                    passMatch.isRenderPass = false;
                 }
                 //else if (passMatch.Foreach != null)
                 //{
@@ -110,6 +111,8 @@ namespace Coocoo3D.RenderPipeline
         public PSO PSODefault;
         [XmlIgnore]
         public bool DrawObjects;
+        [XmlIgnore]
+        public bool isRenderPass;
         [XmlIgnore]
         public Dictionary<string, float> passParameters1;
         [XmlIgnore]

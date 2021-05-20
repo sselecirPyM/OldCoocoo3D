@@ -81,7 +81,6 @@ namespace Coocoo3D.Core
         };
 
         public Physics3D physics3D = new Physics3D();
-        public Physics3DScene physics3DScene = new Physics3DScene();
         Thread renderWorkThread;
         CancellationTokenSource canRenderThread;
         public GameDriverContext GameDriverContext { get => RPContext.gameDriverContext; }
@@ -111,10 +110,10 @@ namespace Coocoo3D.Core
             //PhysXAPI.SetAPIUsed(physics3D);
             BulletAPI.SetAPIUsed(physics3D);
             physics3D.Init();
-            physics3DScene.Reload(physics3D);
-            physics3DScene.SetGravitation(new Vector3(0, -98.01f, 0));
 
             CurrentScene = new Scene();
+            CurrentScene.physics3DScene.Reload(physics3D);
+            CurrentScene.physics3DScene.SetGravitation(new Vector3(0, -98.01f, 0));
             Dispatcher = CoreWindow.GetForCurrentThread().Dispatcher;
             threadPoolTimer = ThreadPoolTimer.CreatePeriodicTimer(Tick, TimeSpan.FromSeconds(1 / 30.0));
 
@@ -171,7 +170,7 @@ namespace Coocoo3D.Core
             {
                 return false;
             }
-            #region Render Preparing
+            #region Scene Simulation
 
             RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
@@ -181,7 +180,7 @@ namespace Coocoo3D.Core
                 RPContext.dynamicContextWrite.DeltaTime = 0;
 
 
-            CurrentScene.DealProcessList(physics3DScene);
+            CurrentScene.DealProcessList();
             lock (CurrentScene)
             {
                 RPContext.dynamicContextWrite.entities.AddRange(CurrentScene.Entities);
@@ -209,7 +208,7 @@ namespace Coocoo3D.Core
                     entity.NeedTransform = false;
                     entity.Position = entity.PositionNextFrame;
                     entity.Rotation = entity.RotationNextFrame;
-                    entity.rendererComponent.TransformToNew(physics3DScene, entity.Position, entity.Rotation);
+                    entity.rendererComponent.TransformToNew(CurrentScene.physics3DScene, entity.Position, entity.Rotation);
 
                     RPContext.gameDriverContext.RequireResetPhysics = true;
                 }
@@ -219,58 +218,11 @@ namespace Coocoo3D.Core
             RPContext.dynamicContextWrite.cameras.Add(camera.GetCameraData());
             RPContext.dynamicContextWrite.Preprocess();
 
-
-
-            void _ResetPhysics()
+            if (RPContext.gameDriverContext.Playing || RPContext.gameDriverContext.RequireResetPhysics)
             {
-                for (int i = 0; i < rendererComponents.Count; i++)
-                {
-                    rendererComponents[i].ResetPhysics(physics3DScene);
-                }
-                physics3DScene.Simulate(1 / 60.0);
-                physics3DScene.FetchResults();
-            }
-
-            double t1 = RPContext.gameDriverContext.DeltaTime;
-            void _BoneUpdate()
-            {
-                void UpdateEntities(float playTime)
-                {
-                    int threshold = 1;
-                    if (entities.Count > threshold)
-                    {
-                        Parallel.ForEach(entities, (MMD3DEntity e) => { e.SetMotionTime(playTime); });
-                    }
-                    else for (int i = 0; i < entities.Count; i++)
-                        {
-                            entities[i].SetMotionTime(playTime);
-                        }
-                }
-                UpdateEntities((float)RPContext.gameDriverContext.PlayTime);
-
-                for (int i = 0; i < rendererComponents.Count; i++)
-                {
-                    rendererComponents[i].SetPhysicsPose(physics3DScene);
-                }
-                physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
-
-                physics3DScene.FetchResults();
-                for (int i = 0; i < rendererComponents.Count; i++)
-                {
-                    rendererComponents[i].SetPoseAfterPhysics(physics3DScene);
-                }
-            }
-            if (RPContext.gameDriverContext.RequireResetPhysics)
-            {
+                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents, entities, RPContext.gameDriverContext.RequireResetPhysics);
                 RPContext.gameDriverContext.RequireResetPhysics = false;
-                _ResetPhysics();
-                _BoneUpdate();
-                _ResetPhysics();
             }
-            //if (RPContext.gameDriverContext.Playing)
-            //{
-            _BoneUpdate();
-            //}
             for (int i = 0; i < rendererComponents.Count; i++)
             {
                 rendererComponents[i].WriteMatriticesData();
@@ -338,7 +290,7 @@ namespace Coocoo3D.Core
                 }
                 else
                 {
-                    deviceResources.Present(performaceSettings.VSync);
+                    deviceResources.RenderComplete();
                 }
 
                 void _RenderFunction()

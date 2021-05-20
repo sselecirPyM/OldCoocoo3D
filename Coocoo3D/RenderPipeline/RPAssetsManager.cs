@@ -25,8 +25,6 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, GraphicsSignature> signaturePass = new Dictionary<string, GraphicsSignature>();
 
         public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
-        public GraphicsSignature rootSignaturePostProcess = new GraphicsSignature();
-        public GraphicsSignature rootSignatureCompute = new GraphicsSignature();
         public GraphicsSignature rtLocal = new GraphicsSignature();
         public GraphicsSignature rtGlobal = new GraphicsSignature();
 
@@ -35,8 +33,6 @@ namespace Coocoo3D.RenderPipeline
         public void InitializeRootSignature(DeviceResources deviceResources)
         {
             rootSignatureSkinning.ReloadSkinning(deviceResources);
-            rootSignaturePostProcess.Reload(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.CBV });
-            rootSignatureCompute.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.CBV, GSD.CBV, GSD.CBV, GSD.SRV, GSD.UAV, GSD.UAV });
             if (deviceResources.IsRayTracingSupport())
             {
                 rtLocal.RayTracingLocal(deviceResources);

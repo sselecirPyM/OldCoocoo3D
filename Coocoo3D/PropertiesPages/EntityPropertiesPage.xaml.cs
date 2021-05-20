@@ -91,7 +91,7 @@ namespace Coocoo3D.PropertiesPages
             if (currentSelectedMorph != null && !entity.LockMotion)
             {
                 int index = entity.morphStateComponent.stringMorphIndexMap[currentSelectedMorph.Name];
-                if (_cahceMorphValue != entity.morphStateComponent.WeightOrigin[index])
+                if (_cahceMorphValue != entity.morphStateComponent.Weights.Origin[index])
                 {
                     propChange(nameof(VMorphValue));
                 }
@@ -212,7 +212,7 @@ namespace Coocoo3D.PropertiesPages
                 else
                 {
                     int index = entity.morphStateComponent.stringMorphIndexMap[currentSelectedMorph.Name];
-                    _cahceMorphValue = entity.morphStateComponent.WeightOrigin[index];
+                    _cahceMorphValue = entity.morphStateComponent.Weights.Origin[index];
                     return _cahceMorphValue;
                 }
             }
@@ -224,9 +224,9 @@ namespace Coocoo3D.PropertiesPages
                 {
                     int index = entity.morphStateComponent.stringMorphIndexMap[currentSelectedMorph.Name];
                     _cahceMorphValue = value;
-                    entity.morphStateComponent.WeightOrigin[index] = value;
-                    entity.morphStateComponent.WeightOriginA[index] = value;
-                    entity.morphStateComponent.WeightOriginB[index] = value;
+                    entity.morphStateComponent.Weights.Origin[index] = value;
+                    entity.morphStateComponent.WeightsA.Origin[index] = value;
+                    entity.morphStateComponent.WeightsB.Origin[index] = value;
                     appBody.RequireRender(true);
                 }
             }

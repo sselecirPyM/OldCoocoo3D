@@ -9,18 +9,24 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.Components
 {
+    public class WeightGroup
+    {
+        public float[] Origin;
+        public float[] Computed;
+        public float[] ComputedPrev;
+
+        public bool ComputedWeightNotEqualsPrev(int index)
+        {
+            return Computed[index] != ComputedPrev[index];
+        }
+    }
     public class MMDMorphStateComponent
     {
         public List<MorphDesc> morphs = new List<MorphDesc>();
-        public float[] WeightOrigin;
-        public float[] WeightComputed;
-        public float[] WeightComputedPrev;
-        public float[] WeightOriginA;
-        public float[] WeightComputedA;
-        public float[] WeightComputedAPrev;
-        public float[] WeightOriginB;
-        public float[] WeightComputedB;
-        public float[] WeightComputedBPrev;
+        public WeightGroup Weights = new WeightGroup();
+        public WeightGroup WeightsA = new WeightGroup();
+        public WeightGroup WeightsB = new WeightGroup();
+
         public float currentTimeA;
         public float amountAB;
 
@@ -31,31 +37,32 @@ namespace Coocoo3D.Components
             currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
             foreach (var pair in stringMorphIndexMap)
             {
-                WeightOrigin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time);
-                motionComponent.GetABWeight(pair.Key, time, out WeightOriginA[pair.Value], out WeightOriginB[pair.Value]);
+                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time);
+                motionComponent.GetABWeight(pair.Key, time, out WeightsA.Origin[pair.Value], out WeightsB.Origin[pair.Value]);
             }
             amountAB = Math.Max((time - currentTimeA) / c_frameInterval, 0);
         }
         public void ComputeWeight()
         {
-            ComputeWeight1(morphs, WeightOrigin, WeightComputed, WeightComputedPrev);
-            ComputeWeight1(morphs, WeightOriginA, WeightComputedA, WeightComputedAPrev);
-            ComputeWeight1(morphs, WeightOriginB, WeightComputedB, WeightComputedBPrev);
+            ComputeWeight1(morphs, Weights);
+            ComputeWeight1(morphs, WeightsA);
+            ComputeWeight1(morphs, WeightsB);
         }
-        private static void ComputeWeight1(IReadOnlyList<MorphDesc> morphs, float[] weightInit, float[] computedWeights, float[] prevComputedWeights)
+
+        private static void ComputeWeight1(IReadOnlyList<MorphDesc> morphs, WeightGroup weightGroup)
         {
             for (int i = 0; i < morphs.Count; i++)
             {
-                prevComputedWeights[i] = computedWeights[i];
-                computedWeights[i] = 0;
+                weightGroup.ComputedPrev[i] = weightGroup.Computed[i];
+                weightGroup.Computed[i] = 0;
             }
             for (int i = 0; i < morphs.Count; i++)
             {
                 MorphDesc morph = morphs[i];
                 if (morph.Type == MorphType.Group)
-                    ComputeWeightGroup(morphs, morph, weightInit[i], computedWeights);
+                    ComputeWeightGroup(morphs, morph, weightGroup.Origin[i], weightGroup.Computed);
                 else
-                    computedWeights[i] += weightInit[i];
+                    weightGroup.Computed[i] += weightGroup.Origin[i];
             }
         }
         private static void ComputeWeightGroup(IReadOnlyList<MorphDesc> morphs, MorphDesc morph, float rate, float[] computedWeights)
@@ -77,21 +84,11 @@ namespace Coocoo3D.Components
             {
                 if (morphs[i].Type == MorphType.Vertex)
                 {
-                    float a = WeightComputedAPrev[i];
-                    WeightComputedAPrev[i] = WeightComputedBPrev[i];
-                    WeightComputedBPrev[i] = a;
+                    float a = WeightsA.ComputedPrev[i];
+                    WeightsA.ComputedPrev[i] = WeightsB.ComputedPrev[i];
+                    WeightsB.ComputedPrev[i] = a;
                 }
             }
-        }
-        public bool ComputedWeightNotEqualsPrevA(int index, out float weight)
-        {
-            weight = WeightComputedA[index];
-            return WeightComputedA[index] != WeightComputedAPrev[index];
-        }
-        public bool ComputedWeightNotEqualsPrevB(int index, out float weight)
-        {
-            weight = WeightComputedB[index];
-            return WeightComputedB[index] != WeightComputedBPrev[index];
         }
     }
 
@@ -213,9 +210,7 @@ namespace Coocoo3D.FileFormat
             {
                 subMorphDescs = new MorphSubMorphDesc[desc.SubMorphs.Length];
                 for (int i = 0; i < desc.SubMorphs.Length; i++)
-                {
                     subMorphDescs[i] = GetMorphSubMorphDesc(desc.SubMorphs[i]);
-                }
             }
 
             MorphMaterialDesc[] morphMaterialDescs = null;
@@ -223,36 +218,28 @@ namespace Coocoo3D.FileFormat
             {
                 morphMaterialDescs = new MorphMaterialDesc[desc.MorphMaterials.Length];
                 for (int i = 0; i < desc.MorphMaterials.Length; i++)
-                {
                     morphMaterialDescs[i] = GetMorphMaterialDesc(desc.MorphMaterials[i]);
-                }
             }
             MorphVertexDesc[] morphVertexDescs = null;
             if (desc.MorphVertexs != null)
             {
                 morphVertexDescs = new MorphVertexDesc[desc.MorphVertexs.Length];
                 for (int i = 0; i < desc.MorphVertexs.Length; i++)
-                {
                     morphVertexDescs[i] = GetMorphVertexDesc(desc.MorphVertexs[i]);
-                }
             }
             MorphUVDesc[] morphUVDescs = null;
             if (desc.MorphUVs != null)
             {
                 morphUVDescs = new MorphUVDesc[desc.MorphUVs.Length];
                 for (int i = 0; i < desc.MorphUVs.Length; i++)
-                {
                     morphUVDescs[i] = GetMorphUVDesc(desc.MorphUVs[i]);
-                }
             }
             MorphBoneDesc[] morphBoneDescs = null;
             if (desc.MorphBones != null)
             {
                 morphBoneDescs = new MorphBoneDesc[desc.MorphBones.Length];
                 for (int i = 0; i < desc.MorphBones.Length; i++)
-                {
                     morphBoneDescs[i] = GetMorphBoneDesc(desc.MorphBones[i]);
-                }
             }
 
             return new MorphDesc()
@@ -283,15 +270,16 @@ namespace Coocoo3D.FileFormat
             {
                 component.morphs.Add(GetMorphDesc(pmx.Morphs[i]));
             }
-            component.WeightOrigin = new float[morphCount];
-            component.WeightOriginA = new float[morphCount];
-            component.WeightOriginB = new float[morphCount];
-            component.WeightComputed = new float[morphCount];
-            component.WeightComputedPrev = new float[morphCount];
-            component.WeightComputedA = new float[morphCount];
-            component.WeightComputedB = new float[morphCount];
-            component.WeightComputedAPrev = new float[morphCount];
-            component.WeightComputedBPrev = new float[morphCount];
+
+            void newWeightGroup(WeightGroup weightGroup)
+            {
+                weightGroup.Origin = new float[morphCount];
+                weightGroup.Computed = new float[morphCount];
+                weightGroup.ComputedPrev = new float[morphCount];
+            }
+            newWeightGroup(component.Weights);
+            newWeightGroup(component.WeightsA);
+            newWeightGroup(component.WeightsB);
             for (int i = 0; i < morphCount; i++)
             {
                 component.stringMorphIndexMap.Add(pmx.Morphs[i].Name, i);

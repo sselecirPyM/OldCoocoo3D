@@ -549,25 +549,28 @@ void DeviceResources::Present(bool vsync)
 	else
 	{
 		DX::ThrowIfFailed(hr);
-
-		DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
-
-		// 提高帧索引。
-		m_executeIndex = (m_executeIndex < (c_frameCount - 1)) ? (m_executeIndex + 1) : 0;
-
-
-		// 检查下一帧是否准备好启动。
-		if (m_fence->GetCompletedValue() < m_fenceValues[m_executeIndex])
-		{
-			DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_executeIndex], m_fenceEvent));
-			WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
-		}
-		Recycle();
-
-		// 为下一帧设置围栏值。
-		m_currentFenceValue++;
-		m_fenceValues[m_executeIndex] = m_currentFenceValue;
+		RenderComplete();
 	}
+}
+
+void DeviceResources::RenderComplete()
+{
+	DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
+
+	// 提高帧索引。
+	m_executeIndex = (m_executeIndex < (c_frameCount - 1)) ? (m_executeIndex + 1) : 0;
+
+	// 检查下一帧是否准备好启动。
+	if (m_fence->GetCompletedValue() < m_fenceValues[m_executeIndex])
+	{
+		DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_executeIndex], m_fenceEvent));
+		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
+	}
+	Recycle();
+
+	// 为下一帧设置围栏值。
+	m_currentFenceValue++;
+	m_fenceValues[m_executeIndex] = m_currentFenceValue;
 }
 
 // 等待挂起的 GPU 工作完成。

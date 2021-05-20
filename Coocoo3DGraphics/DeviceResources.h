@@ -30,6 +30,7 @@ namespace Coocoo3DGraphics
 		float GetDpi() { return m_effectiveDpi; }
 		void ValidateDevice();
 		void Present(bool vsync);
+		void RenderComplete();
 		void WaitForGpu();
 		bool IsRayTracingSupport();
 		DxgiFormat GetBackBufferFormat1();

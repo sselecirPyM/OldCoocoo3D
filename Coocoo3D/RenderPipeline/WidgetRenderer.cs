@@ -152,8 +152,9 @@ namespace Coocoo3D.RenderPipeline
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
             var rpAssets = context.RPAssetsManager;
-            var rsPP = rpAssets.rootSignaturePostProcess;
-            graphicsContext.SetCBVR(constantBuffer, 0);
+            var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs"); ;
+            graphicsContext.SetRootSignature(rsPP);
+            graphicsContext.SetCBVRSlot(constantBuffer, 0, 0, 0);
             graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
             graphicsContext.SetMesh(context.ndcQuadMesh);
 

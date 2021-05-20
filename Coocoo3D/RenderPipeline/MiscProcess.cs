@@ -55,7 +55,7 @@ namespace Coocoo3D.RenderPipeline
         XYZData _XyzData;
         public async Task ReloadAssets(DeviceResources deviceResources)
         {
-            rootSignature.ReloadCompute(deviceResources, new GraphicSignatureDesc[]
+            rootSignature.Reload(deviceResources, new GraphicSignatureDesc[]
             {
                 GraphicSignatureDesc.CBV,
                 GraphicSignatureDesc.CBV,

@@ -59,28 +59,24 @@ namespace Coocoo3D.Components
                 {
                     if (!flip)
                     {
-                        if (morphStateComponent.ComputedWeightNotEqualsPrevA(i, out float computedWeightA))
+                        if (morphStateComponent.WeightsA.ComputedWeightNotEqualsPrev(i))
                             meshNeedUpdateA = true;
-                        if (morphStateComponent.ComputedWeightNotEqualsPrevB(i, out float computedWeightB))
+                        if (morphStateComponent.WeightsB.ComputedWeightNotEqualsPrev(i))
                             meshNeedUpdateB = true;
                     }
                     else
                     {
-                        if (morphStateComponent.ComputedWeightNotEqualsPrevA(i, out float computedWeightA))
+                        if (morphStateComponent.WeightsA.ComputedWeightNotEqualsPrev(i))
                             meshNeedUpdateB = true;
-                        if (morphStateComponent.ComputedWeightNotEqualsPrevB(i, out float computedWeightB))
+                        if (morphStateComponent.WeightsB.ComputedWeightNotEqualsPrev(i))
                             meshNeedUpdateA = true;
                     }
                 }
             }
             if (meshNeedUpdateA)
-            {
                 MMDMesh.CopyPosData(meshPosData1, meshPosData);
-            }
             if (meshNeedUpdateB)
-            {
                 MMDMesh.CopyPosData(meshPosData2, meshPosData);
-            }
 
             for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             {
@@ -88,16 +84,16 @@ namespace Coocoo3D.Components
                 {
                     MorphVertexDesc[] morphVertices = morphStateComponent.morphs[i].MorphVertexs;
 
+                    float computedWeightA = morphStateComponent.WeightsA.Computed[i];
+                    float computedWeightB = morphStateComponent.WeightsB.Computed[i];
                     //for optimization
                     if (!flip)
                     {
-                        float computedWeightA = morphStateComponent.WeightComputedA[i];
                         if (computedWeightA != 0)
                             for (int j = 0; j < morphVertices.Length; j++)
                             {
                                 meshPosData1[morphVertices[j].VertexIndex] += morphVertices[j].Offset * computedWeightA;
                             }
-                        float computedWeightB = morphStateComponent.WeightComputedB[i];
                         if (computedWeightB != 0)
                             for (int j = 0; j < morphVertices.Length; j++)
                             {
@@ -106,13 +102,11 @@ namespace Coocoo3D.Components
                     }
                     else
                     {
-                        float computedWeightA = morphStateComponent.WeightComputedA[i];
                         if (computedWeightA != 0)
                             for (int j = 0; j < morphVertices.Length; j++)
                             {
                                 meshPosData2[morphVertices[j].VertexIndex] += morphVertices[j].Offset * computedWeightA;
                             }
-                        float computedWeightB = morphStateComponent.WeightComputedB[i];
                         if (computedWeightB != 0)
                             for (int j = 0; j < morphVertices.Length; j++)
                             {
@@ -131,10 +125,10 @@ namespace Coocoo3D.Components
             }
             for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             {
-                if (morphStateComponent.morphs[i].Type == MorphType.Material && morphStateComponent.WeightComputed[i] != morphStateComponent.WeightComputedPrev[i])
+                if (morphStateComponent.morphs[i].Type == MorphType.Material && morphStateComponent.Weights.Computed[i] != morphStateComponent.Weights.ComputedPrev[i])
                 {
                     MorphMaterialDesc[] morphMaterialStructs = morphStateComponent.morphs[i].MorphMaterials;
-                    float computedWeight = morphStateComponent.WeightComputed[i];
+                    float computedWeight = morphStateComponent.Weights.Computed[i];
                     for (int j = 0; j < morphMaterialStructs.Length; j++)
                     {
                         MorphMaterialDesc morphMaterialStruct = morphMaterialStructs[j];
@@ -219,7 +213,7 @@ namespace Coocoo3D.Components
                 if (morphStateComponent.morphs[i].Type == MorphType.Bone)
                 {
                     MorphBoneDesc[] morphBoneStructs = morphStateComponent.morphs[i].MorphBones;
-                    float computedWeight = morphStateComponent.WeightComputed[i];
+                    float computedWeight = morphStateComponent.Weights.Computed[i];
                     for (int j = 0; j < morphBoneStructs.Length; j++)
                     {
                         var morphBoneStruct = morphBoneStructs[j];
@@ -373,7 +367,7 @@ namespace Coocoo3D.Components
                                 }
                             case IKTransformOrder.Xyz:
                                 {
-                                    angle =MathHelper.QuaternionToXyz(itEntity.rotation);
+                                    angle = MathHelper.QuaternionToXyz(itEntity.rotation);
                                     Vector3 cachedE = angle;
                                     angle = LimitAngle(angle, axis_lim, IKLINK.LimitMin, IKLINK.LimitMax);
                                     if (cachedE != angle)
