@@ -67,15 +67,9 @@ namespace Coocoo3DGraphics
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
-		void SetSRVT(ITexture2D^ texture, int index);
-		void SetSRVT(ITextureCube^ texture, int index);
 		void SetSRVTSlot(ITexture2D^ texture, int slot);
 		void SetSRVTSlot(ITextureCube^ texture, int slot);
 		//void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
-		void SetCBVR(CBuffer^ buffer, int index);
-		void SetCBVR(SBuffer^ buffer, int index);
-		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
-		void SetCBVR(SBuffer^ buffer, int offset256, int size256, int index);
 		void SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
 		void SetCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot);
 		void SetUAVT(RenderTexture2D^ texture, int index);
@@ -153,6 +147,12 @@ namespace Coocoo3DGraphics
 		void EndEvent();
 		void Execute();
 	internal:
+		void SetCBVR(CBuffer^ buffer, int index);
+		void SetCBVR(SBuffer^ buffer, int index);
+		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
+		void SetCBVR(SBuffer^ buffer, int offset256, int size256, int index);
+		void SetSRVT(ITexture2D^ texture, int index);
+		void SetSRVT(ITextureCube^ texture, int index);
 		DeviceResources^ m_deviceResources;
 		GraphicsSignature^ m_currentSign;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>	m_commandList;

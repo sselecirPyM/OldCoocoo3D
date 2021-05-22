@@ -244,59 +244,8 @@ void GraphicsContext::UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Arr
 {
 	mesh->lastUpdateIndexs[index]++;
 	mesh->lastUpdateIndexs[index] = (mesh->lastUpdateIndexs[index] < c_frameCount) ? mesh->lastUpdateIndexs[index] : 0;
-	_UpdateVerticesPos(m_commandList.Get(), mesh->m_vertexBufferPos[index].Get(), mesh->m_vertexBufferPosUpload[index].Get(), verticeData->begin(), verticeData->Length * 12, mesh->lastUpdateIndexs[index] * mesh->m_bufferSize);
-}
-
-void GraphicsContext::SetSRVT(ITexture2D^ texture, int index)
-{
-	auto d3dDevice = m_deviceResources->GetD3DDevice();
-	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	Texture2D^ tex2d = dynamic_cast<Texture2D^>(texture);
-	RenderTexture2D^ rtex2d = dynamic_cast<RenderTexture2D^>(texture);
-	if (texture != nullptr)
-	{
-		if (tex2d != nullptr)
-		{
-			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, tex2d));
-		}
-		else if (rtex2d != nullptr)
-		{
-			rtex2d->StateTransition(m_commandList.Get(), D3D12_RESOURCE_STATE_GENERIC_READ);
-
-			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, rtex2d));
-		}
-	}
-	else
-	{
-		throw ref new Platform::NotImplementedException();
-	}
-}
-
-void GraphicsContext::SetSRVT(ITextureCube^ texture, int index)
-{
-	auto d3dDevice = m_deviceResources->GetD3DDevice();
-	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-	TextureCube^ texc = dynamic_cast<TextureCube^>(texture);
-	RenderTextureCube^ rtexc = dynamic_cast<RenderTextureCube^>(texture);
-	if (texture != nullptr)
-	{
-		if (texc != nullptr)
-		{
-			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, texc));
-		}
-		else if (rtexc != nullptr)
-		{
-			if (rtexc->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
-				m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtexc->m_texture.Get(), rtexc->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
-			rtexc->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
-
-			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, rtexc));
-		}
-	}
-	else
-	{
-		throw ref new Platform::NotImplementedException();
-	}
+	_UpdateVerticesPos(m_commandList.Get(), mesh->m_vertexBufferPos[index].Get(), mesh->m_vertexBufferPosUpload.Get(),
+		verticeData->begin(), verticeData->Length * sizeof(Windows::Foundation::Numerics::float3), mesh->lastUpdateIndexs[index] * mesh->m_bufferSize * index);
 }
 
 void GraphicsContext::SetSRVTSlot(ITexture2D^ texture, int slot)
@@ -329,26 +278,6 @@ void GraphicsContext::SetSRVTSlot(ITextureCube^ texture, int slot)
 //		throw ref new Platform::NotImplementedException();
 //	}
 //}
-
-void GraphicsContext::SetCBVR(CBuffer^ buffer, int index)
-{
-	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
-}
-
-void GraphicsContext::SetCBVR(SBuffer^ buffer, int index)
-{
-	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
-}
-
-void GraphicsContext::SetCBVR(CBuffer^ buffer, int offset256, int size256, int index)
-{
-	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
-}
-
-void GraphicsContext::SetCBVR(SBuffer^ buffer, int offset256, int size256, int index)
-{
-	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
-}
 
 void GraphicsContext::SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot)
 {
@@ -686,33 +615,24 @@ void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte
 			&defaultHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&vertexBufferDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr,
 			IID_PPV_ARGS(&mesh->m_vertexBufferPos[i])));
 		NAME_D3D12_OBJECT(mesh->m_vertexBufferPos[i]);
 	}
-	CD3DX12_RESOURCE_DESC uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_bufferSize * c_frameCount);
+	CD3DX12_RESOURCE_DESC uploadBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(mesh->m_bufferSize * c_frameCount * 2);
+	m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBufferPosUpload);
+	DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+		&uploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&uploadBufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&mesh->m_vertexBufferPosUpload)));
+	NAME_D3D12_OBJECT(mesh->m_vertexBufferPosUpload);
 	for (int i = 0; i < mesh->c_bufferCount; i++)
 	{
-		m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBufferPosUpload[i]);
-		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&uploadHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&uploadBufferDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&mesh->m_vertexBufferPosUpload[i])));
-		NAME_D3D12_OBJECT(mesh->m_vertexBufferPosUpload[i]);
-	}
-	for (int i = 0; i < mesh->c_bufferCount; i++)
-	{
-		D3D12_SUBRESOURCE_DATA vertexData = {};
-		vertexData.pData = data->begin();
-		vertexData.RowPitch = data->Length;
-		vertexData.SlicePitch = vertexData.RowPitch;
-
-		UpdateSubresources(m_commandList.Get(), mesh->m_vertexBufferPos[i].Get(), mesh->m_vertexBufferPosUpload[i].Get(), 0, 0, 1, &vertexData);
-		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mesh->m_vertexBufferPos[i].Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
+		_UpdateVerticesPos(m_commandList.Get(), mesh->m_vertexBufferPos[i].Get(), mesh->m_vertexBufferPosUpload.Get(), data->begin(), data->Length, i * data->Length);
 	}
 	for (int i = 0; i < mesh->c_bufferCount; i++)
 	{
@@ -1882,4 +1802,76 @@ void GraphicsContext::Execute()
 	ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 	m_deviceResources->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 	m_deviceResources->ReturnCommandList(m_commandList);
+}
+
+void GraphicsContext::SetCBVR(CBuffer^ buffer, int index)
+{
+	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
+}
+
+void GraphicsContext::SetCBVR(SBuffer^ buffer, int index)
+{
+	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
+}
+
+void GraphicsContext::SetCBVR(CBuffer^ buffer, int offset256, int size256, int index)
+{
+	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
+}
+
+void GraphicsContext::SetCBVR(SBuffer^ buffer, int offset256, int size256, int index)
+{
+	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
+}
+
+void GraphicsContext::SetSRVT(ITexture2D^ texture, int index)
+{
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	Texture2D^ tex2d = dynamic_cast<Texture2D^>(texture);
+	RenderTexture2D^ rtex2d = dynamic_cast<RenderTexture2D^>(texture);
+	if (texture != nullptr)
+	{
+		if (tex2d != nullptr)
+		{
+			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, tex2d));
+		}
+		else if (rtex2d != nullptr)
+		{
+			rtex2d->StateTransition(m_commandList.Get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+
+			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, rtex2d));
+		}
+	}
+	else
+	{
+		throw ref new Platform::NotImplementedException();
+	}
+}
+
+void GraphicsContext::SetSRVT(ITextureCube^ texture, int index)
+{
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	TextureCube^ texc = dynamic_cast<TextureCube^>(texture);
+	RenderTextureCube^ rtexc = dynamic_cast<RenderTextureCube^>(texture);
+	if (texture != nullptr)
+	{
+		if (texc != nullptr)
+		{
+			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, texc));
+		}
+		else if (rtexc != nullptr)
+		{
+			if (rtexc->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
+				m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(rtexc->m_texture.Get(), rtexc->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
+			rtexc->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+			m_commandList->SetGraphicsRootDescriptorTable(index, CreateSRVHandle(m_deviceResources, rtexc));
+		}
+	}
+	else
+	{
+		throw ref new Platform::NotImplementedException();
+	}
 }

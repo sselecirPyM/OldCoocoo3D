@@ -242,7 +242,7 @@ namespace Coocoo3D.Components
             SetPose3(morphStateComponent);
         }
 
-        public void SetPhysicsPose(Physics3DScene physics3DScene)
+        public void PrePhysicsSync(Physics3DScene physics3DScene)
         {
             for (int i = 0; i < rigidBodyDescs.Count; i++)
             {
@@ -256,7 +256,7 @@ namespace Coocoo3D.Components
             }
         }
 
-        public void SetPoseAfterPhysics(Physics3DScene physics3DScene)
+        public void PhysicsSync(Physics3DScene physics3DScene)
         {
             Matrix4x4.Decompose(WorldToLocal, out _, out var q1, out var t1);
             for (int i = 0; i < rigidBodyDescs.Count; i++)

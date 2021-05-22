@@ -9,17 +9,6 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.Components
 {
-    public class WeightGroup
-    {
-        public float[] Origin;
-        public float[] Computed;
-        public float[] ComputedPrev;
-
-        public bool ComputedWeightNotEqualsPrev(int index)
-        {
-            return Computed[index] != ComputedPrev[index];
-        }
-    }
     public class MMDMorphStateComponent
     {
         public List<MorphDesc> morphs = new List<MorphDesc>();
@@ -37,8 +26,7 @@ namespace Coocoo3D.Components
             currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
             foreach (var pair in stringMorphIndexMap)
             {
-                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time);
-                motionComponent.GetABWeight(pair.Key, time, out WeightsA.Origin[pair.Value], out WeightsB.Origin[pair.Value]);
+                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time, out WeightsA.Origin[pair.Value], out WeightsB.Origin[pair.Value]);
             }
             amountAB = Math.Max((time - currentTimeA) / c_frameInterval, 0);
         }
@@ -89,6 +77,18 @@ namespace Coocoo3D.Components
                     WeightsB.ComputedPrev[i] = a;
                 }
             }
+        }
+    }
+
+    public class WeightGroup
+    {
+        public float[] Origin;
+        public float[] Computed;
+        public float[] ComputedPrev;
+
+        public bool ComputedWeightNotEqualsPrev(int index)
+        {
+            return Computed[index] != ComputedPrev[index];
         }
     }
 

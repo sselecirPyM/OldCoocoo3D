@@ -11,7 +11,7 @@ namespace Coocoo3DGraphics
 		static const UINT c_bufferCount = 2;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferPos[c_bufferCount];
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferPosUpload[c_bufferCount];
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferPosUpload;
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferPosViews[c_bufferCount];
 		int lastUpdateIndexs[c_bufferCount] = {};
 		int m_posCount;

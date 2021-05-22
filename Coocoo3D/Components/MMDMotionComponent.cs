@@ -13,76 +13,10 @@ namespace Coocoo3D.Components
 {
     public class MMDMotionComponent
     {
-        public Dictionary<string, DataSetStruct<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, DataSetStruct<BoneKeyFrame>>();
-        public Dictionary<string, DataSetStruct<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, DataSetStruct<MorphKeyFrame>>();
+        public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, List<BoneKeyFrame>>();
+        public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, List<MorphKeyFrame>>();
 
         const float c_framePerSecond = 30;
-        public class DataSetStruct<T> : IList<T>
-        {
-            public DataSetStruct(IEnumerable<T> list)
-            {
-                dataSet = new List<T>(list);
-            }
-            public int PrevIndex;
-            List<T> dataSet;
-
-            public T this[int index] { get => ((IList<T>)dataSet)[index]; set => ((IList<T>)dataSet)[index] = value; }
-
-            public int Count => ((ICollection<T>)dataSet).Count;
-
-            public bool IsReadOnly => ((ICollection<T>)dataSet).IsReadOnly;
-
-            public void Add(T item)
-            {
-                ((ICollection<T>)dataSet).Add(item);
-            }
-
-            public void Clear()
-            {
-                ((ICollection<T>)dataSet).Clear();
-            }
-
-            public bool Contains(T item)
-            {
-                return ((ICollection<T>)dataSet).Contains(item);
-            }
-
-            public void CopyTo(T[] array, int arrayIndex)
-            {
-                ((ICollection<T>)dataSet).CopyTo(array, arrayIndex);
-            }
-
-            public IEnumerator<T> GetEnumerator()
-            {
-                return ((IEnumerable<T>)dataSet).GetEnumerator();
-            }
-
-            public int IndexOf(T item)
-            {
-                return ((IList<T>)dataSet).IndexOf(item);
-            }
-
-            public void Insert(int index, T item)
-            {
-                ((IList<T>)dataSet).Insert(index, item);
-            }
-
-            public bool Remove(T item)
-            {
-                return ((ICollection<T>)dataSet).Remove(item);
-            }
-
-            public void RemoveAt(int index)
-            {
-                ((IList<T>)dataSet).RemoveAt(index);
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return ((IEnumerable)dataSet).GetEnumerator();
-            }
-        }
-        //这个函数缓存之前的结果，顺序访问能提高性能。
         public BoneKeyFrame GetBoneMotion(string key, float time)
         {
             if (!BoneKeyFrameSet.TryGetValue(key, out var keyframeSet))
@@ -114,16 +48,7 @@ namespace Coocoo3D.Components
 
                 return newKeyFrame;
             }
-            var cacheIndex = keyframeSet.PrevIndex;
-            if (cacheIndex < keyframeSet.Count - 1 && keyframeSet[cacheIndex].Frame < frame && keyframeSet[cacheIndex + 1].Frame > frame)
-            {
-                return ComputeKeyFrame(keyframeSet[cacheIndex], keyframeSet[cacheIndex + 1]);
-            }
-            else if (cacheIndex < keyframeSet.Count - 2 && keyframeSet[cacheIndex + 1].Frame < frame && keyframeSet[cacheIndex + 2].Frame > frame)
-            {
-                keyframeSet.PrevIndex++;
-                return ComputeKeyFrame(keyframeSet[cacheIndex + 1], keyframeSet[cacheIndex + 2]);
-            }
+
             int left = 0;
             int right = keyframeSet.Count - 1;
             if (left == right) return keyframeSet[left];
@@ -137,109 +62,54 @@ namespace Coocoo3D.Components
                 else
                     left = mid;
             }
-            keyframeSet.PrevIndex = left;
             return ComputeKeyFrame(keyframeSet[left], keyframeSet[right]);
         }
-        //这个函数缓存之前的结果，顺序访问能提高性能。
-        public MorphKeyFrame GetMorphMotion(string key, float time)
+
+        public float GetMorphWeight(string key, float time, out float AWeight, out float BWeight)
         {
             if (!MorphKeyFrameSet.TryGetValue(key, out var keyframeSet))
             {
-                return new MorphKeyFrame();
-            }
-            float frame = Math.Max(time * c_framePerSecond, 0);
-            MorphKeyFrame ComputeKeyFrame(MorphKeyFrame _left, MorphKeyFrame _right)
-            {
-                float amount = (frame - _left.Frame) / (_right.Frame - _left.Frame);
-                MorphKeyFrame newKeyFrame = new MorphKeyFrame();
-                newKeyFrame.Frame = (int)MathF.Round(frame);
-                newKeyFrame.Weight = (1 - amount) * _left.Weight + amount * _right.Weight;
-                return newKeyFrame;
-            }
-            var cacheIndex = keyframeSet.PrevIndex;
-            if (cacheIndex < keyframeSet.Count - 1 && keyframeSet[cacheIndex].Frame <= frame && keyframeSet[cacheIndex + 1].Frame >= frame)
-            {
-                return ComputeKeyFrame(keyframeSet[cacheIndex], keyframeSet[cacheIndex + 1]);
-            }
-            else if (cacheIndex < keyframeSet.Count - 2 && keyframeSet[cacheIndex + 1].Frame <= frame && keyframeSet[cacheIndex + 2].Frame >= frame)
-            {
-                keyframeSet.PrevIndex++;
-                return ComputeKeyFrame(keyframeSet[cacheIndex + 1], keyframeSet[cacheIndex + 2]);
-            }
-            int left = 0;
-            int right = keyframeSet.Count - 1;
-            if (left == right) return keyframeSet[left];
-            if (keyframeSet[right].Frame < frame) return keyframeSet[right];
-
-            while (right - left > 1)
-            {
-                int mid = (right + left) / 2;
-                if (keyframeSet[mid].Frame > frame)
-                    right = mid;
-                else
-                    left = mid;
-            }
-            MorphKeyFrame keyFrameLeft = keyframeSet[left];
-            MorphKeyFrame keyFrameRight = keyframeSet[right];
-            keyframeSet.PrevIndex = left;
-            return ComputeKeyFrame(keyFrameLeft, keyFrameRight);
-        }
-
-        public float GetMorphWeight(string key, float time)
-        {
-            if (!MorphKeyFrameSet.TryGetValue(key, out var keyframeSet))
-            {
+                AWeight = 0;
+                BWeight = 0;
                 return 0.0f;
             }
-            float frame = Math.Max(time * c_framePerSecond, 0);
-            float ComputeKeyFrame(MorphKeyFrame _left, MorphKeyFrame _right)
-            {
-                float amount = (frame - _left.Frame) / (_right.Frame - _left.Frame);
-                return (1 - amount) * _left.Weight + amount * _right.Weight;
-            }
-            var cacheIndex = keyframeSet.PrevIndex;
-            if (cacheIndex < keyframeSet.Count - 1 && keyframeSet[cacheIndex].Frame <= frame && keyframeSet[cacheIndex + 1].Frame >= frame)
-            {
-                return ComputeKeyFrame(keyframeSet[cacheIndex], keyframeSet[cacheIndex + 1]);
-            }
-            else if (cacheIndex < keyframeSet.Count - 2 && keyframeSet[cacheIndex + 1].Frame <= frame && keyframeSet[cacheIndex + 2].Frame >= frame)
-            {
-                keyframeSet.PrevIndex++;
-                return ComputeKeyFrame(keyframeSet[cacheIndex + 1], keyframeSet[cacheIndex + 2]);
-            }
             int left = 0;
             int right = keyframeSet.Count - 1;
-            if (left == right) return keyframeSet[left].Weight;
-            if (keyframeSet[right].Frame < frame) return keyframeSet[right].Weight;
+            float indexFrame = Math.Max(time * c_framePerSecond, 0);
+
+            float ComputeKeyFrame(MorphKeyFrame _left, MorphKeyFrame _right, float frame)
+            {
+                float amount = (float)(frame - _left.Frame) / (_right.Frame - _left.Frame);
+                return (1 - amount) * _left.Weight + amount * _right.Weight;
+            }
+
+            if (keyframeSet.Count == 1)
+            {
+                AWeight = BWeight = keyframeSet[0].Weight;
+                return AWeight;
+            }
+
+            if (keyframeSet[right].Frame < indexFrame)
+            {
+                AWeight = BWeight = keyframeSet[right].Weight;
+                return AWeight;
+            }
 
             while (right - left > 1)
             {
                 int mid = (right + left) / 2;
-                if (keyframeSet[mid].Frame > frame)
+                if (keyframeSet[mid].Frame > indexFrame)
                     right = mid;
                 else
                     left = mid;
             }
             MorphKeyFrame keyFrameLeft = keyframeSet[left];
             MorphKeyFrame keyFrameRight = keyframeSet[right];
-            keyframeSet.PrevIndex = left;
-            return ComputeKeyFrame(keyFrameLeft, keyFrameRight);
 
-        }
-
-        //在GetMorphWeight之后使用
-        public void GetABWeight(string key, float time, out float AWeight, out float BWeight)
-        {
-            if (!MorphKeyFrameSet.TryGetValue(key, out var keyframeSet))
-            {
-                AWeight = 0.0f;
-                BWeight = 0.0f;
-                return;
-            }
+            var cacheIndex = left;
             int frameA = (int)MathF.Floor(Math.Max(time * c_framePerSecond, 0));
             int frameB = frameA + 1;
-            var cacheIndex = keyframeSet.PrevIndex;
-            float ComputeKeyFrame(MorphKeyFrame _left, MorphKeyFrame _right, int frame)
+            float ComputeKeyFrame1(MorphKeyFrame _left, MorphKeyFrame _right, int frame)
             {
                 float amount = (float)(frame - _left.Frame) / (_right.Frame - _left.Frame);
                 return (1 - amount) * _left.Weight + amount * _right.Weight;
@@ -248,11 +118,11 @@ namespace Coocoo3D.Components
             {
                 if (cacheIndex < keyframeSet.Count - 1 && keyframeSet[cacheIndex].Frame <= frame && keyframeSet[cacheIndex + 1].Frame >= frame)
                 {
-                    return ComputeKeyFrame(keyframeSet[cacheIndex], keyframeSet[cacheIndex + 1], frame);
+                    return ComputeKeyFrame1(keyframeSet[cacheIndex], keyframeSet[cacheIndex + 1], frame);
                 }
                 else if (cacheIndex < keyframeSet.Count - 2 && keyframeSet[cacheIndex + 1].Frame <= frame && keyframeSet[cacheIndex + 2].Frame >= frame)
                 {
-                    return ComputeKeyFrame(keyframeSet[cacheIndex + 1], keyframeSet[cacheIndex + 2], frame);
+                    return ComputeKeyFrame1(keyframeSet[cacheIndex + 1], keyframeSet[cacheIndex + 2], frame);
                 }
                 else if (keyframeSet[keyframeSet.Count - 1].Frame <= frame)
                 {
@@ -262,6 +132,8 @@ namespace Coocoo3D.Components
             }
             AWeight = GetWeight(frameA);
             BWeight = GetWeight(frameB);
+
+            return ComputeKeyFrame(keyFrameLeft, keyFrameRight, indexFrame);
         }
     }
 }
@@ -289,11 +161,11 @@ namespace Coocoo3D.FileFormat
 
                 foreach (var pair in vmd.BoneKeyFrameSet)
                 {
-                    motionComponent.BoneKeyFrameSet.Add(pair.Key, new MMDMotionComponent.DataSetStruct<BoneKeyFrame>(pair.Value));
+                    motionComponent.BoneKeyFrameSet.Add(pair.Key, new List<BoneKeyFrame>(pair.Value));
                 }
                 foreach (var pair in vmd.MorphKeyFrameSet)
                 {
-                    motionComponent.MorphKeyFrameSet.Add(pair.Key, new MMDMotionComponent.DataSetStruct<MorphKeyFrame>(pair.Value));
+                    motionComponent.MorphKeyFrameSet.Add(pair.Key, new List<MorphKeyFrame>(pair.Value));
                 }
             }
         }

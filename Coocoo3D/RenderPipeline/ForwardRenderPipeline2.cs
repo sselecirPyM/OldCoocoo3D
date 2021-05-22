@@ -335,7 +335,7 @@ namespace Coocoo3D.RenderPipeline
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
-                graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
+                graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);

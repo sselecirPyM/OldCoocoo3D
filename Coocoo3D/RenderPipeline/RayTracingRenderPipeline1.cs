@@ -179,7 +179,7 @@ namespace Coocoo3D.RenderPipeline
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
-                graphicsContext.SetCBVR(entityBoneDataBuffer, 0);
+                graphicsContext.SetCBVRSlot(entityBoneDataBuffer,0,0, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, PSOSkinning);
                 graphicsContext.SetMeshVertex1(rendererComponent.mesh);

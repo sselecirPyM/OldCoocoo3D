@@ -128,23 +128,22 @@ namespace Coocoo3D.Core
                 {
                     Parallel.ForEach(entities, (MMD3DEntity e) => { e.SetMotionTime(playTime1); });
                 }
-                else for (int i = 0; i < entities.Count; i++)
+                else foreach (MMD3DEntity entity in entities)
                     {
-                        entities[i].SetMotionTime(playTime1);
+                        entity.SetMotionTime(playTime1);
                     }
             }
             UpdateEntities((float)playTime);
             float t1 = Math.Clamp(deltaTime, -0.17f, 0.17f);
             for (int i = 0; i < rendererComponents.Count; i++)
             {
-                rendererComponents[i].SetPhysicsPose(physics3DScene);
+                rendererComponents[i].PrePhysicsSync(physics3DScene);
             }
             physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
-
             physics3DScene.FetchResults();
             for (int i = 0; i < rendererComponents.Count; i++)
             {
-                rendererComponents[i].SetPoseAfterPhysics(physics3DScene);
+                rendererComponents[i].PhysicsSync(physics3DScene);
             }
         }
 
