@@ -61,7 +61,7 @@ namespace Coocoo3D.Present
                 rendererComponent.SetPoseNoMotion(morphStateComponent);
             }
             rendererComponent.ComputeMatricesData();
-            rendererComponent.SetPose(morphStateComponent);
+            rendererComponent.MorphCompute(morphStateComponent);
         }
 
         public override string ToString()

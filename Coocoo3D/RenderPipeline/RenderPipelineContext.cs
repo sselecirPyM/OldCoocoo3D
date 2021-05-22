@@ -208,7 +208,7 @@ namespace Coocoo3D.RenderPipeline
                 IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
                 Matrix4x4 world = Matrix4x4.CreateFromQuaternion(rendererComponent.rotation) * Matrix4x4.CreateTranslation(rendererComponent.position);
                 Marshal.StructureToPtr(Matrix4x4.Transpose(world), ptr1, true);
-                Marshal.StructureToPtr(rendererComponent.amountAB, ptr1 + 64, true);
+
                 Marshal.StructureToPtr(rendererComponent.meshVertexCount, ptr1 + 68, true);
                 Marshal.StructureToPtr(rendererComponent.meshIndexCount, ptr1 + 72, true);
                 Marshal.StructureToPtr(data1, ptr1 + 80, true);
@@ -219,15 +219,10 @@ namespace Coocoo3D.RenderPipeline
                 data1.indexStart += rendererComponent.meshIndexCount;
 
 
-                if (rendererComponent.meshNeedUpdateA)
+                if (rendererComponent.meshNeedUpdate)
                 {
                     graphicsContext.UpdateVerticesPos(rendererComponent.meshAppend, rendererComponent.meshPosData1, 0);
-                    rendererComponent.meshNeedUpdateA = false;
-                }
-                if (rendererComponent.meshNeedUpdateB)
-                {
-                    graphicsContext.UpdateVerticesPos(rendererComponent.meshAppend, rendererComponent.meshPosData2, 1);
-                    rendererComponent.meshNeedUpdateB = false;
+                    rendererComponent.meshNeedUpdate = false;
                 }
             }
             #endregion

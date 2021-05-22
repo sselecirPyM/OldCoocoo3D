@@ -323,7 +323,6 @@ namespace Coocoo3D.RenderPipeline
                     return _tex;
             };
             var rpAssets = context.RPAssetsManager;
-            //var RSBase = rpAssets.rootSignature;
             var deviceResources = context.deviceResources;
 
             PSO PSOSkinning = rpAssets.PSOs["PSOMMDSkinning"];
@@ -339,7 +338,7 @@ namespace Coocoo3D.RenderPipeline
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
-                graphicsContext.SetMeshVertex1(rendererComponent.mesh);
+                graphicsContext.SetMeshVertex(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 graphicsContext.Draw(rendererComponent.meshVertexCount, 0);
             }

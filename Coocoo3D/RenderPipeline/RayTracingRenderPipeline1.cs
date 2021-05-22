@@ -182,7 +182,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVRSlot(entityBoneDataBuffer,0,0, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, PSOSkinning);
-                graphicsContext.SetMeshVertex1(rendererComponent.mesh);
+                graphicsContext.SetMeshVertex(rendererComponent.mesh);
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
                 graphicsContext.Draw(indexCountAll, 0);

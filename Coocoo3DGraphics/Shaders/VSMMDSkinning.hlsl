@@ -12,7 +12,6 @@ cbuffer cbAnimMatrices : register(b0)
 struct VSSkinnedIn
 {
 	float3 Pos	: POSITION0;			//Position
-	float3 Pos1	: POSITION1;		//Position
 	float4 Weights : WEIGHTS;		//Bone weights
 	uint4  Bones : BONES;			//Bone indices
 	float3 Norm : NORMAL;			//Normal
@@ -49,7 +48,7 @@ SkinnedInfo SkinVert(VSSkinnedIn Input)
 {
 	SkinnedInfo Output = (SkinnedInfo)0;
 
-	float4 Pos = float4(Input.Pos * (1 - g_posAmount1) + Input.Pos1 * g_posAmount1, 1);
+	float4 Pos = float4(Input.Pos, 1);
 	float3 Norm = Input.Norm;
 	float3 Tan = Input.Tan;
 

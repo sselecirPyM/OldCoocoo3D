@@ -1470,16 +1470,10 @@ void GraphicsContext::SetMeshVertex(MMDMesh^ mesh)
 	m_commandList->IASetVertexBuffers(0, 1, &mesh->m_vertexBufferView);
 }
 
-void GraphicsContext::SetMeshVertex1(MMDMesh^ mesh)
-{
-	m_commandList->IASetPrimitiveTopology(mesh->m_primitiveTopology);
-	m_commandList->IASetVertexBuffers(0, 1, &mesh->m_vertexBufferView);
-}
-
 void GraphicsContext::SetMeshVertex(MMDMeshAppend^ mesh)
 {
 	m_commandList->IASetVertexBuffers(1, 1, &mesh->m_vertexBufferPosViews[0]);
-	m_commandList->IASetVertexBuffers(2, 1, &mesh->m_vertexBufferPosViews[1]);
+	//m_commandList->IASetVertexBuffers(2, 1, &mesh->m_vertexBufferPosViews[1]);
 }
 
 void GraphicsContext::SetMeshIndex(MMDMesh^ mesh)

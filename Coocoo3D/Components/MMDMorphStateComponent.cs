@@ -13,8 +13,6 @@ namespace Coocoo3D.Components
     {
         public List<MorphDesc> morphs = new List<MorphDesc>();
         public WeightGroup Weights = new WeightGroup();
-        public WeightGroup WeightsA = new WeightGroup();
-        public WeightGroup WeightsB = new WeightGroup();
 
         public float currentTimeA;
         public float amountAB;
@@ -26,15 +24,13 @@ namespace Coocoo3D.Components
             currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
             foreach (var pair in stringMorphIndexMap)
             {
-                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time, out WeightsA.Origin[pair.Value], out WeightsB.Origin[pair.Value]);
+                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time, out _, out _);
             }
             amountAB = Math.Max((time - currentTimeA) / c_frameInterval, 0);
         }
         public void ComputeWeight()
         {
             ComputeWeight1(morphs, Weights);
-            ComputeWeight1(morphs, WeightsA);
-            ComputeWeight1(morphs, WeightsB);
         }
 
         private static void ComputeWeight1(IReadOnlyList<MorphDesc> morphs, WeightGroup weightGroup)
@@ -63,19 +59,6 @@ namespace Coocoo3D.Components
                     ComputeWeightGroup(morphs, subMorph, rate * subMorphStruct.Rate, computedWeights);
                 else
                     computedWeights[subMorphStruct.GroupIndex] += rate * subMorphStruct.Rate;
-            }
-        }
-
-        public void FlipAB()
-        {
-            for (int i = 0; i < morphs.Count; i++)
-            {
-                if (morphs[i].Type == MorphType.Vertex)
-                {
-                    float a = WeightsA.ComputedPrev[i];
-                    WeightsA.ComputedPrev[i] = WeightsB.ComputedPrev[i];
-                    WeightsB.ComputedPrev[i] = a;
-                }
             }
         }
     }
@@ -278,8 +261,6 @@ namespace Coocoo3D.FileFormat
                 weightGroup.ComputedPrev = new float[morphCount];
             }
             newWeightGroup(component.Weights);
-            newWeightGroup(component.WeightsA);
-            newWeightGroup(component.WeightsB);
             for (int i = 0; i < morphCount; i++)
             {
                 component.stringMorphIndexMap.Add(pmx.Morphs[i].Name, i);

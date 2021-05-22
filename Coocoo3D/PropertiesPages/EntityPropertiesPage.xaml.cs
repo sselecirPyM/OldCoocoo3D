@@ -225,8 +225,6 @@ namespace Coocoo3D.PropertiesPages
                     int index = entity.morphStateComponent.stringMorphIndexMap[currentSelectedMorph.Name];
                     _cahceMorphValue = value;
                     entity.morphStateComponent.Weights.Origin[index] = value;
-                    entity.morphStateComponent.WeightsA.Origin[index] = value;
-                    entity.morphStateComponent.WeightsB.Origin[index] = value;
                     appBody.RequireRender(true);
                 }
             }

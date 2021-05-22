@@ -122,7 +122,6 @@ namespace Coocoo3DGraphics
 		void SetTPAS(RayTracingTopAS^ rttas, RayTracingStateObject^ rtso, int slot);
 		void SetMesh(MMDMesh^ mesh);
 		void SetMeshVertex(MMDMesh^ mesh);
-		void SetMeshVertex1(MMDMesh^ mesh);
 		void SetMeshVertex(MMDMeshAppend^ mesh);
 		void SetMeshIndex(MMDMesh^ mesh);
 		void SetMesh(MeshBuffer^ mesh);
