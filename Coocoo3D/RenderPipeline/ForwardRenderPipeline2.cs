@@ -430,7 +430,7 @@ namespace Coocoo3D.RenderPipeline
                         int indexOffset = 0;
                         foreach (var material in Materials)
                         {
-                            if (!FilterObj(context, combinedPass.Filter, rendererComponent, material))
+                            if (!FilterObj(context, _combinedPass.Filter, rendererComponent, material))
                             {
                                 counterX.material++;
                                 indexOffset += material.indexCount;
@@ -442,7 +442,7 @@ namespace Coocoo3D.RenderPipeline
                                 matC++;
                             }
                             _PassSetRes1(material, _combinedPass);
-                            if (passPsoDesc.cullMode == ECullMode.notSpecific)
+                            if (_combinedPass.CullMode == ECullMode.notSpecific)
                                 passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? ECullMode.none : ECullMode.back;
                             SetPipelineStateVariant(deviceResources, graphicsContext, rootSignature, ref passPsoDesc, PSODraw);
                             graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);

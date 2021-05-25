@@ -44,15 +44,6 @@ namespace Coocoo3D.PropertiesPages
                 _cachePos = selectedGameObject.Position;
                 _cacheRot = QuaternionToEularYXZ(selectedGameObject.Rotation) / MathF.PI * 180;
                 _cacheRotQ = selectedGameObject.Rotation;
-                foreach (var pair in selectedGameObject.components)
-                {
-                    Type type1 = C2Control.componentToControl[(pair.Key)];
-                    var menthod = type1.GetMethod("SetTarget", new Type[] { typeof(Components.Component),typeof(Coocoo3DMain) });
-                    object inst = Activator.CreateInstance(type1);
-                    menthod?.Invoke(inst, new object[] { pair.Value,appBody });
-
-                    pivot1.Items.Add(new PivotItem() { Header = pair.Key.Name, Content = inst });
-                }
             }
             else
             {

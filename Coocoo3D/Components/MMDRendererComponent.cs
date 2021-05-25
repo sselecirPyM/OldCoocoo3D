@@ -539,8 +539,10 @@ namespace Coocoo3D.Components
 
         #endregion
     }
+    [Flags]
     public enum DrawFlag
     {
+        None=0,
         DrawDoubleFace = 1,
         DrawGroundShadow = 2,
         CastSelfShadow = 4,

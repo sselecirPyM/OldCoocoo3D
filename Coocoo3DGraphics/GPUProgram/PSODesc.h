@@ -27,6 +27,7 @@ namespace Coocoo3DGraphics
 		mmd = 0,
 		postProcess = 1,
 		skinned = 2,
+		imgui = 3,
 	};
 	public enum struct ED3D12PrimitiveTopologyType
 	{

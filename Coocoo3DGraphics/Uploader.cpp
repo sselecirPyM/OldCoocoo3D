@@ -111,6 +111,17 @@ void Uploader::Texture2D(IBuffer^ file1, bool srgb, bool generateMips)
 	}
 }
 
+void Uploader::Texture2DRaw(const Platform::Array<byte>^ rawData, int width, int height)
+{
+	m_width = width;
+	m_height = height;
+	m_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_mipLevels = 1;
+	m_data = std::vector<byte>();
+	m_data.resize(rawData->Length);
+	memcpy(m_data.data(), rawData->begin(), rawData->Length);
+}
+
 void Uploader::Texture2DPure(int width, int height, Windows::Foundation::Numerics::float4 color)
 {
 	m_width = width;

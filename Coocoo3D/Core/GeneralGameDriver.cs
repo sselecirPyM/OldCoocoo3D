@@ -12,17 +12,17 @@ namespace Coocoo3D.Core
         public override bool Next(RenderPipelineContext rpContext)
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
-            if (!(context.NeedRender || context.Playing))
+            if (!(context.NeedRender>0 || context.Playing))
             {
                 return false;
             }
             if (DateTime.Now - context.LatestRenderTime < context.FrameInterval)
             {
-                context.NeedRender = true;
+                context.NeedRender -=1;
                 return false;
             }
             context.EnableDisplay = true;
-            context.NeedRender = false;
+            context.NeedRender -=1;
             context.RequireResize = context.RequireResizeOuter;
             context.RequireResizeOuter = false;
 

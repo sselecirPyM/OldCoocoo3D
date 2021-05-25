@@ -28,7 +28,7 @@ namespace Coocoo3D.RenderPipeline
     }
     public class GameDriverContext
     {
-        public volatile bool NeedRender;
+        public int NeedRender;
         public volatile bool EnableDisplay;
         public bool Playing;
         public double PlayTime;
@@ -49,17 +49,17 @@ namespace Coocoo3D.RenderPipeline
         public void ReqireReloadModel()
         {
             NeedReloadModel = true;
-            NeedRender = true;
+            NeedRender = 10;
         }
 
         public void RequireRender(bool updateEntities)
         {
-            NeedRender = true;
+            NeedRender = 10;
         }
 
         public void RequireRender()
         {
-            NeedRender = true;
+            NeedRender = 10;
         }
     }
 

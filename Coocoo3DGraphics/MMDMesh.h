@@ -1,4 +1,5 @@
 #pragma once
+#include "DeviceResources.h"
 namespace Coocoo3DGraphics
 {
 	public enum struct PrimitiveTopology
@@ -52,6 +53,7 @@ namespace Coocoo3DGraphics
 		static MMDMesh^ Load1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
 		//在上传GPU之前是无法使用的。使用GraphicsContext::void UploadMesh(MMDMesh^ mesh)上传。
 		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
+		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, PrimitiveTopology pt);
 		void ReloadNDCQuad();
 		void ReloadCube();
 		void ReloadCubeWire();
@@ -59,7 +61,7 @@ namespace Coocoo3DGraphics
 		virtual ~MMDMesh();
 		int GetIndexCount();
 		int GetVertexCount();
-
+		void SetIndexFormat(DxgiFormat format);
 		property Platform::Array<byte>^ m_verticeData;
 	internal:
 		int m_indexCount;

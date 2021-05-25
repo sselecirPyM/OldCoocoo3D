@@ -23,6 +23,18 @@ void MMDMesh::Reload1(const Platform::Array<byte>^ verticeData, const Platform::
 	memcpy(m_indexData->GetBufferPointer(), indexData->begin(), indexData->Length * sizeof(UINT));
 }
 
+void MMDMesh::Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, PrimitiveTopology pt)
+{
+	m_vertexStride = vertexStride;
+	m_vertexCount = verticeData->Length / m_vertexStride;
+	m_indexCount = indexData->Length;
+	m_primitiveTopology = (D3D_PRIMITIVE_TOPOLOGY)pt;
+	m_verticeData = verticeData;
+
+	D3DCreateBlob(indexData->Length, &m_indexData);
+	memcpy(m_indexData->GetBufferPointer(), indexData->begin(), indexData->Length);
+}
+
 struct OnlyPosition
 {
 	DirectX::XMFLOAT3 pos;
@@ -157,4 +169,9 @@ int MMDMesh::GetIndexCount()
 int MMDMesh::GetVertexCount()
 {
 	return m_vertexCount;
+}
+
+void MMDMesh::SetIndexFormat(DxgiFormat format)
+{
+	m_indexBufferView.Format = (DXGI_FORMAT)format;
 }

@@ -36,6 +36,10 @@
     <Name>VSMMDTransform</Name>
     <Path>ms-appx:///Coocoo3DGraphics/VSMMDTransform.cso</Path>
   </VertexShader>
+  <VertexShader>
+    <Name>ImGui_VS</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/ImGui_VS.cso</Path>
+  </VertexShader>
   <!--pixelshaders-->
   <PixelShader>
     <Name>PSPostProcess.cso</Name>
@@ -84,6 +88,10 @@
   <PixelShader>
     <Name>PS_BloomBlur2</Name>
     <Path>ms-appx:///Coocoo3DGraphics/PS_BloomBlur2.cso</Path>
+  </PixelShader>
+  <PixelShader>
+    <Name>ImGui_PS</Name>
+    <Path>ms-appx:///Coocoo3DGraphics/ImGui_PS.cso</Path>
   </PixelShader>
   <ComputeShader>
     <Name>G_IrradianceMap0</Name>
@@ -139,6 +147,11 @@
     <Name>PSOWidgetUILight</Name>
     <VertexShader>VSWidgetUILight.cso</VertexShader>
     <PixelShader>PSWidgetUILight.cso</PixelShader>
+  </PipelineState>
+  <PipelineState>
+    <Name>ImGui</Name>
+    <VertexShader>ImGui_VS</VertexShader>
+    <PixelShader>ImGui_PS</PixelShader>
   </PipelineState>
   <Texture2D>
     <Name>_BRDFLUT</Name>

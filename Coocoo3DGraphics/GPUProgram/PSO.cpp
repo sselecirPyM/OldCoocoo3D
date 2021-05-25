@@ -24,6 +24,12 @@ static const D3D12_INPUT_ELEMENT_DESC inputLayoutPosOnly[] =
 {
 	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 };
+static const D3D12_INPUT_ELEMENT_DESC _inputLayoutImGui[] =
+{
+	{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{ "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+};
 inline D3D12_BLEND_DESC BlendDescAlpha()
 {
 	D3D12_BLEND_DESC blendDescAlpha = {};
@@ -112,6 +118,8 @@ int PSO::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ gr
 			state.InputLayout = { inputLayoutPosOnly, _countof(inputLayoutPosOnly) };
 		else if (psoDesc.inputLayout == EInputLayout::skinned)
 			state.InputLayout = { inputLayoutSkinned, _countof(inputLayoutSkinned) };
+		else if (psoDesc.inputLayout == EInputLayout::imgui)
+			state.InputLayout = { _inputLayoutImGui, _countof(_inputLayoutImGui) };
 		state.pRootSignature = graphicsSignature->m_rootSignature.Get();
 		if (m_vertexShader != nullptr)
 			state.VS = CD3DX12_SHADER_BYTECODE(m_vertexShader->byteCode.Get());

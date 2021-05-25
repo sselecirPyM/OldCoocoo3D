@@ -23,6 +23,7 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
         public Dictionary<string, Texture2D> texture2ds = new Dictionary<string, Texture2D>();
         public Dictionary<string, GraphicsSignature> signaturePass = new Dictionary<string, GraphicsSignature>();
+        public Dictionary<IntPtr, string> ptr2string = new Dictionary<IntPtr, string>();
 
         public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
         public GraphicsSignature rtLocal = new GraphicsSignature();

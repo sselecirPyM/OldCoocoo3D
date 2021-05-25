@@ -96,7 +96,7 @@ namespace Coocoo3D.Core
                 await RPContext.ReloadDefalutResources(miscProcessContext);
                 forwardRenderPipeline2.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
-                widgetRenderer.Reload(deviceResources);
+                widgetRenderer.Reload(RPContext);
                 deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, 0);
                 if (deviceResources.IsRayTracingSupport())
                 {
@@ -152,7 +152,7 @@ namespace Coocoo3D.Core
         }
         public void RequireRender()
         {
-            RPContext.gameDriverContext.NeedRender = true;
+            GameDriverContext.RequireRender();
         }
 
         public ProcessingList ProcessingList { get => RPContext.processingList; }
@@ -273,9 +273,11 @@ namespace Coocoo3D.Core
                 miscProcess.Process(RPContext, _miscProcessContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
-                bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready;
+                bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready && widgetRenderer.Ready;
                 if (thisFrameReady && RPContext.dynamicContextRead.EnableDisplay)
                 {
+                    if (RPContext.dynamicContextRead.settings.ViewerUI)
+                        UI.UIImGui.GUI(this);
                     graphicsContext.BeginCommand();
                     graphicsContext.SetDescriptorHeapDefault();
                     currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);

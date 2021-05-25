@@ -17,7 +17,7 @@ namespace Coocoo3D.Core
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
 
-            context.NeedRender = false;
+            context.NeedRender = 1;
             DateTime now = DateTime.Now;
             context.LatestRenderTime = now;
 
