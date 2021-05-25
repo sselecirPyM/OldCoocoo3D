@@ -28,6 +28,14 @@ namespace Coocoo3D.Components
             }
             amountAB = Math.Max((time - currentTimeA) / c_frameInterval, 0);
         }
+        public void SetPoseDefault()
+        {
+            foreach (var pair in stringMorphIndexMap)
+            {
+                Weights.Origin[pair.Value] = 0;
+            }
+        }
+
         public void ComputeWeight()
         {
             ComputeWeight1(morphs, Weights);

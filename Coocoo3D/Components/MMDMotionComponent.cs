@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.Components
 {
-    public class MMDMotionComponent
+    public class MMDMotionComponent : Component
     {
         public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, List<BoneKeyFrame>>();
         public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, List<MorphKeyFrame>>();

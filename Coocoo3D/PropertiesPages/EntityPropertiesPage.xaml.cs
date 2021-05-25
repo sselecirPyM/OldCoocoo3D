@@ -88,7 +88,7 @@ namespace Coocoo3D.PropertiesPages
                 propChange("VRY");
                 propChange("VRZ");
             }
-            if (currentSelectedMorph != null && !entity.LockMotion)
+            if (currentSelectedMorph != null && !entity.rendererComponent.LockMotion)
             {
                 int index = entity.morphStateComponent.stringMorphIndexMap[currentSelectedMorph.Name];
                 if (_cahceMorphValue != entity.morphStateComponent.Weights.Origin[index])
@@ -153,11 +153,11 @@ namespace Coocoo3D.PropertiesPages
 
         public bool VLockMotion
         {
-            get => entity.LockMotion;
+            get => entity.rendererComponent.LockMotion;
             set
             {
-                if (entity.LockMotion == value) return;
-                entity.LockMotion = value;
+                if (entity.rendererComponent.LockMotion == value) return;
+                entity.rendererComponent.LockMotion = value;
                 appBody.RequireRender(true);
                 propChange(nameof(VLockMotion));
             }
@@ -166,7 +166,6 @@ namespace Coocoo3D.PropertiesPages
         void UpdatePositionFromUI()
         {
             entity.PositionNextFrame = _cacheP;
-            entity.NeedTransform = true;
             appBody.RequireRender();
         }
         void UpdateRotationFromUI()
@@ -176,7 +175,6 @@ namespace Coocoo3D.PropertiesPages
             _cacheRQ = Quaternion.CreateFromYawPitchRoll(t1.Y, t1.X, t1.Z);
 
             entity.RotationNextFrame = _cacheRQ;
-            entity.NeedTransform = true;
             appBody.RequireRender();
         }
 
@@ -277,49 +275,6 @@ namespace Coocoo3D.PropertiesPages
             if (appBody != null)
             {
                 appBody.FrameUpdated -= FrameUpdated;
-            }
-        }
-
-        private async void Page_Drop(object sender, DragEventArgs e)
-        {
-            if (e.DataView.Properties.TryGetValue("ExtName", out object object1))
-            {
-                string extName = object1 as string;
-                if (extName != null)
-                {
-                    e.DataView.Properties.TryGetValue("File", out object object2);
-                    StorageFile storageFile = object2 as StorageFile;
-                    e.DataView.Properties.TryGetValue("Folder", out object object3);
-                    StorageFolder storageFolder = object3 as StorageFolder;
-                    var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-                    if (".vmd".Equals(extName, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        try
-                        {
-                            await UI.UISharedCode.LoadVMD(appBody, storageFile, entity);
-                        }
-                        catch (Exception exception)
-                        {
-                            MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
-                            await dialog.ShowAsync();
-                        }
-                    }
-                }
-            }
-        }
-
-        private void Page_DragOver(object sender, DragEventArgs e)
-        {
-            if (e.DataView.Properties.TryGetValue("ExtName", out object object1))
-            {
-                string extName = object1 as string;
-                if (extName != null)
-                {
-                    if (".vmd".Equals(extName, StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        e.AcceptedOperation = DataPackageOperation.Copy;
-                    }
-                }
             }
         }
 

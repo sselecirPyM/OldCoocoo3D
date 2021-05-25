@@ -98,6 +98,10 @@ namespace Coocoo3D.PropertiesPages
                         {
                             entity.motionComponent.Reload(motionSet);
                         }
+                        foreach (var gameObject in appBody.SelectedGameObjects)
+                        {
+                            gameObject.GetComponent<Components.MMDMotionComponent>()?.Reload(motionSet);
+                        }
                     }
                     catch (Exception exception)
                     {

@@ -132,12 +132,6 @@
     <Compile Include="Components\MMDMotionComponent.cs" />
     <Compile Include="Components\MMDRendererComponent.cs" />
     <Compile Include="Components\VolumeComponent.cs" />
-    <Compile Include="Controls\CLightingComponent.xaml.cs">
-      <DependentUpon>CLightingComponent.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Controls\CVolumeComponent.xaml.cs">
-      <DependentUpon>CVolumeComponent.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Core\Input.cs" />
     <Compile Include="Core\ModelReloader.cs" />
     <Compile Include="Present\CameraMotion.cs" />
@@ -263,14 +257,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="Controls\CLightingComponent.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Controls\CVolumeComponent.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Controls\WorldViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

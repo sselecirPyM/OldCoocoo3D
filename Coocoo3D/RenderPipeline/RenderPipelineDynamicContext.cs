@@ -62,6 +62,13 @@ namespace Coocoo3D.RenderPipeline
                     volume.Position = gameObject.Position;
                     volumes.Add(volume);
                 }
+                MMDRendererComponent rendererComponent = gameObject.GetComponent<MMDRendererComponent>();
+                if (rendererComponent != null)
+                {
+                    rendererComponent.position = gameObject.Position;
+                    rendererComponent.rotation = gameObject.Rotation;
+                    renderers.Add(rendererComponent);
+                }
             }
             lightings.Sort();
         }

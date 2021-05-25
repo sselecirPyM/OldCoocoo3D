@@ -10,7 +10,6 @@ namespace Coocoo3D.Present
 {
     public class GameObject : ISceneObject, System.ComponentModel.INotifyPropertyChanged
     {
-
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         public void PropChange(System.ComponentModel.PropertyChangedEventArgs e)
         {
@@ -18,10 +17,14 @@ namespace Coocoo3D.Present
         }
 
         public string Name = "GameObject";
+        public string Description = string.Empty;
         public int layoutMask;
 
         public Vector3 Position;
         public Quaternion Rotation = Quaternion.Identity;
+
+        public Vector3 PositionNextFrame;
+        public Quaternion RotationNextFrame = Quaternion.Identity;
 
         public override string ToString()
         {

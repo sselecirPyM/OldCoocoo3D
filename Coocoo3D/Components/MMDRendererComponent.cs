@@ -21,7 +21,9 @@ namespace Coocoo3D.Components
         public MMDMeshAppend meshAppend = new MMDMeshAppend();
         public Vector3 position;
         public Quaternion rotation;
-        public MMDMorphStateComponent stateComponent;
+        public MMDMorphStateComponent morphStateComponent = new MMDMorphStateComponent();
+        public MMDMotionComponent motionComponent;
+        public bool LockMotion;
 
         public int meshVertexCount;
         public int meshIndexCount;
@@ -36,13 +38,13 @@ namespace Coocoo3D.Components
         public Vector3[] meshPosData1;
         public bool meshNeedUpdate;
 
-        public void MorphCompute(MMDMorphStateComponent morphStateComponent)
+        public void MorphCompute()
         {
-            ComputeVertexMorph(morphStateComponent);
-            ComputeMaterialMorph(morphStateComponent);
+            ComputeVertexMorph();
+            ComputeMaterialMorph();
         }
 
-        public void ComputeVertexMorph(MMDMorphStateComponent morphStateComponent)
+        public void ComputeVertexMorph()
         {
             for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             {
@@ -71,7 +73,7 @@ namespace Coocoo3D.Components
             }
         }
 
-        public void ComputeMaterialMorph(MMDMorphStateComponent morphStateComponent)
+        public void ComputeMaterialMorph()
         {
             for (int i = 0; i < computedMaterialsData.Count; i++)
             {
@@ -148,19 +150,38 @@ namespace Coocoo3D.Components
             for (int i = 0; i < bones.Count; i++)
                 boneMatricesData[i] = Matrix4x4.Transpose(bones[i].GeneratedTransform);
         }
-        public void SetPoseWithMotion(MMDMotionComponent motionComponent, MMDMorphStateComponent morphStateComponent, float time)
+        public void SetPoseWithMotion(float time)
         {
+            lock (motionComponent)
+            {
+                morphStateComponent.SetPose(motionComponent, time);
+                morphStateComponent.ComputeWeight();
+                foreach (var bone in bones)
+                {
+                    var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
+                    bone.rotation = keyframe.rotation;
+                    bone.dynamicPosition = keyframe.translation;
+                    cachedBoneKeyFrames[bone.index] = keyframe;
+                }
+                UpdateAllMatrix();
+                SetPose3();
+            }
+        }
+        public void SetPoseDefault()
+        {
+            morphStateComponent.SetPoseDefault();
+            morphStateComponent.ComputeWeight();
             foreach (var bone in bones)
             {
-                var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
+                var keyframe = new BoneKeyFrame() { Rotation = Quaternion.Identity };
                 bone.rotation = keyframe.rotation;
                 bone.dynamicPosition = keyframe.translation;
                 cachedBoneKeyFrames[bone.index] = keyframe;
             }
             UpdateAllMatrix();
-            SetPose3(morphStateComponent);
+            SetPose3();
         }
-        public void SetPose3(MMDMorphStateComponent morphStateComponent)
+        public void SetPose3()
         {
             for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             {
@@ -184,8 +205,9 @@ namespace Coocoo3D.Components
             UpdateAppendBones();
         }
 
-        public void SetPoseNoMotion(MMDMorphStateComponent morphStateComponent)
+        public void SetPoseNoMotion()
         {
+            morphStateComponent.ComputeWeight();
             for (int i = 0; i < bones.Count; i++)
             {
                 var keyframe = cachedBoneKeyFrames[i];
@@ -193,7 +215,7 @@ namespace Coocoo3D.Components
                 bones[i].dynamicPosition = keyframe.translation;
             }
             UpdateAllMatrix();
-            SetPose3(morphStateComponent);
+            SetPose3();
         }
 
         public void PrePhysicsSync(Physics3DScene physics3DScene)
@@ -443,12 +465,13 @@ namespace Coocoo3D.Components
             for (int i = 0; i < rigidBodyDescs.Count; i++)
             {
                 var desc = rigidBodyDescs[i];
-                if (desc.Type != 0) continue;
+                if (desc.Type != RigidBodyType.Kinematic) continue;
                 int index = desc.AssociatedBoneIndex;
                 var bone = bones[index];
-                Matrix4x4.Decompose(bone.GeneratedTransform, out _, out Quaternion rot, out Vector3 trans);
-                Vector3 pos = Vector3.Transform(bone.staticPosition, bone.GeneratedTransform * LocalToWorld);
-                physics3DScene.MoveRigidBody(physics3DRigidBodys[i], pos, rot);
+                //Matrix4x4.Decompose(bone.GeneratedTransform, out _, out Quaternion rot, out Vector3 trans);
+                //Vector3 pos = Vector3.Transform(bone.staticPosition, bone.GeneratedTransform * LocalToWorld);
+                Matrix4x4 mat2 = Matrix4x4.CreateFromQuaternion(desc.Rotation) * Matrix4x4.CreateTranslation(desc.Position) * bones[index].GeneratedTransform * LocalToWorld;
+                physics3DScene.MoveRigidBody(physics3DRigidBodys[i], mat2);
             }
         }
 
@@ -538,11 +561,27 @@ namespace Coocoo3D.Components
         #endregion
 
         #endregion
+        public void SetMotionTime(float time)
+        {
+            if (!LockMotion)
+            {
+                if (motionComponent != null)
+                    SetPoseWithMotion(time);
+                else
+                    SetPoseDefault();
+            }
+            else
+            {
+                SetPoseNoMotion();
+            }
+            ComputeMatricesData();
+            MorphCompute();
+        }
     }
     [Flags]
     public enum DrawFlag
     {
-        None=0,
+        None = 0,
         DrawDoubleFace = 1,
         DrawGroundShadow = 2,
         CastSelfShadow = 4,
@@ -732,6 +771,7 @@ namespace Coocoo3D.FileFormat
     {
         public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<Texture2D> textures)
         {
+            rendererComponent.Initialize2(modelPack.pmx);
             rendererComponent.shaders.Clear();
             rendererComponent.Materials.Clear();
             rendererComponent.materialsBaseData.Clear();
@@ -865,6 +905,7 @@ namespace Coocoo3D.FileFormat
 
         public static void Initialize2(this MMDRendererComponent rendererComponent, PMXFormat modelResource)
         {
+            rendererComponent.morphStateComponent.Reload(modelResource);
             rendererComponent.bones.Clear();
             rendererComponent.cachedBoneKeyFrames.Clear();
             var _bones = modelResource.Bones;

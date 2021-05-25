@@ -199,24 +199,26 @@ namespace Coocoo3D.Core
             }
 
             var entities = RPContext.dynamicContextWrite.entities;
+            var gameObjects = RPContext.dynamicContextWrite.gameObjects;
             var rendererComponents = RPContext.dynamicContextWrite.renderers;
-            for (int i = 0; i < entities.Count; i++)
-            {
-                var entity = entities[i];
-                if (entity.NeedTransform)
-                {
-                    entity.NeedTransform = false;
-                    entity.Position = entity.PositionNextFrame;
-                    entity.Rotation = entity.RotationNextFrame;
-                    entity.rendererComponent.TransformToNew(CurrentScene.physics3DScene, entity.Position, entity.Rotation);
-
-                    RPContext.gameDriverContext.RequireResetPhysics = true;
-                }
-            }
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
             camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
             RPContext.dynamicContextWrite.cameras.Add(camera.GetCameraData());
             RPContext.dynamicContextWrite.Preprocess();
+
+            for (int i = 0; i < entities.Count; i++)
+            {
+                var entity = entities[i];
+                if (entity.Position != entity.PositionNextFrame || entity.Rotation != entity.RotationNextFrame)
+                    RPContext.gameDriverContext.RequireResetPhysics = true;
+            }
+
+            for (int i = 0; i < gameObjects.Count; i++)
+            {
+                var gameObject = gameObjects[i];
+                if (gameObject.Position != gameObject.PositionNextFrame || gameObject.Rotation != gameObject.RotationNextFrame)
+                    RPContext.gameDriverContext.RequireResetPhysics = true;
+            }
 
             if (RPContext.gameDriverContext.Playing || RPContext.gameDriverContext.RequireResetPhysics)
             {
@@ -243,11 +245,11 @@ namespace Coocoo3D.Core
                 RPContext.ReloadTextureSizeResources();
             }
             RPContext.PreConfig();
-            if (RPContext.gameDriverContext.NeedReloadModel)
-            {
-                RPContext.gameDriverContext.NeedReloadModel = false;
-                ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
-            }
+            //if (RPContext.gameDriverContext.NeedReloadModel)
+            //{
+            //    RPContext.gameDriverContext.NeedReloadModel = false;
+            //    ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
+            //}
             ProcessingList.MoveToAnother(_processingList);
             if (!_processingList.IsEmpty())
             {

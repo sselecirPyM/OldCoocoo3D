@@ -41,6 +41,7 @@ namespace Coocoo3D.UI
             Present.GameObject selectedObject = null;
             LightingComponent lightingComponent = null;
             VolumeComponent volumeComponent = null;
+            MMDRendererComponent rendererComponent = null;
             if (appBody.SelectedGameObjects.Count == 1 && appBody.SelectedEntities.Count == 0)
             {
                 selectedObject = appBody.SelectedGameObjects[0];
@@ -89,6 +90,12 @@ namespace Coocoo3D.UI
                     ImGui.SetNextWindowSize(new Vector2(300, 200), ImGuiCond.Once);
                     ImGui.Begin("物体");
                     ImGui.Text(selectedObject.Name);
+                    if (ImGui.TreeNode("transform"))
+                    {
+                        ImGui.DragFloat3("位置", ref position, 0.1f);
+                        rotationChange = ImGui.DragFloat3("旋转", ref rotation, 0.01f);
+                        ImGui.TreePop();
+                    }
                     if (lightingComponent != null)
                     {
                         if (ImGui.TreeNode("光照"))
@@ -125,18 +132,18 @@ namespace Coocoo3D.UI
             }
             if (appBody.SelectedGameObjects.Count == 1 && appBody.SelectedEntities.Count == 0)
             {
-                appBody.SelectedGameObjects[0].Position = position;
+                appBody.SelectedGameObjects[0].PositionNextFrame = position;
                 if (rotationChange)
                 {
-                    rotationCache = appBody.SelectedGameObjects[0].Rotation = Quaternion.CreateFromYawPitchRoll(rotation.Y, rotation.X, rotation.Z);
+                    rotationCache = appBody.SelectedGameObjects[0].RotationNextFrame = Quaternion.CreateFromYawPitchRoll(rotation.Y, rotation.X, rotation.Z);
                 }
             }
             else if (appBody.SelectedGameObjects.Count == 0 && appBody.SelectedEntities.Count == 1)
             {
-                appBody.SelectedEntities[0].Position = position;
+                appBody.SelectedEntities[0].PositionNextFrame = position;
                 if (rotationChange)
                 {
-                    rotationCache = appBody.SelectedEntities[0].Rotation = Quaternion.CreateFromYawPitchRoll(rotation.Y, rotation.X, rotation.Z);
+                    rotationCache = appBody.SelectedEntities[0].RotationNextFrame = Quaternion.CreateFromYawPitchRoll(rotation.Y, rotation.X, rotation.Z);
                 }
             }
 

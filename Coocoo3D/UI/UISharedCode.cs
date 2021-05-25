@@ -47,11 +47,15 @@ namespace Coocoo3D.UI
                 }
             }
             if (pack.Status != GraphicsObjectStatus.loaded && pack.LoadTask != null) await pack.LoadTask;
-            MMD3DEntity entity = new MMD3DEntity();
-            entity.Reload2(appBody.ProcessingList, pack, GetTextureList(appBody, storageFolder, pack.pmx), pmxPath);
-            scene.AddSceneObject(entity);
-            appBody.RequireRender();
+            //MMD3DEntity entity = new MMD3DEntity();
+            //entity.Reload2(appBody.ProcessingList, pack, GetTextureList(appBody, storageFolder, pack.pmx), pmxPath);
+            //scene.AddSceneObject(entity);
 
+            GameObject gameObject = new GameObject();
+            gameObject.Reload2(appBody.ProcessingList, pack, GetTextureList(appBody, storageFolder, pack.pmx), pmxPath);
+            scene.AddGameObject(gameObject);
+
+            appBody.RequireRender();
             appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
         }
         public static void NewLighting(Coocoo3DMain appBody)
@@ -107,14 +111,6 @@ namespace Coocoo3D.UI
             StorageFolder folder = await folderPicker.PickSingleFolderAsync();
             if (folder == null) return;
             appBody.OpenedStorageFolderChange(folder);
-        }
-
-        public static async Task LoadVMD(Coocoo3DMain appBody, StorageFile storageFile, MMD3DEntity entity)
-        {
-            BinaryReader reader = new BinaryReader((await storageFile.OpenReadAsync()).AsStreamForRead());
-            VMDFormat motionSet = VMDFormat.Load(reader);
-            entity.motionComponent.Reload(motionSet);
-            appBody.RequireRender(true);
         }
 
         public static List<Texture2D> GetTextureList(Coocoo3DMain appBody, StorageFolder storageFolder, PMXFormat pmx)

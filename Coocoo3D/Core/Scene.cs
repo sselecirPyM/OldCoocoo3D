@@ -16,7 +16,6 @@ namespace Coocoo3D.Core
         public List<MMD3DEntity> Entities = new List<MMD3DEntity>();
         public List<MMD3DEntity> EntityLoadList = new List<MMD3DEntity>();
         public List<MMD3DEntity> EntityRemoveList = new List<MMD3DEntity>();
-        public List<MMD3DEntity> EntityRefreshList = new List<MMD3DEntity>();
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<GameObject> gameObjectLoadList = new List<GameObject>();
         public List<GameObject> gameObjectRemoveList = new List<GameObject>();
@@ -24,6 +23,8 @@ namespace Coocoo3D.Core
 
         public void AddGameObject(GameObject gameObject)
         {
+            gameObject.PositionNextFrame = gameObject.Position;
+            gameObject.RotationNextFrame = gameObject.Rotation;
             lock (this)
             {
                 gameObjectLoadList.Add(gameObject);
@@ -68,22 +69,20 @@ namespace Coocoo3D.Core
                     EntityRemoveList[i].rendererComponent.RemovePhysics(physics3DScene);
                     Entities.Remove(EntityRemoveList[i]);
                 }
-                for (int i = 0; i < EntityRefreshList.Count; i++)
-                {
-                    EntityRefreshList[i].rendererComponent.RemovePhysics(physics3DScene);
-                    EntityRefreshList[i].rendererComponent.AddPhysics(physics3DScene);
-                }
                 EntityLoadList.Clear();
                 EntityRemoveList.Clear();
-                EntityRefreshList.Clear();
 
                 for (int i = 0; i < gameObjectLoadList.Count; i++)
                 {
-                    gameObjects.Add(gameObjectLoadList[i]);
+                    var gameObject = gameObjectLoadList[i];
+                    gameObject.GetComponent<MMDRendererComponent>()?.AddPhysics(physics3DScene);
+                    gameObjects.Add(gameObject);
                 }
                 for (int i = 0; i < gameObjectRemoveList.Count; i++)
                 {
-                    gameObjects.Remove(gameObjectRemoveList[i]);
+                    var gameObject = gameObjectRemoveList[i];
+                    gameObject.GetComponent<MMDRendererComponent>()?.RemovePhysics(physics3DScene);
+                    gameObjects.Remove(gameObject);
                 }
                 gameObjectLoadList.Clear();
                 gameObjectRemoveList.Clear();
@@ -126,14 +125,49 @@ namespace Coocoo3D.Core
                 int threshold = 1;
                 if (entities.Count > threshold)
                 {
-                    Parallel.ForEach(entities, (MMD3DEntity e) => { e.SetMotionTime(playTime1); });
-                }
-                else foreach (MMD3DEntity entity in entities)
+                    Parallel.ForEach(entities, (MMD3DEntity e) =>
                     {
-                        entity.SetMotionTime(playTime1);
+                        e.rendererComponent.motionComponent = e.motionComponent;
+                        e.rendererComponent.SetMotionTime(playTime1);
+                    });
+                }
+                else foreach (MMD3DEntity e in entities)
+                    {
+                        e.rendererComponent.motionComponent = e.motionComponent;
+                        e.rendererComponent.SetMotionTime(playTime1);
+                    }
+            }
+
+            void UpdateGameObjects(float playTime1)
+            {
+                int threshold = 1;
+                if (gameObjects.Count > threshold)
+                {
+                    Parallel.ForEach(gameObjects, (GameObject gameObject) =>
+                    {
+                        var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
+                        if (renderComponent != null)
+                        {
+                            var motionComponent = gameObject.GetComponent<MMDMotionComponent>();
+                            renderComponent.motionComponent = motionComponent;
+                            renderComponent.SetMotionTime(playTime1);
+                        }
+                    });
+                }
+                else foreach (GameObject gameObject in gameObjects)
+                    {
+                        var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
+                        if (renderComponent != null)
+                        {
+                            var motionComponent = gameObject.GetComponent<MMDMotionComponent>();
+                            renderComponent.motionComponent = motionComponent;
+                            renderComponent.SetMotionTime(playTime1);
+                        }
                     }
             }
             UpdateEntities((float)playTime);
+            UpdateGameObjects((float)playTime);
+
             float t1 = Math.Clamp(deltaTime, -0.17f, 0.17f);
             for (int i = 0; i < rendererComponents.Count; i++)
             {
@@ -147,8 +181,32 @@ namespace Coocoo3D.Core
             }
         }
 
-        public void Simulation(double playTime, double deltaTime, IList<MMDRendererComponent> rendererComponents, IList<MMD3DEntity> entities,bool resetPhysics)
+        public void Simulation(double playTime, double deltaTime, IList<MMDRendererComponent> rendererComponents, IList<MMD3DEntity> entities, bool resetPhysics)
         {
+            for (int i = 0; i < entities.Count; i++)
+            {
+                var entity = entities[i];
+                if (entity.Position != entity.PositionNextFrame || entity.Rotation != entity.RotationNextFrame)
+                {
+                    entity.Position = entity.PositionNextFrame;
+                    entity.Rotation = entity.RotationNextFrame;
+                    entity.rendererComponent.TransformToNew(physics3DScene, entity.Position, entity.Rotation);
+
+                    resetPhysics = true;
+                }
+            }
+            for (int i = 0; i < gameObjects.Count; i++)
+            {
+                var gameObject = gameObjects[i];
+                if (gameObject.Position != gameObject.PositionNextFrame || gameObject.Rotation != gameObject.RotationNextFrame)
+                {
+                    gameObject.Position = gameObject.PositionNextFrame;
+                    gameObject.Rotation = gameObject.RotationNextFrame;
+                    gameObject.GetComponent<MMDRendererComponent>()?.TransformToNew(physics3DScene, gameObject.Position, gameObject.Rotation);
+
+                    resetPhysics = true;
+                }
+            }
             if (resetPhysics)
             {
                 _ResetPhysics(rendererComponents);

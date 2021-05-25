@@ -285,7 +285,7 @@ namespace Coocoo3D.RenderPipeline
                             ofs += CooUtility.Write(_buffer, ofs, (float)random.NextDouble());
                             break;
                         default:
-                            var st = _rc?.stateComponent;
+                            var st = _rc?.morphStateComponent;
                             if (st != null && st.stringMorphIndexMap.TryGetValue(s, out int _i))
                             {
                                 ofs += CooUtility.Write(_buffer, ofs, st.Weights.Computed[_i]);
