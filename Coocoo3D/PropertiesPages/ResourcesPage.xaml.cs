@@ -94,10 +94,10 @@ namespace Coocoo3D.PropertiesPages
                     {
                         BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
                         VMDFormat motionSet = VMDFormat.Load(reader);
-                        foreach (var entity in appBody.SelectedEntities)
-                        {
-                            entity.motionComponent.Reload(motionSet);
-                        }
+                        //foreach (var entity in appBody.SelectedEntities)
+                        //{
+                        //    entity.motionComponent.Reload(motionSet);
+                        //}
                         foreach (var gameObject in appBody.SelectedGameObjects)
                         {
                             gameObject.GetComponent<Components.MMDMotionComponent>()?.Reload(motionSet);

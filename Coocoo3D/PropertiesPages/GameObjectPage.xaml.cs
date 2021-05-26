@@ -41,9 +41,9 @@ namespace Coocoo3D.PropertiesPages
                 appBody = _appBody;
                 selectedGameObject = _appBody.SelectedGameObjects[0];
                 appBody.FrameUpdated += FrameUpdated;
-                _cachePos = selectedGameObject.Position;
-                _cacheRot = QuaternionToEularYXZ(selectedGameObject.Rotation) / MathF.PI * 180;
-                _cacheRotQ = selectedGameObject.Rotation;
+                _cachePos = selectedGameObject.PositionNextFrame;
+                _cacheRot = QuaternionToEularYXZ(selectedGameObject.RotationNextFrame) / MathF.PI * 180;
+                _cacheRotQ = selectedGameObject.RotationNextFrame;
             }
             else
             {
@@ -77,9 +77,9 @@ namespace Coocoo3D.PropertiesPages
         }
         private void FrameUpdated(object sender, EventArgs e)
         {
-            if (_cachePos != selectedGameObject.Position)
+            if (_cachePos != selectedGameObject.PositionNextFrame)
             {
-                _cachePos = selectedGameObject.Position;
+                _cachePos = selectedGameObject.PositionNextFrame;
                 _muteProp(() =>
                 {
                     PropertyChanged?.Invoke(this, eaVPX);
@@ -87,10 +87,10 @@ namespace Coocoo3D.PropertiesPages
                     PropertyChanged?.Invoke(this, eaVPZ);
                 });
             }
-            if (_cacheRotQ != selectedGameObject.Rotation)
+            if (_cacheRotQ != selectedGameObject.RotationNextFrame)
             {
                 _cacheRot = QuaternionToEularYXZ(_cacheRotQ) / MathF.PI * 180;
-                _cacheRotQ = selectedGameObject.Rotation;
+                _cacheRotQ = selectedGameObject.RotationNextFrame;
                 _muteProp(() =>
                 {
                     PropertyChanged?.Invoke(this, eaVRX);
@@ -180,13 +180,13 @@ namespace Coocoo3D.PropertiesPages
             var t1 = _cacheRot / 180 * MathF.PI;
             _cacheRotQ = Quaternion.CreateFromYawPitchRoll(t1.Y, t1.X, t1.Z);
 
-            selectedGameObject.Rotation = _cacheRotQ;
+            selectedGameObject.RotationNextFrame = _cacheRotQ;
             appBody.RequireRender();
         }
 
         void UpdatePositionFromUI()
         {
-            selectedGameObject.Position = _cachePos;
+            selectedGameObject.PositionNextFrame = _cachePos;
             appBody.RequireRender();
         }
 

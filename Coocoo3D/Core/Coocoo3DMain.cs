@@ -31,8 +31,7 @@ namespace Coocoo3D.Core
 
         public Scene CurrentScene;
 
-        public object selectedObjcetLock = new object();
-        public List<MMD3DEntity> SelectedEntities = new List<MMD3DEntity>();
+        //public List<MMD3DEntity> SelectedEntities = new List<MMD3DEntity>();
         public List<GameObject> SelectedGameObjects = new List<GameObject>();
 
         public Camera camera = new Camera();
@@ -76,7 +75,7 @@ namespace Coocoo3D.Core
             SaveCpuPower = true,
             AutoReloadShaders = true,
             AutoReloadTextures = true,
-            AutoReloadModels = true,
+            //AutoReloadModels = true,
             VSync = false,
         };
 
@@ -183,12 +182,10 @@ namespace Coocoo3D.Core
             CurrentScene.DealProcessList();
             lock (CurrentScene)
             {
-                RPContext.dynamicContextWrite.entities.AddRange(CurrentScene.Entities);
                 RPContext.dynamicContextWrite.gameObjects.AddRange(CurrentScene.gameObjects);
-                RPContext.dynamicContextWrite.selectedEntity = SelectedEntities.FirstOrDefault();
             }
 
-            lock (selectedObjcetLock)
+            lock (SelectedGameObjects)
             {
                 for (int i = 0; i < SelectedGameObjects.Count; i++)
                 {
@@ -198,20 +195,12 @@ namespace Coocoo3D.Core
                 }
             }
 
-            var entities = RPContext.dynamicContextWrite.entities;
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
             var rendererComponents = RPContext.dynamicContextWrite.renderers;
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
             camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
             RPContext.dynamicContextWrite.cameras.Add(camera.GetCameraData());
             RPContext.dynamicContextWrite.Preprocess();
-
-            for (int i = 0; i < entities.Count; i++)
-            {
-                var entity = entities[i];
-                if (entity.Position != entity.PositionNextFrame || entity.Rotation != entity.RotationNextFrame)
-                    RPContext.gameDriverContext.RequireResetPhysics = true;
-            }
 
             for (int i = 0; i < gameObjects.Count; i++)
             {
@@ -222,7 +211,7 @@ namespace Coocoo3D.Core
 
             if (RPContext.gameDriverContext.Playing || RPContext.gameDriverContext.RequireResetPhysics)
             {
-                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents, entities, RPContext.gameDriverContext.RequireResetPhysics);
+                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents, RPContext.gameDriverContext.RequireResetPhysics);
                 RPContext.gameDriverContext.RequireResetPhysics = false;
             }
             for (int i = 0; i < rendererComponents.Count; i++)
@@ -278,7 +267,6 @@ namespace Coocoo3D.Core
                 bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready && widgetRenderer.Ready;
                 if (thisFrameReady && RPContext.dynamicContextRead.EnableDisplay)
                 {
-                    if (RPContext.dynamicContextRead.settings.ViewerUI)
                         UI.UIImGui.GUI(this);
                     graphicsContext.BeginCommand();
                     graphicsContext.SetDescriptorHeapDefault();
@@ -368,7 +356,7 @@ namespace Coocoo3D.Core
         public bool SaveCpuPower;
         public bool AutoReloadShaders;
         public bool AutoReloadTextures;
-        public bool AutoReloadModels;
+        //public bool AutoReloadModels;
         public bool VSync;
     }
 

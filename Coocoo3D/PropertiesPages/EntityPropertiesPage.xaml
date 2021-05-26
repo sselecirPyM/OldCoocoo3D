@@ -12,7 +12,7 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     AllowDrop="True">
-    <Page.Resources>
+    <!--<Page.Resources>
         <Flyout x:Name="flyout1">
             <Grid>
                 <Grid.RowDefinitions>
@@ -94,14 +94,14 @@
                             <TextBox Text="{x:Bind VTextureName,Mode=TwoWay}" Grid.Column="1"/>
                             <Button Content="Rename" x:Name="RenameButton" Grid.Column="2" Click="RenameButton_Click"/>
                         </Grid>
-                        <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_Subsurface" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Subsurface,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        --><!--<Slider Margin="5" x:Uid="Page_Entity_Slider_Subsurface" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Subsurface,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
                         <!--<Slider Margin="5" x:Uid="Page_Entity_Slider_SpecularTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.SpecularTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
                         <!--<Slider Margin="5" StepFrequency="1e-4" Minimum="0" Maximum="1" Header="各向异性" Value="{x:Bind innerStruct.Anisotropic,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
                         <!--
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Sheen" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Sheen,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_SheenTint" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.SheenTint,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
                         <Slider Margin="5" x:Uid="Page_Entity_Slider_Clearcoat" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.Clearcoat,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>
-                        <Slider Margin="5" x:Uid="Page_Entity_Slider_ClearcoatGloss" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.ClearcoatGloss,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>-->
+                        <Slider Margin="5" x:Uid="Page_Entity_Slider_ClearcoatGloss" StepFrequency="1e-4" Minimum="0" Maximum="1" Value="{x:Bind SelectedMat.innerStruct.ClearcoatGloss,Mode=TwoWay}" ValueChanged="Slider_ValueChanged"/>--><!--
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
@@ -207,5 +207,5 @@
                 </Grid>
             </PivotItem>
         </Pivot>
-    </Grid>
+    </Grid>-->
 </Page>

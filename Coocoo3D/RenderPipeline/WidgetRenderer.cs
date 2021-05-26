@@ -71,32 +71,10 @@ namespace Coocoo3D.RenderPipeline
 
             var cam = context.dynamicContextRead.cameras[0];
 
-            var selectedEntity = context.dynamicContextRead.selectedEntity;
-            if (selectedEntity != null)
-            {
-                indexOfSelectedEntity = context.dynamicContextRead.entities.IndexOf(selectedEntity);
-                Marshal.StructureToPtr(Matrix4x4.Transpose(cam.vpMatrix), pData, true);
-                Marshal.StructureToPtr(Matrix4x4.Transpose(cam.pvMatrix), pData + 64, true);
-                Marshal.StructureToPtr(new _Data()
-                {
-                    size = new Vector2(16, 16),
-                    offset = new Vector2(0, 0),
-                    uvSize = new Vector2(0.25f, 0.25f),
-                    uvOffset = new Vector2(0, 0),
-                }, pData + 128, true);
-                Marshal.StructureToPtr(screenSize, pData + 160, true);
-                var bones = selectedEntity.rendererComponent.bones;
-                for (int i = 0; i < bones.Count; i++)
-                {
-                    Marshal.StructureToPtr(bones[i].staticPosition, pData + i * 16 + 256, true);
-                }
-                graphicsContext.UpdateResource(bigConstantBuffer, context.bigBuffer, c_bigBufferSize, 0);
-            }
             var selectedLightings = context.dynamicContextRead.selectedLightings;
 
             Marshal.StructureToPtr(Matrix4x4.Transpose(cam.vpMatrix), pData, true);
             CBufferGroup.SetSlienceCount(selectedLightings.Count + context.dynamicContextRead.volumes.Count + 1);
-
 
 
             var data = ImGui.GetDrawData();
@@ -162,17 +140,6 @@ namespace Coocoo3D.RenderPipeline
             desc.streamOutput = false;
             desc.wireFrame = false;
             graphicsContext.SetMesh(context.ndcQuadMesh);
-
-            var selectedEntity = context.dynamicContextRead.selectedEntity;
-            if (selectedEntity != null)
-            {
-                desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                graphicsContext.SetCBVRSlot(bigConstantBuffer, 0, 0, 0);
-                graphicsContext.SetCBVRSlot(context.CBs_Bone[indexOfSelectedEntity], 0, 0, 1);
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PSOWidgetUI2"]);
-
-                graphicsContext.DrawIndexedInstanced(context.ndcQuadMesh.GetIndexCount(), 0, 0, selectedEntity.rendererComponent.bones.Count, 0);
-            }
 
             int renderCount = context.dynamicContextRead.selectedLightings.Count + context.dynamicContextRead.volumes.Count;
             int ofs = 0;

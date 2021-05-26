@@ -87,7 +87,7 @@
                                 <Button x:Uid="Page_Common_Button_RefreshTextureCaches" Click="ReloadTextures_Click"/>
                                 <Button x:Uid="Page_Common_Button_RefreshModelCaches" Click="ReloadModels_Click"/>
                                 <CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadTexture" IsChecked="{x:Bind VAutoReloadTexture,Mode=TwoWay}" Checked="ReloadTextures_Click"/>
-                                <CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadModel" IsChecked="{x:Bind VAutoReloadModel,Mode=TwoWay}" Checked="ReloadModels_Click"/>
+                                <!--<CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadModel" IsChecked="{x:Bind VAutoReloadModel,Mode=TwoWay}" Checked="ReloadModels_Click"/>-->
                             </StackPanel>
                         </Flyout>
                     </Button.Flyout>

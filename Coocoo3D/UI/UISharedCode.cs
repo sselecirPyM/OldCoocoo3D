@@ -47,9 +47,6 @@ namespace Coocoo3D.UI
                 }
             }
             if (pack.Status != GraphicsObjectStatus.loaded && pack.LoadTask != null) await pack.LoadTask;
-            //MMD3DEntity entity = new MMD3DEntity();
-            //entity.Reload2(appBody.ProcessingList, pack, GetTextureList(appBody, storageFolder, pack.pmx), pmxPath);
-            //scene.AddSceneObject(entity);
 
             GameObject gameObject = new GameObject();
             gameObject.Reload2(appBody.ProcessingList, pack, GetTextureList(appBody, storageFolder, pack.pmx), pmxPath);
@@ -89,9 +86,7 @@ namespace Coocoo3D.UI
         {
             if (scene.sceneObjects.Remove(sceneObject))
             {
-                if (sceneObject is MMD3DEntity entity)
-                    scene.RemoveSceneObject(entity);
-                else if (sceneObject is GameObject gameObject)
+                if (sceneObject is GameObject gameObject)
                     scene.RemoveGameObject(gameObject);
             }
             appBody.RequireRender();

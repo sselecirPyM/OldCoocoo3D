@@ -64,25 +64,18 @@ namespace Coocoo3D.PropertiesPages
         private void ViewSceneObjects_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             IList<object> selectedItem = (sender as ListView).SelectedItems;
-            lock (appBody.selectedObjcetLock)
+            lock (appBody.SelectedGameObjects)
             {
-                appBody.SelectedEntities.Clear();
                 appBody.SelectedGameObjects.Clear();
                 for (int i = 0; i < selectedItem.Count; i++)
                 {
-                    if (selectedItem[i] is MMD3DEntity entity)
-                        appBody.SelectedEntities.Add(entity);
-                    else if (selectedItem[i] is GameObject gameObject)
+                    if (selectedItem[i] is GameObject gameObject)
                         appBody.SelectedGameObjects.Add(gameObject);
 
                 }
                 if (selectedItem.Count == 1)
                 {
-                    if (appBody.SelectedEntities.Count == 1)
-                    {
-                        appBody.ShowDetailPage(typeof(EntityPropertiesPage), appBody);
-                    }
-                    else if (appBody.SelectedGameObjects.Count == 1)
+                    if (appBody.SelectedGameObjects.Count == 1)
                     {
                         appBody.ShowDetailPage(typeof(GameObjectPage), appBody);
                     }
@@ -110,11 +103,11 @@ namespace Coocoo3D.PropertiesPages
     }
     public class SceneObjectTemplateSelector : DataTemplateSelector
     {
-        public DataTemplate EntityTemplate { get; set; }
+        //public DataTemplate EntityTemplate { get; set; }
         public DataTemplate GameObjectTemplate { get; set; }
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
-            if (item is MMD3DEntity) return EntityTemplate;
+            //if (item is MMD3DEntity) return EntityTemplate;
             if (item is GameObject) return GameObjectTemplate;
             else return null;
         }

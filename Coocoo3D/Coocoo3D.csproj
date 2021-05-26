@@ -133,7 +133,6 @@
     <Compile Include="Components\MMDRendererComponent.cs" />
     <Compile Include="Components\VolumeComponent.cs" />
     <Compile Include="Core\Input.cs" />
-    <Compile Include="Core\ModelReloader.cs" />
     <Compile Include="Present\CameraMotion.cs" />
     <Compile Include="Core\GameDriver.cs" />
     <Compile Include="Core\GeneralGameDriver.cs" />

@@ -347,11 +347,11 @@ namespace Coocoo3D.PropertiesPages
             get => appBody.performaceSettings.AutoReloadTextures;
             set => appBody.performaceSettings.AutoReloadTextures = value;
         }
-        public bool VAutoReloadModel
-        {
-            get => appBody.performaceSettings.AutoReloadModels;
-            set => appBody.performaceSettings.AutoReloadModels = value;
-        }
+        //public bool VAutoReloadModel
+        //{
+        //    get => appBody.performaceSettings.AutoReloadModels;
+        //    set => appBody.performaceSettings.AutoReloadModels = value;
+        //}
 
         bool _cacheCameraMotionOn;
         #endregion

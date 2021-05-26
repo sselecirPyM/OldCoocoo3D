@@ -540,8 +540,8 @@ namespace Coocoo3D.RenderPipeline
         bool FilterObj(RenderPipelineContext context, string filter, MMDRendererComponent renderer, RuntimeMaterial material)
         {
             if (string.IsNullOrEmpty(filter)) return true;
-            if (filter == "SelectedObject")
-                return context.dynamicContextRead.selectedEntity.rendererComponent == renderer;
+            //if (filter == "SelectedObject")
+            //    return context.dynamicContextRead.selectedEntity.rendererComponent == renderer;
             if (filter == "Transparent")
                 return material.Transparent;
             if (filter == "Opaque")
