@@ -82,6 +82,16 @@ namespace Coocoo3D.UI
                         Camera(appBody);
                         ImGui.TreePop();
                     }
+                    if (ImGui.TreeNode("设置"))
+                    {
+                        ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
+                        ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
+                        ImGui.Checkbox("多线程", ref appBody.performaceSettings.MultiThreadRendering);
+                        ImGui.Checkbox("线框", ref appBody.settings.Wireframe);
+                        ImGui.SetNextItemWidth(150);
+                        ImGui.DragInt("阴影分辨率", ref appBody.settings.ShadowMapResolution, 128, 512, 8192);
+                        ImGui.TreePop();
+                    }
                     if (ImGui.TreeNode("帮助"))
                     {
                         Help();
@@ -154,13 +164,13 @@ namespace Coocoo3D.UI
                     }
                     ImGui.End();
                 }
-                //ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
-                //ImGui.SetNextWindowPos(new Vector2(100, 100), ImGuiCond.Once);
-                //if (ImGui.Begin("场景"))
-                //{
-                //    Scene(appBody);
-                //}
-                //    ImGui.End();
+                ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
+                ImGui.SetNextWindowPos(new Vector2(100, 100), ImGuiCond.Once);
+                if (ImGui.Begin("场景"))
+                {
+                    Scene(appBody);
+                }
+                ImGui.End();
 
             }
             ImGui.Render();
@@ -198,7 +208,9 @@ namespace Coocoo3D.UI
             Vector3 a = appBody.camera.Angle / MathF.PI * 180;
             if (ImGui.DragFloat3("角度", ref a))
                 appBody.camera.Angle = a * MathF.PI / 180;
-            ImGui.DragFloat("FOV", ref appBody.camera.Fov);
+            float fov = appBody.camera.Fov / MathF.PI * 180;
+            if (ImGui.DragFloat("FOV", ref fov))
+                appBody.camera.Fov = fov * MathF.PI / 180;
         }
 
         static void Help()
@@ -228,6 +240,21 @@ vmd格式动作");
 
         static void Scene(Coocoo3DMain appBody)
         {
+            if (ImGui.Button("新光源"))
+            {
+                UISharedCode.NewLighting(appBody);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("新体积"))
+            {
+                UISharedCode.NewVolume(appBody);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("移除物体"))
+            {
+                foreach (var gameObject in appBody.SelectedGameObjects)
+                    appBody.CurrentScene.RemoveGameObject(gameObject);
+            }
             //while (gameObjectSelected.Count < appBody.CurrentScene.gameObjects.Count)
             //{
             //    gameObjectSelected.Add(false);
@@ -237,8 +264,15 @@ vmd格式动作");
                 Present.GameObject gameObject = appBody.CurrentScene.gameObjects[i];
                 bool selected = gameObjectSelectIndex == i;
                 ImGui.Selectable(gameObject.Name, ref selected);
-                if (selected)
+                if (selected && (appBody.SelectedGameObjects.Count < 1 || appBody.SelectedGameObjects[0] != gameObject))
+                {
                     gameObjectSelectIndex = i;
+                    lock (appBody.SelectedGameObjects)
+                    {
+                        appBody.SelectedGameObjects.Clear();
+                        appBody.SelectedGameObjects.Add(gameObject);
+                    }
+                }
             }
         }
 

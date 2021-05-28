@@ -57,39 +57,39 @@ namespace Coocoo3D.PropertiesPages
             var selectedItems = viewSceneObjects.SelectedItems;
             while (0 < selectedItems.Count)
             {
-                UI.UISharedCode.RemoveSceneObject(appBody, appBody.CurrentScene, (ISceneObject)selectedItems[0]);
+                UI.UISharedCode.RemoveSceneObject(appBody, appBody.CurrentScene, (GameObject)selectedItems[0]);
             }
         }
 
         private void ViewSceneObjects_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            IList<object> selectedItem = (sender as ListView).SelectedItems;
-            lock (appBody.SelectedGameObjects)
-            {
-                appBody.SelectedGameObjects.Clear();
-                for (int i = 0; i < selectedItem.Count; i++)
-                {
-                    if (selectedItem[i] is GameObject gameObject)
-                        appBody.SelectedGameObjects.Add(gameObject);
+            //IList<object> selectedItem = (sender as ListView).SelectedItems;
+            //lock (appBody.SelectedGameObjects)
+            //{
+            //    appBody.SelectedGameObjects.Clear();
+            //    for (int i = 0; i < selectedItem.Count; i++)
+            //    {
+            //        if (selectedItem[i] is GameObject gameObject)
+            //            appBody.SelectedGameObjects.Add(gameObject);
 
-                }
-                if (selectedItem.Count == 1)
-                {
-                    if (appBody.SelectedGameObjects.Count == 1)
-                    {
-                        appBody.ShowDetailPage(typeof(GameObjectPage), appBody);
-                    }
-                    else
-                    {
-                        appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
-                    }
-                }
-                else
-                {
-                    appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
-                }
-            }
-            appBody.RequireRender();
+            //    }
+            //    if (selectedItem.Count == 1)
+            //    {
+            //        if (appBody.SelectedGameObjects.Count == 1)
+            //        {
+            //            appBody.ShowDetailPage(typeof(GameObjectPage), appBody);
+            //        }
+            //        else
+            //        {
+            //            appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        appBody.ShowDetailPage(typeof(EmptyPropertiesPage), null);
+            //    }
+            //}
+            //appBody.RequireRender();
         }
 
         private void ViewSceneObjects_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)

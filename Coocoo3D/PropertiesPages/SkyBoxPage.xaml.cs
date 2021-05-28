@@ -105,7 +105,7 @@ namespace Coocoo3D.PropertiesPages
             showInfo.Text = resourceLoader.GetString("Message_Operating");
             var rp = appBody.RPContext;
             Uploader uploader = new Uploader();
-            uploader.TextureCube(imgSize[0].x, imgSize[0].y,
+            uploader.TextureCube(
                 new IBuffer[] {
                 await FileIO.ReadBufferAsync(files[0]),
                 await FileIO.ReadBufferAsync(files[1]),

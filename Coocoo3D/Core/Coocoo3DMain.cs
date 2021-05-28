@@ -62,9 +62,10 @@ namespace Coocoo3D.Core
             backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             ViewerUI = true,
             Wireframe = false,
-            HighResolutionShadow = false,
+            //HighResolutionShadow = false,
 
             SkyBoxLightMultiplier = 1.0f,
+            ShadowMapResolution = 2048,
             EnableAO = true,
             EnableShadow = true,
             Quality = 0,
@@ -343,10 +344,10 @@ namespace Coocoo3D.Core
             OpenedStorageFolderChanged?.Invoke(this, null);
         }
         public Frame frameViewProperties;
-        public void ShowDetailPage(Type page, object parameter)
-        {
-            frameViewProperties.Navigate(page, parameter);
-        }
+        //public void ShowDetailPage(Type page, object parameter)
+        //{
+        //    frameViewProperties.Navigate(page, parameter);
+        //}
         #endregion
     }
 
@@ -364,12 +365,12 @@ namespace Coocoo3D.Core
     {
         public bool viewSelectedEntityBone;
         public Vector4 backgroundColor;
-        public uint RenderStyle;
+        //public uint RenderStyle;
         public bool ViewerUI;
         public bool Wireframe;
-        public bool HighResolutionShadow;
 
         public float SkyBoxLightMultiplier;
+        public int ShadowMapResolution;
 
         public uint Quality;
 

@@ -12,7 +12,7 @@ namespace Coocoo3D.Core
 {
     public class Scene
     {
-        public ObservableCollection<ISceneObject> sceneObjects = new ObservableCollection<ISceneObject>();
+        public ObservableCollection<GameObject> sceneObjects = new ObservableCollection<GameObject>();
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<GameObject> gameObjectLoadList = new List<GameObject>();
         public List<GameObject> gameObjectRemoveList = new List<GameObject>();

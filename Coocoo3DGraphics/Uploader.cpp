@@ -54,6 +54,8 @@ inline void _Fun4(Uploader^ tex, DirectX::TexMetadata& metaData, DirectX::Scratc
 
 inline void _Fun1(Uploader^ tex, DirectX::TexMetadata& metaData, DirectX::ScratchImage& scratchImage)
 {
+	tex->m_width = metaData.width;
+	tex->m_height = metaData.width;
 	DirectX::ScratchImage generatedMips;
 	tex->m_format = DirectX::MakeSRGB(metaData.format);
 
@@ -142,17 +144,14 @@ void Uploader::Texture2DPure(int width, int height, Windows::Foundation::Numeric
 	}
 }
 
-void Uploader::TextureCube(int width, int height, const Platform::Array<IBuffer^>^ files)
+void Uploader::TextureCube(const Platform::Array<IBuffer^>^ files)
 {
-	m_width = width;
-	m_height = height;
-
+	DirectX::TexMetadata metaData;
 	{
 		ComPtr<IBufferByteAccess> bufferByteAccess;
 		reinterpret_cast<IInspectable*>(files[0])->QueryInterface(IID_PPV_ARGS(&bufferByteAccess));
 		byte* pixels = nullptr;
 		DX::ThrowIfFailed(bufferByteAccess->Buffer(&pixels));
-		DirectX::TexMetadata metaData;
 		DirectX::ScratchImage scratchImage;
 		HRESULT hr1 = DirectX::GetMetadataFromTGAMemory(pixels, files[0]->Length, metaData);
 		if (SUCCEEDED(hr1))

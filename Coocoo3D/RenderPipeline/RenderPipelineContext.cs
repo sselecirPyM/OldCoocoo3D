@@ -249,10 +249,6 @@ namespace Coocoo3D.RenderPipeline
         {
             if (passSetting == null) return;
 
-            if (dynamicContextRead.settings.HighResolutionShadow)
-                ShadowMapResolution = c_shadowMapResolutionHigh;
-            else
-                ShadowMapResolution = c_shadowMapResolutionLow;
 
             foreach (var rt in passSetting.RenderTargets)
             {
@@ -271,8 +267,8 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (rt.Size.Source == "ShadowMapSize")
                 {
-                    x = (int)(ShadowMapResolution * rt.Size.Multiplier);
-                    y = (int)(ShadowMapResolution * rt.Size.Multiplier);
+                    x = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier);
+                    y = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier);
                 }
                 else
                 {
@@ -306,10 +302,6 @@ namespace Coocoo3D.RenderPipeline
             dpi = deviceResources.GetDpi();
             logicScale = dpi / 96.0f;
         }
-
-        const int c_shadowMapResolutionLow = 2048;
-        const int c_shadowMapResolutionHigh = 4096;
-        int ShadowMapResolution = 2048;
 
         public bool Initilized = false;
         public Task LoadTask;

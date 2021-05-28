@@ -45,12 +45,12 @@
                             <Flyout Placement="RightEdgeAlignedTop">
                                 <StackPanel>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_ViewerUI" Header="Viewer UI" IsOn="{x:Bind VViewerUI,Mode=TwoWay}"/>
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_SaveCPUPower" IsOn="{x:Bind VSaveCpuPower,Mode=TwoWay}"/>
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_MultiThreadRendering" IsOn="{x:Bind VMultiThreadRendering,Mode=TwoWay}"/>
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_HighResolutionShadow" IsOn="{x:Bind VHighResolutionShadow,Mode=TwoWay}"/>
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_VSync" Header="VSync" IsOn="{x:Bind VVSync,Mode=TwoWay}"/>
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_SaveCPUPower" IsOn="{x:Bind VSaveCpuPower,Mode=TwoWay}"/>-->
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_MultiThreadRendering" IsOn="{x:Bind VMultiThreadRendering,Mode=TwoWay}"/>-->
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_HighResolutionShadow" IsOn="{x:Bind VHighResolutionShadow,Mode=TwoWay}"/>-->
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_VSync" Header="VSync" IsOn="{x:Bind VVSync,Mode=TwoWay}"/>-->
                                     <!--<ToggleSwitch x:Uid="Page_Common_Switch_ZPrePass" IsOn="{x:Bind VZPrepass,Mode=TwoWay}"/>-->
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_Wireframe" IsOn="{x:Bind VWireframe,Mode=TwoWay}"/>
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_Wireframe" IsOn="{x:Bind VWireframe,Mode=TwoWay}"/>-->
                                     <ToggleSwitch x:Uid="Page_Common_Switch_AO" IsOn="{x:Bind VEnableAO,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_Shadow" IsOn="{x:Bind VEnableShadow,Mode=TwoWay}"/>
                                     <ComboBox x:Uid="Page_Common_ComboBox_RenderQuality" x:Name="vQuality" SelectionChanged="VQuality_SelectionChanged" SelectedIndex="0"/>
@@ -85,7 +85,7 @@
                         <Flyout>
                             <StackPanel>
                                 <Button x:Uid="Page_Common_Button_RefreshTextureCaches" Click="ReloadTextures_Click"/>
-                                <Button x:Uid="Page_Common_Button_RefreshModelCaches" Click="ReloadModels_Click"/>
+                                <!--<Button x:Uid="Page_Common_Button_RefreshModelCaches" Click="ReloadModels_Click"/>-->
                                 <CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadTexture" IsChecked="{x:Bind VAutoReloadTexture,Mode=TwoWay}" Checked="ReloadTextures_Click"/>
                                 <!--<CheckBox  x:Uid="Page_Common_ChechBox_AutoReloadModel" IsChecked="{x:Bind VAutoReloadModel,Mode=TwoWay}" Checked="ReloadModels_Click"/>-->
                             </StackPanel>

@@ -29,6 +29,8 @@ namespace Coocoo3D.RenderPipeline
         public List<_AssetDefine> ComputeShaders;
         [XmlArrayItem("Texture2D")]
         public List<_AssetDefine> Texture2Ds;
+        [XmlArrayItem("TextureCube")]
+        public List<_AssetDefine2> TextureCubes;
 
         //[XmlArrayItem("RayTracingStateObject")]
         public PSRTSO RayTracingStateObject;
@@ -218,6 +220,12 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public string Path;
         public string EntryPoint;
+    }
+    public class _AssetDefine2
+    {
+        public string Name;
+        [XmlElement(ElementName = "Path")]
+        public string[] Path;
     }
     public struct PassParameter
     {

@@ -8,7 +8,7 @@ using Coocoo3D.Components;
 
 namespace Coocoo3D.Present
 {
-    public class GameObject : ISceneObject, System.ComponentModel.INotifyPropertyChanged
+    public class GameObject : System.ComponentModel.INotifyPropertyChanged
     {
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         public void PropChange(System.ComponentModel.PropertyChangedEventArgs e)

@@ -137,9 +137,6 @@
     <Compile Include="Core\GameDriver.cs" />
     <Compile Include="Core\GeneralGameDriver.cs" />
     <Compile Include="Present\GameObject.cs" />
-    <Compile Include="PropertiesPages\GameObjectPage.xaml.cs">
-      <DependentUpon>GameObjectPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="RenderPipeline\ForwardRenderPipeline2.cs" />
     <Compile Include="RenderPipeline\PassSetting.cs" />
     <Compile Include="RenderPipeline\ProcessingList.cs" />
@@ -158,7 +155,6 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="MMDSupport\MMDMotionDataDescriptions.cs" />
-    <Compile Include="Present\ISceneObject.cs" />
     <Compile Include="Present\Lighting.cs" />
     <Compile Include="Present\MMD3DEntity.cs" />
     <Compile Include="PropertiesPages\CommonPage.xaml.cs">
@@ -166,9 +162,6 @@
     </Compile>
     <Compile Include="PropertiesPages\EmptyPropertiesPage.xaml.cs">
       <DependentUpon>EmptyPropertiesPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="PropertiesPages\EntityPropertiesPage.xaml.cs">
-      <DependentUpon>EntityPropertiesPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="PropertiesPages\ErrorPropertiesPage.xaml.cs">
       <DependentUpon>ErrorPropertiesPage.xaml</DependentUpon>
@@ -272,15 +265,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="PropertiesPages\EntityPropertiesPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="PropertiesPages\ErrorPropertiesPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="PropertiesPages\GameObjectPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

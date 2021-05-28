@@ -96,17 +96,17 @@ namespace Coocoo3D
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Common"), typeof(PropertiesPages.CommonPage), appBody);
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_SkyBox"), typeof(PropertiesPages.SkyBoxPage), appBody);
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Record"), typeof(PropertiesPages.RecordPage), appBody);
-            AddPage(tabViewR1, resourceLoader.GetString("Tab_Title_Scene"), typeof(PropertiesPages.ScenePage), appBody);
+            //AddPage(tabViewR1, resourceLoader.GetString("Tab_Title_Scene"), typeof(PropertiesPages.ScenePage), appBody);
             AddPage(tabViewB1, resourceLoader.GetString("Tab_Title_Resources"), typeof(PropertiesPages.ResourcesPage), appBody);
 
-            Frame frame1 = new Frame();
-            frame1.Navigate(typeof(PropertiesPages.EmptyPropertiesPage));
-            appBody.frameViewProperties = frame1;
-            tabViewR2.TabItems.Add(new TabViewItem()
-            {
-                Header = resourceLoader.GetString("Tab_Title_Detail"),
-                Content = frame1,
-            });
+            //Frame frame1 = new Frame();
+            //frame1.Navigate(typeof(PropertiesPages.EmptyPropertiesPage));
+            //appBody.frameViewProperties = frame1;
+            //tabViewR2.TabItems.Add(new TabViewItem()
+            //{
+            //    Header = resourceLoader.GetString("Tab_Title_Detail"),
+            //    Content = frame1,
+            //});
             Window.Current.Activated += Current_Activated;
         }
 
@@ -252,11 +252,6 @@ namespace Coocoo3D
                 }
             }
         }
-
-        private void About_Click(object sender, RoutedEventArgs e)
-        {
-            appBody.ShowDetailPage(typeof(PropertiesPages.SoftwareInfoPropertiesPage), appBody);
-        }
         private async void SampleShader_Click(object sender, RoutedEventArgs e)
         {
             FolderPicker folderPicker = new FolderPicker()
@@ -294,19 +289,16 @@ namespace Coocoo3D
 
         private void RadioMenuFlyoutItem1_Click(object sender, RoutedEventArgs e)
         {
-            x1.Width = new GridLength(240);
             x2.Height = new GridLength(180);
             x3.Width = new GridLength(240);
         }
         private void RadioMenuFlyoutItem2_Click(object sender, RoutedEventArgs e)
         {
-            x1.Width = new GridLength(360);
             x2.Height = new GridLength(270);
             x3.Width = new GridLength(360);
         }
         private void RadioMenuFlyoutItem3_Click(object sender, RoutedEventArgs e)
         {
-            x1.Width = new GridLength(360);
             x2.Height = new GridLength(360);
             x3.Width = new GridLength(360);
         }

@@ -57,11 +57,12 @@ namespace Coocoo3D.UI
         }
         public static void NewLighting(Coocoo3DMain appBody)
         {
-            var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
             GameObject lighting = new GameObject();
             Components.LightingComponent lightingComponent = new Components.LightingComponent();
             lighting.AddComponent(lightingComponent);
-            lighting.Name = resourceLoader.GetString("Object_Name_Lighting");
+            //lighting.Name = resourceLoader.GetString("Object_Name_Lighting");
+            lighting.Name = "Lighting";
             lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
             lighting.Position = new Vector3(0, 1, 0);
             lightingComponent.Color = new Vector4(3, 3, 3, 1);
@@ -71,23 +72,23 @@ namespace Coocoo3D.UI
         }
         public static void NewVolume(Coocoo3DMain appBody)
         {
-            var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
             GameObject volume = new GameObject();
             Components.VolumeComponent volumeComponent = new Components.VolumeComponent();
             volume.AddComponent(volumeComponent);
-            volume.Name = resourceLoader.GetString("Object_Name_Volume");
+            //volume.Name = resourceLoader.GetString("Object_Name_Volume");
+            volume.Name = "Volume";
             volume.Rotation = Quaternion.Identity;
             volume.Position = new Vector3(0, 25, 0);
             volumeComponent.Size = new Vector3(100, 50, 100);
             appBody.CurrentScene.AddGameObject(volume);
             appBody.RequireRender();
         }
-        public static void RemoveSceneObject(Coocoo3DMain appBody, Scene scene, ISceneObject sceneObject)
+        public static void RemoveSceneObject(Coocoo3DMain appBody, Scene scene, GameObject gameObject)
         {
-            if (scene.sceneObjects.Remove(sceneObject))
+            if (scene.sceneObjects.Remove(gameObject))
             {
-                if (sceneObject is GameObject gameObject)
-                    scene.RemoveGameObject(gameObject);
+                scene.RemoveGameObject(gameObject);
             }
             appBody.RequireRender();
         }
@@ -186,6 +187,27 @@ namespace Coocoo3D.UI
                     }
                     texture.Status = GraphicsObjectStatus.loading;
                     await ReloadTexture2DNoMip(texture, rpc.processingList, await storageFolder.GetFileAsync(t1.Path));
+                }
+            if (passSetting.TextureCubes != null)
+                foreach (var t1 in passSetting.TextureCubes)
+                {
+                    if (t1.Path == null || t1.Path.Length != 6) throw new Exception("TextureCubeError");
+                    TextureCube textureCube = null;
+                    rpc.RPAssetsManager.textureCubes.TryGetValue(t1.Name, out textureCube);
+                    if(textureCube==null)
+                    {
+                        textureCube = new TextureCube();
+                        rpc.RPAssetsManager.textureCubes[t1.Name] = textureCube;
+                    }
+                    IBuffer[] buffers = new IBuffer[t1.Path.Length];
+                    for (int i = 0; i < t1.Path.Length; i++)
+                    {
+                        string path = t1.Path[i];
+                        buffers[i] = await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(path));
+                    }
+                    Uploader uploader = new Uploader();
+                    uploader.TextureCube(buffers);
+                    appBody.ProcessingList.AddObject(new TextureCubeUploadPack(textureCube, uploader));
                 }
 
             rpc.SetCurrentPassSetting(passSetting);

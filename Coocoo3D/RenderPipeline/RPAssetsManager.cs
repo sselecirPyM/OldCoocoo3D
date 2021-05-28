@@ -22,6 +22,7 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, ComputeShader> CSAssets = new Dictionary<string, ComputeShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
         public Dictionary<string, Texture2D> texture2ds = new Dictionary<string, Texture2D>();
+        public Dictionary<string, TextureCube> textureCubes = new Dictionary<string, TextureCube>();
         public Dictionary<string, GraphicsSignature> signaturePass = new Dictionary<string, GraphicsSignature>();
         public Dictionary<IntPtr, string> ptr2string = new Dictionary<IntPtr, string>();
 

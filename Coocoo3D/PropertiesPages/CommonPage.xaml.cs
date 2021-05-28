@@ -69,7 +69,7 @@ namespace Coocoo3D.PropertiesPages
         }
 
         #region view property
-        PropertyChangedEventArgs eaVPX = new PropertyChangedEventArgs("VPX");//防止莫名其妙的gc
+        PropertyChangedEventArgs eaVPX = new PropertyChangedEventArgs("VPX");
         PropertyChangedEventArgs eaVPY = new PropertyChangedEventArgs("VPY");
         PropertyChangedEventArgs eaVPZ = new PropertyChangedEventArgs("VPZ");
         PropertyChangedEventArgs eaVRX = new PropertyChangedEventArgs("VRX");
@@ -268,43 +268,6 @@ namespace Coocoo3D.PropertiesPages
             }
         }
 
-        public bool VSaveCpuPower
-        {
-            get => appBody.performaceSettings.SaveCpuPower;
-            set => appBody.performaceSettings.SaveCpuPower = value;
-        }
-
-        public bool VMultiThreadRendering
-        {
-            get => appBody.performaceSettings.MultiThreadRendering;
-            set => appBody.performaceSettings.MultiThreadRendering = value;
-        }
-
-        public bool VHighResolutionShadow
-        {
-            get => appBody.settings.HighResolutionShadow;
-            set
-            {
-                appBody.settings.HighResolutionShadow = value;
-                appBody.RequireRender();
-            }
-        }
-
-        public bool VVSync
-        {
-            get => appBody.performaceSettings.VSync;
-            set => appBody.performaceSettings.VSync = value;
-        }
-
-        //public bool VZPrepass
-        //{
-        //    get => appBody.settings.ZPrepass; set
-        //    {
-        //        appBody.settings.ZPrepass = value;
-        //        appBody.RequireRender();
-        //    }
-        //}
-
         public bool VWireframe
         {
             get => appBody.settings.Wireframe; set
@@ -385,13 +348,6 @@ namespace Coocoo3D.PropertiesPages
             appBody.RequireRender();
         }
 
-        private void VRenderStyle_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (appBody == null) return;
-            appBody.settings.RenderStyle = (uint)(sender as ComboBox).SelectedIndex;
-            appBody.RequireRender();
-        }
-
         private void PhysicsReset_Click(object sender, RoutedEventArgs e)
         {
             appBody.GameDriverContext.RequireResetPhysics = true;
@@ -458,11 +414,6 @@ namespace Coocoo3D.PropertiesPages
         private void ReloadTextures_Click(object sender, RoutedEventArgs e)
         {
             appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
-        }
-
-        private void ReloadModels_Click(object sender, RoutedEventArgs e)
-        {
-            appBody.GameDriverContext.ReqireReloadModel();
         }
     }
 }
