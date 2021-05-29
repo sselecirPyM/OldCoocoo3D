@@ -94,11 +94,11 @@ namespace Coocoo3D.PropertiesPages
 
         private void ViewSceneObjects_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
         {
-            if (args.DropResult == Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move)
-            {
-                appBody.CurrentScene.SortObjects();
-                appBody.RequireRender();
-            }
+            //if (args.DropResult == Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move)
+            //{
+            //    appBody.CurrentScene.SortObjects();
+            //    appBody.RequireRender();
+            //}
         }
     }
     public class SceneObjectTemplateSelector : DataTemplateSelector

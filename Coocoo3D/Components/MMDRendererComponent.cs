@@ -1,10 +1,10 @@
-﻿using Coocoo3D.Components;
+﻿using Coocoo3D.Base;
+using Coocoo3D.Components;
 using Coocoo3D.MMDSupport;
 using Coocoo3D.Present;
 using Coocoo3D.ResourceWarp;
 using Coocoo3D.Utility;
 using Coocoo3DGraphics;
-using Coocoo3DPhysics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -128,8 +128,8 @@ namespace Coocoo3D.Components
         public List<BoneEntity> bones = new List<BoneEntity>();
         public List<BoneKeyFrame> cachedBoneKeyFrames = new List<BoneKeyFrame>();
 
-        public List<Physics3DRigidBody> physics3DRigidBodys = new List<Physics3DRigidBody>();
-        public List<Physics3DJoint> physics3DJoints = new List<Physics3DJoint>();
+        public List<Physics3DRigidBody1> physics3DRigidBodys = new List<Physics3DRigidBody1>();
+        public List<Physics3DJoint1> physics3DJoints = new List<Physics3DJoint1>();
         public List<RigidBodyDesc> rigidBodyDescs = new List<RigidBodyDesc>();
         public List<JointDesc> jointDescs = new List<JointDesc>();
 
@@ -218,7 +218,7 @@ namespace Coocoo3D.Components
             SetPose3();
         }
 
-        public void PrePhysicsSync(Physics3DScene physics3DScene)
+        public void PrePhysicsSync(Physics3DScene1 physics3DScene)
         {
             for (int i = 0; i < rigidBodyDescs.Count; i++)
             {
@@ -232,7 +232,7 @@ namespace Coocoo3D.Components
             }
         }
 
-        public void PhysicsSync(Physics3DScene physics3DScene)
+        public void PhysicsSync(Physics3DScene1 physics3DScene)
         {
             Matrix4x4.Decompose(WorldToLocal, out _, out var q1, out var t1);
             for (int i = 0; i < rigidBodyDescs.Count; i++)
@@ -241,8 +241,8 @@ namespace Coocoo3D.Components
                 if (desc.Type == 0) continue;
                 int index = desc.AssociatedBoneIndex;
                 if (index == -1) continue;
-                bones[index]._generatedTransform = Matrix4x4.CreateTranslation(-desc.Position) * Matrix4x4.CreateFromQuaternion(Translate(physics3DScene.GetRigidBodyRotation(physics3DRigidBodys[i]) / desc.Rotation * q1))
-                    * Matrix4x4.CreateTranslation(Vector3.Transform(physics3DScene.GetRigidBodyPosition(physics3DRigidBodys[i]), WorldToLocal));
+                bones[index]._generatedTransform = Matrix4x4.CreateTranslation(-desc.Position) * Matrix4x4.CreateFromQuaternion(Translate(physics3DRigidBodys[i].GetRotation() / desc.Rotation * q1))
+                    * Matrix4x4.CreateTranslation(Vector3.Transform(physics3DRigidBodys[i].GetPosition() , WorldToLocal));
             }
             UpdateMatrices(PhysicsNeedUpdateMatIndexs);
 
@@ -370,7 +370,7 @@ namespace Coocoo3D.Components
             }
         }
 
-        public void ResetPhysics(Physics3DScene physics3DScene)
+        public void ResetPhysics(Physics3DScene1 physics3DScene)
         {
             ComputeMatricesData();
             for (int i = 0; i < rigidBodyDescs.Count; i++)
@@ -458,7 +458,7 @@ namespace Coocoo3D.Components
             for (int i = 0; i < indexs.Count; i++)
                 bones[indexs[i]].GetTransformMatrixG(bones);
         }
-        public void TransformToNew(Physics3DScene physics3DScene, Vector3 position, Quaternion rotation)
+        public void TransformToNew(Physics3DScene1 physics3DScene, Vector3 position, Quaternion rotation)
         {
             LocalToWorld = Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position);
             Matrix4x4.Invert(LocalToWorld, out WorldToLocal);
@@ -468,31 +468,28 @@ namespace Coocoo3D.Components
                 if (desc.Type != RigidBodyType.Kinematic) continue;
                 int index = desc.AssociatedBoneIndex;
                 var bone = bones[index];
-                //Matrix4x4.Decompose(bone.GeneratedTransform, out _, out Quaternion rot, out Vector3 trans);
-                //Vector3 pos = Vector3.Transform(bone.staticPosition, bone.GeneratedTransform * LocalToWorld);
                 Matrix4x4 mat2 = Matrix4x4.CreateFromQuaternion(desc.Rotation) * Matrix4x4.CreateTranslation(desc.Position) * bones[index].GeneratedTransform * LocalToWorld;
                 physics3DScene.MoveRigidBody(physics3DRigidBodys[i], mat2);
             }
         }
 
-        public void AddPhysics(Physics3DScene physics3DScene)
+        public void AddPhysics(Physics3DScene1 physics3DScene)
         {
             for (int j = 0; j < rigidBodyDescs.Count; j++)
             {
-                physics3DRigidBodys.Add(new Physics3DRigidBody());
+                physics3DRigidBodys.Add(new Physics3DRigidBody1());
                 var desc = rigidBodyDescs[j];
-                physics3DScene.AddRigidBody(physics3DRigidBodys[j], desc.Position, desc.Rotation, desc.Dimemsions, desc.Mass, desc.Restitution, desc.Friction, desc.TranslateDamp, desc.RotateDamp, (byte)desc.Shape, (byte)desc.Type, desc.CollisionGroup, desc.CollisionMask);
+                physics3DScene.AddRigidBody(physics3DRigidBodys[j], desc);
             }
             for (int j = 0; j < jointDescs.Count; j++)
             {
-                physics3DJoints.Add(new Physics3DJoint());
+                physics3DJoints.Add(new Physics3DJoint1());
                 var desc = jointDescs[j];
-                physics3DScene.AddJoint(physics3DJoints[j], desc.Position, ToQuaternion(desc.Rotation), physics3DRigidBodys[desc.AssociatedRigidBodyIndex1], physics3DRigidBodys[desc.AssociatedRigidBodyIndex2],
-                    desc.PositionMinimum, desc.PositionMaximum, desc.RotationMinimum, desc.RotationMaximum, desc.PositionSpring, desc.RotationSpring);
+                physics3DScene.AddJoint(physics3DJoints[j], physics3DRigidBodys[desc.AssociatedRigidBodyIndex1], physics3DRigidBodys[desc.AssociatedRigidBodyIndex2], desc);
             }
         }
 
-        public void RemovePhysics(Physics3DScene physics3DScene)
+        public void RemovePhysics(Physics3DScene1 physics3DScene)
         {
             for (int j = 0; j < physics3DRigidBodys.Count; j++)
             {
@@ -743,8 +740,8 @@ namespace Coocoo3D.Components
         public Vector3 Position;
         public Quaternion Rotation;
         public float Mass;
-        public float TranslateDamp;
-        public float RotateDamp;
+        public float LinearDamping;
+        public float AngularDamping;
         public float Restitution;
         public float Friction;
         public RigidBodyType Type;
@@ -879,8 +876,8 @@ namespace Coocoo3D.FileFormat
             desc.Position = rigidBody.Position;
             desc.Rotation = MMDRendererComponent.ToQuaternion(rigidBody.Rotation);
             desc.Mass = rigidBody.Mass;
-            desc.TranslateDamp = rigidBody.TranslateDamp;
-            desc.RotateDamp = rigidBody.RotateDamp;
+            desc.LinearDamping = rigidBody.TranslateDamp;
+            desc.AngularDamping = rigidBody.RotateDamp;
             desc.Restitution = rigidBody.Restitution;
             desc.Friction = rigidBody.Friction;
             desc.Type = (RigidBodyType)rigidBody.Type;

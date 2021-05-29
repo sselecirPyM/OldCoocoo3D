@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Components;
-using Coocoo3DPhysics;
+using Coocoo3D.Base;
 
 namespace Coocoo3D.Core
 {
@@ -16,7 +16,7 @@ namespace Coocoo3D.Core
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<GameObject> gameObjectLoadList = new List<GameObject>();
         public List<GameObject> gameObjectRemoveList = new List<GameObject>();
-        public Physics3DScene physics3DScene = new Physics3DScene();
+        public Physics3DScene1 physics3DScene = new Physics3DScene1();
 
         public void AddGameObject(GameObject gameObject)
         {
@@ -57,20 +57,20 @@ namespace Coocoo3D.Core
                 gameObjectRemoveList.Clear();
             }
         }
-        public void SortObjects()
-        {
-            lock (this)
-            {
-                gameObjects.Clear();
-                for (int i = 0; i < sceneObjects.Count; i++)
-                {
-                    if ((sceneObjects[i] is GameObject gameObject))
-                    {
-                        gameObjects.Add(gameObject);
-                    }
-                }
-            }
-        }
+        //public void SortObjects()
+        //{
+        //    lock (this)
+        //    {
+        //        gameObjects.Clear();
+        //        for (int i = 0; i < sceneObjects.Count; i++)
+        //        {
+        //            if ((sceneObjects[i] is GameObject gameObject))
+        //            {
+        //                gameObjects.Add(gameObject);
+        //            }
+        //        }
+        //    }
+        //}
 
         public void _ResetPhysics(IList<MMDRendererComponent> rendererComponents)
         {
@@ -78,8 +78,7 @@ namespace Coocoo3D.Core
             {
                 rendererComponents[i].ResetPhysics(physics3DScene);
             }
-            physics3DScene.Simulate(1 / 60.0);
-            physics3DScene.FetchResults();
+            physics3DScene.Simulation(1 / 60.0);
         }
 
         public void _BoneUpdate(double playTime, float deltaTime, IList<MMDRendererComponent> rendererComponents)
@@ -118,8 +117,8 @@ namespace Coocoo3D.Core
             {
                 rendererComponents[i].PrePhysicsSync(physics3DScene);
             }
-            physics3DScene.Simulate(t1 >= 0 ? t1 : -t1);
-            physics3DScene.FetchResults();
+            physics3DScene.Simulation(t1 >= 0 ? t1 : -t1);
+            //physics3DScene.FetchResults();
             for (int i = 0; i < rendererComponents.Count; i++)
             {
                 rendererComponents[i].PhysicsSync(physics3DScene);

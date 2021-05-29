@@ -15,7 +15,6 @@ using Windows.System.Threading;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
 using Windows.Foundation;
-using Coocoo3DPhysics;
 using System.Globalization;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Components;
@@ -31,7 +30,6 @@ namespace Coocoo3D.Core
 
         public Scene CurrentScene;
 
-        //public List<MMD3DEntity> SelectedEntities = new List<MMD3DEntity>();
         public List<GameObject> SelectedGameObjects = new List<GameObject>();
 
         public Camera camera = new Camera();
@@ -62,8 +60,6 @@ namespace Coocoo3D.Core
             backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             ViewerUI = true,
             Wireframe = false,
-            //HighResolutionShadow = false,
-
             SkyBoxLightMultiplier = 1.0f,
             ShadowMapResolution = 2048,
             EnableAO = true,
@@ -80,7 +76,6 @@ namespace Coocoo3D.Core
             VSync = false,
         };
 
-        public Physics3D physics3D = new Physics3D();
         Thread renderWorkThread;
         CancellationTokenSource canRenderThread;
         public GameDriverContext GameDriverContext { get => RPContext.gameDriverContext; }
@@ -107,12 +102,9 @@ namespace Coocoo3D.Core
                 await miscProcess.ReloadAssets(deviceResources);
                 RequireRender();
             });
-            //PhysXAPI.SetAPIUsed(physics3D);
-            BulletAPI.SetAPIUsed(physics3D);
-            physics3D.Init();
 
             CurrentScene = new Scene();
-            CurrentScene.physics3DScene.Reload(physics3D);
+            CurrentScene.physics3DScene.Initialize();
             CurrentScene.physics3DScene.SetGravitation(new Vector3(0, -98.01f, 0));
             Dispatcher = CoreWindow.GetForCurrentThread().Dispatcher;
             threadPoolTimer = ThreadPoolTimer.CreatePeriodicTimer(Tick, TimeSpan.FromSeconds(1 / 30.0));
