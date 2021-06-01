@@ -40,7 +40,6 @@ namespace Coocoo3D.Core
         ThreadPoolTimer threadPoolTimer;
 
         public DateTime LatestRenderTime = DateTime.Now;
-        public float Fps = 240;
         public CoreDispatcher Dispatcher;
         public event EventHandler FrameUpdated;
 
@@ -48,9 +47,10 @@ namespace Coocoo3D.Core
         public volatile int VirtualRenderCount = 0;
         private async void Tick(ThreadPoolTimer timer)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, async () =>
             {
                 FrameUpdated?.Invoke(this, null);
+                await Coocoo3D.UI.UIHelper.Code(this);
             });
         }
         #endregion
@@ -116,7 +116,7 @@ namespace Coocoo3D.Core
                 while (!token.IsCancellationRequested)
                 {
                     DateTime now = DateTime.Now;
-                    if (now - LatestRenderTime < RPContext.gameDriverContext.FrameInterval) continue;
+                    if (now - LatestRenderTime < TimeSpan.FromSeconds(RPContext.gameDriverContext.FrameInterval)) continue;
                     bool actualRender = RenderFrame();
                     if (performaceSettings.SaveCpuPower && (!performaceSettings.VSync || !actualRender))
                         System.Threading.Thread.Sleep(1);
@@ -165,7 +165,11 @@ namespace Coocoo3D.Core
             #region Scene Simulation
 
             RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
+            DateTime now = DateTime.Now;
+            var deltaTime = now - LatestRenderTime;
+            LatestRenderTime = now;
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
+            RPContext.dynamicContextWrite.RealDeltaTime = deltaTime.TotalSeconds;
             if (RPContext.gameDriverContext.Playing)
                 RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
             else
@@ -178,15 +182,15 @@ namespace Coocoo3D.Core
                 RPContext.dynamicContextWrite.gameObjects.AddRange(CurrentScene.gameObjects);
             }
 
-            lock (SelectedGameObjects)
-            {
+            //lock (SelectedGameObjects)
+            //{
                 for (int i = 0; i < SelectedGameObjects.Count; i++)
                 {
                     LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
                     if (lightingComponent != null)
                         RPContext.dynamicContextWrite.selectedLightings.Add(lightingComponent.GetLightingData());
                 }
-            }
+            //}
 
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
             var rendererComponents = RPContext.dynamicContextWrite.renderers;
@@ -260,7 +264,7 @@ namespace Coocoo3D.Core
                 bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready && widgetRenderer.Ready;
                 if (thisFrameReady && RPContext.dynamicContextRead.EnableDisplay)
                 {
-                        UI.UIImGui.GUI(this);
+                    UI.UIImGui.GUI(this);
                     graphicsContext.BeginCommand();
                     graphicsContext.SetDescriptorHeapDefault();
                     currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);
@@ -336,10 +340,6 @@ namespace Coocoo3D.Core
             OpenedStorageFolderChanged?.Invoke(this, null);
         }
         public Frame frameViewProperties;
-        //public void ShowDetailPage(Type page, object parameter)
-        //{
-        //    frameViewProperties.Navigate(page, parameter);
-        //}
         #endregion
     }
 
@@ -357,7 +357,6 @@ namespace Coocoo3D.Core
     {
         public bool viewSelectedEntityBone;
         public Vector4 backgroundColor;
-        //public uint RenderStyle;
         public bool ViewerUI;
         public bool Wireframe;
 

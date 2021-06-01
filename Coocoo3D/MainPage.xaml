@@ -146,7 +146,7 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="270" x:Name="x2"/>
+                    <RowDefinition Height="30" x:Name="x2"/>
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.ColumnDefinitions>

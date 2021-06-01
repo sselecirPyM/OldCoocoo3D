@@ -16,7 +16,7 @@ namespace Coocoo3D.Core
             {
                 return false;
             }
-            if (DateTime.Now - context.LatestRenderTime < context.FrameInterval)
+            if (DateTime.Now - context.LatestRenderTime <TimeSpan.FromSeconds( context.FrameInterval))
             {
                 context.NeedRender -=1;
                 return false;

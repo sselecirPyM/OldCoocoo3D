@@ -26,6 +26,7 @@ namespace Coocoo3D.RenderPipeline
         public int progressiveRenderIndex;
         public double Time;
         public double DeltaTime;
+        public double RealDeltaTime;
         public bool EnableDisplay;
 
         public int GetSceneObjectVertexCount()

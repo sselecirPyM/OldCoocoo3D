@@ -41,11 +41,6 @@ namespace Coocoo3D.PropertiesPages
         {
             base.OnNavigatedTo(e);
             appBody = e.Parameter as Coocoo3DMain;
-            if (appBody == null)
-            {
-                Frame.Navigate(typeof(ErrorPropertiesPage), "error");
-                return;
-            }
             appBody.OpenedStorageFolderChanged += AppBody_OpenedStorageFolderChanged;
         }
 

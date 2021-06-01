@@ -37,10 +37,6 @@ namespace Coocoo3D.PropertiesPages
             {
                 appBody = _appBody;
             }
-            else
-            {
-                Frame.Navigate(typeof(ErrorPropertiesPage), "显示属性错误");
-            }
         }
 
         private async void Record_Click(object sender, RoutedEventArgs e)

@@ -92,7 +92,7 @@ namespace Coocoo3D.UI
             }
             appBody.RequireRender();
         }
-        public static async Task OpenResourceFolder(Coocoo3DMain appBody)
+        public static async Task<StorageFolder> OpenResourceFolder(Coocoo3DMain appBody)
         {
             FolderPicker folderPicker = new FolderPicker()
             {
@@ -105,8 +105,28 @@ namespace Coocoo3D.UI
                 SettingsIdentifier = "ResourceFolder",
             };
             StorageFolder folder = await folderPicker.PickSingleFolderAsync();
-            if (folder == null) return;
+            if (folder == null) return null;
             appBody.OpenedStorageFolderChange(folder);
+            return folder;
+        }
+        public static async Task Record(Coocoo3DMain appBody)
+        {
+            FolderPicker folderPicker = new FolderPicker()
+            {
+                FileTypeFilter =
+                    {
+                        "*"
+                    },
+                SuggestedStartLocation = PickerLocationId.VideosLibrary,
+                ViewMode = PickerViewMode.Thumbnail,
+                SettingsIdentifier = "RecordFolder",
+            };
+            Windows.Storage.StorageFolder folder = await folderPicker.PickSingleFolderAsync();
+            if (folder == null) return;
+            appBody._RecorderGameDriver.saveFolder = folder;
+            appBody._RecorderGameDriver.SwitchEffect();
+            appBody.GameDriver = appBody._RecorderGameDriver;
+            appBody.Recording = true;
         }
 
         public static List<Texture2D> GetTextureList(Coocoo3DMain appBody, StorageFolder storageFolder, PMXFormat pmx)

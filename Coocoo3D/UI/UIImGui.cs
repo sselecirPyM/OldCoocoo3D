@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Coocoo3D.Components;
+using Windows.Storage;
 
 namespace Coocoo3D.UI
 {
@@ -43,7 +44,7 @@ namespace Coocoo3D.UI
             }
             var context = appBody.RPContext;
             io.DisplaySize = new Vector2(context.screenWidth, context.screenHeight);
-            io.DeltaTime = (float)context.dynamicContextRead.DeltaTime;
+            io.DeltaTime = (float)context.dynamicContextRead.RealDeltaTime;
             Present.GameObject selectedObject = null;
             LightingComponent lightingComponent = null;
             VolumeComponent volumeComponent = null;
@@ -66,61 +67,30 @@ namespace Coocoo3D.UI
             {
                 if (demoWindowOpen)
                     ImGui.ShowDemoWindow(ref demoWindowOpen);
-                ImGui.SetNextWindowSize(new Vector2(300, 200), ImGuiCond.Once);
+                ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.Once);
                 if (ImGui.Begin("常用"))
                 {
-                    if (ImGui.TreeNode("transform"))
-                    {
-                        ImGui.DragFloat3("位置", ref position, 0.1f);
-                        Vector3 a = rotation / MathF.PI * 180;
-                        rotationChange = ImGui.DragFloat3("旋转", ref a);
-                        if (rotationChange) rotation = a * MathF.PI / 180;
-                        ImGui.TreePop();
-                    }
-                    if (ImGui.TreeNode("相机"))
-                    {
-                        Camera(appBody);
-                        ImGui.TreePop();
-                    }
-                    if (ImGui.TreeNode("设置"))
-                    {
-                        ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
-                        ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
-                        ImGui.Checkbox("多线程", ref appBody.performaceSettings.MultiThreadRendering);
-                        ImGui.Checkbox("线框", ref appBody.settings.Wireframe);
-                        ImGui.SetNextItemWidth(150);
-                        ImGui.DragInt("阴影分辨率", ref appBody.settings.ShadowMapResolution, 128, 512, 8192);
-                        ImGui.TreePop();
-                    }
-                    if (ImGui.TreeNode("帮助"))
-                    {
-                        Help();
-                        ImGui.TreePop();
-                    }
-                    if (ImGui.Button("播放"))
-                    {
-                        PlayControl.Play(appBody);
-                    }
-                    ImGui.SameLine();
-                    if (ImGui.Button("暂停"))
-                    {
-                        PlayControl.Pause(appBody);
-                    }
-                    ImGui.SameLine();
-                    if (ImGui.Button("停止"))
-                    {
-                        PlayControl.Stop(appBody);
-                    }
-                    if (ImGui.Button("跳到最前"))
-                    {
-                        PlayControl.Front(appBody);
-                    }
+                    Common(appBody);
+                }
+                ImGui.End();
+                ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.Once);
+                ImGui.SetNextWindowPos(new Vector2(100, 400), ImGuiCond.Once);
+                if (ImGui.Begin("资源"))
+                {
+                    Resources(appBody);
+                }
+                ImGui.End();
+                ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
+                ImGui.SetNextWindowPos(new Vector2(200, 100), ImGuiCond.Once);
+                if (ImGui.Begin("场景"))
+                {
+                    Scene(appBody);
                 }
                 ImGui.End();
                 if (selectedObject != null)
                 {
                     ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
-                    ImGui.SetNextWindowPos(new Vector2(200, 100), ImGuiCond.Once);
+                    ImGui.SetNextWindowPos(new Vector2(200, 200), ImGuiCond.Once);
                     if (ImGui.Begin("物体"))
                     {
                         ImGui.Text(selectedObject.Name);
@@ -164,24 +134,9 @@ namespace Coocoo3D.UI
                     }
                     ImGui.End();
                 }
-                ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
-                ImGui.SetNextWindowPos(new Vector2(100, 100), ImGuiCond.Once);
-                if (ImGui.Begin("场景"))
-                {
-                    Scene(appBody);
-                }
-                ImGui.End();
-
             }
             ImGui.Render();
-            if (!appBody.settings.ViewerUI)
-            {
-                if (io.MouseDown[1])
-                    appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
-                if (io.MouseDown[2])
-                    appBody.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
-            }
-            else if (!io.WantCaptureMouse)
+            if (!appBody.settings.ViewerUI||!io.WantCaptureMouse)
             {
                 if (io.MouseDown[1])
                     appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
@@ -201,16 +156,131 @@ namespace Coocoo3D.UI
 
         }
 
-        static void Camera(Coocoo3DMain appBody)
+        static void Common(Coocoo3DMain appBody)
         {
-            ImGui.DragFloat("距离", ref appBody.camera.Distance);
-            ImGui.DragFloat3("观察点", ref appBody.camera.LookAtPoint, 0.05f);
-            Vector3 a = appBody.camera.Angle / MathF.PI * 180;
-            if (ImGui.DragFloat3("角度", ref a))
-                appBody.camera.Angle = a * MathF.PI / 180;
-            float fov = appBody.camera.Fov / MathF.PI * 180;
-            if (ImGui.DragFloat("FOV", ref fov))
-                appBody.camera.Fov = fov * MathF.PI / 180;
+            if (ImGui.TreeNode("transform"))
+            {
+                ImGui.DragFloat3("位置", ref position, 0.1f);
+                Vector3 a = rotation / MathF.PI * 180;
+                rotationChange = ImGui.DragFloat3("旋转", ref a);
+                if (rotationChange) rotation = a * MathF.PI / 180;
+                ImGui.TreePop();
+            }
+            if (ImGui.TreeNode("相机"))
+            {
+                ImGui.DragFloat("距离", ref appBody.camera.Distance);
+                ImGui.DragFloat3("观察点", ref appBody.camera.LookAtPoint, 0.05f);
+                Vector3 a = appBody.camera.Angle / MathF.PI * 180;
+                if (ImGui.DragFloat3("角度", ref a))
+                    appBody.camera.Angle = a * MathF.PI / 180;
+                float fov = appBody.camera.Fov / MathF.PI * 180;
+                if (ImGui.DragFloat("FOV", ref fov))
+                    appBody.camera.Fov = fov * MathF.PI / 180;
+                ImGui.Checkbox("使用镜头运动文件", ref appBody.camera.CameraMotionOn);
+                ImGui.TreePop();
+            }
+            if (ImGui.TreeNode("录制"))
+            {
+                if(ImGui.Button("开始录制"))
+                {
+                    requireRecord = true;
+                }
+                ImGui.TreePop();
+            }
+            if (ImGui.TreeNode("设置"))
+            {
+                ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
+                ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
+                ImGui.Checkbox("多线程渲染", ref appBody.performaceSettings.MultiThreadRendering);
+                ImGui.Checkbox("线框", ref appBody.settings.Wireframe);
+                ImGui.SetNextItemWidth(150);
+                ImGui.DragInt("阴影分辨率", ref appBody.settings.ShadowMapResolution, 128, 512, 8192);
+                float a = (float)(1.0 / appBody.GameDriverContext.FrameInterval);
+                if (!(a == a))
+                    a = 2000;
+
+                if (ImGui.DragFloat("帧率限制", ref a, 10, 1, 5000))
+                {
+                    if (a == a)
+                        appBody.GameDriverContext.FrameInterval = 1 / a;
+                }
+                ImGui.TreePop();
+            }
+            if (ImGui.TreeNode("帮助"))
+            {
+                Help();
+                ImGui.TreePop();
+            }
+            if (ImGui.Button("播放"))
+            {
+                PlayControl.Play(appBody);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("暂停"))
+            {
+                PlayControl.Pause(appBody);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("停止"))
+            {
+                PlayControl.Stop(appBody);
+            }
+            if (ImGui.Button("跳到最前"))
+            {
+                PlayControl.Front(appBody);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("重置物理"))
+            {
+                appBody.RPContext.gameDriverContext.RequireResetPhysics = true;
+            }
+            if (ImGui.Button("快进"))
+            {
+                PlayControl.FastForward(appBody);
+            }
+        }
+
+        static void Resources(Coocoo3DMain appBody)
+        {
+            if (ImGui.Button("打开文件夹"))
+            {
+                requireOpenFolder = true;
+            }
+            if (ImGui.Button("后退"))
+            {
+                if (viewStack.Count > 0)
+                    requireView = viewStack.Pop();
+            }
+            ImGui.Begin("资源");
+
+            lock (storageItems)
+            {
+                bool requireClear = false;
+                foreach (var item in storageItems)
+                {
+                    if (ImGui.Selectable(item.Name, false, ImGuiSelectableFlags.AllowDoubleClick) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    {
+                        if (item is StorageFolder folder)
+                        {
+                            requireView = folder;
+                            requireClear = true;
+                            viewStack.Push(currentFolder);
+                        }
+                        else if (item is StorageFile file)
+                        {
+                            var requireOpen1 = new _requireOpen();
+                            requireOpen1.file = file;
+                            requireOpen1.folder = currentFolder;
+                            requireOpen = requireOpen1;
+                        }
+                    }
+                }
+                //if (requireView != null)
+                //    storageItems.Clear();
+                if (requireClear)
+                    storageItems.Clear();
+            }
+            ImGui.End();
         }
 
         static void Help()
@@ -236,6 +306,10 @@ vmd格式动作");
 示例着色器已经包含前向渲染以及延迟渲染的示例，有问题或想法请在github上提交。");
                 ImGui.TreePop();
             }
+            if(ImGui.Button("显示ImGuiDemoWindow"))
+            {
+                demoWindowOpen = true;
+            }
         }
 
         static void Scene(Coocoo3DMain appBody)
@@ -259,19 +333,30 @@ vmd格式动作");
             //{
             //    gameObjectSelected.Add(false);
             //}
-            for (int i = 0; i < appBody.CurrentScene.gameObjects.Count; i++)
+            var gameObjects = appBody.CurrentScene.gameObjects;
+            for (int i = 0; i < gameObjects.Count; i++)
             {
-                Present.GameObject gameObject = appBody.CurrentScene.gameObjects[i];
+                Present.GameObject gameObject = gameObjects[i];
                 bool selected = gameObjectSelectIndex == i;
-                ImGui.Selectable(gameObject.Name, ref selected);
+                ImGui.Selectable(gameObject.Name + "###" + gameObject.GetHashCode(), ref selected);
+                if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
+                {
+                    int n_next = i + (ImGui.GetMouseDragDelta(0).Y < 0.0f ? -1 : 1);
+                    if (n_next >= 0 && n_next < gameObjects.Count)
+                    {
+                        gameObjects[i] = gameObjects[n_next];
+                        gameObjects[n_next] = gameObject;
+                        ImGui.ResetMouseDragDelta();
+                    }
+                }
                 if (selected && (appBody.SelectedGameObjects.Count < 1 || appBody.SelectedGameObjects[0] != gameObject))
                 {
                     gameObjectSelectIndex = i;
-                    lock (appBody.SelectedGameObjects)
-                    {
-                        appBody.SelectedGameObjects.Clear();
-                        appBody.SelectedGameObjects.Add(gameObject);
-                    }
+                    //lock (appBody.SelectedGameObjects)
+                    //{
+                    appBody.SelectedGameObjects.Clear();
+                    appBody.SelectedGameObjects.Add(gameObject);
+                    //}
                 }
             }
         }
@@ -330,7 +415,7 @@ vmd格式动作");
             }
         }
 
-        public static bool demoWindowOpen = true;
+        public static bool demoWindowOpen = false;
         public static Vector3 position;
         public static Vector3 rotation;
         public static Quaternion rotationCache;
@@ -338,6 +423,16 @@ vmd格式动作");
 
         public static int materialSelectIndex = 0;
         public static int gameObjectSelectIndex = 0;
+        public static bool requireOpenFolder;
+        public static bool requireSaveFolder;
+        public static bool requireRecord;
+
+        public static StorageFolder rootFolder;
+        public static Stack<StorageFolder> viewStack = new Stack<StorageFolder>();
+        public static List<IStorageItem> storageItems = new List<IStorageItem>();
+        public static StorageFolder requireView;
+        public static StorageFolder currentFolder;
+        public static _requireOpen requireOpen;
         //public static List<bool> gameObjectSelected = new List<bool>();
 
         static Vector3 QuaternionToEularYXZ(Quaternion quaternion)
@@ -357,5 +452,10 @@ vmd格式动作");
             result.Z = (float)Math.Atan2(2.0 * (ek + ij), 1 - 2.0 * (ii + kk));
             return result;
         }
+    }
+    class _requireOpen
+    {
+        public StorageFile file;
+        public StorageFolder folder;
     }
 }

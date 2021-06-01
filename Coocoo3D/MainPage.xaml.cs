@@ -94,10 +94,10 @@ namespace Coocoo3D
             var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
             ;
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Common"), typeof(PropertiesPages.CommonPage), appBody);
-            AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_SkyBox"), typeof(PropertiesPages.SkyBoxPage), appBody);
+            //AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_SkyBox"), typeof(PropertiesPages.SkyBoxPage), appBody);
             AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Record"), typeof(PropertiesPages.RecordPage), appBody);
             //AddPage(tabViewR1, resourceLoader.GetString("Tab_Title_Scene"), typeof(PropertiesPages.ScenePage), appBody);
-            AddPage(tabViewB1, resourceLoader.GetString("Tab_Title_Resources"), typeof(PropertiesPages.ResourcesPage), appBody);
+            //AddPage(tabViewB1, resourceLoader.GetString("Tab_Title_Resources"), typeof(PropertiesPages.ResourcesPage), appBody);
 
             //Frame frame1 = new Frame();
             //frame1.Navigate(typeof(PropertiesPages.EmptyPropertiesPage));
@@ -121,7 +121,8 @@ namespace Coocoo3D
 
         private async void OpenFolder_Click(object sender, RoutedEventArgs e)
         {
-            await UI.UISharedCode.OpenResourceFolder(appBody);
+            UI.UIImGui.requireOpenFolder = true;
+            //await UI.UISharedCode.OpenResourceFolder(appBody);
         }
         private async void OpenMedia_Click(object sender, RoutedEventArgs e)
         {
@@ -289,17 +290,17 @@ namespace Coocoo3D
 
         private void RadioMenuFlyoutItem1_Click(object sender, RoutedEventArgs e)
         {
-            x2.Height = new GridLength(180);
+            //x2.Height = new GridLength(180);
             x3.Width = new GridLength(240);
         }
         private void RadioMenuFlyoutItem2_Click(object sender, RoutedEventArgs e)
         {
-            x2.Height = new GridLength(270);
+            //x2.Height = new GridLength(270);
             x3.Width = new GridLength(360);
         }
         private void RadioMenuFlyoutItem3_Click(object sender, RoutedEventArgs e)
         {
-            x2.Height = new GridLength(360);
+            //x2.Height = new GridLength(360);
             x3.Width = new GridLength(360);
         }
     }

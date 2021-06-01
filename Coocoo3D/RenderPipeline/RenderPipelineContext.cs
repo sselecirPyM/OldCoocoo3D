@@ -33,7 +33,7 @@ namespace Coocoo3D.RenderPipeline
         public bool Playing;
         public double PlayTime;
         public double DeltaTime;
-        public TimeSpan FrameInterval;
+        public float FrameInterval;
         public float PlaySpeed;
         public volatile bool RequireResetPhysics;
         public bool NeedReloadModel;
@@ -144,7 +144,7 @@ namespace Coocoo3D.RenderPipeline
         public float logicScale = 1;
         public GameDriverContext gameDriverContext = new GameDriverContext()
         {
-            FrameInterval = TimeSpan.FromSeconds(1 / 240.0),
+            FrameInterval = 1 / 240.0f,
             recordSettings = new RecordSettings()
             {
                 FPS = 60,

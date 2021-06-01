@@ -45,10 +45,6 @@ namespace Coocoo3D.PropertiesPages
             {
                 appBody = _appBody;
             }
-            else
-            {
-                Frame.Navigate(typeof(ErrorPropertiesPage), "error");
-            }
         }
 
         private bool IsImageExtName(string extName)

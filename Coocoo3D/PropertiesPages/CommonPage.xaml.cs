@@ -62,10 +62,6 @@ namespace Coocoo3D.PropertiesPages
                 }
                 vQuality.ItemsSource = comboBox1Values;
             }
-            else
-            {
-                Frame.Navigate(typeof(ErrorPropertiesPage), "error");
-            }
         }
 
         #region view property
@@ -259,15 +255,6 @@ namespace Coocoo3D.PropertiesPages
             }
         }
 
-        public float VSetFps
-        {
-            get => appBody.Fps; set
-            {
-                appBody.Fps = Math.Max(value, 1);
-                appBody.GameDriverContext.FrameInterval = TimeSpan.FromSeconds(1 / appBody.Fps);
-            }
-        }
-
         public bool VWireframe
         {
             get => appBody.settings.Wireframe; set
@@ -292,14 +279,14 @@ namespace Coocoo3D.PropertiesPages
                 appBody.RequireRender();
             }
         }
-        public bool VCameraMotionOn
-        {
-            get => appBody.camera.CameraMotionOn; set
-            {
-                appBody.camera.CameraMotionOn = value;
-                appBody.RequireRender();
-            }
-        }
+        //public bool VCameraMotionOn
+        //{
+        //    get => appBody.camera.CameraMotionOn; set
+        //    {
+        //        appBody.camera.CameraMotionOn = value;
+        //        appBody.RequireRender();
+        //    }
+        //}
         public bool VAutoReloadShader
         {
             get => appBody.performaceSettings.AutoReloadShaders;
@@ -310,11 +297,6 @@ namespace Coocoo3D.PropertiesPages
             get => appBody.performaceSettings.AutoReloadTextures;
             set => appBody.performaceSettings.AutoReloadTextures = value;
         }
-        //public bool VAutoReloadModel
-        //{
-        //    get => appBody.performaceSettings.AutoReloadModels;
-        //    set => appBody.performaceSettings.AutoReloadModels = value;
-        //}
 
         bool _cacheCameraMotionOn;
         #endregion
@@ -354,11 +336,6 @@ namespace Coocoo3D.PropertiesPages
             appBody.RequireRender(true);
         }
 
-        //private void NewFun_Click(object sender, RoutedEventArgs e)
-        //{
-        //    appBody.UseNewFun = !appBody.UseNewFun;
-        //}
-
         private bool StrEq(string a, string b)
         {
             return a.Equals(b, StringComparison.CurrentCultureIgnoreCase);
@@ -380,36 +357,36 @@ namespace Coocoo3D.PropertiesPages
             }
         }
 
-        private async void Page_Drop(object sender, DragEventArgs e)
-        {
-            if (!e.DataView.Properties.TryGetValue("ExtName", out object object1)) return;
-            string extName = object1 as string;
-            if (extName != null)
-            {
-                e.DataView.Properties.TryGetValue("File", out object object2);
-                StorageFile storageFile = object2 as StorageFile;
-                e.DataView.Properties.TryGetValue("Folder", out object object3);
-                StorageFolder storageFolder = object3 as StorageFolder;
+        //private async void Page_Drop(object sender, DragEventArgs e)
+        //{
+        //    if (!e.DataView.Properties.TryGetValue("ExtName", out object object1)) return;
+        //    string extName = object1 as string;
+        //    if (extName != null)
+        //    {
+        //        e.DataView.Properties.TryGetValue("File", out object object2);
+        //        StorageFile storageFile = object2 as StorageFile;
+        //        e.DataView.Properties.TryGetValue("Folder", out object object3);
+        //        StorageFolder storageFolder = object3 as StorageFolder;
 
-                var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-                if (StrEq(".vmd", extName))
-                {
-                    try
-                    {
-                        VMDFormat motionFile = new VMDFormat();
-                        motionFile.Reload(new BinaryReader(await storageFile.OpenStreamForReadAsync()));
-                        appBody.camera.cameraMotion.cameraKeyFrames = motionFile.CameraKeyFrames;
-                        vCameraMotionOn.IsEnabled = true;
-                        appBody.camera.CameraMotionOn = true;
-                    }
-                    catch (Exception exception)
-                    {
-                        MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
-                        await dialog.ShowAsync();
-                    }
-                }
-            }
-        }
+        //        var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+        //        if (StrEq(".vmd", extName))
+        //        {
+        //            try
+        //            {
+        //                VMDFormat motionFile = new VMDFormat();
+        //                motionFile.Reload(new BinaryReader(await storageFile.OpenStreamForReadAsync()));
+        //                appBody.camera.cameraMotion.cameraKeyFrames = motionFile.CameraKeyFrames;
+        //                vCameraMotionOn.IsEnabled = true;
+        //                appBody.camera.CameraMotionOn = true;
+        //            }
+        //            catch (Exception exception)
+        //            {
+        //                MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
+        //                await dialog.ShowAsync();
+        //            }
+        //        }
+        //    }
+        //}
 
         private void ReloadTextures_Click(object sender, RoutedEventArgs e)
         {
