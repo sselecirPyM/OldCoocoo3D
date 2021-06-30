@@ -246,6 +246,11 @@ namespace Coocoo3D.UI
             {
                 requireOpenFolder = true;
             }
+            if (ImGui.Button("刷新"))
+            {
+                requireView = currentFolder;
+            }
+            ImGui.SameLine();
             if (ImGui.Button("后退"))
             {
                 if (viewStack.Count > 0)
@@ -255,7 +260,7 @@ namespace Coocoo3D.UI
 
             lock (storageItems)
             {
-                bool requireClear = false;
+                bool _requireClear = false;
                 foreach (var item in storageItems)
                 {
                     if (ImGui.Selectable(item.Name, false, ImGuiSelectableFlags.AllowDoubleClick) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
@@ -263,7 +268,7 @@ namespace Coocoo3D.UI
                         if (item is StorageFolder folder)
                         {
                             requireView = folder;
-                            requireClear = true;
+                            _requireClear = true;
                             viewStack.Push(currentFolder);
                         }
                         else if (item is StorageFile file)
@@ -275,9 +280,7 @@ namespace Coocoo3D.UI
                         }
                     }
                 }
-                //if (requireView != null)
-                //    storageItems.Clear();
-                if (requireClear)
+                if (_requireClear)
                     storageItems.Clear();
             }
             ImGui.End();

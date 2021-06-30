@@ -41,7 +41,7 @@ namespace Coocoo3D.RenderPipeline
                 byte[] pixelData = new byte[size];
                 spanByte1.CopyTo(pixelData);
 
-                uploader.Texture2DRaw(pixelData, width, height);
+                uploader.Texture2DRaw(pixelData, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM, width, height);
             }
             var texture2D = new Texture2D();
             context.RPAssetsManager.texture2ds["imgui_font"] = texture2D;

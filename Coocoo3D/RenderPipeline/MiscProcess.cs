@@ -17,28 +17,6 @@ namespace Coocoo3D.RenderPipeline
         public TextureCube source;
         public RenderTextureCube IrradianceMap;
         public RenderTextureCube EnvMap;
-        public int Level;
-    }
-    public class MiscProcessContext
-    {
-        public List<P_Env_Data> miscProcessPairs = new List<P_Env_Data>();
-        public void Add(P_Env_Data pair)
-        {
-            lock (miscProcessPairs)
-            {
-                miscProcessPairs.Add(pair);
-            }
-        }
-
-        public void MoveToAnother(MiscProcessContext context)
-        {
-            miscProcessPairs.MoveTo_CC(context.miscProcessPairs);
-        }
-
-        public void Clear()
-        {
-            miscProcessPairs.Clear();
-        }
     }
 
     public class MiscProcess
@@ -70,26 +48,28 @@ namespace Coocoo3D.RenderPipeline
             Ready = true;
         }
 
-        public void Process(RenderPipelineContext rp, MiscProcessContext context)
+        public void Process(RenderPipelineContext rp)
         {
-            if (context.miscProcessPairs.Count == 0) return;
             if (!Ready) return;
-            ref byte[] bigBuffer = ref rp.bigBuffer;
-            GraphicsContext graphicsContext = rp.graphicsContext1;
-            graphicsContext.BeginCommand();
-            graphicsContext.SetDescriptorHeapDefault();
-            for (int i = 0; i < context.miscProcessPairs.Count; i++)
+            if (rp.SkyBoxChanged)
             {
-                var texture0 = context.miscProcessPairs[i].source;
-                var texture1 = context.miscProcessPairs[i].IrradianceMap;
-                var texture2 = context.miscProcessPairs[i].EnvMap;
+                ref byte[] bigBuffer = ref rp.bigBuffer;
+                GraphicsContext graphicsContext = rp.graphicsContext1;
+                graphicsContext.BeginCommand();
+                graphicsContext.SetDescriptorHeapDefault();
+                //var texture0 = context.miscProcessPairs[i].source;
+                //var texture1 = context.miscProcessPairs[i].IrradianceMap;
+                //var texture2 = context.miscProcessPairs[i].EnvMap;
+                var texture0 = rp.SkyBox;
+                var texture1 = rp.IrradianceMap;
+                var texture2 = rp.ReflectMap;
                 IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
                 _XyzData.x1 = (int)texture1.m_width;
                 _XyzData.y1 = (int)texture1.m_height;
                 _XyzData.x2 = (int)texture2.m_width;
                 _XyzData.y2 = (int)texture2.m_height;
-                _XyzData.Quality = context.miscProcessPairs[i].Level;
-                int itCount = context.miscProcessPairs[i].Level;
+                _XyzData.Quality = 32;
+                int itCount = 32;
 
                 for (int j = 0; j < itCount; j++)
                 {
@@ -146,10 +126,10 @@ namespace Coocoo3D.RenderPipeline
                     }
                     pow2a *= 2;
                 }
+                graphicsContext.EndCommand();
+                graphicsContext.Execute();
+                rp.SkyBoxChanged = false;
             }
-            graphicsContext.EndCommand();
-            graphicsContext.Execute();
-            context.Clear();
         }
 
         public struct XYZData

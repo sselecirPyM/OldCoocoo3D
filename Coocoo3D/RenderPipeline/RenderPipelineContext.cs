@@ -69,10 +69,6 @@ namespace Coocoo3D.RenderPipeline
         public byte[] bigBuffer = new byte[65536];
         GCHandle _bigBufferHandle;
 
-        public const int c_presentDataSize = 256;
-        public const int c_lightingBufferSize = 1024;
-        public CBuffer CameraDataBuffers = new CBuffer();
-        public CBuffer LightCameraDataBuffer = new CBuffer();
         public CBufferGroup XBufferGroup = new CBufferGroup();
         public MainCaches mainCaches = new MainCaches();
 
@@ -87,6 +83,8 @@ namespace Coocoo3D.RenderPipeline
 
         public Texture2D TextureLoading = new Texture2D();
         public Texture2D TextureError = new Texture2D();
+
+        public bool SkyBoxChanged = false;
         public TextureCube SkyBox = new TextureCube();
         public RenderTextureCube IrradianceMap = new RenderTextureCube();
         public RenderTextureCube ReflectMap = new RenderTextureCube();
@@ -305,11 +303,8 @@ namespace Coocoo3D.RenderPipeline
 
         public bool Initilized = false;
         public Task LoadTask;
-        public async Task ReloadDefalutResources(MiscProcessContext miscProcessContext)
+        public async Task ReloadDefalutResources()
         {
-            deviceResources.InitializeCBuffer(CameraDataBuffers, c_presentDataSize);
-            deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightingBufferSize);
-
             Uploader upTexLoading = new Uploader();
             Uploader upTexError = new Uploader();
             upTexLoading.Texture2DPure(1, 1, new Vector4(0, 1, 1, 1));
@@ -323,7 +318,8 @@ namespace Coocoo3D.RenderPipeline
 
             IrradianceMap.ReloadAsRTVUAV(32, 32, 1, DxgiFormat.DXGI_FORMAT_R32G32B32A32_FLOAT);
             ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT);
-            miscProcessContext.Add(new P_Env_Data() { source = SkyBox, IrradianceMap = IrradianceMap, EnvMap = ReflectMap, Level = 16 });
+            //miscProcessContext.Add(new P_Env_Data() { source = SkyBox, IrradianceMap = IrradianceMap, EnvMap = ReflectMap});
+            SkyBoxChanged = true;
             graphicsContext.UpdateRenderTexture(IrradianceMap);
             graphicsContext.UpdateRenderTexture(ReflectMap);
 

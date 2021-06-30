@@ -88,7 +88,7 @@ namespace Coocoo3D.Core
             {
                 await RPAssetsManager.LoadAssets();
                 RPAssetsManager.InitializeRootSignature(deviceResources);
-                await RPContext.ReloadDefalutResources(miscProcessContext);
+                await RPContext.ReloadDefalutResources();
                 forwardRenderPipeline2.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
                 widgetRenderer.Reload(RPContext);
@@ -133,8 +133,6 @@ namespace Coocoo3D.Core
         public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         MiscProcess miscProcess = new MiscProcess();
-        public MiscProcessContext miscProcessContext = new MiscProcessContext();
-        MiscProcessContext _miscProcessContext = new MiscProcessContext();
         public RenderPipeline.RenderPipeline CurrentRenderPipeline { get => _currentRenderPipeline; }
         RenderPipeline.RenderPipeline _currentRenderPipeline;
 
@@ -257,8 +255,7 @@ namespace Coocoo3D.Core
             {
                 GraphicsContext.BeginAlloctor(deviceResources);
 
-                miscProcessContext.MoveToAnother(_miscProcessContext);
-                miscProcess.Process(RPContext, _miscProcessContext);
+                miscProcess.Process(RPContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
                 bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready && widgetRenderer.Ready;

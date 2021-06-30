@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
-using Windows.UI.Xaml.Controls;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Present;
 using Coocoo3DGraphics;
@@ -17,6 +16,9 @@ using Windows.Storage.Streams;
 using System.Threading;
 using Coocoo3D.ResourceWarp;
 using Coocoo3D.RenderPipeline;
+using SixLabors.ImageSharp;
+using System.Runtime.InteropServices;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Coocoo3D.UI
 {
@@ -165,6 +167,7 @@ namespace Coocoo3D.UI
                 if (tex.Status != GraphicsObjectStatus.loaded)
                     tex.Mark(GraphicsObjectStatus.loading);
             }
+            //SixLabors.ImageSharp.Image.Load()
             await ReloadTexture2D(tex.texture2D, appBody.ProcessingList, file);
             return tex.texture2D;
         }
@@ -245,6 +248,29 @@ namespace Coocoo3D.UI
             Uploader uploader = new Uploader();
             uploader.Texture2D(await FileIO.ReadBufferAsync(storageFile), false, false);
             processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
+        }
+
+        private static void GetImageData(Stream stream, Uploader uploader)
+        {
+            byte[] data = GetImageData(stream, out int width, out int height, out _);
+            uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height);
+        }
+
+        private static byte[] GetImageData(Stream stream, out int width, out int height, out int bitPerPixel)
+        {
+            Image image0 = Image.Load(stream);
+            //image0.PixelType.BitsPerPixel;
+
+            Image<Rgba32> image = (Image<Rgba32>)image0;
+            var frame0 = image.Frames[0];
+            frame0.TryGetSinglePixelSpan(out Span<Rgba32> span1);
+            Span<byte> castToByte = MemoryMarshal.Cast<Rgba32, byte>(span1);
+            byte[] bytes = new byte[castToByte.Length];
+            castToByte.CopyTo(bytes);
+            width = frame0.Width;
+            height = frame0.Height;
+            bitPerPixel = image0.PixelType.BitsPerPixel;
+            return bytes;
         }
     }
 }

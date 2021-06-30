@@ -89,36 +89,36 @@ namespace Coocoo3D.PropertiesPages
         int prevRenderFrame = 0;
         private async Task ApplySkyBoxTask(int level)
         {
-            var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-            for (int i = 0; i < 6; i++)
-            {
-                if (files[i] == null)
-                {
-                    showInfo.Text = "天空盒图片未完全填充";
-                    return;
-                }
-            }
-            showInfo.Text = resourceLoader.GetString("Message_Operating");
-            var rp = appBody.RPContext;
-            Uploader uploader = new Uploader();
-            uploader.TextureCube(
-                new IBuffer[] {
-                await FileIO.ReadBufferAsync(files[0]),
-                await FileIO.ReadBufferAsync(files[1]),
-                await FileIO.ReadBufferAsync(files[2]),
-                await FileIO.ReadBufferAsync(files[3]),
-                await FileIO.ReadBufferAsync(files[4]),
-                await FileIO.ReadBufferAsync(files[5])});
-            int t1 = appBody.CompletedRenderCount;
-            if (prevRenderFrame == t1)
-            {
+            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
+            //for (int i = 0; i < 6; i++)
+            //{
+            //    if (files[i] == null)
+            //    {
+            //        showInfo.Text = "天空盒图片未完全填充";
+            //        return;
+            //    }
+            //}
+            //showInfo.Text = resourceLoader.GetString("Message_Operating");
+            //var rp = appBody.RPContext;
+            //Uploader uploader = new Uploader();
+            //uploader.TextureCube(
+            //    new IBuffer[] {
+            //    await FileIO.ReadBufferAsync(files[0]),
+            //    await FileIO.ReadBufferAsync(files[1]),
+            //    await FileIO.ReadBufferAsync(files[2]),
+            //    await FileIO.ReadBufferAsync(files[3]),
+            //    await FileIO.ReadBufferAsync(files[4]),
+            //    await FileIO.ReadBufferAsync(files[5])});
+            //int t1 = appBody.CompletedRenderCount;
+            //if (prevRenderFrame == t1)
+            //{
 
-            }
-            prevRenderFrame = t1;
-            appBody.ProcessingList.AddObject(new TextureCubeUploadPack(rp.SkyBox, uploader));
-            appBody.miscProcessContext.Add(new P_Env_Data() { source = rp.SkyBox, IrradianceMap = rp.IrradianceMap, EnvMap = rp.ReflectMap, Level = level });
-            appBody.RequireRender();
-            showInfo.Text = resourceLoader.GetString("Message_Done");
+            //}
+            //prevRenderFrame = t1;
+            //appBody.ProcessingList.AddObject(new TextureCubeUploadPack(rp.SkyBox, uploader));
+            //appBody.miscProcessContext.Add(new P_Env_Data() { source = rp.SkyBox, IrradianceMap = rp.IrradianceMap, EnvMap = rp.ReflectMap});
+            //appBody.RequireRender();
+            //showInfo.Text = resourceLoader.GetString("Message_Done");
         }
         private async void Apply_Click(object sender, RoutedEventArgs e)
         {
