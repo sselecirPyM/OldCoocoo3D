@@ -23,43 +23,19 @@ void ReadBackTexture2D::GetDataTolocal(int index)
 	m_textureReadBack[index]->Unmap(0,nullptr);
 }
 
-Platform::Array<byte>^ ReadBackTexture2D::EncodePNG(WICFactory^ wicFactory, int index)
+Platform::Array<byte>^ Coocoo3DGraphics::ReadBackTexture2D::GetRaw(int index)
 {
 	UINT dataLengrh = ((m_width + 63) & ~63) * m_height * m_bytesPerPixel;
-	HGLOBAL HGlobalImage = GlobalAlloc(GMEM_ZEROINIT | GMEM_MOVEABLE, dataLengrh);
 
-	ComPtr<IStream> memStream = nullptr;
-	DX::ThrowIfFailed(CreateStreamOnHGlobal(HGlobalImage, true, &memStream));
-	DX::ThrowIfFailed(memStream->Seek(LARGE_INTEGER{ 0,0 }, STREAM_SEEK_SET, nullptr));
-	WICRect rect = {};
-	rect.Width = m_width;
-	rect.Height = m_height;
-	auto factory = wicFactory->GetWicImagingFactory();
-
-	ComPtr<IWICBitmap> bitmap = nullptr;
-	ComPtr<IWICBitmapEncoder> encoder = nullptr;
-	ComPtr<IWICBitmapFrameEncode> frame1 = nullptr;
-	ComPtr<IPropertyBag2> propertyBag = nullptr;
-	DX::ThrowIfFailed(factory->CreateBitmapFromMemory(m_width, m_height, GUID_WICPixelFormat32bppBGRA, ((m_width + 63) & ~63) * m_bytesPerPixel, ((m_width + 63) & ~63) * m_height * m_bytesPerPixel, m_localData + dataLengrh * index, &bitmap));
-	DX::ThrowIfFailed(factory->CreateEncoder(GUID_ContainerFormatPng, nullptr, &encoder));
-	DX::ThrowIfFailed(encoder->Initialize(memStream.Get(), WICBitmapEncoderNoCache));
-	DX::ThrowIfFailed(encoder->CreateNewFrame(&frame1, &propertyBag));
-	DX::ThrowIfFailed(frame1->Initialize(propertyBag.Get()));
-	DX::ThrowIfFailed(frame1->SetSize(m_width, m_height));
-	DX::ThrowIfFailed(frame1->WriteSource(bitmap.Get(), &rect));
-	DX::ThrowIfFailed(frame1->Commit());
-	DX::ThrowIfFailed(encoder->Commit());
-
-	ULARGE_INTEGER curPos = {};
-	ULARGE_INTEGER startPos = {};
-
-	DX::ThrowIfFailed(memStream->Seek(LARGE_INTEGER{}, STREAM_SEEK_CUR, &curPos));
-	DX::ThrowIfFailed(memStream->Seek(LARGE_INTEGER{}, STREAM_SEEK_SET, &startPos));
-	ULONG64 imgSize = curPos.QuadPart - startPos.QuadPart;
-	Platform::Array<byte>^ bitmapData = ref new Platform::Array<byte>(imgSize);
-	memStream->Read(bitmapData->begin(), (ULONG)imgSize, nullptr);
-	GlobalUnlock(HGlobalImage);
+	Platform::Array<byte>^ bitmapData = ref new Platform::Array<byte>(dataLengrh);
+	memcpy(bitmapData->begin(), m_localData + dataLengrh * index, dataLengrh);
 	return bitmapData;
+}
+
+void Coocoo3DGraphics::ReadBackTexture2D::GetRaw(int index, const Platform::Array<byte>^ bitmapData)
+{
+	UINT dataLengrh = ((m_width + 63) & ~63) * m_height * m_bytesPerPixel;
+	memcpy(bitmapData->begin(), m_localData + dataLengrh * index, dataLengrh);
 }
 
 ReadBackTexture2D::~ReadBackTexture2D()

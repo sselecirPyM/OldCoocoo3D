@@ -7,6 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using System.Runtime.InteropServices;
 
 namespace Coocoo3D.Core
 {
@@ -57,22 +60,34 @@ namespace Coocoo3D.Core
         class Pack1
         {
             public Task runningTask;
-            public ReadBackTexture2D ReadBackTexture2D;
-            public int swapIndex;
+            //public int swapIndex;
             public int renderIndex;
-            public WICFactory WICFactory;
             public StorageFolder saveFolder;
+            public byte[] imageData;
+            public int width;
+            public int height;
             public async Task task1()
             {
-                var bytes = ReadBackTexture2D.EncodePNG(WICFactory, swapIndex);
+                Image<Bgra32> image = GetImage();
+
                 StorageFile file = await saveFolder.CreateFileAsync(string.Format("{0}.png", renderIndex), CreationCollisionOption.ReplaceExisting);
                 var stream = await file.OpenStreamForWriteAsync();
-                stream.Write(bytes, 0, bytes.Length);
-                await stream.FlushAsync();
+                image.SaveAsPng(stream);
+
+                //await stream.FlushAsync();
                 stream.Close();
             }
+            Image<Bgra32> GetImage()
+            {
+                Image<Bgra32> image = new Image<Bgra32>(width, height);
+                image.Frames[0].TryGetSinglePixelSpan(out var span1);
+                imageData.CopyTo(MemoryMarshal.Cast<Bgra32, byte>(span1));
+                return image;
+            }
         }
-        Pack1[] packs = new Pack1[c_frameCount];
+        const int encFrameCount = 8;
+        int exIndex = 0;
+        Pack1[] packs = new Pack1[encFrameCount];
         public override void AfterRender(RenderPipelineContext rpContext, GraphicsContext graphicsContext)
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
@@ -84,20 +99,35 @@ namespace Coocoo3D.Core
                 if (RecordCount >= c_frameCount)
                 {
                     rpContext.ReadBackTexture2D.GetDataTolocal(index1);
-                    if (packs[index1] == null)
-                        packs[index1] = new Pack1() { ReadBackTexture2D = rpContext.ReadBackTexture2D, swapIndex = index1, WICFactory = context.WICFactory, saveFolder = saveFolder };
-                    else if (!packs[index1].runningTask.IsCompleted)
+                    if (packs[exIndex] == null)
                     {
-                        packs[index1].runningTask.Wait();
+                        int width = rpContext.ReadBackTexture2D.GetWidth();
+                        int height = rpContext.ReadBackTexture2D.GetHeight();
+                        packs[exIndex] = new Pack1()
+                        {
+                            saveFolder = saveFolder,
+                            width = width,
+                            height = height,
+                            imageData = new byte[width * height * 4],
+                        };
                     }
-                    packs[index1].renderIndex = RecordCount - c_frameCount;
-                    packs[index1].runningTask = Task.Run(packs[index1].task1);
+                    else if (!packs[exIndex].runningTask.IsCompleted)
+                    {
+                        packs[exIndex].runningTask.Wait();
+                    }
+
+                    //packs[exIndex].imageData = rpContext.ReadBackTexture2D.GetRaw(index1);
+                    rpContext.ReadBackTexture2D.GetRaw(index1, packs[exIndex].imageData);
+
+                    packs[exIndex].renderIndex = RecordCount - c_frameCount;
+                    packs[exIndex].runningTask = Task.Run(packs[exIndex].task1);
+                    exIndex = (exIndex + 1) % packs.Length;
                 }
                 RecordCount++;
             }
             else
             {
-                for (int i = 0; i < c_frameCount; i++)
+                for (int i = 0; i < packs.Length; i++)
                 {
                     if (packs[i] != null && !packs[i].runningTask.IsCompleted)
                     {

@@ -51,19 +51,5 @@ namespace Coocoo3D.RenderPipeline
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PSOs["PostProcess"]);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
         }
-
-        public struct InnerStruct
-        {
-            public float GammaCorrection;
-            public float Saturation1;
-            public float Threshold1;
-            public float Transition1;
-            public float Saturation2;
-            public float Threshold2;
-            public float Transition2;
-            public float Saturation3;
-            public float BackgroundFactor;
-        }
-
     }
 }

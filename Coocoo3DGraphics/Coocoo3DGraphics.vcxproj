@@ -313,7 +313,6 @@
     <ClInclude Include="TextUtil.h" />
     <ClInclude Include="TwinBuffer.h" />
     <ClInclude Include="Uploader.h" />
-    <ClInclude Include="WICFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracingASGroup.cpp" />
@@ -378,7 +377,6 @@
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="TwinBuffer.cpp" />
     <ClCompile Include="Uploader.cpp" />
-    <ClCompile Include="WICFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="RayTracing\Raytracing.hlsl">

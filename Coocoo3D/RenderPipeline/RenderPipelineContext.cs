@@ -41,7 +41,6 @@ namespace Coocoo3D.RenderPipeline
         public bool RequireResizeOuter;
         public Windows.Foundation.Size NewSize;
         public float AspectRatio;
-        public WICFactory WICFactory = new WICFactory();
         public RecordSettings recordSettings;
 
         public DateTime LatestRenderTime;
@@ -318,7 +317,7 @@ namespace Coocoo3D.RenderPipeline
 
             IrradianceMap.ReloadAsRTVUAV(32, 32, 1, DxgiFormat.DXGI_FORMAT_R32G32B32A32_FLOAT);
             ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT);
-            //miscProcessContext.Add(new P_Env_Data() { source = SkyBox, IrradianceMap = IrradianceMap, EnvMap = ReflectMap});
+
             SkyBoxChanged = true;
             graphicsContext.UpdateRenderTexture(IrradianceMap);
             graphicsContext.UpdateRenderTexture(ReflectMap);

@@ -12,13 +12,6 @@ using Windows.Storage.Streams;
 
 namespace Coocoo3D.RenderPipeline
 {
-    public struct P_Env_Data
-    {
-        public TextureCube source;
-        public RenderTextureCube IrradianceMap;
-        public RenderTextureCube EnvMap;
-    }
-
     public class MiscProcess
     {
         const int c_bufferSize = 65536;
@@ -57,9 +50,6 @@ namespace Coocoo3D.RenderPipeline
                 GraphicsContext graphicsContext = rp.graphicsContext1;
                 graphicsContext.BeginCommand();
                 graphicsContext.SetDescriptorHeapDefault();
-                //var texture0 = context.miscProcessPairs[i].source;
-                //var texture1 = context.miscProcessPairs[i].IrradianceMap;
-                //var texture2 = context.miscProcessPairs[i].EnvMap;
                 var texture0 = rp.SkyBox;
                 var texture1 = rp.IrradianceMap;
                 var texture2 = rp.ReflectMap;

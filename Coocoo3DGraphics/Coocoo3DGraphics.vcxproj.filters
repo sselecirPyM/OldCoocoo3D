@@ -133,7 +133,6 @@
     <ClCompile Include="DeviceResources.cpp" />
     <ClCompile Include="GraphicsContext.cpp" />
     <ClCompile Include="GraphicsSignature.cpp" />
-    <ClCompile Include="WICFactory.cpp" />
     <ClCompile Include="CBuffer.cpp" />
     <ClCompile Include="SBuffer.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp">
@@ -223,7 +222,6 @@
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="GraphicsContext.h" />
     <ClInclude Include="GraphicsSignature.h" />
-    <ClInclude Include="WICFactory.h" />
     <ClInclude Include="CBuffer.h" />
     <ClInclude Include="SBuffer.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h">
