@@ -183,6 +183,7 @@
     <Compile Include="RenderPipeline\WidgetRenderer.cs" />
     <Compile Include="RenderPipeline\Wrap\CBufferGroup.cs" />
     <Compile Include="RenderPipeline\Wrap\SBufferGroup.cs" />
+    <Compile Include="ResourceWarp\LoadedAsset.cs" />
     <Compile Include="ResourceWarp\MeshAppendUploadPack.cs" />
     <Compile Include="ResourceWarp\ModelPack.cs" />
     <Compile Include="ResourceWarp\Texture2DPack.cs" />

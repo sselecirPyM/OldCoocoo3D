@@ -29,50 +29,41 @@ namespace Coocoo3D.ResourceWarp
 
         public byte[] verticesDataAnotherPart;
         public byte[] verticesDataPosPart;
-        GCHandle gch_vertAnother;
         MMDMesh meshInstance;
 
         public GraphicsObjectStatus Status;
 
-        public void Reload2(BinaryReader reader)
+        public void Reload(BinaryReader reader)
         {
             pmx.Reload(reader);
 
-            if (gch_vertAnother.IsAllocated) gch_vertAnother.Free();
             verticesDataAnotherPart = new byte[pmx.Vertices.Length * c_vertexStride];
             verticesDataPosPart = new byte[pmx.Vertices.Length * c_vertexStride2];
-            gch_vertAnother = GCHandle.Alloc(verticesDataAnotherPart);
-            IntPtr ptr = Marshal.UnsafeAddrOfPinnedArrayElement(verticesDataAnotherPart, 0);
             for (int i = 0; i < pmx.Vertices.Length; i++)
             {
-                Marshal.StructureToPtr(pmx.Vertices[i].innerStruct, ptr, true);
-
-                Marshal.WriteInt32(ptr + 24 + 0 * 2, pmx.Vertices[i].boneId0);
-                Marshal.WriteInt32(ptr + 24 + 1 * 2, pmx.Vertices[i].boneId1);
-                Marshal.WriteInt32(ptr + 24 + 2 * 2, pmx.Vertices[i].boneId2);
-                Marshal.WriteInt32(ptr + 24 + 3 * 2, pmx.Vertices[i].boneId3);//ushort
-                Marshal.StructureToPtr(pmx.Vertices[i].Weights, ptr + 24 + 8, true);
-
-                ptr += c_vertexStride;
+                Span<PMX_Vertex.VertexStruct> vertData = MemoryMarshal.Cast<byte, PMX_Vertex.VertexStruct>(new Span<byte>(verticesDataAnotherPart, i * c_vertexStride, 24));
+                Span<ushort> boneIdSpan = MemoryMarshal.Cast<byte, ushort>(new Span<byte>(verticesDataAnotherPart, i * c_vertexStride + 24, 8));
+                Span<Vector4> boneWeightSpan = MemoryMarshal.Cast<byte, Vector4>(new Span<byte>(verticesDataAnotherPart, i * c_vertexStride + 32, 16));
+                vertData[0] = pmx.Vertices[i].innerStruct;
+                boneIdSpan[0] = (ushort)pmx.Vertices[i].boneId0;
+                boneIdSpan[1] = (ushort)pmx.Vertices[i].boneId1;
+                boneIdSpan[2] = (ushort)pmx.Vertices[i].boneId2;
+                boneIdSpan[3] = (ushort)pmx.Vertices[i].boneId3;
+                boneWeightSpan[0] = pmx.Vertices[i].Weights;
             }
-            var gch_vertPos = GCHandle.Alloc(verticesDataPosPart);
-            IntPtr ptr2 = Marshal.UnsafeAddrOfPinnedArrayElement(verticesDataPosPart, 0);
+
+            Span<Vector3> vector3s = MemoryMarshal.Cast<byte, Vector3>(verticesDataPosPart);
             for (int i = 0; i < pmx.Vertices.Length; i++)
             {
-                Marshal.StructureToPtr(pmx.Vertices[i].Coordinate, ptr2 + i * c_vertexStride2, true);
+                vector3s[i] = pmx.Vertices[i].Coordinate;
             }
-            if (gch_vertPos.IsAllocated) gch_vertPos.Free();
+
         }
         public MMDMesh GetMesh()
         {
             if (meshInstance == null)
                 meshInstance = MMDMesh.Load1(verticesDataAnotherPart, pmx.TriangleIndexs, c_vertexStride, PrimitiveTopology._POINTLIST);
             return meshInstance;
-        }
-
-        ~ModelPack()
-        {
-            if (gch_vertAnother.IsAllocated) gch_vertAnother.Free();
         }
     }
 }

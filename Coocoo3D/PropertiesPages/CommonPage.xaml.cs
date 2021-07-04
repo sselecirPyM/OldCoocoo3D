@@ -390,7 +390,7 @@ namespace Coocoo3D.PropertiesPages
 
         private void ReloadTextures_Click(object sender, RoutedEventArgs e)
         {
-            appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
+            appBody.mainCaches.ReloadTextures();
         }
     }
 }

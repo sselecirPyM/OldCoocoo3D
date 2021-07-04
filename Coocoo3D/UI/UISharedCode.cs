@@ -38,7 +38,7 @@ namespace Coocoo3D.UI
                     {
                         BinaryReader reader = new BinaryReader((await pmxFile.OpenReadAsync()).AsStreamForRead());
                         pack.lastModifiedTime = (await pmxFile.GetBasicPropertiesAsync()).DateModified;
-                        pack.Reload2(reader);
+                        pack.Reload(reader);
                         pack.folder = storageFolder;
                         pack.relativePath = relatePath;
                         reader.Dispose();
@@ -55,15 +55,12 @@ namespace Coocoo3D.UI
             scene.AddGameObject(gameObject);
 
             appBody.RequireRender();
-            appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
         }
         public static void NewLighting(Coocoo3DMain appBody)
         {
-            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
             GameObject lighting = new GameObject();
             Components.LightingComponent lightingComponent = new Components.LightingComponent();
             lighting.AddComponent(lightingComponent);
-            //lighting.Name = resourceLoader.GetString("Object_Name_Lighting");
             lighting.Name = "Lighting";
             lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
             lighting.Position = new Vector3(0, 1, 0);
@@ -74,11 +71,9 @@ namespace Coocoo3D.UI
         }
         public static void NewVolume(Coocoo3DMain appBody)
         {
-            //var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
             GameObject volume = new GameObject();
             Components.VolumeComponent volumeComponent = new Components.VolumeComponent();
             volume.AddComponent(volumeComponent);
-            //volume.Name = resourceLoader.GetString("Object_Name_Volume");
             volume.Name = "Volume";
             volume.Rotation = Quaternion.Identity;
             volume.Position = new Vector3(0, 25, 0);
@@ -143,33 +138,13 @@ namespace Coocoo3D.UI
                 paths.Add(texPath);
                 relativePaths.Add(relativePath);
             }
-            lock (appBody.mainCaches.TextureCaches)
+            for (int i = 0; i < pmx.Textures.Count; i++)
             {
-                for (int i = 0; i < pmx.Textures.Count; i++)
-                {
-                    Texture2DPack tex = appBody.mainCaches.TextureCaches.GetOrCreate(paths[i]);
-                    if (tex.Status != GraphicsObjectStatus.loaded)
-                        tex.Mark(GraphicsObjectStatus.loading);
-                    tex.relativePath = relativePaths[i];
-                    tex.folder = storageFolder;
-                    textures.Add(tex.texture2D);
-                }
+                appBody.mainCaches.Texture(paths[i], relativePaths[i], storageFolder);
+                Texture2DPack tex = appBody.mainCaches.TextureCaches.GetOrCreate(paths[i]);
+                textures.Add(tex.texture2D);
             }
             return textures;
-        }
-
-        public static async Task<Texture2D> LoadTexture(Coocoo3DMain appBody, StorageFile file)
-        {
-            Texture2DPack tex;
-            lock (appBody.mainCaches.TextureCaches)
-            {
-                tex = appBody.mainCaches.TextureCaches.GetOrCreate(file.Path);
-                if (tex.Status != GraphicsObjectStatus.loaded)
-                    tex.Mark(GraphicsObjectStatus.loading);
-            }
-            //SixLabors.ImageSharp.Image.Load()
-            await ReloadTexture2D(tex.texture2D, appBody.ProcessingList, file);
-            return tex.texture2D;
         }
 
         public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)

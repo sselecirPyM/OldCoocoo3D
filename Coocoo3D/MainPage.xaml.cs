@@ -114,7 +114,7 @@ namespace Coocoo3D
         {
             if (appBody.Recording) return;
             if (appBody.performaceSettings.AutoReloadTextures)
-                appBody.mainCaches.ReloadTextures(appBody.ProcessingList, appBody.RequireRender);
+                appBody.mainCaches.ReloadTextures();
             //if (appBody.performaceSettings.AutoReloadModels)
             //    appBody.GameDriverContext.ReqireReloadModel();
         }

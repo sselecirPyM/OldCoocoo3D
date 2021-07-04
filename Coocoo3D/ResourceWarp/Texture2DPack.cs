@@ -21,9 +21,13 @@ namespace Coocoo3D.ResourceWarp
         public DateTimeOffset lastModifiedTime;
         public StorageFolder folder;
         public string relativePath;
-        public SingleLocker loadLocker;
-
         public GraphicsObjectStatus Status;
+        public Uploader uploader1;
+
+        public Task loadTask;
+
+        public bool doNothing;
+
         public void Mark(GraphicsObjectStatus status)
         {
             Status = status;
@@ -32,6 +36,7 @@ namespace Coocoo3D.ResourceWarp
 
         public async Task<bool> ReloadTexture(IStorageItem storageItem, Uploader uploader)
         {
+            uploader1 = uploader;
             Mark(GraphicsObjectStatus.loading);
             if (!(storageItem is StorageFile texFile))
             {

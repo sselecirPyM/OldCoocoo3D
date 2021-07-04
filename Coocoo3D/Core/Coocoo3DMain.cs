@@ -84,6 +84,8 @@ namespace Coocoo3D.Core
             RPContext.Reload();
             GameDriver = _GeneralGameDriver;
             _currentRenderPipeline = forwardRenderPipeline2;
+            mainCaches.processingList = ProcessingList;
+            mainCaches._RequireRender = RequireRender;
             RPContext.LoadTask = Task.Run(async () =>
             {
                 await RPAssetsManager.LoadAssets();
@@ -182,12 +184,12 @@ namespace Coocoo3D.Core
 
             //lock (SelectedGameObjects)
             //{
-                for (int i = 0; i < SelectedGameObjects.Count; i++)
-                {
-                    LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
-                    if (lightingComponent != null)
-                        RPContext.dynamicContextWrite.selectedLightings.Add(lightingComponent.GetLightingData());
-                }
+            for (int i = 0; i < SelectedGameObjects.Count; i++)
+            {
+                LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
+                if (lightingComponent != null)
+                    RPContext.dynamicContextWrite.selectedLightings.Add(lightingComponent.GetLightingData());
+            }
             //}
 
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
@@ -234,6 +236,8 @@ namespace Coocoo3D.Core
             //    RPContext.gameDriverContext.NeedReloadModel = false;
             //    ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
             //}
+            if (!Recording)
+                mainCaches.OnFrame();
             ProcessingList.MoveToAnother(_processingList);
             if (!_processingList.IsEmpty())
             {

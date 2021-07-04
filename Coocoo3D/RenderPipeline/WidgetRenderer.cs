@@ -65,15 +65,13 @@ namespace Coocoo3D.RenderPipeline
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
 
-            IntPtr pData = Marshal.UnsafeAddrOfPinnedArrayElement(context.bigBuffer, 0);
-            Vector2 screenSize = new Vector2(context.screenWidth, context.screenHeight) / context.logicScale;
-            Marshal.StructureToPtr(screenSize, pData, true);
-
             var cam = context.dynamicContextRead.cameras[0];
 
             var selectedLightings = context.dynamicContextRead.selectedLightings;
 
-            Marshal.StructureToPtr(Matrix4x4.Transpose(cam.vpMatrix), pData, true);
+            var tvp = Matrix4x4.Transpose(cam.vpMatrix);
+            MemoryMarshal.Write(new Span<byte>(context.bigBuffer, 0, 64), ref tvp);
+
             CBufferGroup.SetSlienceCount(selectedLightings.Count + context.dynamicContextRead.volumes.Count + 1);
 
 
