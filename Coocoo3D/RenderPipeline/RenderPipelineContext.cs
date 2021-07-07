@@ -304,12 +304,8 @@ namespace Coocoo3D.RenderPipeline
         public Task LoadTask;
         public async Task ReloadDefalutResources()
         {
-            Uploader upTexLoading = new Uploader();
-            Uploader upTexError = new Uploader();
-            upTexLoading.Texture2DPure(1, 1, new Vector4(0, 1, 1, 1));
-            upTexError.Texture2DPure(1, 1, new Vector4(1, 0, 1, 1));
-            processingList.AddObject(new Texture2DUploadPack(TextureLoading, upTexLoading));
-            processingList.AddObject(new Texture2DUploadPack(TextureError, upTexError));
+            processingList.AddObject(Texture2DUploadPack.Pure(TextureLoading, 1, 1, new Vector4(0, 1, 1, 1)));
+            processingList.AddObject(Texture2DUploadPack.Pure(TextureError, 1, 1, new Vector4(1, 0, 1, 1)));
 
             Uploader upTexEnvCube = new Uploader();
             upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
@@ -559,14 +555,12 @@ namespace Coocoo3D.RenderPipeline
         }
         private async Task ReloadTexture2D(Texture2D texture2D, ProcessingList processingList, string uri)
         {
-            Uploader uploader = new Uploader();
-            uploader.Texture2D(await FileIO.ReadBufferAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))), true, true);
+            Uploader uploader = await Texture2DPack.UploaderTex2D(uri);
             processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
         }
         private async Task ReloadTexture2DNoMip(Texture2D texture2D, ProcessingList processingList, string uri)
         {
-            Uploader uploader = new Uploader();
-            uploader.Texture2D(await FileIO.ReadBufferAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))), false, false);
+            Uploader uploader = await Texture2DPack.UploaderTex2DNoMip(uri);
             processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
         }
         protected async Task<IBuffer> ReadFile(string uri)

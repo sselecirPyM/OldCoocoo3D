@@ -6,10 +6,11 @@ namespace Coocoo3DGraphics
 	public ref class Uploader sealed
 	{
 	public:
-		void Texture2D(IBuffer^ file1, bool srgb, bool generateMips);
 		void Texture2DRaw(const Platform::Array<byte>^ rawData, DxgiFormat format, int width, int height);
+		void Texture2DRaw(const Platform::Array<byte>^ rawData, DxgiFormat format, int width, int height,int mipLevel);
 		void Texture2DPure(int width, int height, Windows::Foundation::Numerics::float4 color);
-		void TextureCube(const Platform::Array <IBuffer^>^ files);
+		//void TextureCube(const Platform::Array <IBuffer^>^ files);
+		void TextureCubeRaw(const Platform::Array<byte>^ rawData, DxgiFormat format, int width, int height, int mipLevel);
 		void TextureCubePure(int width, int height, const Platform::Array<Windows::Foundation::Numerics::float4>^ color);
 	internal:
 

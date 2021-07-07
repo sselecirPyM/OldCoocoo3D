@@ -198,7 +198,7 @@ void MyRaygenShader()
 	RayDesc ray2;
 	ray2.Origin = ray.origin;
 	ray2.Direction = ray.direction;
-	ray2.TMin = 0.001;
+	ray2.TMin = 0.01;
 	ray2.TMax = 10000.0;
 	RayPayload payload = { float4(0, 0, 0, 0),ray.direction,0 };
 	TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 2, 0, ray2, payload);
@@ -299,7 +299,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 						RayDesc ray2;
 						ray2.Origin = pos;
 						ray2.Direction = Lightings[i].LightDir;
-						ray2.TMin = 0.001;
+						ray2.TMin = 0.01;
 						ray2.TMax = 10000.0;
 						TestRayPayload payload2 = { false, float3(0,0,0), float4(0,0,0,0) };
 						if (payload.depth < 4 && dot(lightStrength, lightStrength)>1e-3)
@@ -314,7 +314,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 						RayDesc ray2;
 						ray2.Origin = pos;
 						ray2.Direction = Lightings[i].LightDir;
-						ray2.TMin = 0.001;
+						ray2.TMin = 0.01;
 						ray2.TMax = 10000.0;
 						TestRayPayload payload2 = { false, float3(0,0,0), float4(0,0,0,0) };
 						if (payload.depth < 4 && dot(lightStrength, lightStrength)>1e-3)
@@ -333,7 +333,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 					RayDesc ray2;
 					ray2.Origin = pos;
 					ray2.Direction = normalize(Lightings[i].LightDir - pos);
-					ray2.TMin = 0.001;
+					ray2.TMin = 0.01;
 					ray2.TMax = distance(Lightings[i].LightDir, pos);
 					TestRayPayload payload2 = { false,float3(0,0,0),float4(0,0,0,0) };
 					if (payload.depth < 4 && dot(lightStrength, lightStrength)>1e-3)
@@ -418,7 +418,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 			RayDesc rayX;
 			rayX.Origin = pos;
 			rayX.Direction = payloadGI.direction;
-			rayX.TMin = 1e-3f;
+			rayX.TMin = 1e-2f;
 			rayX.TMax = 10000.0;
 			TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 2, 0, rayX, payloadGI);
 
@@ -461,7 +461,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 				RayDesc rayX;
 				rayX.Origin = pos;
 				rayX.Direction = payloadReflect.direction;
-				rayX.TMin = 1e-3f;
+				rayX.TMin = 1e-2f;
 				rayX.TMax = 10000.0;
 				TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 2, 0, rayX, payloadReflect);
 
@@ -469,7 +469,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 				weight += NdotL;
 			}
 		}
-		outputColor += filteredColor * GF / max(weight, 0.001);
+		outputColor += filteredColor * GF / max(weight, 0.01);
 	}
 	else
 	{
@@ -482,7 +482,7 @@ void ClosestHitShaderSurface(inout RayPayload payload, in TriAttributes attr)
 	RayDesc rayNext;
 	rayNext.Origin = pos;
 	rayNext.Direction = payload.direction;
-	rayNext.TMin = 5e-4f;
+	rayNext.TMin = 1e-2f;
 	rayNext.TMax = 10000.0;
 	if (payload.depth < 2 && payload.color.a < 0.99)
 		TraceRay(Scene, RAY_FLAG_NONE, ~0, 0, 2, 0, rayNext, payload);

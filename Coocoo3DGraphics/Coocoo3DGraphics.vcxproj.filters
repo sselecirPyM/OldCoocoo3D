@@ -26,9 +26,6 @@
     <Filter Include="GPUProgram">
       <UniqueIdentifier>{ae96fcc1-6f8c-4df5-98b3-f6a0a9b38ddc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DirectXTex">
-      <UniqueIdentifier>{35ff6d03-2e05-4b11-8f6c-c6e20fbee415}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Extension">
       <UniqueIdentifier>{dc8429a7-4a7a-406e-bb38-df7e5d3df773}</UniqueIdentifier>
     </Filter>
@@ -63,69 +60,6 @@
     </ClCompile>
     <ClCompile Include="GPUProgram\PSO.cpp">
       <Filter>GPUProgram</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexTGA.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexUtil.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexHDR.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexDDS.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BC.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BC4BC5.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BC6HBC7.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\BCDirectCompute.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexCompress.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexCompressGPU.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexConvert.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexD3D11.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexD3D12.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexFlipRotate.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexImage.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexMipmaps.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexMisc.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexNormalMaps.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexPMAlpha.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexResize.cpp">
-      <Filter>DirectXTex</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectXTex\DirectXTexWIC.cpp">
-      <Filter>DirectXTex</Filter>
     </ClCompile>
     <ClCompile Include="MeshBuffer.cpp" />
     <ClCompile Include="Uploader.cpp" />
@@ -190,27 +124,6 @@
     </ClInclude>
     <ClInclude Include="GPUProgram\ShaderMacro.h">
       <Filter>GPUProgram</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\DirectXTex.h">
-      <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\DDS.h">
-      <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\BC.h">
-      <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\BCDirectCompute.h">
-      <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\DirectXTexP.h">
-      <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\Filters.h">
-      <Filter>DirectXTex</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectXTex\scoped.h">
-      <Filter>DirectXTex</Filter>
     </ClInclude>
     <ClInclude Include="TextUtil.h">
       <Filter>Utility</Filter>
@@ -338,9 +251,6 @@
     </None>
     <None Include="Shaders\FromDisney\DisneyBRDF.hlsli">
       <Filter>Shaders\FromDisney</Filter>
-    </None>
-    <None Include="DirectXTex\DirectXTex.inl">
-      <Filter>DirectXTex</Filter>
     </None>
     <None Include="Shaders\BRDF\PBR.hlsli">
       <Filter>Shaders\BRDF</Filter>

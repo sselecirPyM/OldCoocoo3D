@@ -551,15 +551,18 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 	DX::ThrowIfFailed(bufferUpload->Map(0, &readRange, &mapped));
 	if (mesh->m_verticeData->Length > 0)
 	{
-		m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBuffer);
-		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&defaultHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&vertexBufferDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&mesh->m_vertexBuffer)));
-		NAME_D3D12_OBJECT(mesh->m_vertexBuffer);
+		if (mesh->m_vertexBufferView.SizeInBytes != mesh->m_verticeData->Length)
+		{
+			m_deviceResources->ResourceDelayRecycle(mesh->m_vertexBuffer);
+			DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+				&defaultHeapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&vertexBufferDesc,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				nullptr,
+				IID_PPV_ARGS(&mesh->m_vertexBuffer)));
+			NAME_D3D12_OBJECT(mesh->m_vertexBuffer);
+		}
 
 		memcpy(static_cast<byte*>(mapped) + offset, mesh->m_verticeData->begin(), mesh->m_verticeData->Length);
 		m_commandList->CopyBufferRegion(mesh->m_vertexBuffer.Get(), 0, bufferUpload.Get(), offset, mesh->m_verticeData->Length);
@@ -569,15 +572,18 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 	}
 	if (mesh->m_indexCount > 0)
 	{
-		m_deviceResources->ResourceDelayRecycle(mesh->m_indexBuffer);
-		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
-			&defaultHeapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&indexBufferDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&mesh->m_indexBuffer)));
-		NAME_D3D12_OBJECT(mesh->m_indexBuffer);
+		if (mesh->m_indexBufferView.SizeInBytes != mesh->m_indexCount * mesh->c_indexStride)
+		{
+			m_deviceResources->ResourceDelayRecycle(mesh->m_indexBuffer);
+			DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
+				&defaultHeapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&indexBufferDesc,
+				D3D12_RESOURCE_STATE_COPY_DEST,
+				nullptr,
+				IID_PPV_ARGS(&mesh->m_indexBuffer)));
+			NAME_D3D12_OBJECT(mesh->m_indexBuffer);
+		}
 
 		memcpy(static_cast<byte*>(mapped) + offset, mesh->m_indexData->GetBufferPointer(), mesh->m_indexData->GetBufferSize());
 		m_commandList->CopyBufferRegion(mesh->m_indexBuffer.Get(), 0, bufferUpload.Get(), offset, mesh->m_indexData->GetBufferSize());

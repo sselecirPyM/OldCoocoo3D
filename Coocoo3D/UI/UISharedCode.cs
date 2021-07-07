@@ -192,20 +192,19 @@ namespace Coocoo3D.UI
                     if (t1.Path == null || t1.Path.Length != 6) throw new Exception("TextureCubeError");
                     TextureCube textureCube = null;
                     rpc.RPAssetsManager.textureCubes.TryGetValue(t1.Name, out textureCube);
-                    if(textureCube==null)
+                    if (textureCube == null)
                     {
                         textureCube = new TextureCube();
                         rpc.RPAssetsManager.textureCubes[t1.Name] = textureCube;
                     }
-                    IBuffer[] buffers = new IBuffer[t1.Path.Length];
+                    Stream[] streams = new Stream[t1.Path.Length];
+
                     for (int i = 0; i < t1.Path.Length; i++)
                     {
                         string path = t1.Path[i];
-                        buffers[i] = await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(path));
+                        streams[i] = await (await storageFolder.GetFileAsync(path)).OpenStreamForReadAsync();
                     }
-                    Uploader uploader = new Uploader();
-                    uploader.TextureCube(buffers);
-                    appBody.ProcessingList.AddObject(new TextureCubeUploadPack(textureCube, uploader));
+                    appBody.ProcessingList.AddObject(TextureCubeUploadPack.FromFiles(textureCube, streams));
                 }
 
             rpc.SetCurrentPassSetting(passSetting);
@@ -214,38 +213,13 @@ namespace Coocoo3D.UI
         }
         private static async Task ReloadTexture2D(Texture2D texture2D, ProcessingList processingList, StorageFile storageFile)
         {
-            Uploader uploader = new Uploader();
-            uploader.Texture2D(await FileIO.ReadBufferAsync(storageFile), true, true);
+            Uploader uploader = await Texture2DPack.UploaderTex2D(storageFile);
             processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
         }
         private static async Task ReloadTexture2DNoMip(Texture2D texture2D, ProcessingList processingList, StorageFile storageFile)
         {
-            Uploader uploader = new Uploader();
-            uploader.Texture2D(await FileIO.ReadBufferAsync(storageFile), false, false);
+            Uploader uploader = await Texture2DPack.UploaderTex2DNoMip(storageFile);
             processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
-        }
-
-        private static void GetImageData(Stream stream, Uploader uploader)
-        {
-            byte[] data = GetImageData(stream, out int width, out int height, out _);
-            uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height);
-        }
-
-        private static byte[] GetImageData(Stream stream, out int width, out int height, out int bitPerPixel)
-        {
-            Image image0 = Image.Load(stream);
-            //image0.PixelType.BitsPerPixel;
-
-            Image<Rgba32> image = (Image<Rgba32>)image0;
-            var frame0 = image.Frames[0];
-            frame0.TryGetSinglePixelSpan(out Span<Rgba32> span1);
-            Span<byte> castToByte = MemoryMarshal.Cast<Rgba32, byte>(span1);
-            byte[] bytes = new byte[castToByte.Length];
-            castToByte.CopyTo(bytes);
-            width = frame0.Width;
-            height = frame0.Height;
-            bitPerPixel = image0.PixelType.BitsPerPixel;
-            return bytes;
         }
     }
 }

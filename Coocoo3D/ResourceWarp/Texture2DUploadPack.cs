@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,13 @@ namespace Coocoo3D.ResourceWarp
         {
             this.texture = texture;
             this.uploader = uploader;
+        }
+
+        public static Texture2DUploadPack Pure(Texture2D texture,int width,int height,Vector4 color)
+        {
+            Uploader uploader = new Uploader();
+            uploader.Texture2DPure(width, height,color);
+            return new Texture2DUploadPack(texture, uploader);
         }
     }
 }
