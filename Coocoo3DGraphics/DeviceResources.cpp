@@ -637,9 +637,10 @@ void DeviceResources::InitializeCBuffer(CBuffer^ cBuffer, int size)
 	CD3DX12_RANGE readRange(0, 0);		// 我们不打算从 CPU 上的此资源中进行读取。
 	DX::ThrowIfFailed(cBuffer->m_constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&cBuffer->m_mappedConstantBuffer)));
 	ZeroMemory(cBuffer->m_mappedConstantBuffer, c_frameCount * cBuffer->m_size);
+	cBuffer->Mutable = true;
 }
 
-void DeviceResources::InitializeSBuffer(SBuffer^ sBuffer, int size)
+void DeviceResources::InitializeSBuffer(CBuffer^ sBuffer, int size)
 {
 	sBuffer->m_size = (size + 255) & ~255;
 
@@ -663,6 +664,7 @@ void DeviceResources::InitializeSBuffer(SBuffer^ sBuffer, int size)
 		nullptr,
 		IID_PPV_ARGS(&sBuffer->m_constantBufferUploads)));
 	NAME_D3D12_OBJECT(sBuffer->m_constantBufferUploads);
+	sBuffer->Mutable = false;
 }
 
 void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCount)

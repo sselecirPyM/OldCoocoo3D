@@ -35,7 +35,7 @@ namespace Coocoo3D.RenderPipeline
         RayTracingScene RayTracingScene = new RayTracingScene();
         Random randomGenerator = new Random();
 
-        public SBuffer CameraDataBuffer = new SBuffer();
+        public CBuffer CameraDataBuffer = new CBuffer();
         public CBuffer LightCameraDataBuffer = new CBuffer();
         SBufferGroup materialBuffers1 = new SBufferGroup();
 

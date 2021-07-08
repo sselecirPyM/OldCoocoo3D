@@ -7,10 +7,14 @@ using namespace Microsoft::WRL;
 void CBuffer::Unload()
 {
 	m_constantBuffer.Reset();
+	m_constantBufferUploads.Reset();
 	lastUpdateIndex = 0;
 }
 
 D3D12_GPU_VIRTUAL_ADDRESS CBuffer::GetCurrentVirtualAddress()
 {
-	return m_constantBuffer->GetGPUVirtualAddress() + m_size * lastUpdateIndex;
+	if (Mutable)
+		return m_constantBuffer->GetGPUVirtualAddress() + m_size * lastUpdateIndex;
+	else
+		return m_constantBuffer->GetGPUVirtualAddress();
 }

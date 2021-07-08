@@ -68,7 +68,6 @@
     <ClCompile Include="GraphicsContext.cpp" />
     <ClCompile Include="GraphicsSignature.cpp" />
     <ClCompile Include="CBuffer.cpp" />
-    <ClCompile Include="SBuffer.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp">
       <Filter>Interoperation</Filter>
     </ClCompile>
@@ -136,7 +135,6 @@
     <ClInclude Include="GraphicsContext.h" />
     <ClInclude Include="GraphicsSignature.h" />
     <ClInclude Include="CBuffer.h" />
-    <ClInclude Include="SBuffer.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h">
       <Filter>Interoperation</Filter>
     </ClInclude>

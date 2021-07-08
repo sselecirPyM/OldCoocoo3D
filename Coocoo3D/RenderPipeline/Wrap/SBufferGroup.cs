@@ -14,7 +14,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
         public int sliencesPerBuffer;
         public int sizeD256;
         public int count = 0;
-        public List<SBuffer> constantBuffers = new List<SBuffer>();
+        public List<CBuffer> constantBuffers = new List<CBuffer>();
 
         byte[] tempBuffer;
         int lastUpdateBufferIndex = 0;
@@ -33,7 +33,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
             int slience1 = (count + sliencesPerBuffer - 1) / sliencesPerBuffer;
             while (constantBuffers.Count < slience1)
             {
-                SBuffer buffer1 = new SBuffer();
+                CBuffer buffer1 = new CBuffer();
                 deviceResources.InitializeSBuffer(buffer1, bufferSize);
                 constantBuffers.Add(buffer1);
             }

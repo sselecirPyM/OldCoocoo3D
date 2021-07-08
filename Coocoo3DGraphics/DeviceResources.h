@@ -2,7 +2,6 @@
 #include "Interoperation/InteroperationTypes.h"
 #include "GraphicsConstance.h"
 #include "CBuffer.h"
-#include "SBuffer.h"
 #include "MeshBuffer.h"
 namespace Coocoo3DGraphics
 {
@@ -39,7 +38,7 @@ namespace Coocoo3DGraphics
 		UINT64 GetDeviceVideoMemory();
 
 		void InitializeCBuffer(CBuffer^ cBuffer, int size);
-		void InitializeSBuffer(SBuffer^ sBuffer, int size);
+		void InitializeSBuffer(CBuffer^ sBuffer, int size);
 		void InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCount);
 	internal:
 		bool						IsDeviceRemoved() const { return m_deviceRemoved; }

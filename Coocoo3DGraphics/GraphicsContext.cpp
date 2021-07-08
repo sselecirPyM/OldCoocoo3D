@@ -180,19 +180,7 @@ void GraphicsContext::SetPSO(PSO^ pObject, int variantIndex)
 	m_commandList->SetPipelineState(pObject->m_pipelineStates[variantIndex].Get());
 }
 
-void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
-{
-	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
-	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->m_size, data->begin() + dataOffset, sizeInByte);
-}
-
-void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
-{
-	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
-	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->m_size, data->begin() + dataOffset, sizeInByte);
-}
-
-inline void UpdateCBStaticResource(SBuffer^ buffer, ID3D12GraphicsCommandList* commandList, void* data, UINT sizeInByte, int dataOffset)
+inline void UpdateCBStaticResource(CBuffer^ buffer, ID3D12GraphicsCommandList* commandList, void* data, UINT sizeInByte, int dataOffset)
 {
 	buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
 	int lastUpdateIndex = buffer->lastUpdateIndex;
@@ -207,14 +195,30 @@ inline void UpdateCBStaticResource(SBuffer^ buffer, ID3D12GraphicsCommandList* c
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_constantBuffer.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
 }
 
-void GraphicsContext::UpdateResource(SBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
 {
-	UpdateCBStaticResource(buffer, m_commandList.Get(), data->begin(), sizeInByte, dataOffset);
+	if (buffer->Mutable)
+	{
+		buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
+		memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->m_size, data->begin() + dataOffset, sizeInByte);
+	}
+	else
+	{
+		UpdateCBStaticResource(buffer, m_commandList.Get(), data->begin(), sizeInByte, dataOffset);
+	}
 }
 
-void GraphicsContext::UpdateResource(SBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
+void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
 {
-	UpdateCBStaticResource(buffer, m_commandList.Get(), data->begin(), sizeInByte, dataOffset);
+	if (buffer->Mutable)
+	{
+		buffer->lastUpdateIndex = (buffer->lastUpdateIndex < (c_frameCount - 1)) ? (buffer->lastUpdateIndex + 1) : 0;
+		memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->m_size, data->begin() + dataOffset, sizeInByte);
+	}
+	else
+	{
+		UpdateCBStaticResource(buffer, m_commandList.Get(), data->begin(), sizeInByte, dataOffset);
+	}
 }
 
 void GraphicsContext::UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
@@ -260,32 +264,7 @@ void GraphicsContext::SetSRVTSlot(ITextureCube^ texture, int slot)
 	SetSRVT(texture, index);
 }
 
-//void GraphicsContext::SetSRVTFace(RenderTextureCube^ texture, int face, int index)
-//{
-//	auto d3dDevice = m_deviceResources->GetD3DDevice();
-//	UINT incrementSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-//	if (texture != nullptr)
-//	{
-//		if (texture->prevResourceState != D3D12_RESOURCE_STATE_GENERIC_READ)
-//			m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(texture->m_texture.Get(), texture->prevResourceState, D3D12_RESOURCE_STATE_GENERIC_READ));
-//		texture->prevResourceState = D3D12_RESOURCE_STATE_GENERIC_READ;
-//
-//		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle(m_deviceResources->m_cbvSrvUavHeap->GetGPUDescriptorHandleForHeapStart(), texture->m_srvRefIndex + face + 2, incrementSize);
-//		m_commandList->SetGraphicsRootDescriptorTable(index, gpuHandle);
-//	}
-//	else
-//	{
-//		throw ref new Platform::NotImplementedException();
-//	}
-//}
-
 void GraphicsContext::SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot)
-{
-	int index = m_currentSign->m_cbv[slot];
-	SetCBVR(buffer, offset256, size256, index);
-}
-
-void GraphicsContext::SetCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot)
 {
 	int index = m_currentSign->m_cbv[slot];
 	SetCBVR(buffer, offset256, size256, index);
@@ -392,28 +371,12 @@ void GraphicsContext::SetComputeCBVR(CBuffer^ buffer, int index)
 	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
 }
 
-void GraphicsContext::SetComputeCBVR(SBuffer^ buffer, int index)
-{
-	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
-}
-
 void GraphicsContext::SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index)
 {
 	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
 }
 
-void GraphicsContext::SetComputeCBVR(SBuffer^ buffer, int offset256, int size256, int index)
-{
-	m_commandList->SetComputeRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
-}
-
 void GraphicsContext::SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot)
-{
-	int index = m_currentSign->m_cbv[slot];
-	SetComputeCBVR(buffer, offset256, size256, index);
-}
-
-void GraphicsContext::SetComputeCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot)
 {
 	int index = m_currentSign->m_cbv[slot];
 	SetComputeCBVR(buffer, offset256, size256, index);
@@ -1131,7 +1094,7 @@ void GraphicsContext::BuildBottomAccelerationStructures(RayTracingScene^ rayTrac
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::UAV(asStruct.Get()));
 }
 
-void GraphicsContext::BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, SBuffer^ mat, int offset256)
+void GraphicsContext::BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, CBuffer^ mat, int offset256)
 {
 	BuildBottomAccelerationStructures(rayTracingAccelerationStructure, mesh, indexBuffer, vertexBegin, indexBegin, indexCount);
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
@@ -1809,17 +1772,7 @@ void GraphicsContext::SetCBVR(CBuffer^ buffer, int index)
 	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
 }
 
-void GraphicsContext::SetCBVR(SBuffer^ buffer, int index)
-{
-	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress());
-}
-
 void GraphicsContext::SetCBVR(CBuffer^ buffer, int offset256, int size256, int index)
-{
-	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
-}
-
-void GraphicsContext::SetCBVR(SBuffer^ buffer, int offset256, int size256, int index)
 {
 	m_commandList->SetGraphicsRootConstantBufferView(index, buffer->GetCurrentVirtualAddress() + offset256 * 256);
 }

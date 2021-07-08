@@ -6,7 +6,7 @@
 #include "RenderTexture2D.h"
 #include "RenderTextureCube.h"
 #include "CBuffer.h"
-#include "SBuffer.h"
+//#include "SBuffer.h"
 #include "GraphicsSignature.h"
 #include "RayTracingScene.h"
 #include "GPUProgram/ComputeShader.h"
@@ -62,8 +62,6 @@ namespace Coocoo3DGraphics
 		void SetPSO(PSO^ pObject, int variantIndex);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
-		void UpdateResource(SBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
-		void UpdateResource(SBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
@@ -71,7 +69,6 @@ namespace Coocoo3DGraphics
 		void SetSRVTSlot(ITextureCube^ texture, int slot);
 		//void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
-		void SetCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot);
 		void SetUAVT(RenderTexture2D^ texture, int index);
 		void SetComputeSRVT(ITexture2D^ texture, int index);
 		void SetComputeSRVT(ITextureCube^ texture, int index);
@@ -80,11 +77,8 @@ namespace Coocoo3DGraphics
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
 		void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int index);
-		void SetComputeCBVR(SBuffer^ buffer, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index);
-		void SetComputeCBVR(SBuffer^ buffer, int offset256, int size256, int index);
 		void SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
-		void SetComputeCBVRSlot(SBuffer^ buffer, int offset256, int size256, int slot);
 		void SetComputeUAVR(MeshBuffer^ mesh, int startLocation, int index);
 		void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
 		void SetComputeUAVT(RenderTexture2D^ texture, int index);
@@ -109,7 +103,7 @@ namespace Coocoo3DGraphics
 		void DispatchRay(RayTracingShaderTable^ rtst, int x, int y, int z);
 		void Prepare(RayTracingScene^ rtas, int meshCount);
 		void BuildBottomAccelerationStructures(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, int vertexBegin, int indexBegin, int indexCount);
-		void BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, SBuffer^ mat, int offset256);
+		void BuildBASAndParam(RayTracingScene^ rayTracingAccelerationStructure, MeshBuffer^ mesh, MMDMesh^ indexBuffer, UINT instanceMask, int vertexBegin, int indexBegin, int indexCount, Texture2D^ diff, CBuffer^ mat, int offset256);
 		void BuildTopAccelerationStructures(RayTracingScene^ rtas);
 		void BuildShaderTable(RayTracingScene^ rts, const Platform::Array<Platform::String^>^ raygenShaderNames, const Platform::Array<Platform::String^>^ missShaderNames, const Platform::Array <Platform::String^>^ hitGroupNames, int instances);
 		void Prepare(RayTracingASGroup^ asGroup);
@@ -147,9 +141,7 @@ namespace Coocoo3DGraphics
 		void Execute();
 	internal:
 		void SetCBVR(CBuffer^ buffer, int index);
-		void SetCBVR(SBuffer^ buffer, int index);
 		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
-		void SetCBVR(SBuffer^ buffer, int offset256, int size256, int index);
 		void SetSRVT(ITexture2D^ texture, int index);
 		void SetSRVT(ITextureCube^ texture, int index);
 		DeviceResources^ m_deviceResources;
