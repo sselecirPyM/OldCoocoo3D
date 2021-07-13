@@ -543,7 +543,7 @@ namespace Coocoo3D.RenderPipeline
             //    return outputRTV;
             return null;
         }
-        public ITextureCube _GetTexCubeByName(string name)
+        public TextureCube _GetTexCubeByName(string name)
         {
             if (name == "_SkyBoxReflect")
                 return ReflectMap;

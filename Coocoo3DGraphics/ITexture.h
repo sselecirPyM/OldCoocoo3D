@@ -9,8 +9,4 @@ namespace Coocoo3DGraphics
 	{
 
 	};
-	public interface class ITextureCube
-	{
-
-	};
 }

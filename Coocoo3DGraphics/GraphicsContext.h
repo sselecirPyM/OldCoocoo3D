@@ -4,9 +4,7 @@
 #include "Texture2D.h"
 #include "TextureCube.h"
 #include "RenderTexture2D.h"
-#include "RenderTextureCube.h"
 #include "CBuffer.h"
-//#include "SBuffer.h"
 #include "GraphicsSignature.h"
 #include "RayTracingScene.h"
 #include "GPUProgram/ComputeShader.h"
@@ -66,13 +64,13 @@ namespace Coocoo3DGraphics
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
 		void SetSRVTSlot(ITexture2D^ texture, int slot);
-		void SetSRVTSlot(ITextureCube^ texture, int slot);
+		void SetSRVTSlot(TextureCube^ texture, int slot);
 		//void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
 		void SetUAVT(RenderTexture2D^ texture, int index);
 		void SetUAVT(Texture2D^ texture, int index);
 		void SetComputeSRVT(ITexture2D^ texture, int index);
-		void SetComputeSRVT(ITextureCube^ texture, int index);
+		void SetComputeSRVT(TextureCube^ texture, int index);
 		//void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
@@ -84,7 +82,6 @@ namespace Coocoo3DGraphics
 		void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
 		void SetComputeUAVT(RenderTexture2D^ texture, int index);
 		void SetComputeUAVT(Texture2D^ texture, int index);
-		void SetComputeUAVT(RenderTextureCube^ texture, int mipIndex, int index);
 		void SetComputeUAVT(TextureCube^ texture, int mipIndex, int index);
 		void SetComputeUAVTSlot(RenderTexture2D^ texture, int slot);
 		void SetComputeUAVTSlot(Texture2D^ texture, int slot);
@@ -152,7 +149,7 @@ namespace Coocoo3DGraphics
 		void SetCBVR(CBuffer^ buffer, int index);
 		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetSRVT(ITexture2D^ texture, int index);
-		void SetSRVT(ITextureCube^ texture, int index);
+		void SetSRVT(TextureCube^ texture, int index);
 		DeviceResources^ m_deviceResources;
 		GraphicsSignature^ m_currentSign;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>	m_commandList;

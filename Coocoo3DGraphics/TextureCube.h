@@ -3,7 +3,7 @@
 #include "ITexture.h"
 namespace Coocoo3DGraphics
 {
-	public ref class TextureCube sealed : public IRenderTexture, public ITextureCube
+	public ref class TextureCube sealed : public IRenderTexture
 	{
 	public:
 		void ReloadAsRTVUAV(int width, int height, int mipLevels, DxgiFormat format);
