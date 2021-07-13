@@ -85,8 +85,8 @@ namespace Coocoo3D.RenderPipeline
 
         public bool SkyBoxChanged = false;
         public TextureCube SkyBox = new TextureCube();
-        public RenderTextureCube IrradianceMap = new RenderTextureCube();
-        public RenderTextureCube ReflectMap = new RenderTextureCube();
+        public TextureCube IrradianceMap = new TextureCube();
+        public TextureCube ReflectMap = new TextureCube();
 
         public MMDMesh ndcQuadMesh = new MMDMesh();
         public MMDMesh cubeMesh = new MMDMesh();
@@ -126,7 +126,7 @@ namespace Coocoo3D.RenderPipeline
 
         public DxgiFormat gBufferFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_UNORM;
         public DxgiFormat outputFormat = DxgiFormat.DXGI_FORMAT_R16G16B16A16_FLOAT;
-        public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_B8G8R8A8_UNORM;
+        public DxgiFormat swapChainFormat = DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM;
 
         public XmlSerializer PassSettingSerializer = new XmlSerializer(typeof(PassSetting));
         public PassSetting defaultPassSetting;

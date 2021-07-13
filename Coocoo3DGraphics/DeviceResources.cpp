@@ -308,12 +308,12 @@ UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
 void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res)
 {
 	if (res != nullptr)
-		m_recycleList.push_back(d3d12RecycleResource{ res, nullptr, m_currentFenceValue });
+		m_recycleList.push_back(d3d12RecycleResource{ res,  m_currentFenceValue });
 }
 void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12PipelineState> res2)
 {
 	if (res2 != nullptr)
-		m_recycleList.push_back(d3d12RecycleResource{ nullptr,res2,  m_currentFenceValue });
+		m_recycleList.push_back(d3d12RecycleResource{ res2,  m_currentFenceValue });
 }
 
 // 每次更改窗口大小时需要重新创建这些资源。
@@ -329,9 +329,6 @@ void DeviceResources::CreateWindowSizeDependentResources()
 	}
 
 	UpdateRenderTargetSize();
-
-	m_d3dRenderTargetSize.Width = m_outputSize.Width;
-	m_d3dRenderTargetSize.Height = m_outputSize.Height;
 
 	UINT backBufferWidth = lround(m_d3dRenderTargetSize.Width);
 	UINT backBufferHeight = lround(m_d3dRenderTargetSize.Height);
@@ -431,15 +428,12 @@ DeviceResources::DeviceResources() :
 	m_screenViewport(),
 	m_rtvDescriptorSize(0),
 	m_fenceEvent(0),
-	m_backBufferFormat(DXGI_FORMAT_B8G8R8A8_UNORM),
+	m_backBufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
 	m_fenceValues{},
 	m_d3dRenderTargetSize(),
 	m_outputSize(),
 	m_logicalSize(),
-	m_nativeOrientation(DisplayOrientations::None),
-	m_currentOrientation(DisplayOrientations::None),
 	m_dpi(-1.0f),
-	m_effectiveDpi(-1.0f),
 	m_deviceRemoved(false)
 {
 	CreateDeviceResources();
@@ -452,8 +446,6 @@ void DeviceResources::SetSwapChainPanel(SwapChainPanel^ window)
 
 	m_swapChainPanel = window;
 	m_logicalSize = Windows::Foundation::Size(window->Width, window->Height);
-	m_nativeOrientation = currentDisplayInformation->NativeOrientation;
-	m_currentOrientation = currentDisplayInformation->CurrentOrientation;
 	m_compositionScaleX = window->CompositionScaleX;
 	m_compositionScaleY = window->CompositionScaleY;
 	m_dpi = currentDisplayInformation->LogicalDpi;
@@ -471,59 +463,59 @@ void DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
 	}
 }
 
-// 在 DpiChanged 事件的事件处理程序中调用此方法。
-void DeviceResources::SetDpi(float dpi)
-{
-	if (dpi != m_dpi)
-	{
-		m_dpi = dpi;
+//// 在 DpiChanged 事件的事件处理程序中调用此方法。
+//void DeviceResources::SetDpi(float dpi)
+//{
+//	if (dpi != m_dpi)
+//	{
+//		m_dpi = dpi;
+//
+//		// 显示 DPI 更改时，窗口的逻辑大小(以 Dip 为单位)也将更改并且需要更新。
+//		m_logicalSize = Windows::Foundation::Size(m_swapChainPanel->Width, m_swapChainPanel->Height);
+//
+//		CreateWindowSizeDependentResources();
+//	}
+//}
 
-		// 显示 DPI 更改时，窗口的逻辑大小(以 Dip 为单位)也将更改并且需要更新。
-		m_logicalSize = Windows::Foundation::Size(m_swapChainPanel->Width, m_swapChainPanel->Height);
-
-		CreateWindowSizeDependentResources();
-	}
-}
-
-// 在 DisplayContentsInvalidated 事件的事件处理程序中调用此方法。
-void DeviceResources::ValidateDevice()
-{
-	// 如果默认适配器更改，D3D 设备将不再有效，因为该设备
-	// 已创建或该设备已移除。
-
-	// 首先在创建设备时，从中获取默认适配器的 LUID。
-
-	DXGI_ADAPTER_DESC previousDesc;
-	{
-		ComPtr<IDXGIAdapter1> previousDefaultAdapter;
-		DX::ThrowIfFailed(m_dxgiFactory->EnumAdapters1(0, &previousDefaultAdapter));
-
-		DX::ThrowIfFailed(previousDefaultAdapter->GetDesc(&previousDesc));
-	}
-
-	// 接下来，获取当前默认适配器的信息。
-
-	DXGI_ADAPTER_DESC currentDesc;
-	{
-		ComPtr<IDXGIFactory4> currentDxgiFactory;
-		DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&currentDxgiFactory)));
-
-		ComPtr<IDXGIAdapter1> currentDefaultAdapter;
-		DX::ThrowIfFailed(currentDxgiFactory->EnumAdapters1(0, &currentDefaultAdapter));
-
-		DX::ThrowIfFailed(currentDefaultAdapter->GetDesc(&currentDesc));
-	}
-
-	// 如果适配器 LUID 不匹配，或者该设备报告它已被移除，
-	// 则必须创建新的 D3D 设备。
-
-	if (previousDesc.AdapterLuid.LowPart != currentDesc.AdapterLuid.LowPart ||
-		previousDesc.AdapterLuid.HighPart != currentDesc.AdapterLuid.HighPart ||
-		FAILED(m_d3dDevice->GetDeviceRemovedReason()))
-	{
-		m_deviceRemoved = true;
-	}
-}
+//// 在 DisplayContentsInvalidated 事件的事件处理程序中调用此方法。
+//void DeviceResources::ValidateDevice()
+//{
+//	// 如果默认适配器更改，D3D 设备将不再有效，因为该设备
+//	// 已创建或该设备已移除。
+//
+//	// 首先在创建设备时，从中获取默认适配器的 LUID。
+//
+//	DXGI_ADAPTER_DESC previousDesc;
+//	{
+//		ComPtr<IDXGIAdapter1> previousDefaultAdapter;
+//		DX::ThrowIfFailed(m_dxgiFactory->EnumAdapters1(0, &previousDefaultAdapter));
+//
+//		DX::ThrowIfFailed(previousDefaultAdapter->GetDesc(&previousDesc));
+//	}
+//
+//	// 接下来，获取当前默认适配器的信息。
+//
+//	DXGI_ADAPTER_DESC currentDesc;
+//	{
+//		ComPtr<IDXGIFactory4> currentDxgiFactory;
+//		DX::ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&currentDxgiFactory)));
+//
+//		ComPtr<IDXGIAdapter1> currentDefaultAdapter;
+//		DX::ThrowIfFailed(currentDxgiFactory->EnumAdapters1(0, &currentDefaultAdapter));
+//
+//		DX::ThrowIfFailed(currentDefaultAdapter->GetDesc(&currentDesc));
+//	}
+//
+//	// 如果适配器 LUID 不匹配，或者该设备报告它已被移除，
+//	// 则必须创建新的 D3D 设备。
+//
+//	if (previousDesc.AdapterLuid.LowPart != currentDesc.AdapterLuid.LowPart ||
+//		previousDesc.AdapterLuid.HighPart != currentDesc.AdapterLuid.HighPart ||
+//		FAILED(m_d3dDevice->GetDeviceRemovedReason()))
+//	{
+//		m_deviceRemoved = true;
+//	}
+//}
 
 void DeviceResources::Present(bool vsync)
 {
@@ -690,15 +682,16 @@ void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCou
 // 确定呈现器目标的尺寸及其是否将缩小。
 void DeviceResources::UpdateRenderTargetSize()
 {
-	m_effectiveDpi = m_dpi;
-
 	// 计算必要的呈现目标大小(以像素为单位)。
-	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_effectiveDpi);
-	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_effectiveDpi);
+	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_dpi);
+	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_dpi);
 
 	// 防止创建大小为零的 DirectX 内容。
 	m_outputSize.Width = max(m_outputSize.Width, 1);
 	m_outputSize.Height = max(m_outputSize.Height, 1);
+
+	m_d3dRenderTargetSize.Width = m_outputSize.Width;
+	m_d3dRenderTargetSize.Height = m_outputSize.Height;
 }
 
 void DeviceResources::Recycle()

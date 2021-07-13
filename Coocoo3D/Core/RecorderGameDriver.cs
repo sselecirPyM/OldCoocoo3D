@@ -60,7 +60,6 @@ namespace Coocoo3D.Core
         class Pack1
         {
             public Task runningTask;
-            //public int swapIndex;
             public int renderIndex;
             public StorageFolder saveFolder;
             public byte[] imageData;
@@ -68,7 +67,7 @@ namespace Coocoo3D.Core
             public int height;
             public async Task task1()
             {
-                Image<Bgra32> image = GetImage();
+                Image<Rgba32> image = GetImage();
 
                 StorageFile file = await saveFolder.CreateFileAsync(string.Format("{0}.png", renderIndex), CreationCollisionOption.ReplaceExisting);
                 var stream = await file.OpenStreamForWriteAsync();
@@ -77,11 +76,11 @@ namespace Coocoo3D.Core
                 //await stream.FlushAsync();
                 stream.Close();
             }
-            Image<Bgra32> GetImage()
+            Image<Rgba32> GetImage()
             {
-                Image<Bgra32> image = new Image<Bgra32>(width, height);
+                Image<Rgba32> image = new Image<Rgba32>(width, height);
                 image.Frames[0].TryGetSinglePixelSpan(out var span1);
-                imageData.CopyTo(MemoryMarshal.Cast<Bgra32, byte>(span1));
+                imageData.CopyTo(MemoryMarshal.Cast<Rgba32, byte>(span1));
                 return image;
             }
         }

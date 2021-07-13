@@ -8,8 +8,7 @@ namespace Coocoo3DGraphics
 	static const UINT c_graphicsPipelineHeapMaxCount = 65536;
 	struct d3d12RecycleResource
 	{
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_recycleResource;
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> m_recyclePipelineState;
+		Microsoft::WRL::ComPtr<ID3D12Object> m_recycleResource;
 		UINT64 m_removeFrame;
 	};
 	// 控制所有 DirectX 设备资源。
@@ -25,9 +24,9 @@ namespace Coocoo3DGraphics
 		Windows::Foundation::Size	GetOutputSize() { return m_outputSize; }
 		// 呈现器目标的大小，以 dip 为单位。
 		Windows::Foundation::Size	GetLogicalSize() { return m_logicalSize; }
-		void SetDpi(float dpi);
-		float GetDpi() { return m_effectiveDpi; }
-		void ValidateDevice();
+		//void SetDpi(float dpi);
+		float GetDpi() { return m_dpi; }
+		//void ValidateDevice();
 		void Present(bool vsync);
 		void RenderComplete();
 		void WaitForGpu();
@@ -114,14 +113,9 @@ namespace Coocoo3DGraphics
 		Windows::Foundation::Size						m_d3dRenderTargetSize;
 		Windows::Foundation::Size						m_outputSize;
 		Windows::Foundation::Size						m_logicalSize;
-		Windows::Graphics::Display::DisplayOrientations	m_nativeOrientation;
-		Windows::Graphics::Display::DisplayOrientations	m_currentOrientation;
 		float											m_dpi;
 
 		float											m_compositionScaleX;
 		float											m_compositionScaleY;
-
-		// 这是将向应用传回的 DPI。它考虑了应用是否支持高分辨率屏幕。
-		float											m_effectiveDpi;
 	};
 }
