@@ -86,6 +86,7 @@ namespace Coocoo3D.Controls
             inkCanvas.InkPresenter.UnprocessedInput.PointerPressed += Canvas_PointerPressed;
             inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += Canvas_PointerMoved;
             inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += Canvas_PointerReleased;
+            inkCanvas.InkPresenter.UnprocessedInput.PointerHovered += Canvas_PointerHovered;
             inkCanvas.PointerWheelChanged += InkCanvas_PointerWheelChanged;
             inkCanvas.PointerMoved += InkCanvas_PointerMoved;
         }
@@ -145,6 +146,14 @@ namespace Coocoo3D.Controls
             process1(args);
             currentMouse.MouseMoved -= CurrentMouseMovedDelegate;
             currentMouse = null;
+        }
+
+        private void Canvas_PointerHovered(object sender, PointerEventArgs args)
+        {
+            var pointer = args.CurrentPoint;
+            Vector2 position = pointer.Position.ToVector2() * _appBody.RPContext.logicScale;
+            Input.EnqueueMouseMove(position);
+            _appBody.RequireRender();
         }
 
         private void process1(PointerEventArgs args)
