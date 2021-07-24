@@ -169,33 +169,51 @@ namespace Coocoo3D.RenderPipeline
             desc.streamOutput = false;
             desc.wireFrame = false;
             desc.inputLayout = EInputLayout.imgui;
-            desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["ImGui"]);
             CBufferGroup.SetCBVR(graphicsContext, ofs, 0);
             ofs++;
-            unsafe
+            if (data.CmdListsCount > 0)
             {
-                for (int i = 0; i < data.CmdListsCount; i++)
+                unsafe
                 {
-                    var cmdList = data.CmdListsRange[i];
-                    var vertBytes = cmdList.VtxBuffer.Size * sizeof(ImDrawVert);
-                    var indexBytes = cmdList.IdxBuffer.Size * sizeof(UInt16);
-                    byte[] vertexDatas = new byte[vertBytes];
-                    byte[] indexDatas = new byte[indexBytes];
-                    new Span<byte>(cmdList.VtxBuffer.Data.ToPointer(), vertBytes).CopyTo(vertexDatas);
-                    new Span<byte>(cmdList.IdxBuffer.Data.ToPointer(), indexBytes).CopyTo(indexDatas);
+                    byte[] vertexDatas = new byte[data.TotalVtxCount * sizeof(ImDrawVert)];
+                    byte[] indexDatas = new byte[data.TotalIdxCount * sizeof(UInt16)];
 
+                    int vtxByteOfs = 0;
+                    int idxByteOfs = 0;
+                    for (int i = 0; i < data.CmdListsCount; i++)
+                    {
+                        var cmdList = data.CmdListsRange[i];
+                        var vertBytes = cmdList.VtxBuffer.Size * sizeof(ImDrawVert);
+                        var indexBytes = cmdList.IdxBuffer.Size * sizeof(UInt16);
+                        new Span<byte>(cmdList.VtxBuffer.Data.ToPointer(), vertBytes).CopyTo(new Span<byte>(vertexDatas, vtxByteOfs, vertBytes));
+                        new Span<byte>(cmdList.IdxBuffer.Data.ToPointer(), indexBytes).CopyTo(new Span<byte>(indexDatas, idxByteOfs, indexBytes));
+                        vtxByteOfs += vertBytes;
+                        idxByteOfs += indexBytes;
+                    }
                     imguiMesh.Reload1(vertexDatas, indexDatas, 20, PrimitiveTopology._TRIANGLELIST);
                     graphicsContext.UploadMesh(imguiMesh);
-                    imguiMesh.SetIndexFormat(DxgiFormat.DXGI_FORMAT_R16_UINT);
-                    graphicsContext.SetMesh(imguiMesh);
-
-                    for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
+                }
+                unsafe
+                {
+                    int vtxOfs = 0;
+                    int idxOfs = 0;
+                    for (int i = 0; i < data.CmdListsCount; i++)
                     {
-                        var cmd = cmdList.CmdBuffer[j];
+                        var cmdList = data.CmdListsRange[i];
 
-                        graphicsContext.SetSRVTSlot(rpAssets.texture2ds[rpAssets.ptr2string[cmd.TextureId]], 0);
-                        graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset), (int)(cmd.VtxOffset));
+                        imguiMesh.SetIndexFormat(DxgiFormat.DXGI_FORMAT_R16_UINT);
+                        graphicsContext.SetMesh(imguiMesh);
+
+                        for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
+                        {
+                            var cmd = cmdList.CmdBuffer[j];
+
+                            graphicsContext.SetSRVTSlot(rpAssets.texture2ds[rpAssets.ptr2string[cmd.TextureId]], 0);
+                            graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset) + idxOfs, (int)(cmd.VtxOffset) + vtxOfs);
+                        }
+                        vtxOfs += cmdList.VtxBuffer.Size;
+                        idxOfs += cmdList.IdxBuffer.Size;
                     }
                 }
             }
