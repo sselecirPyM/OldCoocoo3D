@@ -14,9 +14,6 @@
     <Filter Include="RayTracing">
       <UniqueIdentifier>{33d80bae-d791-47c2-adf9-087c0e11f84b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\FromDisney">
-      <UniqueIdentifier>{ed325251-453d-4a48-81a6-e8dbd3ecb061}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shaders\ImageProcess">
       <UniqueIdentifier>{5e577815-f70c-4c5d-8d5b-9bf1dea3d92f}</UniqueIdentifier>
     </Filter>
@@ -244,9 +241,6 @@
     </None>
     <None Include="Shaders\RandomNumberGenerator.hlsli">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="Shaders\FromDisney\DisneyBRDF.hlsli">
-      <Filter>Shaders\FromDisney</Filter>
     </None>
     <None Include="Shaders\BRDF\PBR.hlsli">
       <Filter>Shaders\BRDF</Filter>

@@ -298,10 +298,10 @@ namespace Coocoo3D
             //x2.Height = new GridLength(270);
             x3.Width = new GridLength(360);
         }
-        private void RadioMenuFlyoutItem3_Click(object sender, RoutedEventArgs e)
+
+        private void Export_Click(object sender, RoutedEventArgs e)
         {
-            //x2.Height = new GridLength(360);
-            x3.Width = new GridLength(360);
+            UI.UIImGui.requireExport = true;
         }
     }
 }

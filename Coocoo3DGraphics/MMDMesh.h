@@ -51,19 +51,19 @@ namespace Coocoo3DGraphics
 	{
 	public:
 		static MMDMesh^ Load1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
-		//在上传GPU之前是无法使用的。使用GraphicsContext::void UploadMesh(MMDMesh^ mesh)上传。
+
 		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
 		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, PrimitiveTopology pt);
 		void ReloadNDCQuad();
 		void ReloadCube();
 		void ReloadCubeWire();
-		static void CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics::float3>^ Target, const Platform::Array<byte>^ source);
 		virtual ~MMDMesh();
 		int GetIndexCount();
 		int GetVertexCount();
 		void SetIndexFormat(DxgiFormat format);
 		property Platform::Array<byte>^ m_verticeData;
 	internal:
+		bool updated = false;
 		int m_indexCount;
 		int m_vertexCount;
 		const static UINT c_indexStride = sizeof(UINT);
@@ -71,7 +71,7 @@ namespace Coocoo3DGraphics
 		Microsoft::WRL::ComPtr<ID3DBlob> m_indexData;
 
 		D3D_PRIMITIVE_TOPOLOGY m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
+		std::map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_vertexBuffers;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_vertexBuffer;
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_indexBuffer;

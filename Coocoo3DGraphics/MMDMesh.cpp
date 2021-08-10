@@ -152,11 +152,6 @@ void MMDMesh::ReloadCubeWire()
 	memcpy(m_indexData->GetBufferPointer(), indices, sizeof(indices));
 }
 
-void MMDMesh::CopyPosData(Platform::WriteOnlyArray<Windows::Foundation::Numerics::float3>^ Target, const Platform::Array<byte>^ source)
-{
-	memcpy(Target->begin(), source->begin(), source->Length);
-}
-
 MMDMesh::~MMDMesh()
 {
 }

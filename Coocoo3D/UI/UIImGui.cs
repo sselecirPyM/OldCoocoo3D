@@ -248,13 +248,13 @@ namespace Coocoo3D.UI
             }
             if (ImGui.Button("刷新"))
             {
-                requireView = currentFolder;
+                viewRequest = currentFolder;
             }
             ImGui.SameLine();
             if (ImGui.Button("后退"))
             {
                 if (viewStack.Count > 0)
-                    requireView = viewStack.Pop();
+                    viewRequest = viewStack.Pop();
             }
             ImGui.Begin("资源");
 
@@ -267,16 +267,16 @@ namespace Coocoo3D.UI
                     {
                         if (item is StorageFolder folder)
                         {
-                            requireView = folder;
+                            viewRequest = folder;
                             _requireClear = true;
                             viewStack.Push(currentFolder);
                         }
                         else if (item is StorageFile file)
                         {
-                            var requireOpen1 = new _requireOpen();
+                            var requireOpen1 = new _openRequest();
                             requireOpen1.file = file;
                             requireOpen1.folder = currentFolder;
-                            requireOpen = requireOpen1;
+                            openRequest = requireOpen1;
                         }
                     }
                 }
@@ -392,7 +392,7 @@ vmd格式动作");
                             var material = rendererComponent.Materials[materialSelectIndex];
                             ImGui.Text(material.Name);
                             ImGui.SliderFloat("金属性  ", ref material.innerStruct.Metallic, 0, 1);
-                            ImGui.SliderFloat("光滑度  ", ref material.innerStruct.Roughness, 0, 1);
+                            ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
                             ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
                             ImGui.Checkbox("透明材质", ref material.Transparent);
                         }
@@ -427,15 +427,16 @@ vmd格式动作");
         public static int materialSelectIndex = 0;
         public static int gameObjectSelectIndex = 0;
         public static bool requireOpenFolder;
+        public static bool requireExport;
         public static bool requireSaveFolder;
         public static bool requireRecord;
 
         public static StorageFolder rootFolder;
         public static Stack<StorageFolder> viewStack = new Stack<StorageFolder>();
         public static List<IStorageItem> storageItems = new List<IStorageItem>();
-        public static StorageFolder requireView;
         public static StorageFolder currentFolder;
-        public static _requireOpen requireOpen;
+        public static StorageFolder viewRequest;
+        public static _openRequest openRequest;
         //public static List<bool> gameObjectSelected = new List<bool>();
 
         static Vector3 QuaternionToEularYXZ(Quaternion quaternion)
@@ -456,7 +457,7 @@ vmd格式动作");
             return result;
         }
     }
-    class _requireOpen
+    class _openRequest
     {
         public StorageFile file;
         public StorageFolder folder;

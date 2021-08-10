@@ -65,12 +65,10 @@ namespace Coocoo3D.Components
             return ComputeKeyFrame(keyframeSet[left], keyframeSet[right]);
         }
 
-        public float GetMorphWeight(string key, float time, out float AWeight, out float BWeight)
+        public float GetMorphWeight(string key, float time)
         {
             if (!MorphKeyFrameSet.TryGetValue(key, out var keyframeSet))
             {
-                AWeight = 0;
-                BWeight = 0;
                 return 0.0f;
             }
             int left = 0;
@@ -85,14 +83,12 @@ namespace Coocoo3D.Components
 
             if (keyframeSet.Count == 1)
             {
-                AWeight = BWeight = keyframeSet[0].Weight;
-                return AWeight;
+                return keyframeSet[0].Weight;
             }
 
             if (keyframeSet[right].Frame < indexFrame)
             {
-                AWeight = BWeight = keyframeSet[right].Weight;
-                return AWeight;
+                return keyframeSet[right].Weight;
             }
 
             while (right - left > 1)
@@ -106,32 +102,6 @@ namespace Coocoo3D.Components
             MorphKeyFrame keyFrameLeft = keyframeSet[left];
             MorphKeyFrame keyFrameRight = keyframeSet[right];
 
-            var cacheIndex = left;
-            int frameA = (int)MathF.Floor(Math.Max(time * c_framePerSecond, 0));
-            int frameB = frameA + 1;
-            float ComputeKeyFrame1(MorphKeyFrame _left, MorphKeyFrame _right, int frame)
-            {
-                float amount = (float)(frame - _left.Frame) / (_right.Frame - _left.Frame);
-                return (1 - amount) * _left.Weight + amount * _right.Weight;
-            }
-            float GetWeight(int frame)
-            {
-                if (cacheIndex < keyframeSet.Count - 1 && keyframeSet[cacheIndex].Frame <= frame && keyframeSet[cacheIndex + 1].Frame >= frame)
-                {
-                    return ComputeKeyFrame1(keyframeSet[cacheIndex], keyframeSet[cacheIndex + 1], frame);
-                }
-                else if (cacheIndex < keyframeSet.Count - 2 && keyframeSet[cacheIndex + 1].Frame <= frame && keyframeSet[cacheIndex + 2].Frame >= frame)
-                {
-                    return ComputeKeyFrame1(keyframeSet[cacheIndex + 1], keyframeSet[cacheIndex + 2], frame);
-                }
-                else if (keyframeSet[keyframeSet.Count - 1].Frame <= frame)
-                {
-                    return keyframeSet[keyframeSet.Count - 1].Weight;
-                }
-                else throw new NotImplementedException("ABWeight Error");
-            }
-            AWeight = GetWeight(frameA);
-            BWeight = GetWeight(frameB);
 
             return ComputeKeyFrame(keyFrameLeft, keyFrameRight, indexFrame);
         }

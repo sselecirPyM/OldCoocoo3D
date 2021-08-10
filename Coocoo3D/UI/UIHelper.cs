@@ -8,6 +8,7 @@ using Coocoo3D.Core;
 using Coocoo3D.FileFormat;
 using Windows.Storage;
 using Windows.UI.Popups;
+using Windows.Storage.Pickers;
 
 namespace Coocoo3D.UI
 {
@@ -27,19 +28,35 @@ namespace Coocoo3D.UI
                 }
                 appBody.RequireRender();
             }
-            if (UIImGui.requireView != null)
+            if (UIImGui.requireExport)
             {
-                var view = UIImGui.requireView;
-                UIImGui.requireView = null;
+                UIImGui.requireExport = false;
+                var picker = new FileSavePicker()
+                {
+                    SuggestedStartLocation = PickerLocationId.ComputerFolder,
+                    
+                };
+                picker.FileTypeChoices.Add("gltf", new []{ ".gltf" });
+
+                var file = await picker.PickSaveFileAsync();
+                if (file != null)
+                {
+
+                }
+            }
+            if (UIImGui.viewRequest != null)
+            {
+                var view = UIImGui.viewRequest;
+                UIImGui.viewRequest = null;
                 UIImGui.currentFolder = view;
                 var items = await view.GetItemsAsync();
                 SetViewFolder(items);
                 appBody.RequireRender();
             }
-            if (UIImGui.requireOpen != null)
+            if (UIImGui.openRequest != null)
             {
-                var requireOpen = UIImGui.requireOpen;
-                UIImGui.requireOpen = null;
+                var requireOpen = UIImGui.openRequest;
+                UIImGui.openRequest = null;
                 var file = requireOpen.file;
                 var folder = requireOpen.folder;
 
@@ -102,6 +119,11 @@ namespace Coocoo3D.UI
                 UIImGui.requireRecord = false;
                 await UISharedCode.Record(appBody);
             }
+        }
+
+        static void Export()
+        {
+
         }
 
         static void SetViewFolder(IReadOnlyList<IStorageItem> items)

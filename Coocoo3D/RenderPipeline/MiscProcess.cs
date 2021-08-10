@@ -22,7 +22,7 @@ namespace Coocoo3D.RenderPipeline
         GraphicsSignature rootSignature = new GraphicsSignature();
         public bool Ready = false;
         public const int c_maxIteration = 32;
-        public CBuffer constantBuffers = new CBuffer();
+        public CBuffer constantBuffer = new CBuffer();
         XYZData _XyzData;
         public async Task ReloadAssets(DeviceResources deviceResources)
         {
@@ -33,7 +33,7 @@ namespace Coocoo3D.RenderPipeline
                 GraphicSignatureDesc.SRVTable,
                 GraphicSignatureDesc.UAVTable,
             });
-            deviceResources.InitializeCBuffer(constantBuffers, c_bufferSize);
+            deviceResources.InitializeCBuffer(constantBuffer, c_bufferSize);
             IrradianceMap0.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso"));
             EnvironmentMap0.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso"));
             ClearIrradianceMap.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso"));
@@ -53,7 +53,6 @@ namespace Coocoo3D.RenderPipeline
                 var texture0 = rp.SkyBox;
                 var texture1 = rp.IrradianceMap;
                 var texture2 = rp.ReflectMap;
-                IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
                 _XyzData.x1 = (int)texture1.m_width;
                 _XyzData.y1 = (int)texture1.m_height;
                 _XyzData.x2 = (int)texture2.m_width;
@@ -64,13 +63,12 @@ namespace Coocoo3D.RenderPipeline
                 for (int j = 0; j < itCount; j++)
                 {
                     _XyzData.Batch = j;
-
-                    Marshal.StructureToPtr(_XyzData, ptr1 + j * c_splitSize, true);
+                    MemoryMarshal.Write<XYZData>(new Span<byte>(bigBuffer, j * c_splitSize, c_splitSize), ref _XyzData);
                 }
-                graphicsContext.UpdateResource(constantBuffers, bigBuffer, c_bufferSize, 0);
+                graphicsContext.UpdateResource(constantBuffer, bigBuffer, c_bufferSize, 0);
 
                 graphicsContext.SetRootSignatureCompute(rootSignature);
-                graphicsContext.SetComputeCBVR(constantBuffers, 0);
+                graphicsContext.SetComputeCBVR(constantBuffer, 0);
                 graphicsContext.SetComputeSRVT(texture0, 2);
                 graphicsContext.SetPSO(ClearIrradianceMap);
 
@@ -96,7 +94,7 @@ namespace Coocoo3D.RenderPipeline
                     for (int k = 0; k < itCount; k++)
                     {
                         graphicsContext.SetComputeUAVT(texture1, j, 3);
-                        graphicsContext.SetComputeCBVR(constantBuffers, k, 1, 0);
+                        graphicsContext.SetComputeCBVR(constantBuffer, k, 1, 0);
                         graphicsContext.Dispatch((int)(texture1.m_width + 7) / 8 / pow2a, (int)(texture1.m_height + 7) / 8 / pow2a, 6);
                     }
                     pow2a *= 2;
@@ -110,8 +108,8 @@ namespace Coocoo3D.RenderPipeline
                     for (int k = 0; k < itCount; k++)
                     {
                         graphicsContext.SetComputeUAVT(texture2, j, 3);
-                        graphicsContext.SetComputeCBVR(constantBuffers, k, 1, 0);
-                        graphicsContext.SetComputeCBVR(constantBuffers, j, 1, 1);
+                        graphicsContext.SetComputeCBVR(constantBuffer, k, 1, 0);
+                        graphicsContext.SetComputeCBVR(constantBuffer, j, 1, 1);
                         graphicsContext.Dispatch((int)(texture2.m_width + 7) / 8 / pow2a, (int)(texture2.m_height + 7) / 8 / pow2a, 6);
                     }
                     pow2a *= 2;

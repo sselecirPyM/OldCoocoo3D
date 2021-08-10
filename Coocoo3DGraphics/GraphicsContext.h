@@ -74,7 +74,7 @@ namespace Coocoo3DGraphics
 		//void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
-		void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);
+		//void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);

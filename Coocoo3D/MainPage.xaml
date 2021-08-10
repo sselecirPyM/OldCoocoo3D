@@ -125,12 +125,12 @@
             <MenuBarItem x:Uid="M_MenuBarItem_File">
                 <MenuFlyoutItem x:Uid="M_MenuBarItem_OpenFolder" Click="OpenFolder_Click"/>
                 <MenuFlyoutItem x:Uid="M_MenuBarItem_BackgroundMusic" Click="OpenMedia_Click"/>
+                <!--<MenuFlyoutItem Text="导出" Click="Export_Click"/>-->
             </MenuBarItem>
             <MenuBarItem x:Uid="M_MenuBarItem_View">
                 <MenuFlyoutSubItem x:Uid="M_MenuBarItem_Layout">
                     <muxc:RadioMenuFlyoutItem Text="1" GroupName="G1" Click="RadioMenuFlyoutItem1_Click"/>
                     <muxc:RadioMenuFlyoutItem Text="2" GroupName="G1" IsChecked="True" Click="RadioMenuFlyoutItem2_Click"/>
-                    <muxc:RadioMenuFlyoutItem Text="3" GroupName="G1" Click="RadioMenuFlyoutItem3_Click"/>
                 </MenuFlyoutSubItem>
             </MenuBarItem>
             <MenuBarItem x:Uid="M_MenuBarItem_Help">

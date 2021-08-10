@@ -879,7 +879,6 @@
   <ItemGroup>
     <None Include="Shaders\BRDF\PBR.hlsli" />
     <None Include="Shaders\CameraDataDefine.hlsli" />
-    <None Include="Shaders\FromDisney\DisneyBRDF.hlsli" />
     <None Include="Shaders\RandomNumberGenerator.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

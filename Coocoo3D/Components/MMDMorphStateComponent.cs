@@ -14,19 +14,15 @@ namespace Coocoo3D.Components
         public List<MorphDesc> morphs = new List<MorphDesc>();
         public WeightGroup Weights = new WeightGroup();
 
-        public float currentTimeA;
-        public float amountAB;
-
         public const float c_frameInterval = 1 / 30.0f;
         public Dictionary<string, int> stringMorphIndexMap = new Dictionary<string, int>();
         public void SetPose(MMDMotionComponent motionComponent, float time)
         {
-            currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
+            float currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
             foreach (var pair in stringMorphIndexMap)
             {
-                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time, out _, out _);
+                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time);
             }
-            amountAB = Math.Max((time - currentTimeA) / c_frameInterval, 0);
         }
         public void SetPoseDefault()
         {

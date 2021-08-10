@@ -365,10 +365,10 @@ void GraphicsContext::SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int in
 	m_commandList->SetComputeRootShaderResourceView(index, mesh->m_buffer->GetGPUVirtualAddress() + startLocation * mesh->c_vbvStride);
 }
 
-void GraphicsContext::SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index)
-{
-	m_commandList->SetComputeRootShaderResourceView(index, mesh->m_indexBuffer->GetGPUVirtualAddress() + startLocation * sizeof(UINT));
-}
+//void GraphicsContext::SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index)
+//{
+//	m_commandList->SetComputeRootShaderResourceView(index, mesh->m_indexBuffer->GetGPUVirtualAddress() + startLocation * sizeof(UINT));
+//}
 
 void GraphicsContext::SetComputeCBVR(CBuffer^ buffer, int index)
 {
@@ -595,6 +595,7 @@ void GraphicsContext::UploadMesh(MMDMesh^ mesh)
 		mesh->m_indexBufferView.SizeInBytes = mesh->m_indexCount * mesh->c_indexStride;
 		mesh->m_indexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	}
+	mesh->updated = true;
 }
 
 void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte>^ data)

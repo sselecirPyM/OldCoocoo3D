@@ -24,7 +24,6 @@ namespace Coocoo3D.ResourceWarp
         public StorageFolder folder;
         public string fullPath;
         public string relativePath;
-        public SingleLocker loadLocker;
         public volatile Task LoadTask;
 
         public byte[] verticesDataAnotherPart;
