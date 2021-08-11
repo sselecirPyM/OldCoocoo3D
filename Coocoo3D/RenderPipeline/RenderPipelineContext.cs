@@ -71,9 +71,9 @@ namespace Coocoo3D.RenderPipeline
         public CBufferGroup XBufferGroup = new CBufferGroup();
         public MainCaches mainCaches = new MainCaches();
 
-        public RenderTexture2D outputRTV = new RenderTexture2D();
+        public Texture2D outputRTV = new Texture2D();
 
-        public Dictionary<string, RenderTexture2D> RTs = new Dictionary<string, RenderTexture2D>();
+        public Dictionary<string, Texture2D> RTs = new Dictionary<string,Texture2D>();
 
         public RayTracingASGroup RTASGroup = new RayTracingASGroup();
         public Dictionary<string, RayTracingShaderTable> RTSTs = new Dictionary<string, RayTracingShaderTable>();
@@ -251,7 +251,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 if (!RTs.TryGetValue(rt.Name, out var tex2d))
                 {
-                    tex2d = new RenderTexture2D();
+                    tex2d = new Texture2D();
                     RTs[rt.Name] = tex2d;
                 }
                 int x;
@@ -461,12 +461,12 @@ namespace Coocoo3D.RenderPipeline
             {
                 if (_pass1.Type == "Swap") continue;
 
-                _pass1.depthStencil = (RenderTexture2D)_GetTex2DByName(_pass1.DepthStencil);
-                var t1 = new RenderTexture2D[_pass1.RenderTargets.Count];
+                _pass1.depthStencil = _GetTex2DByName(_pass1.DepthStencil);
+                var t1 = new Texture2D[_pass1.RenderTargets.Count];
                 for (int i = 0; i < _pass1.RenderTargets.Count; i++)
                 {
                     string renderTarget = _pass1.RenderTargets[i];
-                    t1[i] = (RenderTexture2D)_GetTex2DByName(renderTarget);
+                    t1[i] = _GetTex2DByName(renderTarget);
                 }
                 _pass1.renderTargets = t1;
             }
@@ -528,7 +528,7 @@ namespace Coocoo3D.RenderPipeline
             }
 
         }
-        public ITexture2D _GetTex2DByName(string name)
+        public Texture2D _GetTex2DByName(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
             if (RTs.TryGetValue(name, out var tex))

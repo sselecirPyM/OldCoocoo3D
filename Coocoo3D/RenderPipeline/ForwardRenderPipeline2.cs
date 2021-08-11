@@ -313,12 +313,12 @@ namespace Coocoo3D.RenderPipeline
             var settings = context.dynamicContextRead.settings;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
-            ITexture2D _Tex(ITexture2D _tex)
+            Texture2D _Tex(Texture2D _tex)
             {
-                if (_tex is Texture2D _tex1)
-                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
-                else if (_tex == null)
+                if (_tex == null)
                     return texError;
+                else if (_tex is Texture2D _tex1)
+                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
                 else
                     return _tex;
             };
@@ -506,8 +506,8 @@ namespace Coocoo3D.RenderPipeline
                         }
                         else if (resd.ResourceType == "Texture2D")
                         {
-                            ITexture2D tex2D = null;
-                            if (material != null && material.textures.TryGetValue(resd.Resource, out ITexture2D tex))
+                            Texture2D tex2D = null;
+                            if (material != null && material.textures.TryGetValue(resd.Resource, out Texture2D tex))
                                 tex2D = tex;
                             if (tex2D == null)
                                 tex2D = context._GetTex2DByName(resd.Resource);

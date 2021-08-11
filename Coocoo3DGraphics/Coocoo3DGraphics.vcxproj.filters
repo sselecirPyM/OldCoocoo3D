@@ -37,7 +37,6 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="MMDMesh.cpp" />
     <ClCompile Include="Texture2D.cpp" />
-    <ClCompile Include="RenderTexture2D.cpp" />
     <ClCompile Include="RayTracingScene.cpp" />
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="ReadBackTexture2D.cpp" />
@@ -89,7 +88,6 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="MMDMesh.h" />
     <ClInclude Include="Texture2D.h" />
-    <ClInclude Include="RenderTexture2D.h" />
     <ClInclude Include="d3dx12.h">
       <Filter>Utility</Filter>
     </ClInclude>

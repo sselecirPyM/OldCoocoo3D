@@ -106,9 +106,9 @@ namespace Coocoo3D.RenderPipeline
         [XmlIgnore]
         public string[] MissShaders;
         [XmlIgnore]
-        public RenderTexture2D[] renderTargets;
+        public Texture2D[] renderTargets;
         [XmlIgnore]
-        public RenderTexture2D depthStencil;
+        public Texture2D depthStencil;
         [XmlIgnore]
         public PSO PSODefault;
         [XmlIgnore]

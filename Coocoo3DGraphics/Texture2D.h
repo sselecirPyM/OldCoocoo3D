@@ -3,16 +3,16 @@
 #include "ITexture.h"
 namespace Coocoo3DGraphics
 {
-	public ref class Texture2D sealed :public IRenderTexture, public ITexture2D
+	public ref class Texture2D sealed :public IRenderTexture
 	{
 	public:
 		property GraphicsObjectStatus Status;
 		property UINT m_width;
 		property UINT m_height;
 		property UINT m_mipLevels;
-		//void ReloadAsDepthStencil(int width, int height, DxgiFormat format);
-		//void ReloadAsRenderTarget(int width, int height, DxgiFormat format);
-		//void ReloadAsRTVUAV(int width, int height, DxgiFormat format);
+		void ReloadAsDepthStencil(int width, int height, DxgiFormat format);
+		void ReloadAsRenderTarget(int width, int height, DxgiFormat format);
+		void ReloadAsRTVUAV(int width, int height, DxgiFormat format);
 		int GetWidth() { return m_width; }
 		int GetHeight() { return m_height; }
 		DxgiFormat GetFormat();

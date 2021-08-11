@@ -3,7 +3,6 @@
 #include "MMDMesh.h"
 #include "Texture2D.h"
 #include "TextureCube.h"
-#include "RenderTexture2D.h"
 #include "CBuffer.h"
 #include "GraphicsSignature.h"
 #include "RayTracingScene.h"
@@ -63,15 +62,13 @@ namespace Coocoo3DGraphics
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData, int index);
-		void SetSRVTSlot(ITexture2D^ texture, int slot);
+		void SetSRVTSlot(Texture2D^ texture, int slot);
 		void SetSRVTSlot(TextureCube^ texture, int slot);
 		//void SetSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
-		void SetUAVT(RenderTexture2D^ texture, int index);
 		void SetUAVT(Texture2D^ texture, int index);
-		void SetComputeSRVT(ITexture2D^ texture, int index);
+		void SetComputeSRVT(Texture2D^ texture, int index);
 		void SetComputeSRVT(TextureCube^ texture, int index);
-		//void SetComputeSRVTFace(RenderTextureCube^ texture, int face, int index);
 		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
 		//void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);
@@ -80,10 +77,8 @@ namespace Coocoo3DGraphics
 		void SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
 		void SetComputeUAVR(MeshBuffer^ mesh, int startLocation, int index);
 		void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
-		void SetComputeUAVT(RenderTexture2D^ texture, int index);
 		void SetComputeUAVT(Texture2D^ texture, int index);
 		void SetComputeUAVT(TextureCube^ texture, int mipIndex, int index);
-		void SetComputeUAVTSlot(RenderTexture2D^ texture, int slot);
 		void SetComputeUAVTSlot(Texture2D^ texture, int slot);
 		void SetRayTracingStateObject(RayTracingStateObject^ stateObject);
 		void SetSOMesh(MeshBuffer^ mesh);
@@ -98,7 +93,6 @@ namespace Coocoo3DGraphics
 		void UploadTexture(Texture2D^ texture, Uploader^ uploader);
 		void UpdateRenderTexture(IRenderTexture^ texture);
 		void UpdateReadBackTexture(ReadBackTexture2D^ texture);
-		//void Copy(TextureCube^ source, RenderTextureCube^ dest);
 		void CopyBackBuffer(ReadBackTexture2D^ target, int index);
 		void Dispatch(int x, int y, int z);
 		void DispatchRay(RayTracingShaderTable^ rtst, int x, int y, int z);
@@ -120,23 +114,17 @@ namespace Coocoo3DGraphics
 		void SetMeshVertex(MMDMeshAppend^ mesh);
 		void SetMeshIndex(MMDMesh^ mesh);
 		void SetMesh(MeshBuffer^ mesh);
-		void SetDSV(RenderTexture2D^ texture, bool clear);
 		void SetDSV(Texture2D^ texture, bool clear);
 		//void SetDSV(RenderTextureCube^ texture, int face, bool clear);
-		void SetRTV(RenderTexture2D^ RTV, Windows::Foundation::Numerics::float4 color, bool clear);
 		void SetRTV(Texture2D^ RTV, Windows::Foundation::Numerics::float4 color, bool clear);
-		void SetRTV(const Platform::Array <RenderTexture2D^>^ RTVs, Windows::Foundation::Numerics::float4 color, bool clear);
 		void SetRTV(const Platform::Array <Texture2D^>^ RTVs, Windows::Foundation::Numerics::float4 color, bool clear);
-		void SetRTVDSV(RenderTexture2D^ RTV, RenderTexture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV);
 		void SetRTVDSV(Texture2D^ RTV, Texture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV);
-		void SetRTVDSV(const Platform::Array <RenderTexture2D^>^ RTVs, RenderTexture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV);
 		void SetRTVDSV(const Platform::Array <Texture2D^>^ RTVs, Texture2D^ DSV, Windows::Foundation::Numerics::float4 color, bool clearRTV, bool clearDSV);
 		void SetRootSignature(GraphicsSignature^ rootSignature);
 		void SetRootSignatureCompute(GraphicsSignature^ rootSignature);
 		void SetRootSignatureRayTracing(RayTracingScene^ rootSignature);
 		void SetRootSignatureRayTracing(GraphicsSignature^ rootSignature);
 		void ResourceBarrierScreen(D3D12ResourceStates before, D3D12ResourceStates after);
-		//void SetRenderTargetScreen(Windows::Foundation::Numerics::float4 color, RenderTexture2D^ DSV, bool clearScreen, bool clearDSV);
 		void SetRenderTargetScreen(Windows::Foundation::Numerics::float4 color, bool clearScreen);
 		static void BeginAlloctor(DeviceResources^ deviceResources);
 		void SetDescriptorHeapDefault();
@@ -148,7 +136,7 @@ namespace Coocoo3DGraphics
 	internal:
 		void SetCBVR(CBuffer^ buffer, int index);
 		void SetCBVR(CBuffer^ buffer, int offset256, int size256, int index);
-		void SetSRVT(ITexture2D^ texture, int index);
+		void SetSRVT(Texture2D^ texture, int index);
 		void SetSRVT(TextureCube^ texture, int index);
 		DeviceResources^ m_deviceResources;
 		GraphicsSignature^ m_currentSign;

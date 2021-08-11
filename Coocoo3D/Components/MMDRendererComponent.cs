@@ -605,7 +605,7 @@ namespace Coocoo3D.Components
             public float Clearcoat;
             public float ClearcoatGloss;
         }
-        public Dictionary<string, ITexture2D> textures = new Dictionary<string, ITexture2D>();
+        public Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
         public override string ToString()
         {
             return string.Format("{0}_{1}", Name, NameEN);

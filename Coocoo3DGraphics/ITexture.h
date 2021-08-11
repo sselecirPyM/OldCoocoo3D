@@ -5,8 +5,4 @@ namespace Coocoo3DGraphics
 	{
 
 	};
-	public interface class ITexture2D
-	{
-
-	};
 }

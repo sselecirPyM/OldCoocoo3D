@@ -298,7 +298,6 @@
     <ClInclude Include="RayTracingScene.h" />
     <ClInclude Include="RayTracing\DirectXRaytracingHelper.h" />
     <ClInclude Include="ReadBackTexture2D.h" />
-    <ClInclude Include="RenderTexture2D.h" />
     <ClInclude Include="Texture2D.h" />
     <ClInclude Include="TextureCube.h" />
     <ClInclude Include="TextUtil.h" />
@@ -340,7 +339,6 @@
     </ClCompile>
     <ClCompile Include="RayTracingScene.cpp" />
     <ClCompile Include="ReadBackTexture2D.cpp" />
-    <ClCompile Include="RenderTexture2D.cpp" />
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="TwinBuffer.cpp" />

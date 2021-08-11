@@ -204,11 +204,10 @@ namespace Coocoo3D.RenderPipeline
                     int numIndex = 0;
                     foreach (RuntimeMaterial material in Materials)
                     {
-                        material.textures.TryGetValue("_Albedo", out ITexture2D tex);
-                        Texture2D tex1 = (Texture2D)tex;
-                        tex1 = TextureStatusSelect(tex1, texLoading, texError, texError);
+                        material.textures.TryGetValue("_Albedo", out Texture2D tex);
+                        tex = TextureStatusSelect(tex, texLoading, texError, texError);
 
-                        graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, material.indexCount, tex1,
+                        graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, material.indexCount, tex,
                             materialBuffers1.constantBuffers[counter.material / materialBuffers1.sliencesPerBuffer], (counter.material % materialBuffers1.sliencesPerBuffer) * 2);
                         counter.material++;
                         numIndex += material.indexCount;
