@@ -401,7 +401,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Type == "RayTracing")
                 {
-                    _RayTracing(rendererComponents, combinedPass);
+                    //_RayTracing(rendererComponents, combinedPass);
                 }
                 else if (combinedPass.Type == "DrawScreen")
                 {
@@ -453,47 +453,47 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
             }
-            void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
-            {
-                if (_rendererComponents.Count == 0) return;
-                var rtso = context.dynamicContextRead.currentPassSetting.RTSO;
-                var rtst = context.RTSTs[_combinedPass.Name];
-                var rtis = context.RTIGroups[_combinedPass.Name];
-                var rttas = context.RTTASs[_combinedPass.Name];
-                var rtTex1 = _combinedPass.renderTargets[0];
-                var rtasg = context.RTASGroup;
-                graphicsContext.Prepare(rtasg);
-                graphicsContext.Prepare(rtis);
-                _Counters counterX = new _Counters();
+            //void _RayTracing(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
+            //{
+            //    if (_rendererComponents.Count == 0) return;
+            //    var rtso = context.dynamicContextRead.currentPassSetting.RTSO;
+            //    var rtst = context.RTSTs[_combinedPass.Name];
+            //    var rtis = context.RTIGroups[_combinedPass.Name];
+            //    var rttas = context.RTTASs[_combinedPass.Name];
+            //    var rtTex1 = _combinedPass.renderTargets[0];
+            //    var rtasg = context.RTASGroup;
+            //    graphicsContext.Prepare(rtasg);
+            //    graphicsContext.Prepare(rtis);
+            //    _Counters counterX = new _Counters();
 
-                foreach (var rendererComponent in _rendererComponents)
-                {
-                    int indexOffset = 0;
-                    foreach (var material in rendererComponent.Materials)
-                    {
-                        graphicsContext.BuildBTAS(rtasg, context.SkinningMeshBuffer, rendererComponent.mesh, counterX.vertex, indexOffset, material.indexCount);
-                        graphicsContext.BuildInst(rtis, rtasg, counterX.material, counterX.material, uint.MaxValue);
+            //    foreach (var rendererComponent in _rendererComponents)
+            //    {
+            //        int indexOffset = 0;
+            //        foreach (var material in rendererComponent.Materials)
+            //        {
+            //            graphicsContext.BuildBTAS(rtasg, context.SkinningMeshBuffer, rendererComponent.mesh, counterX.vertex, indexOffset, material.indexCount);
+            //            graphicsContext.BuildInst(rtis, rtasg, counterX.material, counterX.material, uint.MaxValue);
 
-                        counterX.material++;
-                        indexOffset += material.indexCount;
-                    }
-                    counterX.vertex += rendererComponent.meshVertexCount;
-                }
-                graphicsContext.TestShaderTable(rtst, rtso, _combinedPass.RayGenShaders, _combinedPass.MissShaders);
-                graphicsContext.TestShaderTable2(rtst, rtso, rtasg, new string[] { "Test" });
-                graphicsContext.BuildTPAS(rtis, rttas, rtasg);
-                graphicsContext.SetRayTracingStateObject(rtso);
-                graphicsContext.SetTPAS(rttas, rtso, 0);
+            //            counterX.material++;
+            //            indexOffset += material.indexCount;
+            //        }
+            //        counterX.vertex += rendererComponent.meshVertexCount;
+            //    }
+            //    graphicsContext.TestShaderTable(rtst, rtso, _combinedPass.RayGenShaders, _combinedPass.MissShaders);
+            //    graphicsContext.TestShaderTable2(rtst, rtso, rtasg, new string[] { "Test" });
+            //    graphicsContext.BuildTPAS(rtis, rttas, rtasg);
+            //    graphicsContext.SetRayTracingStateObject(rtso);
+            //    graphicsContext.SetTPAS(rttas, rtso, 0);
 
 
-                foreach (var cbv in _combinedPass.Pass.CBVs)
-                {
-                    context.XBufferGroup.SetComputeCBVR(graphicsContext, matC, cbv.Index);
-                    matC++;
-                }
-                graphicsContext.SetComputeUAVTSlot(context.outputRTV, 0);
-                graphicsContext.DispatchRay(rtst, rtTex1.GetWidth(), rtTex1.GetHeight(), 1);
-            }
+            //    foreach (var cbv in _combinedPass.Pass.CBVs)
+            //    {
+            //        context.XBufferGroup.SetComputeCBVR(graphicsContext, matC, cbv.Index);
+            //        matC++;
+            //    }
+            //    graphicsContext.SetComputeUAVTSlot(context.outputRTV, 0);
+            //    graphicsContext.DispatchRay(rtst, rtTex1.GetWidth(), rtTex1.GetHeight(), 1);
+            //}
 
             void _PassSetRes1(RuntimeMaterial material, PassMatch1 _combinedPass)
             {

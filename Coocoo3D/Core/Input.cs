@@ -24,9 +24,21 @@ namespace Coocoo3D.Core
         public bool mouseDown;
         public InputType inputType;
     }
+    public enum KeyEventType
+    {
+        KeyDown,
+        KeyUp,
+    }
+    public struct KeyInputData
+    {
+        public int key;
+        public KeyEventType keyEventType;
+    }
     public static class Input
     {
         public static ConcurrentQueue<InputData> inputDatas = new ConcurrentQueue<InputData>();
+        public static ConcurrentQueue<KeyInputData> keyInputDatas = new ConcurrentQueue<KeyInputData>();
+        public static bool textInput = false;
         public static void EnqueueMouseClick(Vector2 point, bool click, InputType inputType)
         {
             inputDatas.Enqueue(new InputData() { point = point, mouseDown = click, inputType = inputType }); ;
@@ -42,6 +54,16 @@ namespace Coocoo3D.Core
         public static void EnqueueMouseWheel(Vector2 point, float delta)
         {
             inputDatas.Enqueue(new InputData() { point = point, mouseWheelDelta = delta, inputType = InputType.MouseWheelChanged });
+        }
+
+        public static void KeyDown(int key)
+        {
+            keyInputDatas.Enqueue(new KeyInputData { key = key, keyEventType = KeyEventType.KeyDown });
+        }
+
+        public static void KeyUp(int key)
+        {
+            keyInputDatas.Enqueue(new KeyInputData { key = key, keyEventType = KeyEventType.KeyUp });
         }
     }
 }

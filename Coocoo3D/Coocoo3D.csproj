@@ -196,7 +196,6 @@
     <Compile Include="Utility\IDictionaryExt.cs" />
     <Compile Include="RenderPipeline\MainCaches.cs" />
     <Compile Include="Utility\DoubleVector3.cs" />
-    <Compile Include="Utility\IListExt.cs" />
     <Compile Include="Utility\MathHelper.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -210,6 +209,8 @@
     <Content Include="Samples\PS_DeferredGBuffer.hlsl" />
     <Content Include="Samples\sampleDeferredPasses.coocoox" />
     <Content Include="Samples\VS_Pass1.hlsl" />
+    <Content Include="Shaders\ImGui_PS.hlsl" />
+    <Content Include="Shaders\ImGui_VS.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
     <Content Include="Samples\PS_Pass1.hlsl" />
     <Content Include="Samples\samplePasses.coocoox" />

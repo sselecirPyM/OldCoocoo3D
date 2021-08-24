@@ -83,6 +83,7 @@
     <ClCompile Include="RayTracingShaderTable.cpp" />
     <ClCompile Include="RayTracingTopAS.cpp" />
     <ClCompile Include="RayTracingInstanceGroup.cpp" />
+    <ClCompile Include="UnnamedInputLayout.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -146,6 +147,7 @@
     <ClInclude Include="RayTracingShaderTable.h" />
     <ClInclude Include="RayTracingTopAS.h" />
     <ClInclude Include="RayTracingInstanceGroup.h" />
+    <ClInclude Include="UnnamedInputLayout.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\VSPostProcess.hlsl">

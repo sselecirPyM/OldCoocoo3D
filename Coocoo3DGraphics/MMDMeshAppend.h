@@ -8,12 +8,11 @@ namespace Coocoo3DGraphics
 		void Reload(int count);
 	internal:
 		static const UINT c_vertexStride = 12;
-		static const UINT c_bufferCount = 2;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferPos[c_bufferCount];
+		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferPos;
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_vertexBufferPosUpload;
-		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferPosViews[c_bufferCount];
-		int lastUpdateIndexs[c_bufferCount] = {};
+		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferPosViews;
+		int lastUpdateIndexs=0;
 		int m_posCount;
 		int m_bufferSize;
 	};

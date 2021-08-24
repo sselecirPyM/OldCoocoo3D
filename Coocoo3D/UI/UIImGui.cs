@@ -18,6 +18,11 @@ namespace Coocoo3D.UI
         public static void GUI(Coocoo3DMain appBody)
         {
             var io = ImGui.GetIO();
+            if(!initialized)
+            {
+                InitKeyMap();
+                initialized = true;
+            }
             Vector2 mouseMoveDelta = new Vector2();
             float mouseWheelDelta = 0.0f;
             while (Input.inputDatas.TryDequeue(out InputData inputData))
@@ -41,6 +46,17 @@ namespace Coocoo3D.UI
                 }
                 else if (inputData.inputType == InputType.MouseMoveDelta)
                     mouseMoveDelta += inputData.point;
+            }
+
+            while (Input.keyInputDatas.TryDequeue(out KeyInputData inputData))
+            {
+                if (inputData.keyEventType == KeyEventType.KeyDown)
+                {
+                    io.KeysDown[inputData.key] = true;
+                    io.AddInputCharacter((uint)inputData.key);
+                }
+                if (inputData.keyEventType == KeyEventType.KeyUp)
+                    io.KeysDown[inputData.key] = false;
             }
             var context = appBody.RPContext;
             io.DisplaySize = new Vector2(context.screenWidth, context.screenHeight);
@@ -136,7 +152,7 @@ namespace Coocoo3D.UI
                 }
             }
             ImGui.Render();
-            if (!appBody.settings.ViewerUI||!io.WantCaptureMouse)
+            if (!appBody.settings.ViewerUI || !io.WantCaptureMouse)
             {
                 if (io.MouseDown[1])
                     appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
@@ -181,7 +197,7 @@ namespace Coocoo3D.UI
             }
             if (ImGui.TreeNode("录制"))
             {
-                if(ImGui.Button("开始录制"))
+                if (ImGui.Button("开始录制"))
                 {
                     requireRecord = true;
                 }
@@ -309,7 +325,7 @@ vmd格式动作");
 示例着色器已经包含前向渲染以及延迟渲染的示例，有问题或想法请在github上提交。");
                 ImGui.TreePop();
             }
-            if(ImGui.Button("显示ImGuiDemoWindow"))
+            if (ImGui.Button("显示ImGuiDemoWindow"))
             {
                 demoWindowOpen = true;
             }
@@ -417,6 +433,7 @@ vmd格式动作");
                 ImGui.TreePop();
             }
         }
+        public static bool initialized = false;
 
         public static bool demoWindowOpen = false;
         public static Vector3 position;
@@ -455,6 +472,35 @@ vmd格式动作");
             result.Y = (float)Math.Atan2(2.0 * (ej + ik), 1 - 2.0 * (ii + jj));
             result.Z = (float)Math.Atan2(2.0 * (ek + ij), 1 - 2.0 * (ii + kk));
             return result;
+        }
+
+        static void InitKeyMap()
+        {
+            var io = ImGui.GetIO();
+
+            io.KeyMap[(int)ImGuiKey.Tab] = (int)Windows.System.VirtualKey.Tab ;
+            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Windows.System.VirtualKey.Left;
+            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Windows.System.VirtualKey.Right;
+            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Windows.System.VirtualKey.Up;
+            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Windows.System.VirtualKey.Down;
+            io.KeyMap[(int)ImGuiKey.PageUp] = (int)Windows.System.VirtualKey.PageUp;
+            io.KeyMap[(int)ImGuiKey.PageDown] = (int)Windows.System.VirtualKey.PageDown;
+            io.KeyMap[(int)ImGuiKey.Home] = (int)Windows.System.VirtualKey.Home;
+            io.KeyMap[(int)ImGuiKey.End] = (int)Windows.System.VirtualKey.End;
+            io.KeyMap[(int)ImGuiKey.Insert] = (int)Windows.System.VirtualKey.Insert;
+            io.KeyMap[(int)ImGuiKey.Delete] = (int)Windows.System.VirtualKey.Delete;
+            io.KeyMap[(int)ImGuiKey.Backspace] = (int)Windows.System.VirtualKey.Back;
+            io.KeyMap[(int)ImGuiKey.Space] = (int)Windows.System.VirtualKey.Space;
+            io.KeyMap[(int)ImGuiKey.Enter] = (int)Windows.System.VirtualKey.Enter;
+            io.KeyMap[(int)ImGuiKey.Escape] = (int)Windows.System.VirtualKey.Escape;
+            //io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)Windows.System.VirtualKey.RETURN;
+
+            io.KeyMap[(int)ImGuiKey.A] = 'A';
+            io.KeyMap[(int)ImGuiKey.C] = 'C';
+            io.KeyMap[(int)ImGuiKey.V] = 'V';
+            io.KeyMap[(int)ImGuiKey.X] = 'X';
+            io.KeyMap[(int)ImGuiKey.Y] = 'Y';
+            io.KeyMap[(int)ImGuiKey.Z] = 'Z';
         }
     }
     class _openRequest

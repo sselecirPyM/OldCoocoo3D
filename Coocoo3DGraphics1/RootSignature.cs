@@ -5,7 +5,7 @@ using Vortice.Direct3D12;
 
 namespace Coocoo3DGraphics1
 {
-    public class GraphicsSignature : IDisposable
+    public class RootSignature : IDisposable
     {
         public Dictionary<int, int> cbv = new Dictionary<int, int>();
         public Dictionary<int, int> srv = new Dictionary<int, int>();

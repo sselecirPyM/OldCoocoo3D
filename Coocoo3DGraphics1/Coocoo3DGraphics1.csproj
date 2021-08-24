@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Vortice.D3DCompiler" Version="1.9.87" />
     <PackageReference Include="Vortice.Direct3D12" Version="1.9.87" />
   </ItemGroup>
 

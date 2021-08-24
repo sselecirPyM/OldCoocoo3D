@@ -75,10 +75,10 @@ namespace Coocoo3D.RenderPipeline
 
         public Dictionary<string, Texture2D> RTs = new Dictionary<string,Texture2D>();
 
-        public RayTracingASGroup RTASGroup = new RayTracingASGroup();
-        public Dictionary<string, RayTracingShaderTable> RTSTs = new Dictionary<string, RayTracingShaderTable>();
-        public Dictionary<string, RayTracingInstanceGroup> RTIGroups = new Dictionary<string, RayTracingInstanceGroup>();
-        public Dictionary<string, RayTracingTopAS> RTTASs = new Dictionary<string, RayTracingTopAS>();
+        //public RayTracingASGroup RTASGroup = new RayTracingASGroup();
+        //public Dictionary<string, RayTracingShaderTable> RTSTs = new Dictionary<string, RayTracingShaderTable>();
+        //public Dictionary<string, RayTracingInstanceGroup> RTIGroups = new Dictionary<string, RayTracingInstanceGroup>();
+        //public Dictionary<string, RayTracingTopAS> RTTASs = new Dictionary<string, RayTracingTopAS>();
 
         public Texture2D TextureLoading = new Texture2D();
         public Texture2D TextureError = new Texture2D();
@@ -218,7 +218,7 @@ namespace Coocoo3D.RenderPipeline
 
                 if (rendererComponent.meshNeedUpdate)
                 {
-                    graphicsContext.UpdateVerticesPos(rendererComponent.meshAppend, rendererComponent.meshPosData1, 0);
+                    graphicsContext.UpdateVerticesPos(rendererComponent.meshAppend, rendererComponent.meshPosData1);
                     rendererComponent.meshNeedUpdate = false;
                 }
             }
@@ -337,8 +337,8 @@ namespace Coocoo3D.RenderPipeline
             RTPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DeferredRayTracingPassSetting.xml"));
             try
             {
-                if (deviceResources.IsRayTracingSupport())
-                    await ConfigRayTracing(RTPassSetting);
+                //if (deviceResources.IsRayTracingSupport())
+                //    await ConfigRayTracing(RTPassSetting);
             }
             catch (Exception e)
             {
@@ -471,63 +471,63 @@ namespace Coocoo3D.RenderPipeline
                 _pass1.renderTargets = t1;
             }
         }
-        public async Task ConfigRayTracing(PassSetting passSetting)
-        {
-            if (passSetting.RayTracingStateObject != null)
-            {
-                //foreach(var rtso in passSetting.RayTracingStateObjects)
-                //{
+        //public async Task ConfigRayTracing(PassSetting passSetting)
+        //{
+        //    if (passSetting.RayTracingStateObject != null)
+        //    {
+        //        //foreach(var rtso in passSetting.RayTracingStateObjects)
+        //        //{
 
-                //}
-                var rtso = passSetting.RayTracingStateObject;
-                passSetting.RTSO = new RayTracingStateObject();
-                passSetting.RTSO.LoadShaderLib(await ReadFile(rtso.Path));
-                List<string> exportNames = new List<string>();
-                List<string> rayGenShaders = new List<string>();
-                List<string> missShaders = new List<string>();
-                foreach (var s in rtso.rayGenShaders)
-                {
-                    exportNames.Add(s.Name);
-                    rayGenShaders.Add(s.Name);
-                }
-                if (rtso.missShaders != null)
-                    foreach (var s in rtso.missShaders)
-                    {
-                        exportNames.Add(s.Name);
-                        missShaders.Add(s.Name);
-                    }
-                foreach (var h in rtso.hitGroups)
-                {
-                    if (!string.IsNullOrEmpty(h.AnyHitShader))
-                        exportNames.Add(h.AnyHitShader);
-                    if (!string.IsNullOrEmpty(h.ClosestHitShader))
-                        exportNames.Add(h.ClosestHitShader);
-                }
-                passSetting.RTSO.ExportLib(exportNames.ToArray());
+        //        //}
+        //        var rtso = passSetting.RayTracingStateObject;
+        //        passSetting.RTSO = new RayTracingStateObject();
+        //        passSetting.RTSO.LoadShaderLib(await ReadFile(rtso.Path));
+        //        List<string> exportNames = new List<string>();
+        //        List<string> rayGenShaders = new List<string>();
+        //        List<string> missShaders = new List<string>();
+        //        foreach (var s in rtso.rayGenShaders)
+        //        {
+        //            exportNames.Add(s.Name);
+        //            rayGenShaders.Add(s.Name);
+        //        }
+        //        if (rtso.missShaders != null)
+        //            foreach (var s in rtso.missShaders)
+        //            {
+        //                exportNames.Add(s.Name);
+        //                missShaders.Add(s.Name);
+        //            }
+        //        foreach (var h in rtso.hitGroups)
+        //        {
+        //            if (!string.IsNullOrEmpty(h.AnyHitShader))
+        //                exportNames.Add(h.AnyHitShader);
+        //            if (!string.IsNullOrEmpty(h.ClosestHitShader))
+        //                exportNames.Add(h.ClosestHitShader);
+        //        }
+        //        passSetting.RTSO.ExportLib(exportNames.ToArray());
 
-                foreach (var h in rtso.hitGroups)
-                {
-                    passSetting.RTSO.HitGroupSubobject(h.Name, h.AnyHitShader == null ? "" : h.AnyHitShader, h.ClosestHitShader == null ? "" : h.ClosestHitShader);
-                }
-                passSetting.RTSO.LocalRootSignature(RPAssetsManager.rtLocal);
-                passSetting.RTSO.GlobalRootSignature(RPAssetsManager.rtGlobal);
-                passSetting.RTSO.Config(rtso.MaxPayloadSize, rtso.MaxAttributeSize, rtso.MaxRecursionDepth);
-                passSetting.RTSO.Create(deviceResources);
+        //        foreach (var h in rtso.hitGroups)
+        //        {
+        //            passSetting.RTSO.HitGroupSubobject(h.Name, h.AnyHitShader == null ? "" : h.AnyHitShader, h.ClosestHitShader == null ? "" : h.ClosestHitShader);
+        //        }
+        //        passSetting.RTSO.LocalRootSignature(RPAssetsManager.rtLocal);
+        //        passSetting.RTSO.GlobalRootSignature(RPAssetsManager.rtGlobal);
+        //        passSetting.RTSO.Config(rtso.MaxPayloadSize, rtso.MaxAttributeSize, rtso.MaxRecursionDepth);
+        //        passSetting.RTSO.Create(deviceResources);
 
-                foreach (var item in passSetting.RenderSequence)
-                {
-                    if (item.Type == "RayTracing")
-                    {
-                        RTIGroups[item.Name] = new RayTracingInstanceGroup();
-                        RTSTs[item.Name] = new RayTracingShaderTable();
-                        RTTASs[item.Name] = new RayTracingTopAS();
-                        item.RayGenShaders = rayGenShaders.ToArray();
-                        item.MissShaders = missShaders.ToArray();
-                    }
-                }
-            }
+        //        foreach (var item in passSetting.RenderSequence)
+        //        {
+        //            if (item.Type == "RayTracing")
+        //            {
+        //                RTIGroups[item.Name] = new RayTracingInstanceGroup();
+        //                RTSTs[item.Name] = new RayTracingShaderTable();
+        //                RTTASs[item.Name] = new RayTracingTopAS();
+        //                item.RayGenShaders = rayGenShaders.ToArray();
+        //                item.MissShaders = missShaders.ToArray();
+        //            }
+        //        }
+        //    }
 
-        }
+        //}
         public Texture2D _GetTex2DByName(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;

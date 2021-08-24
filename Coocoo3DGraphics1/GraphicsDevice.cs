@@ -24,16 +24,9 @@ namespace Coocoo3DGraphics1
         public ID3D12Device5 device;
         public IDXGIAdapter adapter;
 
-        ID3D12DescriptorHeap cbvsrvuavHeap;
-        uint cbvSrvUavHeapAllocCount;
-        ID3D12DescriptorHeap rtvHeap;
-        uint rtvHeapAllocCount;
-        ID3D12DescriptorHeap dsvHeap;
-        uint dsvHeapAllocCount;
-
-        public int cbvsrvuavHeapIncrementSize;
-        public int dsvHeapIncrementSize;
-        public int rtvHeapIncrementSize;
+        public DescriptorHeapX cbvsrvuavHeap;
+        public DescriptorHeapX rtvHeap;
+        public DescriptorHeapX dsvHeap;
 
         string m_deviceDescription;
         UInt64 m_deviceVideoMem;
@@ -48,7 +41,7 @@ namespace Coocoo3DGraphics1
         IDXGIFactory4 m_dxgiFactory;
         IDXGISwapChain3 m_swapChain;
         ID3D12Resource[] m_renderTargets = new ID3D12Resource[c_frameCount];
-        ID3D12CommandQueue commandQueue;
+        public ID3D12CommandQueue commandQueue;
         ID3D12CommandAllocator[] commandAllocators = new ID3D12CommandAllocator[c_frameCount];
 
         Format m_backBufferFormat;
@@ -255,22 +248,19 @@ namespace Coocoo3DGraphics1
             descriptorHeapDescription.Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView;
             descriptorHeapDescription.Flags = DescriptorHeapFlags.ShaderVisible;
             descriptorHeapDescription.NodeMask = 0;
-            ThrowIfFailed(device.CreateDescriptorHeap(descriptorHeapDescription, out cbvsrvuavHeap));
+            cbvsrvuavHeap.Initialize(this, descriptorHeapDescription);
 
             descriptorHeapDescription.DescriptorCount = 16;
             descriptorHeapDescription.Type = DescriptorHeapType.DepthStencilView;
             descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
-            ThrowIfFailed(device.CreateDescriptorHeap(descriptorHeapDescription, out dsvHeap));
+            dsvHeap.Initialize(this, descriptorHeapDescription);
 
             descriptorHeapDescription.DescriptorCount = 16;
             descriptorHeapDescription.Type = DescriptorHeapType.RenderTargetView;
             descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
-            ThrowIfFailed(device.CreateDescriptorHeap(descriptorHeapDescription, out rtvHeap));
+            rtvHeap.Initialize(this, descriptorHeapDescription);
             fenceEvent = new EventWaitHandle(false, EventResetMode.AutoReset);
 
-            cbvsrvuavHeapIncrementSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView);
-            dsvHeapIncrementSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.DepthStencilView);
-            rtvHeapIncrementSize = device.GetDescriptorHandleIncrementSize(DescriptorHeapType.RenderTargetView);
 
             for (int i = 0; i < c_frameCount; i++)
             {
@@ -305,12 +295,17 @@ namespace Coocoo3DGraphics1
             m_commandLists1.Add(commandList);
         }
 
-        void ResourceDelayRecycle(ID3D12Resource res)
+        public ID3D12Resource GetRenderTarget()
+        {
+            return m_renderTargets[m_swapChain.GetCurrentBackBufferIndex()];
+        }
+
+        public void ResourceDelayRecycle(ID3D12Resource res)
         {
             if (res != null)
                 m_recycleList.Add(new d3d12RecycleResource { m_recycleResource = res, m_removeFrame = m_currentFenceValue });
         }
-        void ResourceDelayRecycle(ID3D12PipelineState res2)
+        public void ResourceDelayRecycle(ID3D12PipelineState res2)
         {
             if (res2 != null)
                 m_recycleList.Add(new d3d12RecycleResource { m_recycleResource = res2, m_removeFrame = m_currentFenceValue });
@@ -377,7 +372,7 @@ namespace Coocoo3DGraphics1
 
         ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
 
-        void ThrowIfFailed(SharpGen.Runtime.Result hr)
+        public static void ThrowIfFailed(SharpGen.Runtime.Result hr)
         {
             if (hr != SharpGen.Runtime.Result.Ok)
                 throw new NotImplementedException(hr.ToString());

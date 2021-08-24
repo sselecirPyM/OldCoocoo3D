@@ -188,5 +188,17 @@ namespace Coocoo3D.Controls
             e.Handled = true;
             AppBody.RequireRender();
         }
+
+        private void swapChainPanel_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            Input.KeyDown((int)e.Key);
+            AppBody.RequireRender();
+        }
+
+        private void swapChainPanel_KeyUp(object sender, KeyRoutedEventArgs e)
+        {
+            Input.KeyUp((int)e.Key);
+            AppBody.RequireRender();
+        }
     }
 }

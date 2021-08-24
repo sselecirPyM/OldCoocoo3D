@@ -210,6 +210,7 @@ namespace Coocoo3D.RenderPipeline
                             var cmd = cmdList.CmdBuffer[j];
 
                             graphicsContext.SetSRVTSlot(rpAssets.texture2ds[rpAssets.ptr2string[cmd.TextureId]], 0);
+                            graphicsContext.RSSetScissorRect((int)(cmd.ClipRect.X - clip_off.X), (int)(cmd.ClipRect.Y - clip_off.Y), (int)(cmd.ClipRect.Z - clip_off.X), (int)(cmd.ClipRect.W - clip_off.Y));
                             graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset) + idxOfs, (int)(cmd.VtxOffset) + vtxOfs);
                         }
                         vtxOfs += cmdList.VtxBuffer.Size;

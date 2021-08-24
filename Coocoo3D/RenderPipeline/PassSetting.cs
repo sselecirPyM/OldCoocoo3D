@@ -37,8 +37,8 @@ namespace Coocoo3D.RenderPipeline
 
         [XmlIgnore]
         public bool configured;
-        [XmlIgnore]
-        public RayTracingStateObject RTSO;
+        //[XmlIgnore]
+        //public RayTracingStateObject RTSO;
 
         public bool Verify()
         {

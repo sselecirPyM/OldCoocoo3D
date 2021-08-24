@@ -302,6 +302,7 @@
     <ClInclude Include="TextureCube.h" />
     <ClInclude Include="TextUtil.h" />
     <ClInclude Include="TwinBuffer.h" />
+    <ClInclude Include="UnnamedInputLayout.h" />
     <ClInclude Include="Uploader.h" />
   </ItemGroup>
   <ItemGroup>
@@ -342,6 +343,7 @@
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="TwinBuffer.cpp" />
+    <ClCompile Include="UnnamedInputLayout.cpp" />
     <ClCompile Include="Uploader.cpp" />
   </ItemGroup>
   <ItemGroup>
