@@ -145,7 +145,6 @@
     <Compile Include="RenderPipeline\ProcessingList.cs" />
     <Compile Include="Core\RecorderGameDriver.cs" />
     <Compile Include="Core\Scene.cs" />
-    <Compile Include="FileFormat\CCSceneFormat.cs" />
     <Compile Include="FileFormat\VPDFormat.cs" />
     <Compile Include="Present\Camera.cs" />
     <Compile Include="Controls\WorldViewer.xaml.cs">

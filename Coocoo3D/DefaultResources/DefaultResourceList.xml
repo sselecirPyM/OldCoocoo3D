@@ -38,7 +38,7 @@
   </VertexShader>
   <VertexShader>
     <Name>ImGui_VS</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/ImGui_VS.cso</Path>
+    <Path>ms-appx:///Shaders/ImGui_VS.hlsl</Path>
   </VertexShader>
   <!--pixelshaders-->
   <PixelShader>
@@ -91,7 +91,7 @@
   </PixelShader>
   <PixelShader>
     <Name>ImGui_PS</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/ImGui_PS.cso</Path>
+    <Path>ms-appx:///Shaders/ImGui_PS.hlsl</Path>
   </PixelShader>
   <ComputeShader>
     <Name>G_IrradianceMap0</Name>

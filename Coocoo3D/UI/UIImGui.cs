@@ -18,7 +18,7 @@ namespace Coocoo3D.UI
         public static void GUI(Coocoo3DMain appBody)
         {
             var io = ImGui.GetIO();
-            if(!initialized)
+            if (!initialized)
             {
                 InitKeyMap();
                 initialized = true;
@@ -382,6 +382,7 @@ vmd格式动作");
 
         static void RendererComponent(Coocoo3DMain appBody, MMDRendererComponent rendererComponent)
         {
+            var io = ImGui.GetIO();
             if (ImGui.TreeNode("渲染"))
             {
                 if (ImGui.TreeNode("材质"))
@@ -411,6 +412,24 @@ vmd格式动作");
                             ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
                             ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
                             ImGui.Checkbox("透明材质", ref material.Transparent);
+                            foreach (var tex in material.textures)
+                            {
+                                string key = "imgui/" + tex.Key;
+                                appBody.RPAssetsManager.texture2ds[key] = tex.Value;
+                                Vector2 pos = ImGui.GetCursorScreenPos();
+                                Vector2 imageSize = new Vector2(120, 120);
+                                IntPtr imageId = appBody.RPAssetsManager.GetPtr(key);
+                                ImGui.Image(imageId, imageSize);
+                                if (ImGui.IsItemHovered())
+                                {
+                                    Vector2 uv0 = (io.MousePos - pos) / imageSize;
+                                    Vector2 uv1 = uv0 + new Vector2(20) / imageSize;
+
+                                    ImGui.BeginTooltip();
+                                    ImGui.Image(imageId, new Vector2(100, 100), uv0, uv1);
+                                    ImGui.EndTooltip();
+                                }
+                            }
                         }
                     }
                     ImGui.EndChild();
@@ -478,7 +497,7 @@ vmd格式动作");
         {
             var io = ImGui.GetIO();
 
-            io.KeyMap[(int)ImGuiKey.Tab] = (int)Windows.System.VirtualKey.Tab ;
+            io.KeyMap[(int)ImGuiKey.Tab] = (int)Windows.System.VirtualKey.Tab;
             io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Windows.System.VirtualKey.Left;
             io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Windows.System.VirtualKey.Right;
             io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Windows.System.VirtualKey.Up;

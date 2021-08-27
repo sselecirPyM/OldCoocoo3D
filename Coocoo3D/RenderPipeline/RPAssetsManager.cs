@@ -41,6 +41,14 @@ namespace Coocoo3D.RenderPipeline
                 rtGlobal.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
             }
         }
+        long count1 = 0;
+        public IntPtr GetPtr(string s)
+        {
+            long i = System.Threading.Interlocked.Increment(ref count1);
+            IntPtr ptr = new IntPtr(i);
+            ptr2string[ptr] = s;
+            return ptr;
+        }
         public async Task LoadAssets()
         {
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));
@@ -73,13 +81,27 @@ namespace Coocoo3D.RenderPipeline
         protected async Task RegVSAssets(string name, string path)
         {
             VertexShader vertexShader = new VertexShader();
-            vertexShader.Initialize(await ReadFile(path));
+            if (Path.GetExtension(path) == ".hlsl")
+            {
+                vertexShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+            }
+            else
+            {
+                vertexShader.Initialize(await ReadFile(path));
+            }
             VSAssets.Add(name, vertexShader);
         }
         protected async Task RegPSAssets(string name, string path)
         {
             PixelShader pixelShader = new PixelShader();
-            pixelShader.Initialize(await ReadFile(path));
+            if (Path.GetExtension(path) == ".hlsl")
+            {
+                pixelShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+            }
+            else
+            {
+                pixelShader.Initialize(await ReadFile(path));
+            }
             PSAssets.Add(name, pixelShader);
         }
         protected async Task<IBuffer> ReadFile(string uri)

@@ -14,9 +14,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class WidgetRenderer : RenderPipeline
     {
-        const int c_bufferSize = 256;
-        const int c_bigBufferSize = 65536;
-        public CBuffer bigConstantBuffer = new CBuffer();
         CBufferGroup CBufferGroup = new CBufferGroup();
         public MMDMesh imguiMesh = new MMDMesh();
 
@@ -26,7 +23,6 @@ namespace Coocoo3D.RenderPipeline
         public void Reload(RenderPipelineContext context)
         {
             var deviceResources = context.deviceResources;
-            deviceResources.InitializeCBuffer(bigConstantBuffer, c_bigBufferSize);
             CBufferGroup.Reload(deviceResources, 256, 65536);
             ImGui.SetCurrentContext(ImGui.CreateContext());
             Uploader uploader = new Uploader();
@@ -44,23 +40,13 @@ namespace Coocoo3D.RenderPipeline
                 uploader.Texture2DRaw(pixelData, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM, width, height);
             }
             var texture2D = new Texture2D();
+            io.Fonts.TexID = context.RPAssetsManager.GetPtr("imgui_font");
             context.RPAssetsManager.texture2ds["imgui_font"] = texture2D;
-            io.Fonts.TexID = new IntPtr(1);
-            context.RPAssetsManager.ptr2string[io.Fonts.TexID] = "imgui_font";
             context.processingList.AddObject(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
             Ready = true;
         }
 
-        struct _Data
-        {
-            public Vector2 size;
-            public Vector2 offset;
-            public Vector2 uvSize;
-            public Vector2 uvOffset;
-        }
-        readonly Vector2 c_buttonSize = new Vector2(64, 64);
 
-        int indexOfSelectedEntity;
         public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             if (!context.dynamicContextRead.settings.ViewerUI) return;
@@ -118,8 +104,20 @@ namespace Coocoo3D.RenderPipeline
 
         public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-
             if (!context.dynamicContextRead.settings.ViewerUI) return;
+
+            Texture2D texLoading = context.TextureLoading;
+            Texture2D texError = context.TextureError;
+            Texture2D _Tex(Texture2D _tex)
+            {
+                if (_tex == null)
+                    return texError;
+                else if (_tex is Texture2D _tex1)
+                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
+                else
+                    return _tex;
+            };
+
             var rpAssets = context.RPAssetsManager;
             var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs"); ;
             graphicsContext.SetRootSignature(rsPP);
@@ -208,8 +206,14 @@ namespace Coocoo3D.RenderPipeline
                         for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
                         {
                             var cmd = cmdList.CmdBuffer[j];
+                            Texture2D tex = null;
+                            if (rpAssets.ptr2string.TryGetValue(cmd.TextureId, out string s) && rpAssets.texture2ds.TryGetValue(s, out tex))
+                            {
 
-                            graphicsContext.SetSRVTSlot(rpAssets.texture2ds[rpAssets.ptr2string[cmd.TextureId]], 0);
+                            }
+                            tex = _Tex(tex);
+
+                            graphicsContext.SetSRVTSlot(tex, 0);
                             graphicsContext.RSSetScissorRect((int)(cmd.ClipRect.X - clip_off.X), (int)(cmd.ClipRect.Y - clip_off.Y), (int)(cmd.ClipRect.Z - clip_off.X), (int)(cmd.ClipRect.W - clip_off.Y));
                             graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset) + idxOfs, (int)(cmd.VtxOffset) + vtxOfs);
                         }
