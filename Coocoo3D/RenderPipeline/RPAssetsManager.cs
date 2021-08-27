@@ -11,6 +11,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.IO;
 using GSD = Coocoo3DGraphics.GraphicSignatureDesc;
+using System.Collections.Concurrent;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -53,14 +54,23 @@ namespace Coocoo3D.RenderPipeline
         {
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));
             defaultResource = (DefaultResource)xmlSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DefaultResourceList.xml"));
-            foreach (var vertexShader in defaultResource.vertexShaders)
-            {
-                RegVSAssets(vertexShader.Name, vertexShader.Path);
-            }
-            foreach (var pixelShader in defaultResource.pixelShaders)
-            {
-                RegPSAssets(pixelShader.Name, pixelShader.Path);
-            }
+            ConcurrentDictionary<string, VertexShader> vss = new ConcurrentDictionary<string, VertexShader>();
+            ConcurrentDictionary<string, PixelShader> pss = new ConcurrentDictionary<string, PixelShader>();
+            ConcurrentDictionary<string, ComputeShader> css = new ConcurrentDictionary<string, ComputeShader>();
+
+            Parallel.Invoke(() =>
+            Parallel.ForEach(defaultResource.vertexShaders, async vertexShader => await RegVSAssets1(vertexShader.Name, vertexShader.Path, vss)),
+            () => Parallel.ForEach(defaultResource.pixelShaders, async pixelShader => await RegPSAssets1(pixelShader.Name, pixelShader.Path, pss)),
+            () => Parallel.ForEach(defaultResource.computeShaders, async computeShader => await RegCSAssets1(computeShader.Name, computeShader.Path, css)));
+            
+            foreach (var vs in vss)
+                VSAssets.Add(vs.Key, vs.Value);
+            foreach (var ps in pss)
+                PSAssets.Add(ps.Key, ps.Value);
+            foreach (var cs in css)
+                CSAssets.Add(cs.Key, cs.Value);
+
+
             foreach (var pipelineState in defaultResource.pipelineStates)
             {
                 PSO pso = new PSO();
@@ -82,28 +92,51 @@ namespace Coocoo3D.RenderPipeline
         {
             VertexShader vertexShader = new VertexShader();
             if (Path.GetExtension(path) == ".hlsl")
-            {
                 vertexShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
-            }
             else
-            {
                 vertexShader.Initialize(await ReadFile(path));
-            }
             VSAssets.Add(name, vertexShader);
+        }
+        protected async Task RegVSAssets1(string name, string path, ConcurrentDictionary<string, VertexShader> assets)
+        {
+            VertexShader vertexShader = new VertexShader();
+            if (Path.GetExtension(path) == ".hlsl")
+                vertexShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+            else
+                vertexShader.Initialize(await ReadFile(path));
+            assets.TryAdd(name, vertexShader);
         }
         protected async Task RegPSAssets(string name, string path)
         {
             PixelShader pixelShader = new PixelShader();
             if (Path.GetExtension(path) == ".hlsl")
-            {
                 pixelShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
-            }
             else
-            {
                 pixelShader.Initialize(await ReadFile(path));
-            }
             PSAssets.Add(name, pixelShader);
         }
+        protected async Task RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
+        {
+            PixelShader pixelShader = new PixelShader();
+            if (Path.GetExtension(path) == ".hlsl")
+                pixelShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+            else
+                pixelShader.Initialize(await ReadFile(path));
+            assets.TryAdd(name, pixelShader);
+        }
+        protected async Task RegCSAssets1(string name, string path, ConcurrentDictionary<string, ComputeShader> assets)
+        {
+            ComputeShader computeShader = new ComputeShader();
+            if (Path.GetExtension(path) == ".hlsl")
+                computeShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+            else
+                computeShader.Initialize(await ReadFile(path));
+            assets.TryAdd(name, computeShader);
+        }
+
+
+
+
         protected async Task<IBuffer> ReadFile(string uri)
         {
             StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));

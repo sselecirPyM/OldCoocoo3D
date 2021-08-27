@@ -150,80 +150,11 @@
     <ClInclude Include="UnnamedInputLayout.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\VSPostProcess.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSPostProcess.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="RayTracing\Raytracing.hlsl">
       <Filter>RayTracing</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\VSMMDTransform.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\ImageProcess\G_IrradianceMap0.hlsl">
-      <Filter>Shaders\ImageProcess</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\ImageProcess\G_ClearIrradianceMap.hlsl">
-      <Filter>Shaders\ImageProcess</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PS_Pass1.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\ImageProcess\G_PreFilterEnv.hlsl">
-      <Filter>Shaders\ImageProcess</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSWidgetUI1.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VSWidgetUI1.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VSWidgetUI2.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSWidgetUI2.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSWidgetUILight.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VSWidgetUILight.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSError.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PSLoading.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VSMMDSkinning.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VS_Pass1.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\VS_SkyBox.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PS_SkyBox.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PS_DeferredGBuffer.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PS_DeferredFinal.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
     <FxCompile Include="RayTracing\RayTracing2.hlsl">
       <Filter>RayTracing</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PS_BloomBlur1.hlsl">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\PS_BloomBlur2.hlsl">
-      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -164,9 +164,6 @@
     <Compile Include="PropertiesPages\RecordPage.xaml.cs">
       <DependentUpon>RecordPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="PropertiesPages\ResourcesPage.xaml.cs">
-      <DependentUpon>ResourcesPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="PropertiesPages\SkyBoxPage.xaml.cs">
       <DependentUpon>SkyBoxPage.xaml</DependentUpon>
     </Compile>
@@ -208,8 +205,31 @@
     <Content Include="Samples\PS_DeferredGBuffer.hlsl" />
     <Content Include="Samples\sampleDeferredPasses.coocoox" />
     <Content Include="Samples\VS_Pass1.hlsl" />
+    <Content Include="Shaders\G_ClearIrradianceMap.hlsl" />
+    <Content Include="Shaders\G_IrradianceMap0.hlsl" />
+    <Content Include="Shaders\G_PreFilterEnv.hlsl" />
     <Content Include="Shaders\ImGui_PS.hlsl" />
     <Content Include="Shaders\ImGui_VS.hlsl" />
+    <Content Include="Shaders\PSError.hlsl" />
+    <Content Include="Shaders\PSLoading.hlsl" />
+    <Content Include="Shaders\PSPostProcess.hlsl" />
+    <Content Include="Shaders\PSWidgetUI1.hlsl" />
+    <Content Include="Shaders\PSWidgetUI2.hlsl" />
+    <Content Include="Shaders\PSWidgetUILight.hlsl" />
+    <Content Include="Shaders\PS_BloomBlur1.hlsl" />
+    <Content Include="Shaders\PS_BloomBlur2.hlsl" />
+    <Content Include="Shaders\PS_DeferredFinal.hlsl" />
+    <Content Include="Shaders\PS_DeferredGBuffer.hlsl" />
+    <Content Include="Shaders\PS_Pass1.hlsl" />
+    <Content Include="Shaders\PS_SkyBox.hlsl" />
+    <Content Include="Shaders\VSMMDSkinning.hlsl" />
+    <Content Include="Shaders\VSMMDTransform.hlsl" />
+    <Content Include="Shaders\VSPostProcess.hlsl" />
+    <Content Include="Shaders\VSWidgetUI1.hlsl" />
+    <Content Include="Shaders\VSWidgetUI2.hlsl" />
+    <Content Include="Shaders\VSWidgetUILight.hlsl" />
+    <Content Include="Shaders\VS_Pass1.hlsl" />
+    <Content Include="Shaders\VS_SkyBox.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
     <Content Include="Samples\PS_Pass1.hlsl" />
     <Content Include="Samples\samplePasses.coocoox" />
@@ -250,10 +270,6 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="PropertiesPages\RecordPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="PropertiesPages\ResourcesPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -23,11 +23,8 @@ namespace Coocoo3D.ResourceWarp
         public StorageFolder folder;
         public string relativePath;
         public GraphicsObjectStatus Status;
-        public Uploader uploader1;
 
         public Task loadTask;
-
-        public bool doNothing;
 
         public void Mark(GraphicsObjectStatus status)
         {
@@ -37,13 +34,12 @@ namespace Coocoo3D.ResourceWarp
 
         public async Task<bool> ReloadTexture(IStorageItem storageItem, Uploader uploader)
         {
-            uploader1 = uploader;
-            Mark(GraphicsObjectStatus.loading);
             if (!(storageItem is StorageFile texFile))
             {
                 Mark(GraphicsObjectStatus.error);
                 return false;
             }
+            Mark(GraphicsObjectStatus.loading);
             try
             {
                 //uploader.Texture2D(await FileIO.ReadBufferAsync(texFile), true, true);
@@ -70,7 +66,7 @@ namespace Coocoo3D.ResourceWarp
         public static async Task<Uploader> UploaderTex2DNoMip(string uri)
         {
             Uploader uploader = new Uploader();
-            byte[] data = Texture2DPack.GetImageData(await(await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))).OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel);
+            byte[] data = Texture2DPack.GetImageData(await (await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))).OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel);
             uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1);
             return uploader;
         }
@@ -78,7 +74,7 @@ namespace Coocoo3D.ResourceWarp
         public static async Task<Uploader> UploaderTex2D(string uri)
         {
             Uploader uploader = new Uploader();
-            byte[] data = Texture2DPack.GetImageData(await(await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))).OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel,out int mipMap);
+            byte[] data = Texture2DPack.GetImageData(await (await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri))).OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel, out int mipMap);
             uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height, mipMap);
             return uploader;
         }
@@ -94,7 +90,7 @@ namespace Coocoo3D.ResourceWarp
         public static async Task<Uploader> UploaderTex2D(StorageFile file)
         {
             Uploader uploader = new Uploader();
-            byte[] data = Texture2DPack.GetImageData(await file.OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel,out int mipMap);
+            byte[] data = Texture2DPack.GetImageData(await file.OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel, out int mipMap);
             uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height, mipMap);
             return uploader;
         }

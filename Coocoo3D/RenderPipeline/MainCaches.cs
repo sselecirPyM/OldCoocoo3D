@@ -4,6 +4,7 @@ using Coocoo3D.Utility;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -34,6 +35,7 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
+        ConcurrentDictionary<Texture2DPack, Uploader> uploaders = new ConcurrentDictionary<Texture2DPack, Uploader>();
         public void OnFrame()
         {
             lock (TextureOnDemand)
@@ -41,6 +43,7 @@ namespace Coocoo3D.RenderPipeline
                 ReloadTextures2();
 
                 if (TextureOnDemand.Count == 0) return;
+
                 foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null; }))
                 {
                     var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
@@ -59,6 +62,7 @@ namespace Coocoo3D.RenderPipeline
                                     {
                                         texturePack1.lastModifiedTime = attr.DateModified;
                                         texturePack1.Mark(GraphicsObjectStatus.loaded);
+                                        uploaders[texturePack1] = uploader;
                                     }
                                     else
                                     {
@@ -67,7 +71,6 @@ namespace Coocoo3D.RenderPipeline
                                 }
                                 else
                                 {
-                                    texturePack1.doNothing = true;
                                     texturePack1.Mark(GraphicsObjectStatus.loaded);
                                 }
                             }
@@ -92,8 +95,10 @@ namespace Coocoo3D.RenderPipeline
                         tex1.folder = loadCompleted.Value.folder;
                         tex1.relativePath = loadCompleted.Value.relativePath;
                         tex1.Mark(loadCompleted.Value.Status);
-                        if (loadCompleted.Value.Status == GraphicsObjectStatus.loaded && loadCompleted.Value.doNothing == false)
-                            processingList.AddObject(new Texture2DUploadPack(tex1.texture2D, loadCompleted.Value.uploader1));
+                        if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
+                        {
+                            processingList.AddObject(new Texture2DUploadPack(tex1.texture2D, uploader));
+                        }
                         TextureOnDemand.Remove(loadCompleted.Key);
                     }
                 }

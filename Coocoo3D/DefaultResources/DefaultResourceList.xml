@@ -1,40 +1,40 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <DefaultResource>
   <VertexShader>
-    <Name>VSMMDSkinning.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSMMDSkinning.cso</Path>
+    <Name>VSMMDSkinning</Name>
+    <Path>ms-appx:///Shaders/VSMMDSkinning.hlsl</Path>
   </VertexShader>
   <VertexShader>
-    <Name>VSPostProcess.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSPostProcess.cso</Path>
+    <Name>VSPostProcess</Name>
+    <Path>ms-appx:///Shaders/VSPostProcess.hlsl</Path>
   </VertexShader>
   <VertexShader>
-    <Name>VSWidgetUI1.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSWidgetUI1.cso</Path>
+    <Name>VSWidgetUI1</Name>
+    <Path>ms-appx:///Shaders/VSWidgetUI1.hlsl</Path>
   </VertexShader>
   <VertexShader>
-    <Name>VSWidgetUI2.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSWidgetUI2.cso</Path>
+    <Name>VSWidgetUI2</Name>
+    <Path>ms-appx:///Shaders/VSWidgetUI2.hlsl</Path>
   </VertexShader>
   <VertexShader>
-    <Name>VSWidgetUILight.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSWidgetUILight.cso</Path>
+    <Name>VSWidgetUILight</Name>
+    <Path>ms-appx:///Shaders/VSWidgetUILight.hlsl</Path>
   </VertexShader>
   <VertexShader>
     <Name>VS_ShadowMap</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VS_Pass1.cso</Path>
+    <Path>ms-appx:///Shaders/VS_Pass1.hlsl</Path>
   </VertexShader>
   <VertexShader>
     <Name>VS_Pass1</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VS_Pass1.cso</Path>
+    <Path>ms-appx:///Shaders/VS_Pass1.hlsl</Path>
   </VertexShader>
   <VertexShader>
     <Name>VS_SkyBox</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VS_SkyBox.cso</Path>
+    <Path>ms-appx:///Shaders/VS_SkyBox.hlsl</Path>
   </VertexShader>
   <VertexShader>
     <Name>VSMMDTransform</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/VSMMDTransform.cso</Path>
+    <Path>ms-appx:///Shaders/VSMMDTransform.hlsl</Path>
   </VertexShader>
   <VertexShader>
     <Name>ImGui_VS</Name>
@@ -42,52 +42,52 @@
   </VertexShader>
   <!--pixelshaders-->
   <PixelShader>
-    <Name>PSPostProcess.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSPostProcess.cso</Path>
+    <Name>PSPostProcess</Name>
+    <Path>ms-appx:///Shaders/PSPostProcess.hlsl</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSWidgetUI1.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSWidgetUI1.cso</Path>
+    <Name>PSWidgetUI1</Name>
+    <Path>ms-appx:///Shaders/PSWidgetUI1.hlsl</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSWidgetUI2.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSWidgetUI2.cso</Path>
+    <Name>PSWidgetUI2</Name>
+    <Path>ms-appx:///Shaders/PSWidgetUI2.hlsl</Path>
   </PixelShader>
   <PixelShader>
-    <Name>PSWidgetUILight.cso</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSWidgetUILight.cso</Path>
+    <Name>PSWidgetUILight</Name>
+    <Path>ms-appx:///Shaders/PSWidgetUILight.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_Loading</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSLoading.cso</Path>
+    <Path>ms-appx:///Shaders/PSLoading.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_Error</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PSError.cso</Path>
+    <Path>ms-appx:///Shaders/PSError.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_Pass1</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_Pass1.cso</Path>
+    <Path>ms-appx:///Shaders/PS_Pass1.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_SkyBox</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_SkyBox.cso</Path>
+    <Path>ms-appx:///Shaders/PS_SkyBox.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_DeferredGBuffer</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredGBuffer.cso</Path>
+    <Path>ms-appx:///Shaders/PS_DeferredGBuffer.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_DeferredFinal</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_DeferredFinal.cso</Path>
+    <Path>ms-appx:///Shaders/PS_DeferredFinal.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_BloomBlur1</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_BloomBlur1.cso</Path>
+    <Path>ms-appx:///Shaders/PS_BloomBlur1.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>PS_BloomBlur2</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/PS_BloomBlur2.cso</Path>
+    <Path>ms-appx:///Shaders/PS_BloomBlur2.hlsl</Path>
   </PixelShader>
   <PixelShader>
     <Name>ImGui_PS</Name>
@@ -95,15 +95,15 @@
   </PixelShader>
   <ComputeShader>
     <Name>G_IrradianceMap0</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso</Path>
+    <Path>ms-appx:///Shaders/G_IrradianceMap0.hlsl</Path>
   </ComputeShader>
   <ComputeShader>
     <Name>G_PreFilterEnv</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso</Path>
+    <Path>ms-appx:///Shaders/G_PreFilterEnv.hlsl</Path>
   </ComputeShader>
   <ComputeShader>
     <Name>G_ClearIrradianceMap</Name>
-    <Path>ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso</Path>
+    <Path>ms-appx:///Shaders/G_ClearIrradianceMap.hlsl</Path>
   </ComputeShader>
   <PipelineState>
     <Name>Loading</Name>
@@ -117,8 +117,8 @@
   </PipelineState>
   <PipelineState>
     <Name>PostProcess</Name>
-    <VertexShader>VSPostProcess.cso</VertexShader>
-    <PixelShader>PSPostProcess.cso</PixelShader>
+    <VertexShader>VSPostProcess</VertexShader>
+    <PixelShader>PSPostProcess</PixelShader>
   </PipelineState>
   <PipelineState>
     <Name>SkyBox</Name>
@@ -131,22 +131,22 @@
   </PipelineState>
   <PipelineState>
     <Name>PSOMMDSkinning</Name>
-    <VertexShader>VSMMDSkinning.cso</VertexShader>
+    <VertexShader>VSMMDSkinning</VertexShader>
   </PipelineState>
   <PipelineState>
     <Name>PSOWidgetUI1</Name>
-    <VertexShader>VSWidgetUI1.cso</VertexShader>
-    <PixelShader>PSWidgetUI1.cso</PixelShader>
+    <VertexShader>VSWidgetUI1</VertexShader>
+    <PixelShader>PSWidgetUI1</PixelShader>
   </PipelineState>
   <PipelineState>
     <Name>PSOWidgetUI2</Name>
-    <VertexShader>VSWidgetUI2.cso</VertexShader>
-    <PixelShader>PSWidgetUI2.cso</PixelShader>
+    <VertexShader>VSWidgetUI2</VertexShader>
+    <PixelShader>PSWidgetUI2</PixelShader>
   </PipelineState>
   <PipelineState>
     <Name>PSOWidgetUILight</Name>
-    <VertexShader>VSWidgetUILight.cso</VertexShader>
-    <PixelShader>PSWidgetUILight.cso</PixelShader>
+    <VertexShader>VSWidgetUILight</VertexShader>
+    <PixelShader>PSWidgetUILight</PixelShader>
   </PipelineState>
   <PipelineState>
     <Name>ImGui</Name>
