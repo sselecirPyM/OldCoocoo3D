@@ -94,6 +94,7 @@ namespace Coocoo3DGraphics
 		void UpdateRenderTexture(IRenderTexture^ texture);
 		void UpdateReadBackTexture(ReadBackTexture2D^ texture);
 		void CopyBackBuffer(ReadBackTexture2D^ target, int index);
+		void CopyTexture(ReadBackTexture2D^ target,Texture2D^ texture2d, int index);
 		void RSSetScissorRect(int left, int top, int right, int buttom);
 		void Dispatch(int x, int y, int z);
 		//void DispatchRay(RayTracingShaderTable^ rtst, int x, int y, int z);

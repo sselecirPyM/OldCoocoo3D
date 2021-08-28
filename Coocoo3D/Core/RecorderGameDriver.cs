@@ -32,8 +32,10 @@ namespace Coocoo3D.Core
                 context.PlaySpeed = 2.0f;
                 context.PlayTime = 0.0f;
                 float logicSizeScale = rpContext.deviceResources.GetDpi() / 96.0f;
-                context.NewSize = new Windows.Foundation.Size(recordSettings.Width / logicSizeScale, recordSettings.Height / logicSizeScale);
-                context.RequireResize = true;
+                //context.NewSize = new Windows.Foundation.Size(recordSettings.Width / logicSizeScale, recordSettings.Height / logicSizeScale);
+                rpContext.outputSize = new Numerics.Int2(recordSettings.Width, recordSettings.Height);
+                context.AspectRatio = (float)rpContext.outputSize.X / (float)rpContext.outputSize.Y;
+                //context.RequireResize = true;
                 context.RequireResetPhysics = true;
                 StartTime = recordSettings.StartTime;
                 StopTime = recordSettings.StopTime;
@@ -50,7 +52,7 @@ namespace Coocoo3D.Core
             context.PlayTime = FrameIntervalF * RenderCount;
             RenderCount++;
 
-            if (context.PlayTime >= StartTime || context.RequireResize)
+            if (context.PlayTime >= StartTime || context.RequireResizeOuter)
                 context.EnableDisplay = true;
             else
                 context.EnableDisplay = false;
@@ -94,7 +96,7 @@ namespace Coocoo3D.Core
             if (context.PlayTime >= StartTime && (RenderCount - c_frameCount) * FrameIntervalF <= StopTime)
             {
                 int index1 = RecordCount % c_frameCount;
-                graphicsContext.CopyBackBuffer(rpContext.ReadBackTexture2D, index1);
+                graphicsContext.CopyTexture(rpContext.ReadBackTexture2D, rpContext.finalOutput, index1);
                 if (RecordCount >= c_frameCount)
                 {
                     rpContext.ReadBackTexture2D.GetDataTolocal(index1);

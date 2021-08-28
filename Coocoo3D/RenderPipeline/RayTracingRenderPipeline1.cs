@@ -228,7 +228,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
                 graphicsContext.SetComputeSRVT(RPAssetsManager.texture2ds["_BRDFLUT"], 5);
 
-                graphicsContext.DoRayTracing(RayTracingScene, context.screenWidth, context.screenHeight, 0);
+                graphicsContext.DoRayTracing(RayTracingScene, context.outputSize.X, context.outputSize.Y, 0);
             }
             else
             {

@@ -50,6 +50,14 @@ namespace Coocoo3D.RenderPipeline
             ptr2string[ptr] = s;
             return ptr;
         }
+        public Texture2D GetTexture(IntPtr ptr)
+        {
+            if(ptr2string.TryGetValue(ptr, out string s) && texture2ds.TryGetValue(s, out var tex))
+            {
+                return tex;
+            }
+            return null;
+        }
         public async Task LoadAssets()
         {
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));

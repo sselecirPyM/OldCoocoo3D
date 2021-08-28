@@ -59,7 +59,7 @@ namespace Coocoo3D.UI
                     io.KeysDown[inputData.key] = false;
             }
             var context = appBody.RPContext;
-            io.DisplaySize = new Vector2(context.screenWidth, context.screenHeight);
+            io.DisplaySize = new Vector2(context.screenSize.X, context.screenSize.Y);
             io.DeltaTime = (float)context.dynamicContextRead.RealDeltaTime;
             Present.GameObject selectedObject = null;
             LightingComponent lightingComponent = null;
@@ -101,6 +101,13 @@ namespace Coocoo3D.UI
                 if (ImGui.Begin("场景"))
                 {
                     Scene(appBody);
+                }
+                ImGui.End();
+                ImGui.SetNextWindowSize(new Vector2(605, 520), ImGuiCond.FirstUseEver);
+                ImGui.SetNextWindowPos(new Vector2(200, 200), ImGuiCond.FirstUseEver);
+                if (ImGui.Begin("场景视图"))
+                {
+                    SceneView(appBody);
                 }
                 ImGui.End();
                 if (selectedObject != null)
@@ -451,6 +458,40 @@ vmd格式动作");
                 }
                 ImGui.TreePop();
             }
+        }
+
+        static void SceneView(Coocoo3DMain appBody)
+        {
+            var io = ImGui.GetIO();
+            IntPtr imageId = appBody.RPAssetsManager.GetPtr("_Final0");
+            Vector2 pos = ImGui.GetCursorScreenPos();
+            var tex = appBody.RPAssetsManager.GetTexture(imageId);
+            Vector2 spaceSize = Vector2.Max(ImGui.GetWindowSize() - new Vector2(5, 40), new Vector2(100, 100));
+            appBody.RPContext.sceneViewSize = new Numerics.Int2((int)spaceSize.X, (int)spaceSize.Y);
+            Vector2 texSize = new Vector2(tex.GetWidth(), tex.GetHeight());
+            float factor = MathF.Max(MathF.Min(spaceSize.X / texSize.X, spaceSize.Y / texSize.Y), 0.01f);
+            Vector2 imageSize = texSize * factor;
+
+
+
+            ImGui.InvisibleButton("X", imageSize, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.MouseButtonMiddle);
+            ImGui.GetWindowDrawList().AddImage(imageId, pos, pos + imageSize);
+            if (ImGui.IsItemActive())
+            {
+                if (io.MouseDown[1])
+                    appBody.camera.RotateDelta(new Vector3(-io.MouseDelta.Y, -io.MouseDelta.X, 0) / 200);
+                if (io.MouseDown[2])
+                    appBody.camera.MoveDelta(new Vector3(-io.MouseDelta.X, io.MouseDelta.Y, 0) / 50);
+            }
+            //if (ImGui.IsItemHovered())
+            //{
+            //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
+            //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
+
+            //    ImGui.BeginTooltip();
+            //    ImGui.Image(imageId, new Vector2(100, 100), uv0, uv1);
+            //    ImGui.EndTooltip();
+            //}
         }
         public static bool initialized = false;
 

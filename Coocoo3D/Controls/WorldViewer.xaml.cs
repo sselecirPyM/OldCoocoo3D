@@ -59,7 +59,7 @@ namespace Coocoo3D.Controls
         {
             if (!swapChainPanel.IsLoaded) return;
             if (_appBody == null) return;
-            AppBody.GameDriverContext.AspectRatio = (float)(ActualWidth / ActualHeight);
+            //AppBody.GameDriverContext.AspectRatio = (float)(ActualWidth / ActualHeight);
             AppBody.deviceResources.SetSwapChainPanel(swapChainPanel);
             AppBody.GameDriverContext.NewSize = new Size(ActualWidth, ActualHeight);
             AppBody.GameDriverContext.RequireResizeOuter = true;
@@ -71,7 +71,7 @@ namespace Coocoo3D.Controls
 
         private void SwapChainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            AppBody.GameDriverContext.AspectRatio = (float)(ActualWidth / ActualHeight);
+            //AppBody.GameDriverContext.AspectRatio = (float)(ActualWidth / ActualHeight);
             AppBody.GameDriverContext.NewSize = e.NewSize;
             AppBody.GameDriverContext.RequireResizeOuter = true;
             AppBody.RequireRender();
@@ -125,12 +125,6 @@ namespace Coocoo3D.Controls
         }
 
         private void WorldViewer_MouseMoved_Rotate(MouseDevice sender, MouseEventArgs args)
-        {
-            Input.EnqueueMouseMoveDelta(new Vector2(args.MouseDelta.X, args.MouseDelta.Y));
-            AppBody.RequireRender();
-        }
-
-        private void WorldViewer_MouseMoved_Drag(MouseDevice sender, MouseEventArgs args)
         {
             Input.EnqueueMouseMoveDelta(new Vector2(args.MouseDelta.X, args.MouseDelta.Y));
             AppBody.RequireRender();

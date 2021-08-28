@@ -30,7 +30,7 @@ namespace Coocoo3D.RenderPipeline
         {
             var rsPostProcess = context.RPAssetsManager.GetRootSignature(context.deviceResources,"CCs");
             graphicsContext.SetRootSignature(rsPostProcess);
-            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
+            graphicsContext.SetRTV(context.finalOutput, System.Numerics.Vector4.Zero, true);
             graphicsContext.SetSRVTSlot(context.outputRTV, 0);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             PSODesc desc = new PSODesc
@@ -49,6 +49,8 @@ namespace Coocoo3D.RenderPipeline
             };
 
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PSOs["PostProcess"]);
+            graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
+            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
         }
     }

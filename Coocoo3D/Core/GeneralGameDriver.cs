@@ -23,8 +23,10 @@ namespace Coocoo3D.Core
             }
             context.EnableDisplay = true;
             context.NeedRender -=1;
-            context.RequireResize = context.RequireResizeOuter;
-            context.RequireResizeOuter = false;
+            //context.RequireResize = context.RequireResizeOuter;
+            //context.RequireResizeOuter = false;
+            rpContext.outputSize = rpContext.sceneViewSize;
+            context.AspectRatio = (float)rpContext.outputSize.X / (float)rpContext.outputSize.Y;
 
             DateTime now = DateTime.Now;
             context.DeltaTime = Math.Clamp((now - context.LatestRenderTime).TotalSeconds * context.PlaySpeed, -0.17f, 0.17f);

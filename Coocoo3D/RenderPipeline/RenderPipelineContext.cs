@@ -1,5 +1,6 @@
 ﻿using Coocoo3D.Components;
 using Coocoo3D.Core;
+using Coocoo3D.Numerics;
 using Coocoo3D.Present;
 using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3D.ResourceWarp;
@@ -37,7 +38,7 @@ namespace Coocoo3D.RenderPipeline
         public float PlaySpeed;
         public volatile bool RequireResetPhysics;
         public bool NeedReloadModel;
-        public bool RequireResize;
+        //public bool RequireResize;
         public bool RequireResizeOuter;
         public Windows.Foundation.Size NewSize;
         public float AspectRatio;
@@ -72,8 +73,9 @@ namespace Coocoo3D.RenderPipeline
         public MainCaches mainCaches = new MainCaches();
 
         public Texture2D outputRTV = new Texture2D();
+        public Texture2D finalOutput = new Texture2D();
 
-        public Dictionary<string, Texture2D> RTs = new Dictionary<string,Texture2D>();
+        public Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
 
         //public RayTracingASGroup RTASGroup = new RayTracingASGroup();
         //public Dictionary<string, RayTracingShaderTable> RTSTs = new Dictionary<string, RayTracingShaderTable>();
@@ -135,8 +137,9 @@ namespace Coocoo3D.RenderPipeline
         public PassSetting currentPassSetting;
         public PassSetting customPassSetting;
 
-        public int screenWidth;
-        public int screenHeight;
+        public Int2 screenSize;
+        public Int2 outputSize;
+        public Int2 sceneViewSize = new Int2(100, 100);
         public float dpi = 96.0f;
         public float logicScale = 1;
         public GameDriverContext gameDriverContext = new GameDriverContext()
@@ -259,8 +262,8 @@ namespace Coocoo3D.RenderPipeline
 
                 if (rt.Size.Source == "OutputSize")
                 {
-                    x = (int)(screenWidth * rt.Size.Multiplier);
-                    y = (int)(screenHeight * rt.Size.Multiplier);
+                    x = (int)(outputSize.X * rt.Size.Multiplier);
+                    y = (int)(outputSize.Y * rt.Size.Multiplier);
                 }
                 else if (rt.Size.Source == "ShadowMapSize")
                 {
@@ -283,19 +286,25 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void ReloadTextureSizeResources()
+        public void ReloadScreenSizeResources()
         {
             int x = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Width), 1);
             int y = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Height), 1);
-            screenWidth = x;
-            screenHeight = y;
-            if (outputRTV.GetWidth() != x || outputRTV.GetHeight() != y)
+            screenSize.X = x;
+            screenSize.Y = y;
+            //outputSize.X = x;
+            //outputSize.Y = y;
+            if (outputRTV.GetWidth() != outputSize.X || outputRTV.GetHeight() != outputSize.Y)
             {
-                outputRTV.ReloadAsRTVUAV(x, y, outputFormat);
+                outputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
                 graphicsContext.UpdateRenderTexture(outputRTV);
+
+                finalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
+                graphicsContext.UpdateRenderTexture(finalOutput);
+
+                ReadBackTexture2D.Reload(outputSize.X, outputSize.Y, 4);
+                graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
             }
-            ReadBackTexture2D.Reload(x, y, 4);
-            graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
             dpi = deviceResources.GetDpi();
             logicScale = dpi / 96.0f;
         }
@@ -345,6 +354,7 @@ namespace Coocoo3D.RenderPipeline
                 string a = e.ToString();
             }
             RTs["_Output0"] = outputRTV;
+            RPAssetsManager.texture2ds["_Final0"] = finalOutput;
 
             SetCurrentPassSetting(defaultPassSetting);
 

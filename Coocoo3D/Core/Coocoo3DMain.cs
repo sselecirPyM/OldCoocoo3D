@@ -223,13 +223,13 @@ namespace Coocoo3D.Core
             RPContext.dynamicContextWrite = RPContext.dynamicContextRead;
             RPContext.dynamicContextRead = temp1;
 
-            if (RPContext.gameDriverContext.RequireResize)
+            if (RPContext.gameDriverContext.RequireResizeOuter)
             {
-                RPContext.gameDriverContext.RequireResize = false;
+                RPContext.gameDriverContext.RequireResizeOuter = false;
                 deviceResources.SetLogicalSize(RPContext.gameDriverContext.NewSize);
                 deviceResources.WaitForGpu();
-                RPContext.ReloadTextureSizeResources();
             }
+            RPContext.ReloadScreenSizeResources();
             RPContext.PreConfig();
             //if (RPContext.gameDriverContext.NeedReloadModel)
             //{

@@ -119,7 +119,10 @@ namespace Coocoo3D.RenderPipeline
             };
 
             var rpAssets = context.RPAssetsManager;
-            var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs"); ;
+            var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs");
+
+            //graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
+
             graphicsContext.SetRootSignature(rsPP);
             graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
 
@@ -206,11 +209,8 @@ namespace Coocoo3D.RenderPipeline
                         for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
                         {
                             var cmd = cmdList.CmdBuffer[j];
-                            Texture2D tex = null;
-                            if (rpAssets.ptr2string.TryGetValue(cmd.TextureId, out string s) && rpAssets.texture2ds.TryGetValue(s, out tex))
-                            {
+                            Texture2D tex = rpAssets.GetTexture(cmd.TextureId);
 
-                            }
                             tex = _Tex(tex);
 
                             graphicsContext.SetSRVTSlot(tex, 0);

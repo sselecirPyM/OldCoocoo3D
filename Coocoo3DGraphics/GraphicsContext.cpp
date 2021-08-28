@@ -911,6 +911,23 @@ void GraphicsContext::CopyBackBuffer(ReadBackTexture2D^ target, int index)
 	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 }
 
+void GraphicsContext::CopyTexture(ReadBackTexture2D^ target, Texture2D^ texture2d, int index)
+{
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+	auto backBuffer = texture2d->m_texture.Get();
+	texture2d->StateTransition(m_commandList.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT footPrint = {};
+	footPrint.Footprint.Width = target->m_width;
+	footPrint.Footprint.Height = target->m_height;
+	footPrint.Footprint.Depth = 1;
+	footPrint.Footprint.RowPitch = (target->m_width * 4 + 255) & ~255;
+	footPrint.Footprint.Format = m_deviceResources->GetBackBufferFormat();
+	CD3DX12_TEXTURE_COPY_LOCATION Dst(target->m_textureReadBack[index].Get(), footPrint);
+	CD3DX12_TEXTURE_COPY_LOCATION Src(backBuffer, 0);
+	m_commandList->CopyTextureRegion(&Dst, 0, 0, 0, &Src, nullptr);
+}
+
 void GraphicsContext::RSSetScissorRect(int left, int top, int right, int bottom)
 {
 	D3D12_RECT scissorRect = { left,top,right,bottom };
