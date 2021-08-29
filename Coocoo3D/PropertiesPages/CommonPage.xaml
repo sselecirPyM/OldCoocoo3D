@@ -43,7 +43,7 @@
                         <Button.Flyout>
                             <Flyout Placement="RightEdgeAlignedTop">
                                 <StackPanel>
-                                    <ToggleSwitch x:Uid="Page_Common_Switch_ViewerUI" Header="Viewer UI" IsOn="{x:Bind VViewerUI,Mode=TwoWay}"/>
+                                    <!--<ToggleSwitch x:Uid="Page_Common_Switch_ViewerUI" Header="Viewer UI" IsOn="{x:Bind VViewerUI,Mode=TwoWay}"/>-->
                                     <ToggleSwitch x:Uid="Page_Common_Switch_AO" IsOn="{x:Bind VEnableAO,Mode=TwoWay}"/>
                                     <ToggleSwitch x:Uid="Page_Common_Switch_Shadow" IsOn="{x:Bind VEnableShadow,Mode=TwoWay}"/>
                                     <ComboBox x:Uid="Page_Common_ComboBox_RenderQuality" x:Name="vQuality" SelectionChanged="VQuality_SelectionChanged" SelectedIndex="0"/>

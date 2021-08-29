@@ -49,8 +49,6 @@ namespace Coocoo3D.RenderPipeline
 
         public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            if (!context.dynamicContextRead.settings.ViewerUI) return;
-
             var cam = context.dynamicContextRead.cameras[0];
 
             var selectedLightings = context.dynamicContextRead.selectedLightings;
@@ -104,7 +102,6 @@ namespace Coocoo3D.RenderPipeline
 
         public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            if (!context.dynamicContextRead.settings.ViewerUI) return;
 
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
@@ -121,7 +118,7 @@ namespace Coocoo3D.RenderPipeline
             var rpAssets = context.RPAssetsManager;
             var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs");
 
-            //graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
+            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
 
             graphicsContext.SetRootSignature(rsPP);
             graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);

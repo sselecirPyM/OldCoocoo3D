@@ -52,7 +52,7 @@ namespace Coocoo3D.RenderPipeline
         }
         public Texture2D GetTexture(IntPtr ptr)
         {
-            if(ptr2string.TryGetValue(ptr, out string s) && texture2ds.TryGetValue(s, out var tex))
+            if (ptr2string.TryGetValue(ptr, out string s) && texture2ds.TryGetValue(s, out var tex))
             {
                 return tex;
             }
@@ -66,11 +66,10 @@ namespace Coocoo3D.RenderPipeline
             ConcurrentDictionary<string, PixelShader> pss = new ConcurrentDictionary<string, PixelShader>();
             ConcurrentDictionary<string, ComputeShader> css = new ConcurrentDictionary<string, ComputeShader>();
 
-            Parallel.Invoke(() =>
-            Parallel.ForEach(defaultResource.vertexShaders, async vertexShader => await RegVSAssets1(vertexShader.Name, vertexShader.Path, vss)),
-            () => Parallel.ForEach(defaultResource.pixelShaders, async pixelShader => await RegPSAssets1(pixelShader.Name, pixelShader.Path, pss)),
-            () => Parallel.ForEach(defaultResource.computeShaders, async computeShader => await RegCSAssets1(computeShader.Name, computeShader.Path, css)));
-            
+            Parallel.ForEach(defaultResource.vertexShaders, async vertexShader => await RegVSAssets1(vertexShader.Name, vertexShader.Path, vss));
+            Parallel.ForEach(defaultResource.pixelShaders, async pixelShader => await RegPSAssets1(pixelShader.Name, pixelShader.Path, pss));
+            Parallel.ForEach(defaultResource.computeShaders, async computeShader => await RegCSAssets1(computeShader.Name, computeShader.Path, css));
+
             foreach (var vs in vss)
                 VSAssets.Add(vs.Key, vs.Value);
             foreach (var ps in pss)

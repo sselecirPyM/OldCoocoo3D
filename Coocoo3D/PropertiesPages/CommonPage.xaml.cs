@@ -245,15 +245,15 @@ namespace Coocoo3D.PropertiesPages
             }
         }
 
-        public bool VViewerUI
-        {
-            get => appBody.settings.ViewerUI;
-            set
-            {
-                appBody.settings.ViewerUI = value;
-                appBody.RequireRender();
-            }
-        }
+        //public bool VViewerUI
+        //{
+        //    get => appBody.settings.ViewerUI;
+        //    set
+        //    {
+        //        appBody.settings.ViewerUI = value;
+        //        appBody.RequireRender();
+        //    }
+        //}
 
         public bool VWireframe
         {

@@ -78,96 +78,115 @@ namespace Coocoo3D.UI
                 volumeComponent = selectedObject.GetComponent<VolumeComponent>();
                 rendererComponent = selectedObject.GetComponent<MMDRendererComponent>();
             }
+
+
             ImGui.NewFrame();
-            if (appBody.settings.ViewerUI)
+
+
+            if (demoWindowOpen)
+                ImGui.ShowDemoWindow(ref demoWindowOpen);
+
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0, 0));
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
+            var viewPort = ImGui.GetMainViewport();
+            ImGui.SetNextWindowPos(viewPort.GetWorkPos(), ImGuiCond.Always);
+            ImGui.SetNextWindowSize(viewPort.GetWorkSize(), ImGuiCond.Always);
+            ImGui.SetNextWindowViewport(viewPort.ID);
+            if (ImGui.Begin("Dockspace", window_flags))
             {
-                if (demoWindowOpen)
-                    ImGui.ShowDemoWindow(ref demoWindowOpen);
-                ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.Once);
-                if (ImGui.Begin("常用"))
-                {
-                    Common(appBody);
-                }
-                ImGui.End();
-                ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.Once);
-                ImGui.SetNextWindowPos(new Vector2(100, 400), ImGuiCond.Once);
-                if (ImGui.Begin("资源"))
-                {
-                    Resources(appBody);
-                }
-                ImGui.End();
-                ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
-                ImGui.SetNextWindowPos(new Vector2(200, 100), ImGuiCond.Once);
-                if (ImGui.Begin("场景"))
-                {
-                    Scene(appBody);
-                }
-                ImGui.End();
-                ImGui.SetNextWindowSize(new Vector2(605, 520), ImGuiCond.FirstUseEver);
-                ImGui.SetNextWindowPos(new Vector2(200, 200), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin("场景视图"))
-                {
-                    SceneView(appBody);
-                }
-                ImGui.End();
+                DockSpace(appBody);
+            }
+            ImGui.End();
+            ImGui.PopStyleVar(3);
+
+            ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.Once);
+            ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.Once);
+            if (ImGui.Begin("常用"))
+            {
+                Common(appBody);
+            }
+            ImGui.End();
+            ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.Once);
+            ImGui.SetNextWindowPos(new Vector2(300, 400), ImGuiCond.Once);
+            if (ImGui.Begin("资源"))
+            {
+                Resources(appBody);
+            }
+            ImGui.End();
+            ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
+            ImGui.SetNextWindowPos(new Vector2(700, 0), ImGuiCond.Once);
+            if (ImGui.Begin("场景"))
+            {
+                Scene(appBody);
+            }
+            ImGui.End();
+            ImGui.SetNextWindowSize(new Vector2(345, 280), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
+            if (ImGui.Begin("场景视图"))
+            {
+                SceneView(appBody, mouseWheelDelta);
+            }
+            ImGui.End();
+            ImGui.SetNextWindowSize(new Vector2(300, 300), ImGuiCond.Once);
+            ImGui.SetNextWindowPos(new Vector2(0, 400), ImGuiCond.Once);
+            if (ImGui.Begin("物体"))
+            {
                 if (selectedObject != null)
                 {
-                    ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
-                    ImGui.SetNextWindowPos(new Vector2(200, 200), ImGuiCond.Once);
-                    if (ImGui.Begin("物体"))
+                    ImGui.Text(selectedObject.Name);
+                    if (ImGui.TreeNode("描述"))
                     {
-                        ImGui.Text(selectedObject.Name);
-                        if (ImGui.TreeNode("描述"))
+                        ImGui.Text(selectedObject.Description);
+                        ImGui.TreePop();
+                    }
+                    if (ImGui.TreeNode("transform"))
+                    {
+                        ImGui.DragFloat3("位置", ref position, 0.1f);
+                        Vector3 a = rotation / MathF.PI * 180;
+                        rotationChange = ImGui.DragFloat3("旋转", ref a);
+                        if (rotationChange) rotation = a * MathF.PI / 180;
+                        ImGui.TreePop();
+                    }
+                    if (rendererComponent != null)
+                    {
+                        RendererComponent(appBody, rendererComponent);
+                    }
+                    if (lightingComponent != null)
+                    {
+                        if (ImGui.TreeNode("光照"))
                         {
-                            ImGui.Text(selectedObject.Description);
+                            int current = (int)lightingComponent.LightingType;
+                            ImGui.ColorEdit4("颜色", ref lightingComponent.Color, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
+                            ImGui.DragFloat("范围", ref lightingComponent.Range);
+                            ImGui.Combo("类型", ref current, lightTypeString, 2);
                             ImGui.TreePop();
-                        }
-                        if (ImGui.TreeNode("transform"))
-                        {
-                            ImGui.DragFloat3("位置", ref position, 0.1f);
-                            Vector3 a = rotation / MathF.PI * 180;
-                            rotationChange = ImGui.DragFloat3("旋转", ref a);
-                            if (rotationChange) rotation = a * MathF.PI / 180;
-                            ImGui.TreePop();
-                        }
-                        if (rendererComponent != null)
-                        {
-                            RendererComponent(appBody, rendererComponent);
-                        }
-                        if (lightingComponent != null)
-                        {
-                            if (ImGui.TreeNode("光照"))
-                            {
-                                int current = (int)lightingComponent.LightingType;
-                                ImGui.ColorEdit4("颜色", ref lightingComponent.Color, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
-                                ImGui.DragFloat("范围", ref lightingComponent.Range);
-                                ImGui.Combo("类型", ref current, new[] { "方向光", "点光" }, 2);
-                                ImGui.TreePop();
-                                lightingComponent.LightingType = (Present.LightingType)current;
-                            }
-                        }
-                        if (volumeComponent != null)
-                        {
-                            if (ImGui.TreeNode("体积"))
-                            {
-                                ImGui.DragFloat3("尺寸", ref volumeComponent.Size);
-                                ImGui.TreePop();
-                            }
+                            lightingComponent.LightingType = (Present.LightingType)current;
                         }
                     }
-                    ImGui.End();
+                    if (volumeComponent != null)
+                    {
+                        if (ImGui.TreeNode("体积"))
+                        {
+                            ImGui.DragFloat3("尺寸", ref volumeComponent.Size);
+                            ImGui.TreePop();
+                        }
+                    }
                 }
             }
+            ImGui.End();
             ImGui.Render();
-            if (!appBody.settings.ViewerUI || !io.WantCaptureMouse)
-            {
-                if (io.MouseDown[1])
-                    appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
-                if (io.MouseDown[2])
-                    appBody.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
+            //if (!appBody.settings.ViewerUI || !io.WantCaptureMouse)
+            //{
+            //    if (io.MouseDown[1])
+            //        appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
+            //    if (io.MouseDown[2])
+            //        appBody.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
 
-                appBody.camera.Distance += mouseWheelDelta / 20.0f;
-            }
+            //    appBody.camera.Distance += mouseWheelDelta / 20.0f;
+            //}
             if (selectedObject != null)
             {
                 selectedObject.PositionNextFrame = position;
@@ -261,6 +280,16 @@ namespace Coocoo3D.UI
             {
                 PlayControl.FastForward(appBody);
             }
+        }
+
+        static void DockSpace(Coocoo3DMain appBody)
+        {
+            var viewPort = ImGui.GetMainViewport();
+            ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
+
+            IntPtr imageId = appBody.RPAssetsManager.GetPtr("_Final0");
+            ImGui.GetWindowDrawList().AddImage(imageId, viewPort.GetWorkPos(), viewPort.GetWorkPos() + viewPort.GetWorkSize());
+            ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
         }
 
         static void Resources(Coocoo3DMain appBody)
@@ -460,7 +489,7 @@ vmd格式动作");
             }
         }
 
-        static void SceneView(Coocoo3DMain appBody)
+        static void SceneView(Coocoo3DMain appBody, float mouseWheelDelta)
         {
             var io = ImGui.GetIO();
             IntPtr imageId = appBody.RPAssetsManager.GetPtr("_Final0");
@@ -483,15 +512,16 @@ vmd格式动作");
                 if (io.MouseDown[2])
                     appBody.camera.MoveDelta(new Vector3(-io.MouseDelta.X, io.MouseDelta.Y, 0) / 50);
             }
-            //if (ImGui.IsItemHovered())
-            //{
-            //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
-            //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
+            if (ImGui.IsItemHovered())
+            {
+                appBody.camera.Distance += mouseWheelDelta / 20.0f;
+                //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
+                //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
 
-            //    ImGui.BeginTooltip();
-            //    ImGui.Image(imageId, new Vector2(100, 100), uv0, uv1);
-            //    ImGui.EndTooltip();
-            //}
+                //    ImGui.BeginTooltip();
+                //    ImGui.Image(imageId, new Vector2(100, 100), uv0, uv1);
+                //    ImGui.EndTooltip();
+            }
         }
         public static bool initialized = false;
 
@@ -561,7 +591,11 @@ vmd格式动作");
             io.KeyMap[(int)ImGuiKey.X] = 'X';
             io.KeyMap[(int)ImGuiKey.Y] = 'Y';
             io.KeyMap[(int)ImGuiKey.Z] = 'Z';
+
+            io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         }
+
+        static string[] lightTypeString = new[] { "方向光", "点光" };
     }
     class _openRequest
     {

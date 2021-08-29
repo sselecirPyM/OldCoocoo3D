@@ -50,8 +50,8 @@ namespace Coocoo3D.RenderPipeline
 
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PSOs["PostProcess"]);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
-            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
-            graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
+            //graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
+            //graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
         }
     }
 }

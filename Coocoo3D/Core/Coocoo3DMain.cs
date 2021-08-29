@@ -58,7 +58,7 @@ namespace Coocoo3D.Core
         {
             viewSelectedEntityBone = true,
             backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
-            ViewerUI = true,
+            //ViewerUI = true,
             Wireframe = false,
             SkyBoxLightMultiplier = 1.0f,
             ShadowMapResolution = 2048,
@@ -358,7 +358,7 @@ namespace Coocoo3D.Core
     {
         public bool viewSelectedEntityBone;
         public Vector4 backgroundColor;
-        public bool ViewerUI;
+        //public bool ViewerUI;
         public bool Wireframe;
 
         public float SkyBoxLightMultiplier;
