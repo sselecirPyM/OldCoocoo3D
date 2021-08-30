@@ -12,7 +12,6 @@ namespace Coocoo3D.Core
 {
     public class Scene
     {
-        public ObservableCollection<GameObject> sceneObjects = new ObservableCollection<GameObject>();
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<GameObject> gameObjectLoadList = new List<GameObject>();
         public List<GameObject> gameObjectRemoveList = new List<GameObject>();
@@ -26,7 +25,6 @@ namespace Coocoo3D.Core
             {
                 gameObjectLoadList.Add(gameObject);
             }
-            sceneObjects.Add(gameObject);
         }
 
         public void RemoveGameObject(GameObject gameObject)

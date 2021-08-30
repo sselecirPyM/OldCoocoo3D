@@ -44,7 +44,7 @@ namespace Coocoo3D.RenderPipeline
 
                 if (TextureOnDemand.Count == 0) return;
 
-                foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null; }))
+                foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null && u.Value.canReload; }))
                 {
                     var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
                     tex1.Mark(GraphicsObjectStatus.loading);

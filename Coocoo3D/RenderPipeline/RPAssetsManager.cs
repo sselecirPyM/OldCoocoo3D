@@ -142,8 +142,6 @@ namespace Coocoo3D.RenderPipeline
         }
 
 
-
-
         protected async Task<IBuffer> ReadFile(string uri)
         {
             StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));

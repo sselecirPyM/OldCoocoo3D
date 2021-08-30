@@ -250,6 +250,6 @@ float4 main(PSIn input) : SV_TARGET
 	else
 	{
 		float3 EnvColor = EnvCube.Sample(s0, -V).rgb * g_skyBoxMultiple;
-		return float4(EnvColor, 0);
+		return float4(EnvColor, 1);
 	}
 }

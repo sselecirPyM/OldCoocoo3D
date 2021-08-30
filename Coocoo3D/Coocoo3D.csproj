@@ -162,12 +162,6 @@
     <Compile Include="PropertiesPages\CommonPage.xaml.cs">
       <DependentUpon>CommonPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="PropertiesPages\RecordPage.xaml.cs">
-      <DependentUpon>RecordPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="PropertiesPages\SkyBoxPage.xaml.cs">
-      <DependentUpon>SkyBoxPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RenderPipeline\MiscProcess.cs" />
     <Compile Include="RenderPipeline\PostProcess.cs" />
@@ -267,14 +261,6 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="PropertiesPages\CommonPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="PropertiesPages\RecordPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="PropertiesPages\SkyBoxPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

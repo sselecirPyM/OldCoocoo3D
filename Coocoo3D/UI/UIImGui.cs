@@ -53,7 +53,31 @@ namespace Coocoo3D.UI
                 if (inputData.keyEventType == KeyEventType.KeyDown)
                 {
                     io.KeysDown[inputData.key] = true;
-                    io.AddInputCharacter((uint)inputData.key);
+                    if (inputData.key >= 96 && inputData.key < 106)
+                    {
+                        io.AddInputCharacter((uint)inputData.key - 48);//numpad
+                    }
+                    else
+                    {
+                        int key = inputData.key;
+                        switch (inputData.key)
+                        {
+                            case 110:
+                            case 190:
+                                key = 46;
+                                break;
+                            case 107:
+                                key = 43;
+                                break;
+                            case 111:
+                                key = 47;
+                                break;
+                            case 109:
+                                key = 45;
+                                break;
+                        }
+                        io.AddInputCharacter((uint)key);
+                    }
                 }
                 if (inputData.keyEventType == KeyEventType.KeyUp)
                     io.KeysDown[inputData.key] = false;
@@ -118,16 +142,16 @@ namespace Coocoo3D.UI
             ImGui.End();
             ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
             ImGui.SetNextWindowPos(new Vector2(700, 0), ImGuiCond.Once);
-            if (ImGui.Begin("场景"))
+            if (ImGui.Begin("场景层级"))
             {
-                Scene(appBody);
+                SceneHierarchy(appBody);
             }
             ImGui.End();
-            ImGui.SetNextWindowSize(new Vector2(345, 280), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("场景视图"))
             {
-                SceneView(appBody, mouseWheelDelta);
+                SceneView(appBody, mouseWheelDelta, mouseMoveDelta);
             }
             ImGui.End();
             ImGui.SetNextWindowSize(new Vector2(300, 300), ImGuiCond.Once);
@@ -211,7 +235,7 @@ namespace Coocoo3D.UI
             if (ImGui.TreeNode("相机"))
             {
                 ImGui.DragFloat("距离", ref appBody.camera.Distance);
-                ImGui.DragFloat3("观察点", ref appBody.camera.LookAtPoint, 0.05f);
+                ImGui.DragFloat3("焦点", ref appBody.camera.LookAtPoint, 0.05f);
                 Vector3 a = appBody.camera.Angle / MathF.PI * 180;
                 if (ImGui.DragFloat3("角度", ref a))
                     appBody.camera.Angle = a * MathF.PI / 180;
@@ -223,6 +247,11 @@ namespace Coocoo3D.UI
             }
             if (ImGui.TreeNode("录制"))
             {
+                ImGui.DragFloat("开始时间", ref appBody.GameDriverContext.recordSettings.StartTime);
+                ImGui.DragFloat("结束时间", ref appBody.GameDriverContext.recordSettings.StopTime);
+                ImGui.DragInt("宽度", ref appBody.GameDriverContext.recordSettings.Width, 32, 32, 16384);
+                ImGui.DragInt("高度", ref appBody.GameDriverContext.recordSettings.Height, 8, 8, 16384);
+                ImGui.DragFloat("FPS", ref appBody.GameDriverContext.recordSettings.FPS, 1, 1, 1000);
                 if (ImGui.Button("开始录制"))
                 {
                     requireRecord = true;
@@ -357,7 +386,6 @@ vmd格式动作");
             if (ImGui.TreeNode("编写着色器"))
             {
                 ImGui.TextWrapped(@"请点击帮助菜单下的""示例着色器""来导出示例着色器文件夹。可以加载coocoox格式的渲染配置文件。
-此配置文件极易阅读和修改，你可以快速的迭代渲染效果。
 示例着色器已经包含前向渲染以及延迟渲染的示例，有问题或想法请在github上提交。");
                 ImGui.TreePop();
             }
@@ -367,7 +395,7 @@ vmd格式动作");
             }
         }
 
-        static void Scene(Coocoo3DMain appBody)
+        static void SceneHierarchy(Coocoo3DMain appBody)
         {
             if (ImGui.Button("新光源"))
             {
@@ -384,6 +412,7 @@ vmd格式动作");
                 foreach (var gameObject in appBody.SelectedGameObjects)
                     appBody.CurrentScene.RemoveGameObject(gameObject);
             }
+            ImGui.DragFloat("天空盒亮度", ref appBody.settings.SkyBoxLightMultiplier, 0.05f);
             //while (gameObjectSelected.Count < appBody.CurrentScene.gameObjects.Count)
             //{
             //    gameObjectSelected.Add(false);
@@ -451,7 +480,10 @@ vmd格式动作");
                             foreach (var tex in material.textures)
                             {
                                 string key = "imgui/" + tex.Key;
-                                appBody.RPAssetsManager.texture2ds[key] = tex.Value;
+                                if (appBody.mainCaches.TextureCaches.TryGetValue(tex.Value, out var texPack))
+                                {
+                                    appBody.RPAssetsManager.texture2ds[key] = texPack.texture2D;
+                                }
                                 Vector2 pos = ImGui.GetCursorScreenPos();
                                 Vector2 imageSize = new Vector2(120, 120);
                                 IntPtr imageId = appBody.RPAssetsManager.GetPtr(key);
@@ -489,7 +521,7 @@ vmd格式动作");
             }
         }
 
-        static void SceneView(Coocoo3DMain appBody, float mouseWheelDelta)
+        static void SceneView(Coocoo3DMain appBody, float mouseWheelDelta, Vector2 mouseMoveDelta)
         {
             var io = ImGui.GetIO();
             IntPtr imageId = appBody.RPAssetsManager.GetPtr("_Final0");
@@ -502,15 +534,14 @@ vmd格式动作");
             Vector2 imageSize = texSize * factor;
 
 
-
             ImGui.InvisibleButton("X", imageSize, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.MouseButtonMiddle);
             ImGui.GetWindowDrawList().AddImage(imageId, pos, pos + imageSize);
             if (ImGui.IsItemActive())
             {
                 if (io.MouseDown[1])
-                    appBody.camera.RotateDelta(new Vector3(-io.MouseDelta.Y, -io.MouseDelta.X, 0) / 200);
+                    appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
                 if (io.MouseDown[2])
-                    appBody.camera.MoveDelta(new Vector3(-io.MouseDelta.X, io.MouseDelta.Y, 0) / 50);
+                    appBody.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
             }
             if (ImGui.IsItemHovered())
             {

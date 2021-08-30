@@ -605,7 +605,7 @@ namespace Coocoo3D.Components
             public float Clearcoat;
             public float ClearcoatGloss;
         }
-        public Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
+        public Dictionary<string, string> textures = new Dictionary<string, string>();
         public override string ToString()
         {
             return string.Format("{0}_{1}", Name, NameEN);
@@ -748,7 +748,7 @@ namespace Coocoo3D.FileFormat
 {
     public static partial class PMXFormatExtension
     {
-        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<Texture2D> textures)
+        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<string> textures)
         {
             rendererComponent.Initialize2(modelPack.pmx);
             rendererComponent.shaders.Clear();
@@ -999,7 +999,7 @@ namespace Coocoo3D.FileFormat
             int morphCount = modelResource.Morphs.Count;
         }
 
-        public static void Reload2(this GameObject gameObject, RenderPipeline.ProcessingList processingList, ModelPack modelPack, List<Texture2D> textures, string ModelPath)
+        public static void Reload2(this GameObject gameObject, RenderPipeline.ProcessingList processingList, ModelPack modelPack, List<string> textures, string ModelPath)
         {
             var modelResource = modelPack.pmx;
             gameObject.Name = string.Format("{0} {1}", modelResource.Name, modelResource.NameEN);
@@ -1009,7 +1009,7 @@ namespace Coocoo3D.FileFormat
             ReloadModel(gameObject, processingList, modelPack, textures);
         }
 
-        public static void ReloadModel(this GameObject gameObject, RenderPipeline.ProcessingList processingList, ModelPack modelPack, List<Texture2D> textures)
+        public static void ReloadModel(this GameObject gameObject, RenderPipeline.ProcessingList processingList, ModelPack modelPack, List<string> textures)
         {
             var modelResource = modelPack.pmx;
             var rendererComponent = new MMDRendererComponent();

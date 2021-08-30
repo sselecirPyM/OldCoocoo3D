@@ -507,8 +507,8 @@ namespace Coocoo3D.RenderPipeline
                         else if (resd.ResourceType == "Texture2D")
                         {
                             Texture2D tex2D = null;
-                            if (material != null && material.textures.TryGetValue(resd.Resource, out Texture2D tex))
-                                tex2D = tex;
+                            if (material != null && material.textures.TryGetValue(resd.Resource, out string texPath) && context.mainCaches.TextureCaches.TryGetValue(texPath, out var texPack))
+                                tex2D = texPack.texture2D;
                             if (tex2D == null)
                                 tex2D = context._GetTex2DByName(resd.Resource);
 

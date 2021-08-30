@@ -81,14 +81,6 @@ namespace Coocoo3D.UI
             appBody.CurrentScene.AddGameObject(volume);
             appBody.RequireRender();
         }
-        public static void RemoveSceneObject(Coocoo3DMain appBody, Scene scene, GameObject gameObject)
-        {
-            if (scene.sceneObjects.Remove(gameObject))
-            {
-                scene.RemoveGameObject(gameObject);
-            }
-            appBody.RequireRender();
-        }
         public static async Task<StorageFolder> OpenResourceFolder(Coocoo3DMain appBody)
         {
             FolderPicker folderPicker = new FolderPicker()
@@ -126,9 +118,8 @@ namespace Coocoo3D.UI
             appBody.Recording = true;
         }
 
-        public static List<Texture2D> GetTextureList(Coocoo3DMain appBody, StorageFolder storageFolder, PMXFormat pmx)
+        public static List<string> GetTextureList(Coocoo3DMain appBody, StorageFolder storageFolder, PMXFormat pmx)
         {
-            List<Texture2D> textures = new List<Texture2D>();
             List<string> paths = new List<string>();
             List<string> relativePaths = new List<string>();
             foreach (var vTex in pmx.Textures)
@@ -142,9 +133,8 @@ namespace Coocoo3D.UI
             {
                 appBody.mainCaches.Texture(paths[i], relativePaths[i], storageFolder);
                 Texture2DPack tex = appBody.mainCaches.TextureCaches.GetOrCreate(paths[i]);
-                textures.Add(tex.texture2D);
             }
-            return textures;
+            return paths;
         }
 
         public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)

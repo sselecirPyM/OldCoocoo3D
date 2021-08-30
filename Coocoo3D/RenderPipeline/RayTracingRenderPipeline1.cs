@@ -179,7 +179,7 @@ namespace Coocoo3D.RenderPipeline
             void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
             {
                 var Materials = rendererComponent.Materials;
-                graphicsContext.SetCBVRSlot(entityBoneDataBuffer,0,0, 0);
+                graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, PSOSkinning);
                 graphicsContext.SetMeshVertex(rendererComponent.mesh);
@@ -204,7 +204,11 @@ namespace Coocoo3D.RenderPipeline
                     int numIndex = 0;
                     foreach (RuntimeMaterial material in Materials)
                     {
-                        material.textures.TryGetValue("_Albedo", out Texture2D tex);
+                        Texture2D tex = null;
+                        if (material.textures.TryGetValue("_Albedo", out string texPath) && context.mainCaches.TextureCaches.TryGetValue(texPath, out var texpack))
+                        {
+                            tex = texpack.texture2D;
+                        }
                         tex = TextureStatusSelect(tex, texLoading, texError, texError);
 
                         graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, material.indexCount, tex,
