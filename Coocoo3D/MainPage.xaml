@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Coocoo3D"
     xmlns:controls="using:Coocoo3D.Controls"
-    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:system="using:System"
@@ -13,106 +12,8 @@
     Loaded="Page_Loaded"
     xmlns:primitiveContract7Present="using:Microsoft.UI.Xaml.Controls.Primitives?IsApiContractPresent(Windows.Foundation.UniversalApiContract,7)">
     <Page.Resources>
-        <Style x:Name="TabViewButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="{ThemeResource TabViewButtonBackground}"/>
-            <Setter Property="Foreground" Value="{ThemeResource TabViewButtonForeground}"/>
-            <Setter Property="CornerRadius" Value="{Binding Converter={StaticResource TopCornerRadiusFilterConverter}, Source={ThemeResource OverlayCornerRadius}}"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-            <Setter Property="VerticalAlignment" Value="Bottom"/>
-            <Setter Property="Margin" Value="0,0,0,0"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <ContentPresenter x:Name="ContentPresenter" AutomationProperties.AccessibilityView="Raw" Background="{TemplateBinding Background}" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" CornerRadius="{TemplateBinding CornerRadius}" ContentTransitions="{TemplateBinding ContentTransitions}" FontWeight="SemiLight" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" Padding="{TemplateBinding Padding}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal">
-                                        <Storyboard>
-                                            <PointerUpThemeAnimation Storyboard.TargetName="ContentPresenter"/>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="PointerOver">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TabViewItemHeaderBackgroundPointerOver}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TabViewItemHeaderForegroundPointerOver}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <PointerUpThemeAnimation Storyboard.TargetName="ContentPresenter"/>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TabViewItemHeaderBackgroundPressed}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TabViewItemHeaderForegroundPressed}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <PointerDownThemeAnimation Storyboard.TargetName="ContentPresenter"/>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TabViewButtonBackgroundDisabled}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
-                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TabViewButtonForegroundDisabled}"/>
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                        </ContentPresenter>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <ControlTemplate x:Key="TabViewTemplate1" TargetType="muxc:TabView">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid x:Name="TabContainerGrid" Background="{TemplateBinding Background}" XYFocusKeyboardNavigation="Enabled">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="LeftContentColumn" Width="Auto"/>
-                        <ColumnDefinition x:Name="TabColumn" Width="Auto"/>
-                        <ColumnDefinition x:Name="AddButtonColumn" Width="Auto"/>
-                        <ColumnDefinition x:Name="RightContentColumn" Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <ContentPresenter x:Name="LeftContentPresenter" ContentTemplate="{TemplateBinding TabStripHeaderTemplate}" Content="{TemplateBinding TabStripHeader}" Grid.Column="0"/>
-                    <Grid x:Name="ShadowReceiver" Grid.ColumnSpan="4"/>
-                    <primitiveContract7Present:TabViewListView x:Name="TabListView" AllowDrop="{TemplateBinding AllowDropTabs}" CanReorderItems="{TemplateBinding CanReorderTabs}" Grid.Column="1" CanDragItems="{TemplateBinding CanDragTabs}" ItemTemplate="{TemplateBinding TabItemTemplate}" ItemsSource="{TemplateBinding TabItemsSource}" ItemTemplateSelector="{TemplateBinding TabItemTemplateSelector}" Padding="0"/>
-                    <Button x:Name="AddButton" Command="{TemplateBinding AddTabButtonCommand}" CommandParameter="{TemplateBinding AddTabButtonCommandParameter}" Content="&#xE710;" Grid.Column="2" HighContrastAdjustment="None" IsTextScaleFactorEnabled="False" Style="{StaticResource TabViewButtonStyle}" VerticalAlignment="Stretch" Visibility="{Binding IsAddTabButtonVisible, RelativeSource={RelativeSource Mode=TemplatedParent}}"/>
-                    <ContentPresenter x:Name="RightContentPresenter" ContentTemplate="{TemplateBinding TabStripFooterTemplate}" Content="{TemplateBinding TabStripFooter}" Grid.Column="3" HorizontalAlignment="Stretch"/>
-                </Grid>
-                <Grid x:Name="ShadowCaster" Background="Transparent" Height="10" Margin="0,0,0,-10" Grid.Row="0" VerticalAlignment="Bottom"/>
-                <ContentPresenter x:Name="TabContentPresenter" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
-            </Grid>
-        </ControlTemplate>
-        <Thickness x:Key="TabViewItemHeaderPadding">12 0 12 0</Thickness>
-        <Style TargetType="muxc:TabView">
-            <Setter Property="VerticalAlignment" Value="Stretch"/>
-            <Setter Property="IsAddTabButtonVisible" Value="False"/>
-            <Setter Property="TabWidthMode" Value="SizeToContent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{ThemeResource ListBoxBorderThemeBrush}"/>
-            <Setter Property="Template" Value="{StaticResource TabViewTemplate1}"/>
-        </Style>
         <Style TargetType="MenuBar">
-            <!--<Setter Property="Height" Value="{StaticResource MenuBarHeight}"/>-->
             <Setter Property="Height" Value="30"/>
-        </Style>
-        <Style TargetType="Frame">
-            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-        </Style>
-        <Style TargetType="muxc:TabViewItem">
-            <Setter Property="IsClosable" Value="False"/>
         </Style>
     </Page.Resources>
 
@@ -127,12 +28,6 @@
                 <MenuFlyoutItem x:Uid="M_MenuBarItem_BackgroundMusic" Click="OpenMedia_Click"/>
                 <!--<MenuFlyoutItem Text="导出" Click="Export_Click"/>-->
             </MenuBarItem>
-            <!--<MenuBarItem x:Uid="M_MenuBarItem_View">
-                <MenuFlyoutSubItem x:Uid="M_MenuBarItem_Layout">
-                    <muxc:RadioMenuFlyoutItem Text="1" GroupName="G1" Click="RadioMenuFlyoutItem1_Click"/>
-                    <muxc:RadioMenuFlyoutItem Text="2" GroupName="G1" IsChecked="True" Click="RadioMenuFlyoutItem2_Click"/>
-                </MenuFlyoutSubItem>
-            </MenuBarItem>-->
             <MenuBarItem x:Uid="M_MenuBarItem_Help">
                 <!--<MenuFlyoutItem x:Uid="M_MenuBarItem_AboutThisSoftware" Click="About_Click"/>-->
                 <MenuFlyoutItem x:Uid="M_MenuBarItem_ShaderFileSample" Click="SampleShader_Click"/>
@@ -141,60 +36,39 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <!--<ColumnDefinition Width="360" x:Name="x1"/>-->
             </Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="30" x:Name="x2"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <!--<ColumnDefinition Width="360" x:Name="x3"/>-->
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <!--<muxc:TabView x:Name="tabViewL1"
-                              CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
-                    </muxc:TabView>-->
                     <MediaElement x:Name="mediaElement" Grid.Column="0" AutoPlay="False"/>
                     <controls:WorldViewer x:Name="worldViewer" Grid.Column="0" Loaded="worldViewer_Loaded"/>
                 </Grid>
-                <muxc:TabView Grid.Row="1" x:Name="tabViewB1"
-                              CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
-                    <muxc:TabView.TabStripFooter>
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <StackPanel.Resources>
-                                <Style TargetType="Button">
-                                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                                    <Setter Property="Padding" Value="1"/>
-                                </Style>
-                            </StackPanel.Resources>
-                            <Button ToolTipService.ToolTip="打开文件夹" Content="&#xED25;" Click="OpenFolder_Click"/>
-                            <Button ToolTipService.ToolTip="背景音乐" Content="&#xE8D6;" Click="OpenMedia_Click"
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <StackPanel.Resources>
+                        <Style TargetType="Button">
+                            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                            <Setter Property="Padding" Value="1"/>
+                        </Style>
+                    </StackPanel.Resources>
+                    <Button ToolTipService.ToolTip="打开文件夹" Content="&#xED25;" Click="OpenFolder_Click"/>
+                    <Button ToolTipService.ToolTip="背景音乐" Content="&#xE8D6;" Click="OpenMedia_Click"
                             Margin="0 0 30 0"/>
-                            <Button ToolTipService.ToolTip="播放" Content="&#xE102;" Click="Play_Click"/>
-                            <Button ToolTipService.ToolTip="暂停" Content="&#xE103;" Click="Pause_Click"/>
-                            <Button ToolTipService.ToolTip="停止" Content="&#xE71A;" Click="Stop_Click"/>
-                            <Button ToolTipService.ToolTip="快退" Content="&#xEB9E;" Click="Rewind_Click"/>
-                            <Button ToolTipService.ToolTip="快进" Content="&#xEB9D;" Click="FastForward_Click"/>
-                            <Button ToolTipService.ToolTip="跳到最前" Content="&#xE100;" Click="Front_Click"/>
-                            <Button ToolTipService.ToolTip="跳到最后" Content="&#xE101;" Click="Rear_Click"/>
-                            <Button ToolTipService.ToolTip="录制图片序列" Content="&#xE1F5;" Click="Record_Click"
-                            Margin="0 0 150 0"/>
-                        </StackPanel>
-                    </muxc:TabView.TabStripFooter>
-                </muxc:TabView>
+                    <Button ToolTipService.ToolTip="播放" Content="&#xE102;" Click="Play_Click"/>
+                    <Button ToolTipService.ToolTip="暂停" Content="&#xE103;" Click="Pause_Click"/>
+                    <Button ToolTipService.ToolTip="停止" Content="&#xE71A;" Click="Stop_Click"/>
+                    <Button ToolTipService.ToolTip="快退" Content="&#xEB9E;" Click="Rewind_Click"/>
+                    <Button ToolTipService.ToolTip="快进" Content="&#xEB9D;" Click="FastForward_Click"/>
+                    <Button ToolTipService.ToolTip="跳到最前" Content="&#xE100;" Click="Front_Click"/>
+                    <Button ToolTipService.ToolTip="跳到最后" Content="&#xE101;" Click="Rear_Click"/>
+                    <Button ToolTipService.ToolTip="录制图片序列" Content="&#xE1F5;" Click="Record_Click"/>
+                </StackPanel>
             </Grid>
-            <!--<Grid Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="2*"/>
-                </Grid.RowDefinitions>
-                <muxc:TabView x:Name="tabViewR1" CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
-                </muxc:TabView>
-                <muxc:TabView x:Name="tabViewR2" Grid.Row="1" CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
-                </muxc:TabView>
-            </Grid>-->
         </Grid>
     </Grid>
 </Page>

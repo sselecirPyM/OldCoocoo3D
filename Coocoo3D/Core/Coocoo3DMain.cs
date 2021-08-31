@@ -15,7 +15,6 @@ using Windows.System.Threading;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
 using Windows.Foundation;
-using System.Globalization;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Components;
 using Coocoo3D.RenderPipeline;
@@ -58,7 +57,6 @@ namespace Coocoo3D.Core
         {
             viewSelectedEntityBone = true,
             backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
-            //ViewerUI = true,
             Wireframe = false,
             SkyBoxLightMultiplier = 1.0f,
             ShadowMapResolution = 2048,
@@ -340,16 +338,6 @@ namespace Coocoo3D.Core
                 }
             }
         }
-        #region UI
-        public StorageFolder openedStorageFolder;
-        public event EventHandler OpenedStorageFolderChanged;
-        public void OpenedStorageFolderChange(StorageFolder storageFolder)
-        {
-            openedStorageFolder = storageFolder;
-            OpenedStorageFolderChanged?.Invoke(this, null);
-        }
-        public Frame frameViewProperties;
-        #endregion
     }
 
     public struct PerformaceSettings
@@ -366,7 +354,6 @@ namespace Coocoo3D.Core
     {
         public bool viewSelectedEntityBone;
         public Vector4 backgroundColor;
-        //public bool ViewerUI;
         public bool Wireframe;
 
         public float SkyBoxLightMultiplier;

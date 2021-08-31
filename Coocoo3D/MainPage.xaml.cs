@@ -11,9 +11,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
-using Microsoft.UI.Xaml.Controls;
 using Coocoo3DGraphics;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Core;
@@ -76,17 +74,6 @@ namespace Coocoo3D
             {
                 mediaElement.Pause();
             }
-        }
-
-        private void AddPage(TabView tabView, string header, Type pageType, object navParam)
-        {
-            Frame frame1 = new Frame();
-            frame1.Navigate(pageType, navParam);
-            tabView.TabItems.Add(new TabViewItem()
-            {
-                Header = header,
-                Content = frame1,
-            });
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -204,39 +191,6 @@ namespace Coocoo3D
         }
 
 
-        private void TabView_TabDragStarting(TabView sender, TabViewTabDragStartingEventArgs args)
-        {
-            var x = args.Tab;
-            args.Data.Properties.Add("Tab", x);
-            args.Data.Properties.Add("Owner", sender);
-        }
-
-        private void TabView_DragOver(object sender, DragEventArgs e)
-        {
-            var container = (sender as TabView);
-            if (e.DataView.Properties.TryGetValue("Owner", out object ownerData) &&
-                container != ownerData)
-            {
-                if (e.DataView.Properties.TryGetValue("Tab", out object tab))
-                {
-                    e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
-                }
-            }
-        }
-
-        private void TabView_Drop(object sender, DragEventArgs e)
-        {
-            var container = (sender as TabView);
-            if (e.DataView.Properties.TryGetValue("Owner", out object ownerData) &&
-                container != ownerData)
-            {
-                if (e.DataView.Properties.TryGetValue("Tab", out object tab))
-                {
-                    (ownerData as TabView).TabItems.Remove(tab);
-                    container.TabItems.Add(tab);
-                }
-            }
-        }
         private async void SampleShader_Click(object sender, RoutedEventArgs e)
         {
             FolderPicker folderPicker = new FolderPicker()

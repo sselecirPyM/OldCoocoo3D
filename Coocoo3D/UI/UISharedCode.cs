@@ -95,7 +95,6 @@ namespace Coocoo3D.UI
             };
             StorageFolder folder = await folderPicker.PickSingleFolderAsync();
             if (folder == null) return null;
-            appBody.OpenedStorageFolderChange(folder);
             return folder;
         }
         public static async Task Record(Coocoo3DMain appBody)
