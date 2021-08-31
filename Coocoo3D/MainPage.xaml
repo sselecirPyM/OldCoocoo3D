@@ -127,12 +127,12 @@
                 <MenuFlyoutItem x:Uid="M_MenuBarItem_BackgroundMusic" Click="OpenMedia_Click"/>
                 <!--<MenuFlyoutItem Text="导出" Click="Export_Click"/>-->
             </MenuBarItem>
-            <MenuBarItem x:Uid="M_MenuBarItem_View">
+            <!--<MenuBarItem x:Uid="M_MenuBarItem_View">
                 <MenuFlyoutSubItem x:Uid="M_MenuBarItem_Layout">
                     <muxc:RadioMenuFlyoutItem Text="1" GroupName="G1" Click="RadioMenuFlyoutItem1_Click"/>
                     <muxc:RadioMenuFlyoutItem Text="2" GroupName="G1" IsChecked="True" Click="RadioMenuFlyoutItem2_Click"/>
                 </MenuFlyoutSubItem>
-            </MenuBarItem>
+            </MenuBarItem>-->
             <MenuBarItem x:Uid="M_MenuBarItem_Help">
                 <!--<MenuFlyoutItem x:Uid="M_MenuBarItem_AboutThisSoftware" Click="About_Click"/>-->
                 <MenuFlyoutItem x:Uid="M_MenuBarItem_ShaderFileSample" Click="SampleShader_Click"/>
@@ -150,14 +150,14 @@
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="360" x:Name="x3"/>
+                        <!--<ColumnDefinition Width="360" x:Name="x3"/>-->
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <muxc:TabView x:Name="tabViewL1"
+                    <!--<muxc:TabView x:Name="tabViewL1"
                               CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">
-                    </muxc:TabView>
-                    <MediaElement x:Name="mediaElement" Grid.Column="1" AutoPlay="False"/>
-                    <controls:WorldViewer x:Name="worldViewer" Grid.Column="1" Loaded="worldViewer_Loaded"/>
+                    </muxc:TabView>-->
+                    <MediaElement x:Name="mediaElement" Grid.Column="0" AutoPlay="False"/>
+                    <controls:WorldViewer x:Name="worldViewer" Grid.Column="0" Loaded="worldViewer_Loaded"/>
                 </Grid>
                 <muxc:TabView Grid.Row="1" x:Name="tabViewB1"
                               CanDragTabs="True" TabDragStarting="TabView_TabDragStarting" AllowDrop="True" DragOver="TabView_DragOver" Drop="TabView_Drop">

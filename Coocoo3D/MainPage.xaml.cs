@@ -91,22 +91,6 @@ namespace Coocoo3D
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-            ;
-            AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Common"), typeof(PropertiesPages.CommonPage), appBody);
-            //AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_SkyBox"), typeof(PropertiesPages.SkyBoxPage), appBody);
-            //AddPage(tabViewL1, resourceLoader.GetString("Tab_Title_Record"), typeof(PropertiesPages.RecordPage), appBody);
-            //AddPage(tabViewR1, resourceLoader.GetString("Tab_Title_Scene"), typeof(PropertiesPages.ScenePage), appBody);
-            //AddPage(tabViewB1, resourceLoader.GetString("Tab_Title_Resources"), typeof(PropertiesPages.ResourcesPage), appBody);
-
-            //Frame frame1 = new Frame();
-            //frame1.Navigate(typeof(PropertiesPages.EmptyPropertiesPage));
-            //appBody.frameViewProperties = frame1;
-            //tabViewR2.TabItems.Add(new TabViewItem()
-            //{
-            //    Header = resourceLoader.GetString("Tab_Title_Detail"),
-            //    Content = frame1,
-            //});
             Window.Current.Activated += Current_Activated;
         }
 
@@ -286,17 +270,6 @@ namespace Coocoo3D
         private void worldViewer_Loaded(object sender, RoutedEventArgs e)
         {
 
-        }
-
-        private void RadioMenuFlyoutItem1_Click(object sender, RoutedEventArgs e)
-        {
-            //x2.Height = new GridLength(180);
-            x3.Width = new GridLength(240);
-        }
-        private void RadioMenuFlyoutItem2_Click(object sender, RoutedEventArgs e)
-        {
-            //x2.Height = new GridLength(270);
-            x3.Width = new GridLength(360);
         }
 
         private void Export_Click(object sender, RoutedEventArgs e)

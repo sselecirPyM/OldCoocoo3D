@@ -40,7 +40,18 @@ namespace Coocoo3D.RenderPipeline
         {
             lock (TextureOnDemand)
             {
-                ReloadTextures2();
+                if (ReloadTextures1.SetFalse())
+                {
+                    if (TextureCaches.Count > 0)
+                    {
+                        var packs = TextureCaches.ToList();
+                        foreach (var pair in packs)
+                        {
+                            if (!TextureOnDemand.ContainsKey(pair.Key))
+                                TextureOnDemand.Add(pair.Key, new Texture2DPack() { folder = pair.Value.folder, relativePath = pair.Value.relativePath, lastModifiedTime = pair.Value.lastModifiedTime });
+                        }
+                    }
+                }
 
                 if (TextureOnDemand.Count == 0) return;
 
@@ -105,20 +116,6 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        private void ReloadTextures2()
-        {
-            if (!ReloadTextures1) return;
-            ReloadTextures1 = false;
-            if (TextureCaches.Count > 0)
-            {
-                var packs = TextureCaches.ToList();
-                foreach (var pair in packs)
-                {
-                    if (!TextureOnDemand.ContainsKey(pair.Key))
-                        TextureOnDemand.Add(pair.Key, new Texture2DPack() { folder = pair.Value.folder, relativePath = pair.Value.relativePath, lastModifiedTime = pair.Value.lastModifiedTime });
-                }
-            }
-        }
         public void ReloadTextures()
         {
             ReloadTextures1 = true;

@@ -332,7 +332,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
 	UINT backBufferWidth = lround(m_d3dRenderTargetSize.Width);
 	UINT backBufferHeight = lround(m_d3dRenderTargetSize.Height);
-
+	bool setSwapChain = false;
 	if (m_swapChain != nullptr)
 	{
 		// 如果交换链已存在，请调整其大小。
@@ -380,17 +380,7 @@ void DeviceResources::CreateWindowSizeDependentResources()
 			));
 
 		DX::ThrowIfFailed(swapChain.As(&m_swapChain));
-
-		// 将交换链与 SwapChainPanel 关联
-		// UI 更改将需要调度回 UI 线程
-		m_swapChainPanel->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
-			{
-				//获取 SwapChainPanel 的受支持的本机接口
-				ComPtr<ISwapChainPanelNative> panelNative;
-				DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_swapChainPanel)->QueryInterface(IID_PPV_ARGS(&panelNative)));
-
-				DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
-			}, CallbackContext::Any));
+		setSwapChain = true;
 	}
 
 	// 在交换链上设置反向缩放
@@ -421,6 +411,20 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
 	// 设置用于确定整个窗口的 3D 渲染视区。
 	m_screenViewport = { 0.0f, 0.0f, m_d3dRenderTargetSize.Width, m_d3dRenderTargetSize.Height, 0.0f, 1.0f };
+
+	if (setSwapChain)
+	{
+		// 将交换链与 SwapChainPanel 关联
+		// UI 更改将需要调度回 UI 线程
+		m_swapChainPanel->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
+			{
+				//获取 SwapChainPanel 的受支持的本机接口
+				ComPtr<ISwapChainPanelNative> panelNative;
+				DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_swapChainPanel)->QueryInterface(IID_PPV_ARGS(&panelNative)));
+
+				DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
+			}, CallbackContext::Any));
+	}
 }
 
 DeviceResources::DeviceResources() :

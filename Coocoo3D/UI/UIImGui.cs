@@ -275,6 +275,10 @@ namespace Coocoo3D.UI
                     if (a == a)
                         appBody.GameDriverContext.FrameInterval = 1 / a;
                 }
+                if(ImGui.Combo("渲染管线",ref appBody.renderPipelineIndex,renderPipelines,4))
+                {
+                    appBody.SwitchToRenderPipeline(appBody.renderPipelineIndex);
+                }
                 ImGui.TreePop();
             }
             if (ImGui.TreeNode("帮助"))
@@ -627,6 +631,7 @@ vmd格式动作");
         }
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
+        static string[] renderPipelines = new[] { "前向", "延迟","光线追踪","自定义" };
     }
     class _openRequest
     {

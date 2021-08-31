@@ -9,6 +9,7 @@ using Coocoo3D.FileFormat;
 using Windows.Storage;
 using Windows.UI.Popups;
 using Windows.Storage.Pickers;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.UI
 {
@@ -16,9 +17,8 @@ namespace Coocoo3D.UI
     {
         public static async Task Code(Coocoo3DMain appBody)
         {
-            if (UIImGui.requireOpenFolder)
+            if (UIImGui.requireOpenFolder.SetFalse())
             {
-                UIImGui.requireOpenFolder = false;
                 var folder = await UISharedCode.OpenResourceFolder(appBody);
                 if (folder != null)
                 {
@@ -28,9 +28,8 @@ namespace Coocoo3D.UI
                 }
                 appBody.RequireRender();
             }
-            if (UIImGui.requireExport)
+            if (UIImGui.requireExport.SetFalse())
             {
-                UIImGui.requireExport = false;
                 var picker = new FileSavePicker()
                 {
                     SuggestedStartLocation = PickerLocationId.ComputerFolder,
@@ -114,9 +113,8 @@ namespace Coocoo3D.UI
                 }
                 appBody.RequireRender(true);
             }
-            if (UIImGui.requireRecord)
+            if (UIImGui.requireRecord.SetFalse())
             {
-                UIImGui.requireRecord = false;
                 await UISharedCode.Record(appBody);
             }
         }

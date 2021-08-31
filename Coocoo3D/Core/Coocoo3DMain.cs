@@ -120,7 +120,7 @@ namespace Coocoo3D.Core
                     DateTime now = DateTime.Now;
                     if (now - LatestRenderTime < TimeSpan.FromSeconds(RPContext.gameDriverContext.FrameInterval)) continue;
                     bool actualRender = RenderFrame();
-                    if (performaceSettings.SaveCpuPower && (!performaceSettings.VSync || !actualRender))
+                    if ((performaceSettings.SaveCpuPower && !Recording) && (!performaceSettings.VSync || !actualRender))
                         System.Threading.Thread.Sleep(1);
                 }
             });
@@ -263,13 +263,16 @@ namespace Coocoo3D.Core
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
                 bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready && widgetRenderer.Ready;
-                if (thisFrameReady && RPContext.dynamicContextRead.EnableDisplay)
+                if (thisFrameReady)
                 {
                     UI.UIImGui.GUI(this);
                     graphicsContext.BeginCommand();
                     graphicsContext.SetDescriptorHeapDefault();
-                    currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);
-                    postProcess.PrepareRenderData(RPContext, graphicsContext);
+                    if (RPContext.dynamicContextRead.EnableDisplay)
+                    {
+                        currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);
+                        postProcess.PrepareRenderData(RPContext, graphicsContext);
+                    }
                     widgetRenderer.PrepareRenderData(RPContext, graphicsContext);
                     RPContext.UpdateGPUResource();
 
@@ -286,9 +289,13 @@ namespace Coocoo3D.Core
                 void _RenderFunction()
                 {
                     graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._PRESENT, D3D12ResourceStates._RENDER_TARGET);
-                    currentRenderPipeline.RenderCamera(RPContext, graphicsContext);
-                    postProcess.RenderCamera(RPContext, graphicsContext);
-                    GameDriver.AfterRender(RPContext, graphicsContext);
+
+                    if (RPContext.dynamicContextRead.EnableDisplay)
+                    {
+                        currentRenderPipeline.RenderCamera(RPContext, graphicsContext);
+                        postProcess.RenderCamera(RPContext, graphicsContext);
+                        GameDriver.AfterRender(RPContext, graphicsContext);
+                    }
                     widgetRenderer.RenderCamera(RPContext, graphicsContext);
                     graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._RENDER_TARGET, D3D12ResourceStates._PRESENT);
                     graphicsContext.EndCommand();
@@ -302,7 +309,8 @@ namespace Coocoo3D.Core
         #endregion
         public bool Recording = false;
 
-        int currentRenderPipelineIndex;
+        public int currentRenderPipelineIndex;
+        public int renderPipelineIndex;
         public void SwitchToRenderPipeline(int index)
         {
             if (currentRenderPipelineIndex != index)

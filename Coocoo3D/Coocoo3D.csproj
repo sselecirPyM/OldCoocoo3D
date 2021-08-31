@@ -182,6 +182,7 @@
     <Compile Include="UI\PlayControl.cs" />
     <Compile Include="UI\UIHelper.cs" />
     <Compile Include="UI\UIImGui.cs" />
+    <Compile Include="Utility\BoolExt.cs" />
     <Compile Include="Utility\CubicBezierCurve.cs" />
     <Compile Include="UI\UISharedCode.cs" />
     <Compile Include="Utility\IDictionaryExt.cs" />

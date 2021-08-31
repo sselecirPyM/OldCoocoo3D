@@ -27,27 +27,10 @@ namespace Coocoo3D.Controls
 {
     public sealed partial class WorldViewer : UserControl
     {
-        public Coocoo3DMain AppBody
-        {
-            get => _appBody;
-            set { _appBody = value; SetupSwapChain(); }
-        }
-        Coocoo3DMain _appBody;
-        CoreIndependentInputSource coreIndependentInputSource;
+        public Coocoo3DMain AppBody;
         public WorldViewer()
         {
             this.InitializeComponent();
-            //WorkItemHandler workItemHandler = new WorkItemHandler((IAsyncAction action) =>
-            //{
-            //    coreIndependentInputSource = swapChainPanel.CreateCoreIndependentInputSource(CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Pen | CoreInputDeviceTypes.Touch);
-            //    coreIndependentInputSource.PointerPressed += Canvas_PointerPressed;
-            //    coreIndependentInputSource.PointerMoved += Canvas_PointerMoved;
-            //    coreIndependentInputSource.PointerReleased += Canvas_PointerReleased;
-            //    coreIndependentInputSource.PointerWheelChanged += InkCanvas_PointerWheelChanged;
-
-            //    coreIndependentInputSource.Dispatcher.ProcessEvents(CoreProcessEventsOption.ProcessUntilQuit);
-            //});
-            //ThreadPool.RunAsync(workItemHandler, WorkItemPriority.High, WorkItemOptions.TimeSliced);
         }
 
         private void SwapChainPanel_Loaded(object sender, RoutedEventArgs e)
@@ -58,8 +41,7 @@ namespace Coocoo3D.Controls
         private void SetupSwapChain()
         {
             if (!swapChainPanel.IsLoaded) return;
-            if (_appBody == null) return;
-            //AppBody.GameDriverContext.AspectRatio = (float)(ActualWidth / ActualHeight);
+            if (AppBody == null) return;
             AppBody.deviceResources.SetSwapChainPanel(swapChainPanel);
             AppBody.GameDriverContext.NewSize = new Size(ActualWidth, ActualHeight);
             AppBody.GameDriverContext.RequireResizeOuter = true;
@@ -71,7 +53,6 @@ namespace Coocoo3D.Controls
 
         private void SwapChainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            //AppBody.GameDriverContext.AspectRatio = (float)(ActualWidth / ActualHeight);
             AppBody.GameDriverContext.NewSize = e.NewSize;
             AppBody.GameDriverContext.RequireResizeOuter = true;
             AppBody.RequireRender();
@@ -96,8 +77,6 @@ namespace Coocoo3D.Controls
             process1(e);
             e.Handled = true;
         }
-
-        readonly Vector2 c_buttonSize = new Vector2(64, 64);
 
         MouseDevice currentMouse;
         TypedEventHandler<MouseDevice, MouseEventArgs> CurrentMouseMovedDelegate;
@@ -145,37 +124,37 @@ namespace Coocoo3D.Controls
         private void Canvas_PointerHovered(object sender, PointerEventArgs args)
         {
             var pointer = args.CurrentPoint;
-            Vector2 position = pointer.Position.ToVector2() * _appBody.RPContext.logicScale;
+            Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
             Input.EnqueueMouseMove(position);
-            _appBody.RequireRender();
+            AppBody.RequireRender();
         }
 
         private void process1(PointerEventArgs args)
         {
             var pointer = args.CurrentPoint;
-            Vector2 position = pointer.Position.ToVector2() * _appBody.RPContext.logicScale;
+            Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
             Input.EnqueueMouseMove(position);
             Input.EnqueueMouseClick(position, pointer.Properties.IsLeftButtonPressed, InputType.MouseLeftDown);
             Input.EnqueueMouseClick(position, pointer.Properties.IsRightButtonPressed, InputType.MouseRightDown);
             Input.EnqueueMouseClick(position, pointer.Properties.IsMiddleButtonPressed, InputType.MouseMiddleDown);
-            _appBody.RequireRender();
+            AppBody.RequireRender();
         }
 
         private void process1(PointerRoutedEventArgs args)
         {
             var pointer = args.GetCurrentPoint(this);
-            Vector2 position = pointer.Position.ToVector2() * _appBody.RPContext.logicScale;
+            Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
             Input.EnqueueMouseMove(position);
             Input.EnqueueMouseClick(position, pointer.Properties.IsLeftButtonPressed, InputType.MouseLeftDown);
             Input.EnqueueMouseClick(position, pointer.Properties.IsRightButtonPressed, InputType.MouseRightDown);
             Input.EnqueueMouseClick(position, pointer.Properties.IsMiddleButtonPressed, InputType.MouseMiddleDown);
-            _appBody.RequireRender();
+            AppBody.RequireRender();
         }
 
         private void InkCanvas_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
         {
             var pointer = e.GetCurrentPoint(this);
-            Vector2 position = pointer.Position.ToVector2() * _appBody.RPContext.logicScale;
+            Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
             Input.EnqueueMouseMove(position);
             Input.EnqueueMouseWheel(position, pointer.Properties.MouseWheelDelta);
 
