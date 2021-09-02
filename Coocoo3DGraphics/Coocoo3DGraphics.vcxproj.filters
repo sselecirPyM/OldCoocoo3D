@@ -23,9 +23,6 @@
     <Filter Include="GPUProgram">
       <UniqueIdentifier>{ae96fcc1-6f8c-4df5-98b3-f6a0a9b38ddc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Extension">
-      <UniqueIdentifier>{dc8429a7-4a7a-406e-bb38-df7e5d3df773}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shaders\BRDF">
       <UniqueIdentifier>{557263b2-fe8d-401e-84ec-177365b89a57}</UniqueIdentifier>
     </Filter>
@@ -71,12 +68,6 @@
     </ClCompile>
     <ClCompile Include="GPUProgram\ShaderMacro.cpp">
       <Filter>GPUProgram</Filter>
-    </ClCompile>
-    <ClCompile Include="Extension\CooUtility.cpp">
-      <Filter>Extension</Filter>
-    </ClCompile>
-    <ClCompile Include="Extension\BoundingBox.cpp">
-      <Filter>Extension</Filter>
     </ClCompile>
     <ClCompile Include="RayTracingStateObject.cpp" />
     <ClCompile Include="RayTracingASGroup.cpp" />
@@ -136,12 +127,6 @@
       <Filter>GPUProgram</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsConstance.h" />
-    <ClInclude Include="Extension\CooUtility.h">
-      <Filter>Extension</Filter>
-    </ClInclude>
-    <ClInclude Include="Extension\BoundingBox.h">
-      <Filter>Extension</Filter>
-    </ClInclude>
     <ClInclude Include="RayTracingStateObject.h" />
     <ClInclude Include="RayTracingASGroup.h" />
     <ClInclude Include="RayTracingShaderTable.h" />

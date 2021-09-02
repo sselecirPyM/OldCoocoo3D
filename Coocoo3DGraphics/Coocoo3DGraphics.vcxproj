@@ -270,8 +270,6 @@
   <ItemGroup>
     <ClInclude Include="RayTracingASGroup.h" />
     <ClInclude Include="CBuffer.h" />
-    <ClInclude Include="Extension\BoundingBox.h" />
-    <ClInclude Include="Extension\CooUtility.h" />
     <ClInclude Include="GPUProgram\PSODesc.h" />
     <ClInclude Include="GraphicsConstance.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h" />
@@ -308,8 +306,6 @@
   <ItemGroup>
     <ClCompile Include="RayTracingASGroup.cpp" />
     <ClCompile Include="CBuffer.cpp" />
-    <ClCompile Include="Extension\BoundingBox.cpp" />
-    <ClCompile Include="Extension\CooUtility.cpp" />
     <ClCompile Include="GPUProgram\PSODesc.cpp" />
     <ClCompile Include="GPUProgram\ShaderMacro.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp" />

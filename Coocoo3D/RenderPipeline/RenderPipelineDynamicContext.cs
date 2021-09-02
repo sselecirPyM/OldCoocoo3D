@@ -12,18 +12,15 @@ namespace Coocoo3D.RenderPipeline
     public class RenderPipelineDynamicContext
     {
         public Settings settings;
-        //public List<MMD3DEntity> entities = new List<MMD3DEntity>();
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<Components.MMDRendererComponent> renderers = new List<Components.MMDRendererComponent>();
         public List<Components.VolumeComponent> volumes = new List<VolumeComponent>();
-        //public MMD3DEntity selectedEntity;
         public List<LightingData> lightings = new List<LightingData>();
         public List<LightingData> selectedLightings = new List<LightingData>();
         public List<CameraData> cameras = new List<CameraData>();
         public PassSetting currentPassSetting;
         public int VertexCount;
         public int frameRenderIndex;
-        public int progressiveRenderIndex;
         public double Time;
         public double DeltaTime;
         public double RealDeltaTime;
@@ -42,12 +39,6 @@ namespace Coocoo3D.RenderPipeline
 
         public void Preprocess()
         {
-            //foreach (MMD3DEntity entity in entities)
-            //{
-            //    entity.rendererComponent.position = entity.Position;
-            //    entity.rendererComponent.rotation = entity.Rotation;
-            //    renderers.Add(entity.rendererComponent);
-            //}
             foreach (GameObject gameObject in gameObjects)
             {
                 LightingComponent lightingComponent = gameObject.GetComponent<LightingComponent>();
@@ -74,9 +65,8 @@ namespace Coocoo3D.RenderPipeline
             lightings.Sort();
         }
 
-        public void ClearCollections()
+        public void FrameBegin()
         {
-            //entities.Clear();
             gameObjects.Clear();
             lightings.Clear();
             volumes.Clear();

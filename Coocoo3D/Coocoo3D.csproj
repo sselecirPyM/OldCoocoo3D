@@ -136,6 +136,7 @@
     <Compile Include="Components\VolumeComponent.cs" />
     <Compile Include="Core\Input.cs" />
     <Compile Include="Base\Physics3DScene.cs" />
+    <Compile Include="Numerics\BoundingBox.cs" />
     <Compile Include="Numerics\Int2.cs" />
     <Compile Include="Present\CameraMotion.cs" />
     <Compile Include="Core\GameDriver.cs" />
@@ -167,6 +168,8 @@
     <Compile Include="RenderPipeline\RenderPipelineContext.cs" />
     <Compile Include="RenderPipeline\RenderPipelineDynamicContext.cs" />
     <Compile Include="RenderPipeline\RPAssetsManager.cs" />
+    <Compile Include="RenderPipeline\SkinningCompute.cs" />
+    <Compile Include="RenderPipeline\VisualChannel.cs" />
     <Compile Include="RenderPipeline\WidgetRenderer.cs" />
     <Compile Include="RenderPipeline\Wrap\CBufferGroup.cs" />
     <Compile Include="RenderPipeline\Wrap\SBufferGroup.cs" />
@@ -180,6 +183,7 @@
     <Compile Include="UI\UIHelper.cs" />
     <Compile Include="UI\UIImGui.cs" />
     <Compile Include="Utility\BoolExt.cs" />
+    <Compile Include="Utility\CooUtility.cs" />
     <Compile Include="Utility\CubicBezierCurve.cs" />
     <Compile Include="UI\UISharedCode.cs" />
     <Compile Include="Utility\IDictionaryExt.cs" />

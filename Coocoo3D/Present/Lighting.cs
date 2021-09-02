@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3DGraphics;
 using Coocoo3D.Components;
+using Coocoo3D.Numerics;
 
 namespace Coocoo3D.Present
 {
@@ -64,25 +65,6 @@ namespace Coocoo3D.Present
             }
             return vp;
         }
-        //public Matrix4x4 GetLightingMatrix(Matrix4x4 cameraInvert)
-        //{
-        //    Vector4 v1x = Vector4.Transform(new Vector4(-1, -1, 0.0f, 1), cameraInvert);
-        //    Vector3 v2x = new Vector3(v1x.X / v1x.W, v1x.Y / v1x.W, v1x.Z / v1x.W);
-        //    Vector3 whMin = v2x;
-        //    Vector3 whMax = v2x;
-        //    for (int i = -1; i <= 1; i += 2)
-        //        for (int j = -1; j <= 1; j += 2)
-        //            for (int k = 0; k <= 1; k += 1)
-        //            {
-        //                Vector4 v1 = Vector4.Transform(new Vector4(i, j, k * 0.99f, 1), cameraInvert);
-        //                Vector3 v2 = new Vector3(v1.X / v1.W, v1.Y / v1.W, v1.Z / v1.W);
-        //                whMin = Vector3.Min(v2, whMin);
-        //                whMax = Vector3.Max(v2, whMax);
-        //            }
-        //    Vector3 whMax2 = whMax - whMin;
-
-        //    return GetLightingMatrix(new BoundingBox() { position = (whMin + whMax)*0.5f , extension = whMax2});
-        //}
         public Matrix4x4 GetLightingMatrix(Matrix4x4 cameraInvert)
         {
             Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);

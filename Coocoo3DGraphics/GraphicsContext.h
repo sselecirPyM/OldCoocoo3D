@@ -9,15 +9,15 @@
 #include "GPUProgram/ComputeShader.h"
 #include "GPUProgram/PSO.h"
 #include "ReadBackTexture2D.h"
-#include "TwinBuffer.h"
+//#include "TwinBuffer.h"
 #include "MeshBuffer.h"
 #include "Uploader.h"
 #include "MMDMeshAppend.h"
-#include "RayTracingStateObject.h"
-#include "RayTracingASGroup.h"
-#include "RayTracingShaderTable.h"
-#include "RayTracingTopAS.h"
-#include "RayTracingInstanceGroup.h"
+//#include "RayTracingStateObject.h"
+//#include "RayTracingASGroup.h"
+//#include "RayTracingShaderTable.h"
+//#include "RayTracingTopAS.h"
+//#include "RayTracingInstanceGroup.h"
 
 namespace Coocoo3DGraphics
 {
@@ -59,8 +59,6 @@ namespace Coocoo3DGraphics
 		void SetPSO(PSO^ pObject, int variantIndex);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateResource(CBuffer^ buffer, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
-		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset);
-		void UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset);
 		void UpdateVerticesPos(MMDMeshAppend^ mesh, const Platform::Array<Windows::Foundation::Numerics::float3>^ verticeData);
 		void SetSRVTSlot(Texture2D^ texture, int slot);
 		void SetSRVTSlot(TextureCube^ texture, int slot);
@@ -69,14 +67,14 @@ namespace Coocoo3DGraphics
 		void SetUAVT(Texture2D^ texture, int index);
 		void SetComputeSRVT(Texture2D^ texture, int index);
 		void SetComputeSRVT(TextureCube^ texture, int index);
-		void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
+		//void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
 		//void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
 		void SetComputeUAVR(MeshBuffer^ mesh, int startLocation, int index);
-		void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
+		//void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
 		void SetComputeUAVT(Texture2D^ texture, int index);
 		void SetComputeUAVT(TextureCube^ texture, int mipIndex, int index);
 		void SetComputeUAVTSlot(Texture2D^ texture, int slot);
@@ -89,6 +87,7 @@ namespace Coocoo3DGraphics
 		void DoRayTracing(RayTracingScene^ rayTracingScene, int width, int height, int raygenIndex);
 		void UploadMesh(MMDMesh^ mesh);
 		void UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte>^ data);
+		void UploadMesh(MMDMesh^ mesh, Platform::String^ name,const Platform::Array<byte>^ data);
 		void UploadTexture(TextureCube^ texture, Uploader^ uploader);
 		void UploadTexture(Texture2D^ texture, Uploader^ uploader);
 		void UpdateRenderTexture(IRenderTexture^ texture);

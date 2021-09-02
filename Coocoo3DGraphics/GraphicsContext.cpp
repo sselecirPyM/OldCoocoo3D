@@ -186,16 +186,6 @@ void GraphicsContext::UpdateResource(CBuffer^ buffer, const Platform::Array<Wind
 	}
 }
 
-void GraphicsContext::UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<byte>^ data, UINT sizeInByte, int dataOffset)
-{
-	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->m_size + bufferDataOffset, data->begin() + dataOffset, sizeInByte);
-}
-
-void GraphicsContext::UpdateResourceRegion(CBuffer^ buffer, UINT bufferDataOffset, const Platform::Array<Windows::Foundation::Numerics::float4x4>^ data, UINT sizeInByte, int dataOffset)
-{
-	memcpy(buffer->m_mappedConstantBuffer + buffer->lastUpdateIndex * buffer->m_size + bufferDataOffset, data->begin() + dataOffset, sizeInByte);
-}
-
 inline void _UpdateVerticesPos(ID3D12GraphicsCommandList* commandList, ID3D12Resource* resource, ID3D12Resource* uploaderResource, void* dataBegin, UINT dataLength, int offset)
 {
 	CD3DX12_RANGE readRange(0, 0);
@@ -297,13 +287,13 @@ void GraphicsContext::SetComputeSRVT(TextureCube^ texture, int index)
 //	}
 //}
 
-void GraphicsContext::SetComputeSRVR(TwinBuffer^ buffer, int bufIndex, int index)
-{
-	if (buffer->m_prevResourceState[bufIndex] != D3D12_RESOURCE_STATE_GENERIC_READ)
-		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer[bufIndex].Get(), buffer->m_prevResourceState[bufIndex], D3D12_RESOURCE_STATE_GENERIC_READ));
-	buffer->m_prevResourceState[bufIndex] = D3D12_RESOURCE_STATE_GENERIC_READ;
-	m_commandList->SetComputeRootShaderResourceView(index, buffer->m_buffer[bufIndex]->GetGPUVirtualAddress());
-}
+//void GraphicsContext::SetComputeSRVR(TwinBuffer^ buffer, int bufIndex, int index)
+//{
+//	if (buffer->m_prevResourceState[bufIndex] != D3D12_RESOURCE_STATE_GENERIC_READ)
+//		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(buffer->m_buffer[bufIndex].Get(), buffer->m_prevResourceState[bufIndex], D3D12_RESOURCE_STATE_GENERIC_READ));
+//	buffer->m_prevResourceState[bufIndex] = D3D12_RESOURCE_STATE_GENERIC_READ;
+//	m_commandList->SetComputeRootShaderResourceView(index, buffer->m_buffer[bufIndex]->GetGPUVirtualAddress());
+//}
 
 void GraphicsContext::SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index)
 {
@@ -338,11 +328,11 @@ void GraphicsContext::SetComputeUAVR(MeshBuffer^ mesh, int startLocation, int in
 	m_commandList->SetComputeRootUnorderedAccessView(index, mesh->m_buffer->GetGPUVirtualAddress() + startLocation * mesh->c_vbvStride);
 }
 
-void GraphicsContext::SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index)
-{
-	DX12UAVResourceBarrier(m_commandList.Get(), buffer->m_buffer[bufIndex].Get(), buffer->m_prevResourceState[bufIndex]);
-	m_commandList->SetComputeRootUnorderedAccessView(index, buffer->m_buffer[bufIndex]->GetGPUVirtualAddress());
-}
+//void GraphicsContext::SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index)
+//{
+//	DX12UAVResourceBarrier(m_commandList.Get(), buffer->m_buffer[bufIndex].Get(), buffer->m_prevResourceState[bufIndex]);
+//	m_commandList->SetComputeRootUnorderedAccessView(index, buffer->m_buffer[bufIndex]->GetGPUVirtualAddress());
+//}
 
 void GraphicsContext::SetComputeUAVT(Texture2D^ texture, int index)
 {
@@ -551,6 +541,11 @@ void GraphicsContext::UploadMesh(MMDMeshAppend^ mesh, const Platform::Array<byte
 	mesh->m_vertexBufferPosViews.BufferLocation = mesh->m_vertexBufferPos->GetGPUVirtualAddress();
 	mesh->m_vertexBufferPosViews.StrideInBytes = mesh->c_vertexStride;
 	mesh->m_vertexBufferPosViews.SizeInBytes = mesh->c_vertexStride * mesh->m_posCount;
+}
+
+void GraphicsContext::UploadMesh(MMDMesh^ mesh, Platform::String^ name, const Platform::Array<byte>^ data)
+{
+	throw ref new Platform::NotImplementedException();
 }
 
 void GraphicsContext::UploadTexture(TextureCube^ texture, Uploader^ uploader)

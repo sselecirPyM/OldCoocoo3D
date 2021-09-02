@@ -17,7 +17,7 @@ namespace Coocoo3D.Components
 {
     public class MMDRendererComponent : Component
     {
-        public MMDMesh mesh;
+        public string meshPath;
         public MMDMeshAppend meshAppend = new MMDMeshAppend();
         public Vector3 position;
         public Quaternion rotation;
@@ -755,12 +755,12 @@ namespace Coocoo3D.FileFormat
             rendererComponent.Materials.Clear();
             rendererComponent.materialsBaseData.Clear();
             rendererComponent.computedMaterialsData.Clear();
-
-            rendererComponent.mesh = modelPack.GetMesh();
+            var mesh = modelPack.GetMesh();
+            rendererComponent.meshPath = modelPack.fullPath;
             rendererComponent.meshPosData = modelPack.verticesDataPosPart;
-            rendererComponent.meshVertexCount = rendererComponent.mesh.GetVertexCount();
-            rendererComponent.meshIndexCount = rendererComponent.mesh.GetIndexCount();
-            rendererComponent.meshPosData1 = new Vector3[rendererComponent.mesh.GetVertexCount()];
+            rendererComponent.meshVertexCount = mesh.GetVertexCount();
+            rendererComponent.meshIndexCount = mesh.GetIndexCount();
+            rendererComponent.meshPosData1 = new Vector3[mesh.GetVertexCount()];
 
             rendererComponent.meshAppend.Reload(rendererComponent.meshVertexCount);
 
@@ -840,7 +840,7 @@ namespace Coocoo3D.FileFormat
             //    }
             //}
         }
-    
+
         public static RigidBodyDesc GetRigidBodyDesc(PMX_RigidBody rigidBody)
         {
             RigidBodyDesc desc = new RigidBodyDesc();
@@ -1019,7 +1019,7 @@ namespace Coocoo3D.FileFormat
             morphStateComponent.Reload(modelResource);
 
             rendererComponent.ReloadModel(modelPack, textures);
-            processingList.AddObject(new MeshAppendUploadPack(rendererComponent.meshAppend, rendererComponent.meshPosData));
+            processingList.AddObject(new MeshAppendUploadPack(rendererComponent.meshAppend, modelPack.verticesDataPosPart));
 
         }
     }

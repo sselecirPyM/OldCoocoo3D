@@ -1,6 +1,8 @@
 ﻿using Coocoo3D.Components;
 using Coocoo3D.Core;
+using Coocoo3D.Numerics;
 using Coocoo3D.Present;
+using Coocoo3D.Utility;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
@@ -338,7 +340,7 @@ namespace Coocoo3D.RenderPipeline
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
-                graphicsContext.SetMeshVertex(rendererComponent.mesh);
+                graphicsContext.SetMeshVertex(context.GetMesh(rendererComponent.meshPath));
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 graphicsContext.Draw(rendererComponent.meshVertexCount, 0);
             }
@@ -420,7 +422,7 @@ namespace Coocoo3D.RenderPipeline
                     _Counters counterX = new _Counters();
                     foreach (var rendererComponent in _rendererComponents)
                     {
-                        graphicsContext.SetMeshIndex(rendererComponent.mesh);
+                        graphicsContext.SetMeshIndex(context.GetMesh(rendererComponent.meshPath));
                         PSO pso = null;
                         if (rendererComponent.shaders != null)
                             rendererComponent.shaders.TryGetValue(_combinedPass.Name, out pso);

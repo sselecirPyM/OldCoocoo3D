@@ -9,10 +9,11 @@ using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3D.Core;
 using ImGuiNET;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.RenderPipeline
 {
-    public class WidgetRenderer : RenderPipeline
+    public class WidgetRenderer
     {
         CBufferGroup CBufferGroup = new CBufferGroup();
         public MMDMesh imguiMesh = new MMDMesh();
@@ -47,16 +48,16 @@ namespace Coocoo3D.RenderPipeline
         }
 
 
-        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
             var cam = context.dynamicContextRead.cameras[0];
 
-            var selectedLightings = context.dynamicContextRead.selectedLightings;
+            //var selectedLightings = context.dynamicContextRead.selectedLightings;
 
             var tvp = Matrix4x4.Transpose(cam.vpMatrix);
             MemoryMarshal.Write(new Span<byte>(context.bigBuffer, 0, 64), ref tvp);
 
-            CBufferGroup.SetSlienceCount(selectedLightings.Count + context.dynamicContextRead.volumes.Count + 1);
+            CBufferGroup.SetSlienceCount(/*selectedLightings.Count + context.dynamicContextRead.volumes.Count +*/ 1);
 
 
             var data = ImGui.GetDrawData();
@@ -74,20 +75,20 @@ namespace Coocoo3D.RenderPipeline
 
 
             int matC = 0;
-            foreach (var lighting in selectedLightings)
-            {
-                int ofs = 0;
-                ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(Matrix4x4.CreateScale(lighting.Range) * Matrix4x4.CreateTranslation(lighting.Position) * cam.vpMatrix));
-                CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
-                matC++;
-            }
-            foreach (var volume in context.dynamicContextRead.volumes)
-            {
-                int ofs = 0;
-                ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(Matrix4x4.CreateScale(volume.Size) * Matrix4x4.CreateTranslation(volume.Position) * cam.vpMatrix));
-                CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
-                matC++;
-            }
+            //foreach (var lighting in selectedLightings)
+            //{
+            //    int ofs = 0;
+            //    ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(Matrix4x4.CreateScale(lighting.Range) * Matrix4x4.CreateTranslation(lighting.Position) * cam.vpMatrix));
+            //    CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
+            //    matC++;
+            //}
+            //foreach (var volume in context.dynamicContextRead.volumes)
+            //{
+            //    int ofs = 0;
+            //    ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(Matrix4x4.CreateScale(volume.Size) * Matrix4x4.CreateTranslation(volume.Position) * cam.vpMatrix));
+            //    CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
+            //    matC++;
+            //}
             {
                 int ofs = 0;
                 for (int i = 0; i < mvp.Length; i++)
@@ -100,7 +101,7 @@ namespace Coocoo3D.RenderPipeline
             CBufferGroup.UpdateSlienceComplete(graphicsContext);
         }
 
-        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
 
             Texture2D texLoading = context.TextureLoading;
@@ -137,20 +138,20 @@ namespace Coocoo3D.RenderPipeline
             desc.wireFrame = false;
             graphicsContext.SetMesh(context.ndcQuadMesh);
 
-            int renderCount = context.dynamicContextRead.selectedLightings.Count + context.dynamicContextRead.volumes.Count;
+            //int renderCount = context.dynamicContextRead.selectedLightings.Count + context.dynamicContextRead.volumes.Count;
             int ofs = 0;
-            if (renderCount > 0)
-            {
-                desc.ptt = ED3D12PrimitiveTopologyType.LINE;
-                graphicsContext.SetMesh(context.cubeWireMesh);
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PSOWidgetUILight"]);
-                for (int i = 0; i < renderCount; i++)
-                {
-                    CBufferGroup.SetCBVR(graphicsContext, ofs, 0);
-                    graphicsContext.DrawIndexed(context.cubeWireMesh.GetIndexCount(), 0, 0);
-                    ofs++;
-                }
-            }
+            //if (renderCount > 0)
+            //{
+            //    desc.ptt = ED3D12PrimitiveTopologyType.LINE;
+            //    graphicsContext.SetMesh(context.cubeWireMesh);
+            //    SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PSOWidgetUILight"]);
+            //    for (int i = 0; i < renderCount; i++)
+            //    {
+            //        CBufferGroup.SetCBVR(graphicsContext, ofs, 0);
+            //        graphicsContext.DrawIndexed(context.cubeWireMesh.GetIndexCount(), 0, 0);
+            //        ofs++;
+            //    }
+            //}
 
             var data = ImGui.GetDrawData();
 
@@ -219,6 +220,45 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
             }
+        }
+
+        public volatile bool Ready;
+
+        protected Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
+        {
+            if (texture == null) return error;
+            if (texture.Status == GraphicsObjectStatus.loaded)
+                return texture;
+            else if (texture.Status == GraphicsObjectStatus.loading)
+                return loading;
+            else if (texture.Status == GraphicsObjectStatus.unload)
+                return unload;
+            else
+                return error;
+        }
+
+        protected PSO PSOSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
+        {
+            if (pso == null) return unload;
+            if (pso.Status == GraphicsObjectStatus.unload)
+                return unload;
+            else if (pso.Status == GraphicsObjectStatus.loaded)
+            {
+                if (pso.GetVariantIndex(deviceResources, graphicsSignature, desc) != -1)
+                    return pso;
+                else
+                    return error;
+            }
+            else if (pso.Status == GraphicsObjectStatus.loading)
+                return loading;
+            else
+                return error;
+        }
+
+        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
+        {
+            int variant = pso.GetVariantIndex(deviceResources, graphicsSignature, desc);
+            graphicsContext.SetPSO(pso, variant);
         }
     }
 }

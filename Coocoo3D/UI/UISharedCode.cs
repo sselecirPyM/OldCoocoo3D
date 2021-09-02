@@ -28,30 +28,31 @@ namespace Coocoo3D.UI
         {
             string pmxPath = pmxFile.Path;
             string relatePath = pmxFile.Name;
-            ModelPack pack = null;
+            ModelPack modelPack = null;
             lock (appBody.mainCaches.ModelPackCaches)
             {
-                pack = appBody.mainCaches.ModelPackCaches.GetOrCreate(pmxPath);
-                if (pack.LoadTask == null && pack.Status != GraphicsObjectStatus.loaded)
+                modelPack = appBody.mainCaches.ModelPackCaches.GetOrCreate(pmxPath);
+                modelPack.fullPath = pmxPath;
+                if (modelPack.LoadTask == null && modelPack.Status != GraphicsObjectStatus.loaded)
                 {
-                    pack.LoadTask = Task.Run(async () =>
+                    modelPack.LoadTask = Task.Run(async () =>
                     {
                         BinaryReader reader = new BinaryReader((await pmxFile.OpenReadAsync()).AsStreamForRead());
-                        pack.lastModifiedTime = (await pmxFile.GetBasicPropertiesAsync()).DateModified;
-                        pack.Reload(reader);
-                        pack.folder = storageFolder;
-                        pack.relativePath = relatePath;
+                        modelPack.lastModifiedTime = (await pmxFile.GetBasicPropertiesAsync()).DateModified;
+                        modelPack.Reload(reader);
+                        modelPack.folder = storageFolder;
+                        modelPack.relativePath = relatePath;
                         reader.Dispose();
-                        appBody.ProcessingList.AddObject(pack.GetMesh());
-                        pack.Status = GraphicsObjectStatus.loaded;
-                        pack.LoadTask = null;
+                        appBody.ProcessingList.AddObject(modelPack.GetMesh());
+                        modelPack.Status = GraphicsObjectStatus.loaded;
+                        modelPack.LoadTask = null;
                     });
                 }
             }
-            if (pack.Status != GraphicsObjectStatus.loaded && pack.LoadTask != null) await pack.LoadTask;
+            if (modelPack.Status != GraphicsObjectStatus.loaded && modelPack.LoadTask != null) await modelPack.LoadTask;
 
             GameObject gameObject = new GameObject();
-            gameObject.Reload2(appBody.ProcessingList, pack, GetTextureList(appBody, storageFolder, pack.pmx), pmxPath);
+            gameObject.Reload2(appBody.ProcessingList, modelPack, GetTextureList(appBody, storageFolder, modelPack.pmx), pmxPath);
             scene.AddGameObject(gameObject);
 
             appBody.RequireRender();

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -182,7 +183,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
                 rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, PSOSkinning);
-                graphicsContext.SetMeshVertex(rendererComponent.mesh);
+                graphicsContext.SetMeshVertex(context.GetMesh(rendererComponent.meshPath));
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 int indexCountAll = rendererComponent.meshVertexCount;
                 graphicsContext.Draw(indexCountAll, 0);
@@ -211,7 +212,7 @@ namespace Coocoo3D.RenderPipeline
                         }
                         tex = TextureStatusSelect(tex, texLoading, texError, texError);
 
-                        graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, rendererComponent.mesh, 0x1, counter.vertex, numIndex, material.indexCount, tex,
+                        graphicsContext.BuildBASAndParam(RayTracingScene, context.SkinningMeshBuffer, context.GetMesh(rendererComponent.meshPath), 0x1, counter.vertex, numIndex, material.indexCount, tex,
                             materialBuffers1.constantBuffers[counter.material / materialBuffers1.sliencesPerBuffer], (counter.material % materialBuffers1.sliencesPerBuffer) * 2);
                         counter.material++;
                         numIndex += material.indexCount;
@@ -226,7 +227,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.BuildTopAccelerationStructures(RayTracingScene);
                 graphicsContext.BuildShaderTable(RayTracingScene, c_rayGenShaderNames, c_missShaderNames, c_hitGroupNames, counter1.material);
                 graphicsContext.SetRootSignatureRayTracing(RayTracingScene);
-                graphicsContext.SetComputeUAVT(context.outputRTV, 0);
+                graphicsContext.SetComputeUAVT(context._GetTex2DByName("_Output0"), 0);
                 graphicsContext.SetComputeCBVR(CameraDataBuffer, 2);
                 graphicsContext.SetComputeSRVT(context.SkyBox, 3);
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
@@ -239,7 +240,7 @@ namespace Coocoo3D.RenderPipeline
                 var rootSignature = RPAssetsManager.GetRootSignature(context.deviceResources, "Cssss");
                 #region Render Sky box
                 graphicsContext.SetRootSignature(rootSignature);
-                graphicsContext.SetRTV(context.outputRTV, Vector4.Zero, true);
+                graphicsContext.SetRTV(context._GetTex2DByName("_Output0"), Vector4.Zero, true);
                 graphicsContext.SetCBVRSlot(CameraDataBuffer, 0, 0, 0);
                 graphicsContext.SetSRVTSlot(context.SkyBox, 3);
                 graphicsContext.SetMesh(context.ndcQuadMesh);

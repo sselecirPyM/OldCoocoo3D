@@ -72,6 +72,7 @@ namespace Coocoo3DGraphics
 
 		D3D_PRIMITIVE_TOPOLOGY m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 		std::map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_vertexBuffers;
+		std::map<std::string, D3D12_VERTEX_BUFFER_VIEW> m_vertexBufferViews;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_vertexBuffer;
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_indexBuffer;

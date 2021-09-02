@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -74,6 +75,10 @@ namespace Coocoo3D.RenderPipeline
 
         public Texture2D outputRTV = new Texture2D();
         public Texture2D finalOutput = new Texture2D();
+
+        public Dictionary<string, VisualChannel> visualChannels = new Dictionary<string, VisualChannel>();
+
+        public VisualChannel currentChannel;
 
         public Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
 
@@ -158,7 +163,6 @@ namespace Coocoo3D.RenderPipeline
         public RenderPipelineContext()
         {
             _bigBufferHandle = GCHandle.Alloc(bigBuffer);
-            XBufferGroup.Reload(deviceResources, 1024, 1024 * 256);
         }
         ~RenderPipelineContext()
         {
@@ -168,11 +172,16 @@ namespace Coocoo3D.RenderPipeline
         {
             graphicsContext.Reload(deviceResources);
             graphicsContext1.Reload(deviceResources);
+            XBufferGroup.Reload(deviceResources, 1024, 1024 * 256);
+            var visualChannel = new VisualChannel();
+            visualChannels["main"] = visualChannel;
+            visualChannel.Name = "main";
+            visualChannel.graphicsContext = graphicsContext;
         }
 
         public void BeginDynamicContext(bool enableDisplay, Settings settings)
         {
-            dynamicContextWrite.ClearCollections();
+            dynamicContextWrite.FrameBegin();
             dynamicContextWrite.EnableDisplay = enableDisplay;
             dynamicContextWrite.settings = settings;
             dynamicContextWrite.currentPassSetting = currentPassSetting;
@@ -205,16 +214,16 @@ namespace Coocoo3D.RenderPipeline
                 var rendererComponent = dynamicContextRead.renderers[i];
                 data1.vertexCount = rendererComponent.meshVertexCount;
                 data1.indexCount = rendererComponent.meshIndexCount;
-                IntPtr ptr1 = Marshal.UnsafeAddrOfPinnedArrayElement(bigBuffer, 0);
                 Matrix4x4 world = Matrix4x4.CreateFromQuaternion(rendererComponent.rotation) * Matrix4x4.CreateTranslation(rendererComponent.position);
-                Marshal.StructureToPtr(Matrix4x4.Transpose(world), ptr1, true);
 
-                Marshal.StructureToPtr(rendererComponent.meshVertexCount, ptr1 + 68, true);
-                Marshal.StructureToPtr(rendererComponent.meshIndexCount, ptr1 + 72, true);
-                Marshal.StructureToPtr(data1, ptr1 + 80, true);
+                CooUtility.Write(bigBuffer, 0, Matrix4x4.Transpose(world));
 
-                graphicsContext.UpdateResource(CBs_Bone[i], bigBuffer, 256, 0);
-                graphicsContext.UpdateResourceRegion(CBs_Bone[i], 256, rendererComponent.boneMatricesData, 65280, 0);
+                CooUtility.Write(bigBuffer, 68, rendererComponent.meshVertexCount);
+                CooUtility.Write(bigBuffer, 72, rendererComponent.meshIndexCount);
+
+                MemoryMarshal.Write(new Span<byte>(bigBuffer, 80, 16), ref data1);
+                MemoryMarshal.Cast<Matrix4x4, byte>(rendererComponent.boneMatricesData).CopyTo(new Span<byte>(bigBuffer, 256, 65280));
+                graphicsContext.UpdateResource(CBs_Bone[i], bigBuffer, 65536, 0);
                 data1.vertexStart += rendererComponent.meshVertexCount;
                 data1.indexStart += rendererComponent.meshIndexCount;
 
@@ -240,15 +249,9 @@ namespace Coocoo3D.RenderPipeline
                 deviceResources.InitializeMeshBuffer(SkinningMeshBuffer, SceneObjectVertexCount);
             }
         }
-        public void PrepareRootSignature(PassSetting passSetting)
-        {
-            if (passSetting == null) return;
-
-        }
         public void PrepareRenderTarget(PassSetting passSetting)
         {
             if (passSetting == null) return;
-
 
             foreach (var rt in passSetting.RenderTargets)
             {
@@ -292,8 +295,6 @@ namespace Coocoo3D.RenderPipeline
             int y = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Height), 1);
             screenSize.X = x;
             screenSize.Y = y;
-            //outputSize.X = x;
-            //outputSize.Y = y;
             if (outputRTV.GetWidth() != outputSize.X || outputRTV.GetHeight() != outputSize.Y)
             {
                 outputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
@@ -465,6 +466,8 @@ namespace Coocoo3D.RenderPipeline
 
         }
 
+        public MMDMesh GetMesh(string path) => mainCaches.ModelPackCaches[path].GetMesh();
+
         public void RefreshPassesRenderTarget(PassSetting passSetting)
         {
             foreach (var _pass1 in passSetting.RenderSequence)
@@ -549,8 +552,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 return tex2;
             }
-            //else if (name == "_Output0")
-            //    return outputRTV;
             return null;
         }
         public TextureCube _GetTexCubeByName(string name)
