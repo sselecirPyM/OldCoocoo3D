@@ -37,6 +37,8 @@ namespace Coocoo3D.RenderPipeline
 
         [XmlIgnore]
         public bool configured;
+        [XmlIgnore]
+        public HashSet<string> renderTargets;
         //[XmlIgnore]
         //public RayTracingStateObject RTSO;
 
@@ -105,10 +107,10 @@ namespace Coocoo3D.RenderPipeline
         public string[] RayGenShaders;
         [XmlIgnore]
         public string[] MissShaders;
-        [XmlIgnore]
-        public Texture2D[] renderTargets;
-        [XmlIgnore]
-        public Texture2D depthStencil;
+        //[XmlIgnore]
+        //public Texture2D[] renderTargets;
+        //[XmlIgnore]
+        //public Texture2D depthStencil;
         [XmlIgnore]
         public PSO PSODefault;
         [XmlIgnore]

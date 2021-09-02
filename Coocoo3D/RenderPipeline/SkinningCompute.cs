@@ -10,12 +10,8 @@ namespace Coocoo3D.RenderPipeline
 {
     public class SkinningCompute
     {
-        public static void MorphCompute(RenderPipelineContext context)
-        {
 
-        }
-
-        public void Process(RenderPipelineContext context)
+        public static void Process(RenderPipelineContext context)
         {
             var rpAssets = context.RPAssetsManager;
             var deviceResources = context.deviceResources;
@@ -42,7 +38,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSOMeshNone();
         }
 
-        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
+        private static void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
         {
             int variant = pso.GetVariantIndex(deviceResources, graphicsSignature, desc);
             graphicsContext.SetPSO(pso, variant);

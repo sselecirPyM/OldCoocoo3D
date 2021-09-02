@@ -42,7 +42,6 @@ namespace Coocoo3D.RenderPipeline
         //public bool RequireResize;
         public bool RequireResizeOuter;
         public Windows.Foundation.Size NewSize;
-        //public float AspectRatio;
         public RecordSettings recordSettings;
 
         public DateTime LatestRenderTime;
@@ -70,11 +69,7 @@ namespace Coocoo3D.RenderPipeline
         public byte[] bigBuffer = new byte[65536];
         GCHandle _bigBufferHandle;
 
-        public CBufferGroup XBufferGroup = new CBufferGroup();
         public MainCaches mainCaches = new MainCaches();
-
-        //public Texture2D outputRTV = new Texture2D();
-        //public Texture2D finalOutput = new Texture2D();
 
         public Dictionary<string, VisualChannel> visualChannels = new Dictionary<string, VisualChannel>();
 
@@ -143,8 +138,6 @@ namespace Coocoo3D.RenderPipeline
         public PassSetting customPassSetting;
 
         public Int2 screenSize;
-        //public Int2 outputSize;
-        //public Int2 sceneViewSize = new Int2(100, 100);
         public float dpi = 96.0f;
         public float logicScale = 1;
         public GameDriverContext gameDriverContext = new GameDriverContext()
@@ -172,12 +165,18 @@ namespace Coocoo3D.RenderPipeline
         {
             graphicsContext.Reload(deviceResources);
             graphicsContext1.Reload(deviceResources);
-            XBufferGroup.Reload(deviceResources, 1024, 1024 * 256);
+            currentChannel = AddVisualChannel("main");
+            AddVisualChannel("second");
+            deviceResources.InitializeMeshBuffer(SkinningMeshBuffer, 0);
+        }
+
+        public VisualChannel AddVisualChannel(string name)
+        {
             var visualChannel = new VisualChannel();
-            visualChannels["main"] = visualChannel;
-            visualChannel.Name = "main";
+            visualChannels[name] = visualChannel;
+            visualChannel.Name = name;
             visualChannel.graphicsContext = graphicsContext;
-            currentChannel = visualChannel;
+            return visualChannel;
         }
 
         public void BeginDynamicContext(bool enableDisplay, Settings settings)
@@ -262,10 +261,11 @@ namespace Coocoo3D.RenderPipeline
             var outputSize = visualChannel.outputSize;
             foreach (var rt in passSetting.RenderTargets)
             {
-                if (!RTs.TryGetValue(rt.Name, out var tex2d))
+                string rtName = string.Format("SceneView/{0}/{1}", visualChannel.Name, rt.Name);
+                if (!RTs.TryGetValue(rtName, out var tex2d))
                 {
                     tex2d = new Texture2D();
-                    RTs[rt.Name] = tex2d;
+                    RTs[rtName] = tex2d;
                 }
                 int x;
                 int y;
@@ -301,17 +301,7 @@ namespace Coocoo3D.RenderPipeline
             int y = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Height), 1);
             screenSize.X = x;
             screenSize.Y = y;
-            //if (outputRTV.GetWidth() != outputSize.X || outputRTV.GetHeight() != outputSize.Y)
-            //{
-            //outputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
-            //graphicsContext.UpdateRenderTexture(outputRTV);
 
-            //finalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
-            //graphicsContext.UpdateRenderTexture(finalOutput);
-
-            //}
-            //ReadBackTexture2D.Reload(outputSize.X, outputSize.Y, 4);
-            //graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
             dpi = deviceResources.GetDpi();
             logicScale = dpi / 96.0f;
             ConfigVisualChannels();
@@ -325,6 +315,7 @@ namespace Coocoo3D.RenderPipeline
                 {
                     visualChannel1.OutputRTV.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, outputFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
+                    RPAssetsManager.texture2ds[visualChannel1.GetTexName("Output")] = visualChannel1.OutputRTV;
 
                     visualChannel1.FinalOutput.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, swapChainFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
@@ -394,10 +385,6 @@ namespace Coocoo3D.RenderPipeline
         {
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
-            //foreach (var visualChannel in visualChannels.Values)
-            //{
-            //    PrepareRenderTarget(passSetting, visualChannel);
-            //}
             foreach (var pipelineState in passSetting.PipelineStates)
             {
                 PSO pso = new PSO();
@@ -415,8 +402,6 @@ namespace Coocoo3D.RenderPipeline
                 pso.Initialize(vs, gs, ps);
                 RPAssetsManager.PSOs[pipelineState.Name] = pso;
             }
-            //foreach (var visualChannel in visualChannels.Values)
-            //    RefreshPassesRenderTarget(passSetting, visualChannel);
             foreach (var pass in passSetting.RenderSequence)
             {
                 if (pass.Type == "Swap") continue;
@@ -488,6 +473,7 @@ namespace Coocoo3D.RenderPipeline
                 RPAssetsManager.PSOs[pass.Pass.Name] = pso;
             }
             passSetting.configured = true;
+            passSetting.renderTargets = passSetting.RenderTargets.Select(u => u.Name).ToHashSet();
             return true;
 
         }
@@ -496,22 +482,22 @@ namespace Coocoo3D.RenderPipeline
 
         public void RefreshPassesRenderTarget(PassSetting passSetting, VisualChannel visualChannel)
         {
-            foreach (var _pass1 in passSetting.RenderSequence)
-            {
-                if (_pass1.Type == "Swap") continue;
+            //foreach (var _pass1 in passSetting.RenderSequence)
+            //{
+            //    if (_pass1.Type == "Swap") continue;
 
-                _pass1.depthStencil = _GetTex2DByName(_pass1.DepthStencil);
-                var t1 = new Texture2D[_pass1.RenderTargets.Count];
-                for (int i = 0; i < _pass1.RenderTargets.Count; i++)
-                {
-                    string renderTarget = _pass1.RenderTargets[i];
-                    if (renderTarget == "_Output0")
-                        t1[i] = visualChannel.OutputRTV;
-                    else
-                        t1[i] = _GetTex2DByName(renderTarget);
-                }
-                _pass1.renderTargets = t1;
-            }
+            //    _pass1.depthStencil = _GetTex2DByName(_pass1.DepthStencil);
+            //    var t1 = new Texture2D[_pass1.RenderTargets.Count];
+            //    for (int i = 0; i < _pass1.RenderTargets.Count; i++)
+            //    {
+            //        string renderTarget = _pass1.RenderTargets[i];
+            //        if (renderTarget == "_Output0")
+            //            t1[i] = visualChannel.OutputRTV;
+            //        else
+            //            t1[i] = _GetTex2DByName(renderTarget);
+            //    }
+            //    _pass1.renderTargets = t1;
+            //}
         }
         //public async Task ConfigRayTracing(PassSetting passSetting)
         //{

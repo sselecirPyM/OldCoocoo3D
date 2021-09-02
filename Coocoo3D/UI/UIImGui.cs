@@ -151,7 +151,7 @@ namespace Coocoo3D.UI
             {
                 ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
                 ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin(string.Format("场景视图###SceneView{0}",visualChannel.Name)))
+                if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}",visualChannel.Name)))
                 {
                     SceneView(appBody,visualChannel, mouseWheelDelta, mouseMoveDelta);
                 }
@@ -279,7 +279,7 @@ namespace Coocoo3D.UI
                     if (a == a)
                         appBody.GameDriverContext.FrameInterval = 1 / a;
                 }
-                if (ImGui.Combo("渲染管线", ref appBody.renderPipelineIndex, renderPipelines, 4))
+                if (ImGui.Combo("渲染管线", ref appBody.renderPipelineIndex, renderPipelines, renderPipelines.Length))
                 {
                     appBody.SwitchToRenderPipeline(appBody.renderPipelineIndex);
                 }
@@ -550,6 +550,7 @@ vmd格式动作");
                     channel.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
                 if (io.MouseDown[2])
                     channel.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
+                appBody.RPContext.currentChannel = channel;
             }
             if (ImGui.IsItemHovered())
             {
@@ -635,7 +636,7 @@ vmd格式动作");
         }
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
-        static string[] renderPipelines = new[] { "前向", "延迟", "光线追踪", "自定义" };
+        static string[] renderPipelines = new[] { "前向", "延迟", /*"光线追踪",*/ "自定义" };
     }
     class _openRequest
     {

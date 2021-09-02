@@ -31,7 +31,6 @@ namespace Coocoo3D.Core
 
         public List<GameObject> SelectedGameObjects = new List<GameObject>();
 
-        //public Camera camera = new Camera();
         public GameDriver GameDriver;
         public GeneralGameDriver _GeneralGameDriver = new GeneralGameDriver();
         public RecorderGameDriver _RecorderGameDriver = new RecorderGameDriver();
@@ -92,7 +91,6 @@ namespace Coocoo3D.Core
                 forwardRenderPipeline2.Reload(deviceResources);
                 postProcess.Reload(deviceResources);
                 widgetRenderer.Reload(RPContext);
-                deviceResources.InitializeMeshBuffer(RPContext.SkinningMeshBuffer, 0);
                 if (deviceResources.IsRayTracingSupport())
                 {
                     rayTracingRenderPipeline1.Reload(deviceResources);
@@ -249,7 +247,7 @@ namespace Coocoo3D.Core
                 VirtualRenderCount++;
             }
 
-            foreach(var visualChannel in RPContext.visualChannels.Values)
+            foreach (var visualChannel in RPContext.visualChannels.Values)
             {
                 visualChannel.Onframe(RPContext);
             }
@@ -268,9 +266,11 @@ namespace Coocoo3D.Core
                     graphicsContext.SetDescriptorHeapDefault();
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
-                        var visualChannel = RPContext.visualChannels["main"];
-                        currentRenderPipeline.PrepareRenderData(RPContext, visualChannel);
-                        postProcess.PrepareRenderData(RPContext, visualChannel);
+                        foreach (var visualChannel in RPContext.visualChannels.Values)
+                        {
+                            currentRenderPipeline.PrepareRenderData(RPContext, visualChannel);
+                            postProcess.PrepareRenderData(RPContext, visualChannel);
+                        }
                     }
                     widgetRenderer.PrepareRenderData(RPContext, graphicsContext);
                     RPContext.UpdateGPUResource();
@@ -291,11 +291,14 @@ namespace Coocoo3D.Core
 
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
-                        var visualChannel = RPContext.visualChannels["main"];
-                        currentRenderPipeline.RenderCamera(RPContext, visualChannel);
-                        postProcess.RenderCamera(RPContext, visualChannel);
-                        GameDriver.AfterRender(RPContext, graphicsContext);
+                        SkinningCompute.Process(RPContext);
+                        foreach (var visualChannel in RPContext.visualChannels.Values)
+                        {
+                            currentRenderPipeline.RenderCamera(RPContext, visualChannel);
+                            postProcess.RenderCamera(RPContext, visualChannel);
+                        }
                     }
+                    GameDriver.AfterRender(RPContext, graphicsContext);
                     widgetRenderer.RenderCamera(RPContext, graphicsContext);
                     graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._RENDER_TARGET, D3D12ResourceStates._PRESENT);
                     graphicsContext.EndCommand();
@@ -326,11 +329,12 @@ namespace Coocoo3D.Core
                     _currentRenderPipeline = forwardRenderPipeline2;
                     RPContext.SetCurrentPassSetting(RPContext.deferredPassSetting);
                 }
-                if (currentRenderPipelineIndex == 2)
-                {
-                    _currentRenderPipeline = rayTracingRenderPipeline1;
-                }
-                else if (currentRenderPipelineIndex == 3)
+                //if (currentRenderPipelineIndex == 2)
+                //{
+                //    _currentRenderPipeline = rayTracingRenderPipeline1;
+                //}
+                //else if (currentRenderPipelineIndex == 3)
+                else if (currentRenderPipelineIndex == 2)
                 {
                     if (RPContext.customPassSetting != null)
                     {

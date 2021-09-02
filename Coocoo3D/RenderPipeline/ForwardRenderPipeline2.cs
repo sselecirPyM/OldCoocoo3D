@@ -20,8 +20,8 @@ namespace Coocoo3D.RenderPipeline
         {
             Ready = true;
         }
-
-        Random random = new Random();
+        [ThreadStatic]
+        static Random random = new Random();
 
         struct _Counters
         {
@@ -29,7 +29,6 @@ namespace Coocoo3D.RenderPipeline
             public int vertex;
         }
 
-        bool HasMainLight;
         public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var deviceResources = context.deviceResources;
@@ -61,10 +60,10 @@ namespace Coocoo3D.RenderPipeline
                 lightCameraMatrix0 = Matrix4x4.Transpose(lightCameraMatrix0);
                 invLightCameraMatrix0 = Matrix4x4.Transpose(invLightCameraMatrix0);
 
-                HasMainLight = true;
+                visualChannel.customDataInt["mainLight"] = 1;
             }
             else
-                HasMainLight = false;
+                visualChannel.customDataInt["mainLight"] = 0;
             for (int i = 1; i < lightings.Count; i++)
             {
                 LightingData lighting = lightings[i];
@@ -77,11 +76,13 @@ namespace Coocoo3D.RenderPipeline
             foreach (MMDRendererComponent v in rendererComponents)
                 numMaterials += v.Materials.Count;
 
-            int numofBuffer = 0;
-            foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
-                if (combinedPass.Pass?.CBVs != null)
-                    numofBuffer += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
-            context.XBufferGroup.SetSlienceCount(numofBuffer);
+            var XBufferGroup = visualChannel.XBufferGroup;
+
+            //int numofBuffer = 0;
+            //foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
+            //    if (combinedPass.Pass?.CBVs != null)
+            //        numofBuffer += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
+            //context.XBufferGroup.SetSlienceCount(numofBuffer);
 
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
@@ -93,7 +94,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Pass.Camera == "ShadowMap")
                 {
-                    if (!(HasMainLight && settings.EnableShadow)) continue;
+                    if (!(visualChannel.customDataInt["mainLight"] == 1 && settings.EnableShadow)) continue;
                 }
                 if (combinedPass.Pass.CBVs.Count == 0) continue;
                 if (combinedPass.DrawObjects)
@@ -108,7 +109,7 @@ namespace Coocoo3D.RenderPipeline
                             foreach (var cbv in combinedPass.Pass.CBVs)
                             {
                                 int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, material, rendererComponent);
-                                context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
+                                XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
                                 matC++;
                             }
                         }
@@ -118,12 +119,31 @@ namespace Coocoo3D.RenderPipeline
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
                         int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, null, null);
-                        context.XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
+                        XBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, ofs, matC);
                         matC++;
                     }
                 }
             }
-            context.XBufferGroup.UpdateSlienceComplete(graphicsContext);
+            XBufferGroup.UpdateSlienceComplete(graphicsContext);
+
+            Texture2D _GetTex2D(RuntimeMaterial material, string name)
+            {
+                Texture2D tex2D = null;
+                if (name == "_Output0") return visualChannel.OutputRTV;
+
+                if (material != null && material.textures.TryGetValue(name, out string texPath) && context.mainCaches.TextureCaches.TryGetValue(texPath, out var texPack))
+                    tex2D = texPack.texture2D;
+
+                if (tex2D == null)
+                {
+                    if (context.dynamicContextRead.currentPassSetting.renderTargets.Contains(name))
+                        tex2D = context._GetTex2DByName(string.Format("SceneView/{0}/{1}", visualChannel.Name, name));
+                    else
+                        tex2D = context._GetTex2DByName(name);
+                }
+                return tex2D;
+            }
+
             //着色器可读取数据
             int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
@@ -176,18 +196,22 @@ namespace Coocoo3D.RenderPipeline
                             ofs += CooUtility.Write(_buffer, ofs, (float)context.dynamicContextRead.Time);
                             break;
                         case "WidthHeight":
-                            if (_pass.renderTargets != null && _pass.renderTargets.Length > 0)
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, _pass.renderTargets[0].GetWidth());
-                                ofs += CooUtility.Write(_buffer, ofs, _pass.renderTargets[0].GetHeight());
+                                var depthStencil = _GetTex2D(material, _pass.DepthStencil);
+                                if (_pass.RenderTargets != null && _pass.RenderTargets.Count > 0)
+                                {
+                                    Texture2D renderTarget = _GetTex2D(material, _pass.RenderTargets[0]);
+                                    ofs += CooUtility.Write(_buffer, ofs, renderTarget.GetWidth());
+                                    ofs += CooUtility.Write(_buffer, ofs, renderTarget.GetHeight());
+                                }
+                                else if (!string.IsNullOrEmpty(_pass.DepthStencil))
+                                {
+                                    ofs += CooUtility.Write(_buffer, ofs, depthStencil.GetWidth());
+                                    ofs += CooUtility.Write(_buffer, ofs, depthStencil.GetHeight());
+                                }
+                                else
+                                    ofs += sizeof(int) * 2;
                             }
-                            else if (_pass.depthStencil != null)
-                            {
-                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthStencil.GetWidth());
-                                ofs += CooUtility.Write(_buffer, ofs, _pass.depthStencil.GetHeight());
-                            }
-                            else
-                                ofs += sizeof(int) * 2;
                             break;
                         case "Camera":
                             if (_pass.Pass.Camera == "Main")
@@ -315,6 +339,7 @@ namespace Coocoo3D.RenderPipeline
             var graphicsContext = visualChannel.graphicsContext;
             var rendererComponents = context.dynamicContextRead.renderers;
             var settings = context.dynamicContextRead.settings;
+            var XBufferGroup = visualChannel.XBufferGroup;
             Texture2D texLoading = context.TextureLoading;
             Texture2D texError = context.TextureError;
             Texture2D _Tex(Texture2D _tex)
@@ -329,27 +354,8 @@ namespace Coocoo3D.RenderPipeline
             var rpAssets = context.RPAssetsManager;
             var deviceResources = context.deviceResources;
 
-            PSO PSOSkinning = rpAssets.PSOs["PSOMMDSkinning"];
             PSO psoLoading = rpAssets.PSOs["Loading"];
             PSO psoError = rpAssets.PSOs["Error"];
-            #region Skinning
-            graphicsContext.SetRootSignature(rpAssets.rootSignatureSkinning);
-            graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
-            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
-            {
-                var Materials = rendererComponent.Materials;
-                graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
-                rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
-                var psoSkinning = PSOSelect(deviceResources, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, shaderSkinning, PSOSkinning, PSOSkinning, PSOSkinning);
-                SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
-                graphicsContext.SetMeshVertex(context.GetMesh(rendererComponent.meshPath));
-                graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
-                graphicsContext.Draw(rendererComponent.meshVertexCount, 0);
-            }
-            for (int i = 0; i < rendererComponents.Count; i++)
-                EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
-            graphicsContext.SetSOMeshNone();
-            #endregion
 
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
@@ -372,27 +378,35 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Pass.Camera == "ShadowMap")
                 {
-                    if (!(HasMainLight && settings.EnableShadow)) continue;
+                    if (!(visualChannel.customDataInt["mainLight"] == 1 && settings.EnableShadow)) continue;
                 }
                 GraphicsSignature rootSignature = rpAssets.GetRootSignature(deviceResources, combinedPass.rootSignatureKey);
 
                 graphicsContext.SetRootSignature(rootSignature);
-                if (combinedPass.renderTargets.Length == 0)
-                    graphicsContext.SetDSV(combinedPass.depthStencil, combinedPass.ClearDepth);
-                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthStencil != null)
-                    graphicsContext.SetRTVDSV(combinedPass.renderTargets, combinedPass.depthStencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
-                else if (combinedPass.renderTargets.Length != 0 && combinedPass.depthStencil == null)
-                    graphicsContext.SetRTV(combinedPass.renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
+
+                Texture2D depthStencil = _GetTex2D1(combinedPass.DepthStencil);
+                Texture2D[] renderTargets = new Texture2D[combinedPass.RenderTargets.Count];
+                for (int i = 0; i < combinedPass.RenderTargets.Count; i++)
+                {
+                    renderTargets[i] = _GetTex2D1(combinedPass.RenderTargets[i]);
+                }
+
+                if (combinedPass.RenderTargets.Count == 0)
+                    graphicsContext.SetDSV(depthStencil, combinedPass.ClearDepth);
+                else if (combinedPass.RenderTargets.Count != 0 && depthStencil != null)
+                    graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
+                else if (combinedPass.RenderTargets.Count != 0 && depthStencil == null)
+                    graphicsContext.SetRTV(renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
 
                 PSODesc passPsoDesc;
                 passPsoDesc.blendState = combinedPass.BlendMode;
                 passPsoDesc.cullMode = combinedPass.CullMode;
                 passPsoDesc.depthBias = combinedPass.DepthBias;
                 passPsoDesc.slopeScaledDepthBias = combinedPass.SlopeScaledDepthBias;
-                passPsoDesc.dsvFormat = combinedPass.depthStencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.depthStencil.GetFormat();
+                passPsoDesc.dsvFormat = depthStencil == null ? DxgiFormat.DXGI_FORMAT_UNKNOWN : depthStencil.GetFormat();
                 passPsoDesc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
-                passPsoDesc.rtvFormat = combinedPass.renderTargets.Length == 0 ? DxgiFormat.DXGI_FORMAT_UNKNOWN : combinedPass.renderTargets[0].GetFormat();
-                passPsoDesc.renderTargetCount = combinedPass.renderTargets.Length;
+                passPsoDesc.rtvFormat = combinedPass.RenderTargets.Count == 0 ? DxgiFormat.DXGI_FORMAT_UNKNOWN : renderTargets[0].GetFormat();
+                passPsoDesc.renderTargetCount = combinedPass.RenderTargets.Count;
                 passPsoDesc.streamOutput = false;
                 passPsoDesc.wireFrame = false;
                 _PassSetRes1(null, combinedPass);
@@ -411,7 +425,7 @@ namespace Coocoo3D.RenderPipeline
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        context.XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
+                        XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
                         matC++;
                     }
                     passPsoDesc.inputLayout = EInputLayout.postProcess;
@@ -442,7 +456,7 @@ namespace Coocoo3D.RenderPipeline
                             }
                             foreach (var cbv in _combinedPass.Pass.CBVs)
                             {
-                                context.XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
+                                XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
                                 matC++;
                             }
                             _PassSetRes1(material, _combinedPass);
@@ -511,10 +525,7 @@ namespace Coocoo3D.RenderPipeline
                         else if (resd.ResourceType == "Texture2D")
                         {
                             Texture2D tex2D = null;
-                            if (material != null && material.textures.TryGetValue(resd.Resource, out string texPath) && context.mainCaches.TextureCaches.TryGetValue(texPath, out var texPack))
-                                tex2D = texPack.texture2D;
-                            if (tex2D == null)
-                                tex2D = context._GetTex2DByName(resd.Resource);
+                            tex2D = _GetTex2D(material, resd.Resource);
 
                             if (tex2D != null)
                             {
@@ -523,6 +534,43 @@ namespace Coocoo3D.RenderPipeline
                         }
                     }
             }
+            Texture2D _GetTex2D(RuntimeMaterial material, string name)
+            {
+                if (string.IsNullOrEmpty(name))
+                    return null;
+
+                if (name == "_Output0") return visualChannel.OutputRTV;
+                Texture2D tex2D = null;
+                if (material != null && material.textures.TryGetValue(name, out string texPath) && context.mainCaches.TextureCaches.TryGetValue(texPath, out var texPack))
+                    tex2D = texPack.texture2D;
+
+                if (tex2D == null)
+                {
+                    if (context.dynamicContextRead.currentPassSetting.renderTargets.Contains(name))
+                        tex2D = context._GetTex2DByName(string.Format("SceneView/{0}/{1}", visualChannel.Name, name));
+                    else
+                        tex2D = context._GetTex2DByName(name);
+                }
+                return tex2D;
+            }
+            Texture2D _GetTex2D1(string name)
+            {
+                if (string.IsNullOrEmpty(name))
+                    return null;
+
+                if (name == "_Output0") return visualChannel.OutputRTV;
+                Texture2D tex2D = null;
+
+                if (tex2D == null)
+                {
+                    if (context.dynamicContextRead.currentPassSetting.renderTargets.Contains(name))
+                        tex2D = context._GetTex2DByName(string.Format("SceneView/{0}/{1}", visualChannel.Name, name));
+                    else
+                        tex2D = context._GetTex2DByName(name);
+                }
+                return tex2D;
+            }
+
             //void _PassSetResRayTracing(PassMatch1 _combinedPass)
             //{
             //    if (_combinedPass.Pass.SRVs != null)

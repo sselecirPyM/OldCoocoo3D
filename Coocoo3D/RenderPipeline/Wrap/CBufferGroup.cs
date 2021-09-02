@@ -19,7 +19,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
 
         byte[] tempBuffer;
         int lastUpdateBufferIndex = 0;
-        public void Reload(DeviceResources deviceResources,int slienceSize, int bufferSize)
+        public void Reload(DeviceResources deviceResources, int slienceSize, int bufferSize)
         {
             this.slienceSize = slienceSize;
             this.bufferSize = bufferSize;
@@ -27,6 +27,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
             sliencesPerBuffer = bufferSize / slienceSize;
             sizeD256 = slienceSize / 256;
             tempBuffer = new byte[bufferSize];
+            SetSlienceCount(1);
         }
 
         public void SetSlienceCount(int count)
@@ -58,6 +59,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
             else
             {
                 graphicsContext.UpdateResource(constantBuffers[lastUpdateBufferIndex], tempBuffer, (uint)bufferSize, 0);
+                SetSlienceCount(slience1 + 1);
                 lastUpdateBufferIndex = slience1;
                 Array.Copy(data, dataOffset, tempBuffer, slience2 * slienceSize, dataLength);
             }

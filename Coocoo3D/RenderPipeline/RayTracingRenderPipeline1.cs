@@ -34,7 +34,8 @@ namespace Coocoo3D.RenderPipeline
         };
 
         RayTracingScene RayTracingScene = new RayTracingScene();
-        Random randomGenerator = new Random();
+        [ThreadStatic]
+        static Random randomGenerator = new Random();
 
         public CBuffer CameraDataBuffer = new CBuffer();
         public CBuffer LightCameraDataBuffer = new CBuffer();
@@ -42,11 +43,11 @@ namespace Coocoo3D.RenderPipeline
 
         public RayTracingRenderPipeline1()
         {
-            materialBuffers1.Reload(c_materialDataSize, 65536);
         }
 
         public void Reload(DeviceResources deviceResources)
         {
+            materialBuffers1.Reload(deviceResources, c_materialDataSize, 65536);
             deviceResources.InitializeSBuffer(CameraDataBuffer, c_presentDataSize);
             deviceResources.InitializeCBuffer(LightCameraDataBuffer, c_lightCameraDataSize);
         }
@@ -72,9 +73,6 @@ namespace Coocoo3D.RenderPipeline
         }
         #endregion
 
-
-        bool HasMainLight;
-        int renderMatCount = 0;
         public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var graphicsContext = visualChannel.graphicsContext;
@@ -85,7 +83,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 countMaterials += rendererComponents[i].Materials.Count;
             }
-            DesireMaterialBuffers(deviceResources, countMaterials);
+            DesireMaterialBuffers(countMaterials);
             //var cameras = context.dynamicContextRead.cameras;
             var camera = visualChannel.cameraData;
             ref var settings = ref context.dynamicContextRead.settings;
@@ -163,8 +161,9 @@ namespace Coocoo3D.RenderPipeline
                 counterMaterial.vertex += rendererComponents[i].meshVertexCount;
             }
             #endregion
-            renderMatCount = counterMaterial.material;
-            if (renderMatCount > 0)
+            
+            visualChannel.customDataInt["renderMatCount"] = counterMaterial.material;
+            if (visualChannel.customDataInt["renderMatCount"] > 0)
                 materialBuffers1.UpdateSlienceComplete(graphicsContext);
         }
 
@@ -174,29 +173,10 @@ namespace Coocoo3D.RenderPipeline
             var RPAssetsManager = context.RPAssetsManager;
 
             var rendererComponents = context.dynamicContextRead.renderers;
-            graphicsContext.SetRootSignature(RPAssetsManager.rootSignatureSkinning);
-            graphicsContext.SetSOMesh(context.SkinningMeshBuffer);
-            //var shadowDepth = RPAssetsManager.PSOs["PSOMMDShadowDepth"];
-            var PSOSkinning = RPAssetsManager.PSOs["PSOMMDSkinning"];
-
-            void EntitySkinning(MMDRendererComponent rendererComponent, CBuffer entityBoneDataBuffer)
-            {
-                var Materials = rendererComponent.Materials;
-                graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
-                rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, RPAssetsManager.rootSignatureSkinning, ref context.SkinningDesc, PSOSkinning);
-                graphicsContext.SetMeshVertex(context.GetMesh(rendererComponent.meshPath));
-                graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
-                int indexCountAll = rendererComponent.meshVertexCount;
-                graphicsContext.Draw(indexCountAll, 0);
-            }
-            for (int i = 0; i < rendererComponents.Count; i++)
-                EntitySkinning(rendererComponents[i], context.CBs_Bone[i]);
-            graphicsContext.SetSOMeshNone();
 
             if (rendererComponents.Count > 0)
             {
-                graphicsContext.Prepare(RayTracingScene, renderMatCount);
+                graphicsContext.Prepare(RayTracingScene, visualChannel.customDataInt["renderMatCount"]);
                 void BuildEntityBAS1(MMDRendererComponent rendererComponent, ref _Counters counter)
                 {
                     Texture2D texLoading = context.TextureLoading;
@@ -265,9 +245,9 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        private void DesireMaterialBuffers(DeviceResources deviceResources, int count)
+        private void DesireMaterialBuffers(int count)
         {
-            materialBuffers1.SetSlienceCount(deviceResources, count);
+            materialBuffers1.SetSlienceCount(count);
         }
     }
 }

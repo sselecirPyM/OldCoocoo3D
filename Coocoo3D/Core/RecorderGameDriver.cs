@@ -96,6 +96,12 @@ namespace Coocoo3D.Core
             {
                 int index1 = RecordCount % c_frameCount;
                 var visualchannel = rpContext.visualChannels["main"];
+                if (rpContext.ReadBackTexture2D.GetWidth() != visualchannel.outputSize.X || rpContext.ReadBackTexture2D.GetHeight() != visualchannel.outputSize.Y)
+                {
+                    rpContext.ReadBackTexture2D.Reload(visualchannel.outputSize.X, visualchannel.outputSize.Y, 4);
+                    graphicsContext.UpdateReadBackTexture(rpContext.ReadBackTexture2D);
+                }
+
                 graphicsContext.CopyTexture(rpContext.ReadBackTexture2D, visualchannel.FinalOutput, index1);
                 if (RecordCount >= c_frameCount)
                 {
