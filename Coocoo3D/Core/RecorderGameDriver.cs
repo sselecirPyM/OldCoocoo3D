@@ -32,9 +32,9 @@ namespace Coocoo3D.Core
                 context.PlaySpeed = 2.0f;
                 context.PlayTime = 0.0f;
                 float logicSizeScale = rpContext.deviceResources.GetDpi() / 96.0f;
-                //context.NewSize = new Windows.Foundation.Size(recordSettings.Width / logicSizeScale, recordSettings.Height / logicSizeScale);
-                rpContext.outputSize = new Numerics.Int2(recordSettings.Width, recordSettings.Height);
-                context.AspectRatio = (float)rpContext.outputSize.X / (float)rpContext.outputSize.Y;
+                var visualchannel = rpContext.visualChannels["main"];
+                visualchannel.outputSize = new Numerics.Int2(recordSettings.Width, recordSettings.Height);
+                visualchannel.camera.AspectRatio = (float)recordSettings.Width / (float)recordSettings.Height;
                 //context.RequireResize = true;
                 context.RequireResetPhysics = true;
                 StartTime = recordSettings.StartTime;
@@ -46,7 +46,6 @@ namespace Coocoo3D.Core
             else
             {
             }
-            context.AspectRatio = (float)recordSettings.Width / (float)recordSettings.Height;
 
             context.DeltaTime = FrameIntervalF;
             context.PlayTime = FrameIntervalF * RenderCount;
@@ -96,7 +95,8 @@ namespace Coocoo3D.Core
             if (context.PlayTime >= StartTime && (RenderCount - c_frameCount) * FrameIntervalF <= StopTime)
             {
                 int index1 = RecordCount % c_frameCount;
-                graphicsContext.CopyTexture(rpContext.ReadBackTexture2D, rpContext.finalOutput, index1);
+                var visualchannel = rpContext.visualChannels["main"];
+                graphicsContext.CopyTexture(rpContext.ReadBackTexture2D, visualchannel.FinalOutput, index1);
                 if (RecordCount >= c_frameCount)
                 {
                     rpContext.ReadBackTexture2D.GetDataTolocal(index1);

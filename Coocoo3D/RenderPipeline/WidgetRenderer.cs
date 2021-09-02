@@ -50,12 +50,12 @@ namespace Coocoo3D.RenderPipeline
 
         public void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
-            var cam = context.dynamicContextRead.cameras[0];
+            //var cam = context.dynamicContextRead.cameras[0];
 
             //var selectedLightings = context.dynamicContextRead.selectedLightings;
 
-            var tvp = Matrix4x4.Transpose(cam.vpMatrix);
-            MemoryMarshal.Write(new Span<byte>(context.bigBuffer, 0, 64), ref tvp);
+            //var tvp = Matrix4x4.Transpose(cam.vpMatrix);
+            //MemoryMarshal.Write(new Span<byte>(context.bigBuffer, 0, 64), ref tvp);
 
             CBufferGroup.SetSlienceCount(/*selectedLightings.Count + context.dynamicContextRead.volumes.Count +*/ 1);
 

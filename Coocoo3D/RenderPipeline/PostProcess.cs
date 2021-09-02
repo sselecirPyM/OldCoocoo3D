@@ -21,17 +21,18 @@ namespace Coocoo3D.RenderPipeline
             Ready = true;
         }
 
-        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
 
         }
 
-        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var rsPostProcess = context.RPAssetsManager.GetRootSignature(context.deviceResources,"CCs");
+            var graphicsContext = visualChannel.graphicsContext;
             graphicsContext.SetRootSignature(rsPostProcess);
-            graphicsContext.SetRTV(context.finalOutput, System.Numerics.Vector4.Zero, true);
-            graphicsContext.SetSRVTSlot(context.outputRTV, 0);
+            graphicsContext.SetRTV(visualChannel.FinalOutput, System.Numerics.Vector4.Zero, true);
+            graphicsContext.SetSRVTSlot(visualChannel.OutputRTV, 0);
             graphicsContext.SetMesh(context.ndcQuadMesh);
             PSODesc desc = new PSODesc
             {

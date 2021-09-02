@@ -30,14 +30,15 @@ namespace Coocoo3D.RenderPipeline
         }
 
         bool HasMainLight;
-        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var deviceResources = context.deviceResources;
+            var graphicsContext = visualChannel.graphicsContext;
             //var cameras = context.dynamicContextRead.cameras;
             var settings = context.dynamicContextRead.settings;
             var rendererComponents = context.dynamicContextRead.renderers;
             var lightings = context.dynamicContextRead.lightings;
-            var camera = context.dynamicContextRead.cameras[0];
+            var camera = visualChannel.cameraData;
             var bigBuffer = context.bigBuffer;
             List<LightingData> pointLights = new List<LightingData>();
 
@@ -309,8 +310,9 @@ namespace Coocoo3D.RenderPipeline
             }
         }
         //you can fold local function in your editor
-        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
+            var graphicsContext = visualChannel.graphicsContext;
             var rendererComponents = context.dynamicContextRead.renderers;
             var settings = context.dynamicContextRead.settings;
             Texture2D texLoading = context.TextureLoading;
@@ -352,19 +354,19 @@ namespace Coocoo3D.RenderPipeline
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
-                if (combinedPass.Type == "Swap")
-                {
-                    //swap all render target
-                    var a = context.RTs[combinedPass.RenderTargets[0]];
-                    for (int i = 0; i < combinedPass.RenderTargets.Count - 1; i++)
-                    {
-                        context.RTs[combinedPass.RenderTargets[i]] = context.RTs[combinedPass.RenderTargets[i + 1]];
-                    }
-                    context.RTs[combinedPass.RenderTargets[combinedPass.RenderTargets.Count - 1]] = a;
-                    context.RefreshPassesRenderTarget(context.dynamicContextRead.currentPassSetting);
+                //if (combinedPass.Type == "Swap")
+                //{
+                //    //swap all render target
+                //    var a = context.RTs[combinedPass.RenderTargets[0]];
+                //    for (int i = 0; i < combinedPass.RenderTargets.Count - 1; i++)
+                //    {
+                //        context.RTs[combinedPass.RenderTargets[i]] = context.RTs[combinedPass.RenderTargets[i + 1]];
+                //    }
+                //    context.RTs[combinedPass.RenderTargets[combinedPass.RenderTargets.Count - 1]] = a;
+                //    context.RefreshPassesRenderTarget(context.dynamicContextRead.currentPassSetting, visualChannel);
 
-                    continue;
-                }
+                //    continue;
+                //}
                 if (combinedPass.Pass.Camera == "Main")
                 {
                 }

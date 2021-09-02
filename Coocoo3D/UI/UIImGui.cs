@@ -147,13 +147,16 @@ namespace Coocoo3D.UI
                 SceneHierarchy(appBody);
             }
             ImGui.End();
-            ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
-            if (ImGui.Begin("场景视图"))
+            foreach (var visualChannel in appBody.RPContext.visualChannels.Values)
             {
-                SceneView(appBody, mouseWheelDelta, mouseMoveDelta);
+                ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
+                ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
+                if (ImGui.Begin(string.Format("场景视图###SceneView{0}",visualChannel.Name)))
+                {
+                    SceneView(appBody,visualChannel, mouseWheelDelta, mouseMoveDelta);
+                }
+                ImGui.End();
             }
-            ImGui.End();
             ImGui.SetNextWindowSize(new Vector2(300, 300), ImGuiCond.Once);
             ImGui.SetNextWindowPos(new Vector2(0, 400), ImGuiCond.Once);
             if (ImGui.Begin("物体"))
@@ -224,6 +227,7 @@ namespace Coocoo3D.UI
 
         static void Common(Coocoo3DMain appBody)
         {
+            var camera = appBody.RPContext.currentChannel.camera;
             if (ImGui.TreeNode("transform"))
             {
                 ImGui.DragFloat3("位置", ref position, 0.1f);
@@ -234,15 +238,15 @@ namespace Coocoo3D.UI
             }
             if (ImGui.TreeNode("相机"))
             {
-                ImGui.DragFloat("距离", ref appBody.camera.Distance);
-                ImGui.DragFloat3("焦点", ref appBody.camera.LookAtPoint, 0.05f);
-                Vector3 a = appBody.camera.Angle / MathF.PI * 180;
+                ImGui.DragFloat("距离", ref camera.Distance);
+                ImGui.DragFloat3("焦点", ref camera.LookAtPoint, 0.05f);
+                Vector3 a = camera.Angle / MathF.PI * 180;
                 if (ImGui.DragFloat3("角度", ref a))
-                    appBody.camera.Angle = a * MathF.PI / 180;
-                float fov = appBody.camera.Fov / MathF.PI * 180;
+                    camera.Angle = a * MathF.PI / 180;
+                float fov = camera.Fov / MathF.PI * 180;
                 if (ImGui.DragFloat("FOV", ref fov))
-                    appBody.camera.Fov = fov * MathF.PI / 180;
-                ImGui.Checkbox("使用镜头运动文件", ref appBody.camera.CameraMotionOn);
+                    camera.Fov = fov * MathF.PI / 180;
+                ImGui.Checkbox("使用镜头运动文件", ref camera.CameraMotionOn);
                 ImGui.TreePop();
             }
             if (ImGui.TreeNode("录制"))
@@ -275,7 +279,7 @@ namespace Coocoo3D.UI
                     if (a == a)
                         appBody.GameDriverContext.FrameInterval = 1 / a;
                 }
-                if(ImGui.Combo("渲染管线",ref appBody.renderPipelineIndex,renderPipelines,4))
+                if (ImGui.Combo("渲染管线", ref appBody.renderPipelineIndex, renderPipelines, 4))
                 {
                     appBody.SwitchToRenderPipeline(appBody.renderPipelineIndex);
                 }
@@ -318,9 +322,9 @@ namespace Coocoo3D.UI
         static void DockSpace(Coocoo3DMain appBody)
         {
             var viewPort = ImGui.GetMainViewport();
+            string texName= appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("FinalOutput");
             ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
-
-            IntPtr imageId = appBody.RPAssetsManager.GetPtr("_Final0");
+            IntPtr imageId = appBody.RPAssetsManager.GetPtr(texName);
             ImGui.GetWindowDrawList().AddImage(imageId, viewPort.GetWorkPos(), viewPort.GetWorkPos() + viewPort.GetWorkSize());
             ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
         }
@@ -525,14 +529,14 @@ vmd格式动作");
             }
         }
 
-        static void SceneView(Coocoo3DMain appBody, float mouseWheelDelta, Vector2 mouseMoveDelta)
+        static void SceneView(Coocoo3DMain appBody, RenderPipeline.VisualChannel channel, float mouseWheelDelta, Vector2 mouseMoveDelta)
         {
             var io = ImGui.GetIO();
-            IntPtr imageId = appBody.RPAssetsManager.GetPtr("_Final0");
+            IntPtr imageId = appBody.RPAssetsManager.GetPtr(channel.GetTexName("FinalOutput"));
             Vector2 pos = ImGui.GetCursorScreenPos();
             var tex = appBody.RPAssetsManager.GetTexture(imageId);
             Vector2 spaceSize = Vector2.Max(ImGui.GetWindowSize() - new Vector2(5, 40), new Vector2(100, 100));
-            appBody.RPContext.sceneViewSize = new Numerics.Int2((int)spaceSize.X, (int)spaceSize.Y);
+            channel.sceneViewSize = new Numerics.Int2((int)spaceSize.X, (int)spaceSize.Y);
             Vector2 texSize = new Vector2(tex.GetWidth(), tex.GetHeight());
             float factor = MathF.Max(MathF.Min(spaceSize.X / texSize.X, spaceSize.Y / texSize.Y), 0.01f);
             Vector2 imageSize = texSize * factor;
@@ -543,13 +547,13 @@ vmd格式动作");
             if (ImGui.IsItemActive())
             {
                 if (io.MouseDown[1])
-                    appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
+                    channel.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
                 if (io.MouseDown[2])
-                    appBody.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
+                    channel.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
             }
             if (ImGui.IsItemHovered())
             {
-                appBody.camera.Distance += mouseWheelDelta / 20.0f;
+                channel.camera.Distance += mouseWheelDelta / 20.0f;
                 //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
                 //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
 
@@ -631,7 +635,7 @@ vmd格式动作");
         }
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
-        static string[] renderPipelines = new[] { "前向", "延迟","光线追踪","自定义" };
+        static string[] renderPipelines = new[] { "前向", "延迟", "光线追踪", "自定义" };
     }
     class _openRequest
     {

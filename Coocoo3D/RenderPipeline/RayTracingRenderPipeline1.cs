@@ -75,8 +75,9 @@ namespace Coocoo3D.RenderPipeline
 
         bool HasMainLight;
         int renderMatCount = 0;
-        public override void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
+            var graphicsContext = visualChannel.graphicsContext;
             var rendererComponents = context.dynamicContextRead.renderers;
             var deviceResources = context.deviceResources;
             int countMaterials = 0;
@@ -85,8 +86,8 @@ namespace Coocoo3D.RenderPipeline
                 countMaterials += rendererComponents[i].Materials.Count;
             }
             DesireMaterialBuffers(deviceResources, countMaterials);
-            var cameras = context.dynamicContextRead.cameras;
-            var camera = context.dynamicContextRead.cameras[0];
+            //var cameras = context.dynamicContextRead.cameras;
+            var camera = visualChannel.cameraData;
             ref var settings = ref context.dynamicContextRead.settings;
             var lightings = context.dynamicContextRead.lightings;
 
@@ -167,8 +168,9 @@ namespace Coocoo3D.RenderPipeline
                 materialBuffers1.UpdateSlienceComplete(graphicsContext);
         }
 
-        public override void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
+            var graphicsContext = visualChannel.graphicsContext;
             var RPAssetsManager = context.RPAssetsManager;
 
             var rendererComponents = context.dynamicContextRead.renderers;
@@ -227,20 +229,20 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.BuildTopAccelerationStructures(RayTracingScene);
                 graphicsContext.BuildShaderTable(RayTracingScene, c_rayGenShaderNames, c_missShaderNames, c_hitGroupNames, counter1.material);
                 graphicsContext.SetRootSignatureRayTracing(RayTracingScene);
-                graphicsContext.SetComputeUAVT(context._GetTex2DByName("_Output0"), 0);
+                graphicsContext.SetComputeUAVT(visualChannel.OutputRTV, 0);
                 graphicsContext.SetComputeCBVR(CameraDataBuffer, 2);
                 graphicsContext.SetComputeSRVT(context.SkyBox, 3);
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
                 graphicsContext.SetComputeSRVT(RPAssetsManager.texture2ds["_BRDFLUT"], 5);
 
-                graphicsContext.DoRayTracing(RayTracingScene, context.outputSize.X, context.outputSize.Y, 0);
+                graphicsContext.DoRayTracing(RayTracingScene, visualChannel.outputSize.X, visualChannel.outputSize.Y, 0);
             }
             else
             {
                 var rootSignature = RPAssetsManager.GetRootSignature(context.deviceResources, "Cssss");
                 #region Render Sky box
                 graphicsContext.SetRootSignature(rootSignature);
-                graphicsContext.SetRTV(context._GetTex2DByName("_Output0"), Vector4.Zero, true);
+                graphicsContext.SetRTV(visualChannel.OutputRTV, Vector4.Zero, true);
                 graphicsContext.SetCBVRSlot(CameraDataBuffer, 0, 0, 0);
                 graphicsContext.SetSRVTSlot(context.SkyBox, 3);
                 graphicsContext.SetMesh(context.ndcQuadMesh);

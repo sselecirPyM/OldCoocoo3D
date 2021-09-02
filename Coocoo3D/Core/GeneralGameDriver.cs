@@ -25,8 +25,11 @@ namespace Coocoo3D.Core
             context.NeedRender -=1;
             //context.RequireResize = context.RequireResizeOuter;
             //context.RequireResizeOuter = false;
-            rpContext.outputSize = rpContext.sceneViewSize;
-            context.AspectRatio = (float)rpContext.outputSize.X / (float)rpContext.outputSize.Y;
+            foreach(var visualChannel in rpContext.visualChannels.Values)
+            {
+                visualChannel.outputSize = visualChannel.sceneViewSize;
+                visualChannel.camera.AspectRatio = (float)visualChannel.outputSize.X / (float)visualChannel.outputSize.Y;
+            }
 
             DateTime now = DateTime.Now;
             context.DeltaTime = Math.Clamp((now - context.LatestRenderTime).TotalSeconds * context.PlaySpeed, -0.17f, 0.17f);

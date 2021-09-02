@@ -18,13 +18,15 @@ namespace Coocoo3D.RenderPipeline
         public Int2 sceneViewSize = new Int2(100, 100);
         public Dictionary<string, int> customDataInt = new Dictionary<string, int>();
         public GraphicsContext graphicsContext;
-        public Texture2D FinalOutput;
+        public Texture2D FinalOutput = new Texture2D();
+        public Texture2D OutputRTV = new Texture2D();
         public RenderPipeline renderPipeline;
 
         public void Onframe(RenderPipelineContext RPContext)
         {
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
-            camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
+            cameraData = camera.GetCameraData();
+            //camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
 
         }
 
@@ -32,6 +34,11 @@ namespace Coocoo3D.RenderPipeline
         {
             renderPipeline = null;
 
+        }
+
+        public string GetTexName(string texName)
+        {
+            return string.Format("SceneView/{0}/{1}", Name, texName);
         }
     }
 }

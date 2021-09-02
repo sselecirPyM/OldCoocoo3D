@@ -13,9 +13,9 @@ namespace Coocoo3D.RenderPipeline
     {
         public const int c_maxCameraPerRender = 2;
 
-        public abstract void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext);
+        public abstract void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel);
 
-        public abstract void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext);
+        public abstract void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel);
 
         public volatile bool Ready;
 

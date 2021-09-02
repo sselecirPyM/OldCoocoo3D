@@ -81,8 +81,8 @@ namespace Coocoo3D.UI
                         VMDFormat motionSet = VMDFormat.Load(reader);
                         if (motionSet.CameraKeyFrames.Count != 0)
                         {
-                            appBody.camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
-                            appBody.camera.CameraMotionOn = true;
+                            appBody.RPContext.currentChannel.camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
+                            appBody.RPContext.currentChannel.camera.CameraMotionOn = true;
                         }
                         else
                         {

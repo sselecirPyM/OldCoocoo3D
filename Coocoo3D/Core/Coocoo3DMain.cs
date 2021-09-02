@@ -31,7 +31,7 @@ namespace Coocoo3D.Core
 
         public List<GameObject> SelectedGameObjects = new List<GameObject>();
 
-        public Camera camera = new Camera();
+        //public Camera camera = new Camera();
         public GameDriver GameDriver;
         public GeneralGameDriver _GeneralGameDriver = new GeneralGameDriver();
         public RecorderGameDriver _RecorderGameDriver = new RecorderGameDriver();
@@ -192,9 +192,6 @@ namespace Coocoo3D.Core
 
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
             var rendererComponents = RPContext.dynamicContextWrite.renderers;
-            if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
-            camera.AspectRatio = RPContext.gameDriverContext.AspectRatio;
-            RPContext.dynamicContextWrite.cameras.Add(camera.GetCameraData());
             RPContext.dynamicContextWrite.Preprocess();
 
             for (int i = 0; i < gameObjects.Count; i++)
@@ -252,7 +249,10 @@ namespace Coocoo3D.Core
                 VirtualRenderCount++;
             }
 
-
+            foreach(var visualChannel in RPContext.visualChannels.Values)
+            {
+                visualChannel.Onframe(RPContext);
+            }
             if (swapChainReady)
             {
                 GraphicsContext.BeginAlloctor(deviceResources);
@@ -268,8 +268,9 @@ namespace Coocoo3D.Core
                     graphicsContext.SetDescriptorHeapDefault();
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
-                        currentRenderPipeline.PrepareRenderData(RPContext, graphicsContext);
-                        postProcess.PrepareRenderData(RPContext, graphicsContext);
+                        var visualChannel = RPContext.visualChannels["main"];
+                        currentRenderPipeline.PrepareRenderData(RPContext, visualChannel);
+                        postProcess.PrepareRenderData(RPContext, visualChannel);
                     }
                     widgetRenderer.PrepareRenderData(RPContext, graphicsContext);
                     RPContext.UpdateGPUResource();
@@ -290,8 +291,9 @@ namespace Coocoo3D.Core
 
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
-                        currentRenderPipeline.RenderCamera(RPContext, graphicsContext);
-                        postProcess.RenderCamera(RPContext, graphicsContext);
+                        var visualChannel = RPContext.visualChannels["main"];
+                        currentRenderPipeline.RenderCamera(RPContext, visualChannel);
+                        postProcess.RenderCamera(RPContext, visualChannel);
                         GameDriver.AfterRender(RPContext, graphicsContext);
                     }
                     widgetRenderer.RenderCamera(RPContext, graphicsContext);

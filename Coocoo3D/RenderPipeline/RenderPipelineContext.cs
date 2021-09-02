@@ -42,7 +42,7 @@ namespace Coocoo3D.RenderPipeline
         //public bool RequireResize;
         public bool RequireResizeOuter;
         public Windows.Foundation.Size NewSize;
-        public float AspectRatio;
+        //public float AspectRatio;
         public RecordSettings recordSettings;
 
         public DateTime LatestRenderTime;
@@ -73,8 +73,8 @@ namespace Coocoo3D.RenderPipeline
         public CBufferGroup XBufferGroup = new CBufferGroup();
         public MainCaches mainCaches = new MainCaches();
 
-        public Texture2D outputRTV = new Texture2D();
-        public Texture2D finalOutput = new Texture2D();
+        //public Texture2D outputRTV = new Texture2D();
+        //public Texture2D finalOutput = new Texture2D();
 
         public Dictionary<string, VisualChannel> visualChannels = new Dictionary<string, VisualChannel>();
 
@@ -143,8 +143,8 @@ namespace Coocoo3D.RenderPipeline
         public PassSetting customPassSetting;
 
         public Int2 screenSize;
-        public Int2 outputSize;
-        public Int2 sceneViewSize = new Int2(100, 100);
+        //public Int2 outputSize;
+        //public Int2 sceneViewSize = new Int2(100, 100);
         public float dpi = 96.0f;
         public float logicScale = 1;
         public GameDriverContext gameDriverContext = new GameDriverContext()
@@ -177,6 +177,7 @@ namespace Coocoo3D.RenderPipeline
             visualChannels["main"] = visualChannel;
             visualChannel.Name = "main";
             visualChannel.graphicsContext = graphicsContext;
+            currentChannel = visualChannel;
         }
 
         public void BeginDynamicContext(bool enableDisplay, Settings settings)
@@ -208,7 +209,7 @@ namespace Coocoo3D.RenderPipeline
                 CBs_Bone.Add(constantBuffer);
             }
             _Data1 data1 = new _Data1();
-            Vector3 camPos = dynamicContextRead.cameras[0].Pos;
+            //Vector3 camPos = dynamicContextRead.cameras[0].Pos;
             for (int i = 0; i < count; i++)
             {
                 var rendererComponent = dynamicContextRead.renderers[i];
@@ -241,7 +242,12 @@ namespace Coocoo3D.RenderPipeline
         {
             if (!Initilized) return;
             ConfigPassSettings(dynamicContextRead.currentPassSetting);
-            PrepareRenderTarget(dynamicContextRead.currentPassSetting);
+            foreach (var visualChannel in visualChannels.Values)
+            {
+                PrepareRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
+            }
+            foreach (var visualChannel in visualChannels.Values)
+                RefreshPassesRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
             int SceneObjectVertexCount = dynamicContextRead.GetSceneObjectVertexCount();
             if (SceneObjectVertexCount > SkinningMeshBufferSize)
             {
@@ -249,10 +255,11 @@ namespace Coocoo3D.RenderPipeline
                 deviceResources.InitializeMeshBuffer(SkinningMeshBuffer, SceneObjectVertexCount);
             }
         }
-        public void PrepareRenderTarget(PassSetting passSetting)
+        public void PrepareRenderTarget(PassSetting passSetting, VisualChannel visualChannel)
         {
             if (passSetting == null) return;
 
+            var outputSize = visualChannel.outputSize;
             foreach (var rt in passSetting.RenderTargets)
             {
                 if (!RTs.TryGetValue(rt.Name, out var tex2d))
@@ -262,7 +269,6 @@ namespace Coocoo3D.RenderPipeline
                 }
                 int x;
                 int y;
-
                 if (rt.Size.Source == "OutputSize")
                 {
                     x = (int)(outputSize.X * rt.Size.Multiplier);
@@ -295,19 +301,36 @@ namespace Coocoo3D.RenderPipeline
             int y = Math.Max((int)Math.Round(deviceResources.GetOutputSize().Height), 1);
             screenSize.X = x;
             screenSize.Y = y;
-            if (outputRTV.GetWidth() != outputSize.X || outputRTV.GetHeight() != outputSize.Y)
-            {
-                outputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
-                graphicsContext.UpdateRenderTexture(outputRTV);
+            //if (outputRTV.GetWidth() != outputSize.X || outputRTV.GetHeight() != outputSize.Y)
+            //{
+            //outputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
+            //graphicsContext.UpdateRenderTexture(outputRTV);
 
-                finalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
-                graphicsContext.UpdateRenderTexture(finalOutput);
+            //finalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
+            //graphicsContext.UpdateRenderTexture(finalOutput);
 
-                ReadBackTexture2D.Reload(outputSize.X, outputSize.Y, 4);
-                graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
-            }
+            //}
+            //ReadBackTexture2D.Reload(outputSize.X, outputSize.Y, 4);
+            //graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
             dpi = deviceResources.GetDpi();
             logicScale = dpi / 96.0f;
+            ConfigVisualChannels();
+        }
+
+        public void ConfigVisualChannels()
+        {
+            foreach (var visualChannel1 in visualChannels.Values)
+            {
+                if (visualChannel1.outputSize.X != visualChannel1.FinalOutput.m_width || visualChannel1.outputSize.Y != visualChannel1.FinalOutput.m_height)
+                {
+                    visualChannel1.OutputRTV.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, outputFormat);
+                    graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
+
+                    visualChannel1.FinalOutput.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, swapChainFormat);
+                    graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
+                    RPAssetsManager.texture2ds[visualChannel1.GetTexName("FinalOutput")] = visualChannel1.FinalOutput;
+                }
+            }
         }
 
         public bool Initilized = false;
@@ -354,8 +377,8 @@ namespace Coocoo3D.RenderPipeline
             {
                 string a = e.ToString();
             }
-            RTs["_Output0"] = outputRTV;
-            RPAssetsManager.texture2ds["_Final0"] = finalOutput;
+            //RTs["_Output0"] = outputRTV;
+            //RPAssetsManager.texture2ds["_Final0"] = finalOutput;
 
             SetCurrentPassSetting(defaultPassSetting);
 
@@ -371,8 +394,10 @@ namespace Coocoo3D.RenderPipeline
         {
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
-            PrepareRenderTarget(passSetting);
-
+            //foreach (var visualChannel in visualChannels.Values)
+            //{
+            //    PrepareRenderTarget(passSetting, visualChannel);
+            //}
             foreach (var pipelineState in passSetting.PipelineStates)
             {
                 PSO pso = new PSO();
@@ -390,7 +415,8 @@ namespace Coocoo3D.RenderPipeline
                 pso.Initialize(vs, gs, ps);
                 RPAssetsManager.PSOs[pipelineState.Name] = pso;
             }
-            RefreshPassesRenderTarget(passSetting);
+            //foreach (var visualChannel in visualChannels.Values)
+            //    RefreshPassesRenderTarget(passSetting, visualChannel);
             foreach (var pass in passSetting.RenderSequence)
             {
                 if (pass.Type == "Swap") continue;
@@ -468,7 +494,7 @@ namespace Coocoo3D.RenderPipeline
 
         public MMDMesh GetMesh(string path) => mainCaches.ModelPackCaches[path].GetMesh();
 
-        public void RefreshPassesRenderTarget(PassSetting passSetting)
+        public void RefreshPassesRenderTarget(PassSetting passSetting, VisualChannel visualChannel)
         {
             foreach (var _pass1 in passSetting.RenderSequence)
             {
@@ -479,7 +505,10 @@ namespace Coocoo3D.RenderPipeline
                 for (int i = 0; i < _pass1.RenderTargets.Count; i++)
                 {
                     string renderTarget = _pass1.RenderTargets[i];
-                    t1[i] = _GetTex2DByName(renderTarget);
+                    if (renderTarget == "_Output0")
+                        t1[i] = visualChannel.OutputRTV;
+                    else
+                        t1[i] = _GetTex2DByName(renderTarget);
                 }
                 _pass1.renderTargets = t1;
             }
