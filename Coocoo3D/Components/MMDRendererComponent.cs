@@ -3,7 +3,7 @@ using Coocoo3D.Components;
 using Coocoo3D.MMDSupport;
 using Coocoo3D.Present;
 using Coocoo3D.ResourceWarp;
-using Coocoo3D.Utility;
+using Coocoo3D.Numerics;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;

@@ -535,7 +535,7 @@ vmd格式动作");
             IntPtr imageId = appBody.RPAssetsManager.GetPtr(channel.GetTexName("FinalOutput"));
             Vector2 pos = ImGui.GetCursorScreenPos();
             var tex = appBody.RPAssetsManager.GetTexture(imageId);
-            Vector2 spaceSize = Vector2.Max(ImGui.GetWindowSize() - new Vector2(5, 40), new Vector2(100, 100));
+            Vector2 spaceSize = Vector2.Max(ImGui.GetWindowSize() - new Vector2(20, 40), new Vector2(100, 100));
             channel.sceneViewSize = new Numerics.Int2((int)spaceSize.X, (int)spaceSize.Y);
             Vector2 texSize = new Vector2(tex.GetWidth(), tex.GetHeight());
             float factor = MathF.Max(MathF.Min(spaceSize.X / texSize.X, spaceSize.Y / texSize.Y), 0.01f);
@@ -636,7 +636,7 @@ vmd格式动作");
         }
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
-        static string[] renderPipelines = new[] { "前向", "延迟", /*"光线追踪",*/ "自定义" };
+        static string[] renderPipelines = new[] { "前向", "延迟", "光线追踪", "自定义" };
     }
     class _openRequest
     {

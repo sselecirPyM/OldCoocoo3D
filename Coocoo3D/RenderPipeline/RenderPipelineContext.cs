@@ -240,13 +240,12 @@ namespace Coocoo3D.RenderPipeline
         public void PreConfig()
         {
             if (!Initilized) return;
+            ConfigVisualChannels();
             ConfigPassSettings(dynamicContextRead.currentPassSetting);
             foreach (var visualChannel in visualChannels.Values)
             {
                 PrepareRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
             }
-            foreach (var visualChannel in visualChannels.Values)
-                RefreshPassesRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
             int SceneObjectVertexCount = dynamicContextRead.GetSceneObjectVertexCount();
             if (SceneObjectVertexCount > SkinningMeshBufferSize)
             {
@@ -304,7 +303,6 @@ namespace Coocoo3D.RenderPipeline
 
             dpi = deviceResources.GetDpi();
             logicScale = dpi / 96.0f;
-            ConfigVisualChannels();
         }
 
         public void ConfigVisualChannels()
@@ -480,25 +478,6 @@ namespace Coocoo3D.RenderPipeline
 
         public MMDMesh GetMesh(string path) => mainCaches.ModelPackCaches[path].GetMesh();
 
-        public void RefreshPassesRenderTarget(PassSetting passSetting, VisualChannel visualChannel)
-        {
-            //foreach (var _pass1 in passSetting.RenderSequence)
-            //{
-            //    if (_pass1.Type == "Swap") continue;
-
-            //    _pass1.depthStencil = _GetTex2DByName(_pass1.DepthStencil);
-            //    var t1 = new Texture2D[_pass1.RenderTargets.Count];
-            //    for (int i = 0; i < _pass1.RenderTargets.Count; i++)
-            //    {
-            //        string renderTarget = _pass1.RenderTargets[i];
-            //        if (renderTarget == "_Output0")
-            //            t1[i] = visualChannel.OutputRTV;
-            //        else
-            //            t1[i] = _GetTex2DByName(renderTarget);
-            //    }
-            //    _pass1.renderTargets = t1;
-            //}
-        }
         //public async Task ConfigRayTracing(PassSetting passSetting)
         //{
         //    if (passSetting.RayTracingStateObject != null)

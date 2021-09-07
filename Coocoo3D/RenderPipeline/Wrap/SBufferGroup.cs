@@ -72,18 +72,25 @@ namespace Coocoo3D.RenderPipeline.Wrap
             lastUpdateBufferIndex = 0;
         }
 
-        public void SetCBVR(GraphicsContext graphicsContext, int slienceIndex, int slot)
+        public void SetCBVRSlot(GraphicsContext graphicsContext, int slienceIndex, int slot)
         {
             int slience1 = slienceIndex / sliencesPerBuffer;
             int slience2 = slienceIndex % sliencesPerBuffer;
             graphicsContext.SetCBVRSlot(constantBuffers[slience1], sizeD256 * slience2, sizeD256, slot);
         }
 
-        public void SetComputeCBVR(GraphicsContext graphicsContext, int slienceIndex, int slot)
+        public void SetComputeCBVRSlot(GraphicsContext graphicsContext, int slienceIndex, int slot)
         {
             int slience1 = slienceIndex / sliencesPerBuffer;
             int slience2 = slienceIndex % sliencesPerBuffer;
             graphicsContext.SetComputeCBVRSlot(constantBuffers[slience1], sizeD256 * slience2, sizeD256, slot);
+        }
+
+        public void SetComputeCBVR(GraphicsContext graphicsContext, int slienceIndex, int index)
+        {
+            int slience1 = slienceIndex / sliencesPerBuffer;
+            int slience2 = slienceIndex % sliencesPerBuffer;
+            graphicsContext.SetComputeCBVR(constantBuffers[slience1], sizeD256 * slience2, sizeD256, index);
         }
     }
 }

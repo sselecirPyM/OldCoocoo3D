@@ -189,7 +189,7 @@
     <Compile Include="Utility\IDictionaryExt.cs" />
     <Compile Include="RenderPipeline\MainCaches.cs" />
     <Compile Include="Utility\DoubleVector3.cs" />
-    <Compile Include="Utility\MathHelper.cs" />
+    <Compile Include="Numerics\MathHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

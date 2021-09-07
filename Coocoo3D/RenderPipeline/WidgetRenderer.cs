@@ -169,7 +169,7 @@ namespace Coocoo3D.RenderPipeline
             desc.wireFrame = false;
             desc.inputLayout = EInputLayout.imgui;
             SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["ImGui"]);
-            CBufferGroup.SetCBVR(graphicsContext, ofs, 0);
+            CBufferGroup.SetCBVRSlot(graphicsContext, ofs, 0);
             ofs++;
             if (data.CmdListsCount > 0)
             {

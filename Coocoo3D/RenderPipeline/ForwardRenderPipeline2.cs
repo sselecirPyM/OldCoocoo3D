@@ -31,6 +31,9 @@ namespace Coocoo3D.RenderPipeline
 
         public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
+            if (random == null)
+                random = new Random();
+
             var deviceResources = context.deviceResources;
             var graphicsContext = visualChannel.graphicsContext;
             //var cameras = context.dynamicContextRead.cameras;
@@ -425,7 +428,7 @@ namespace Coocoo3D.RenderPipeline
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
+                        XBufferGroup.SetCBVRSlot(graphicsContext, matC, cbv.Index);
                         matC++;
                     }
                     passPsoDesc.inputLayout = EInputLayout.postProcess;
@@ -456,7 +459,7 @@ namespace Coocoo3D.RenderPipeline
                             }
                             foreach (var cbv in _combinedPass.Pass.CBVs)
                             {
-                                XBufferGroup.SetCBVR(graphicsContext, matC, cbv.Index);
+                                XBufferGroup.SetCBVRSlot(graphicsContext, matC, cbv.Index);
                                 matC++;
                             }
                             _PassSetRes1(material, _combinedPass);

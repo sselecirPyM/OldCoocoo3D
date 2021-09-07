@@ -23,6 +23,7 @@ namespace Coocoo3D.RenderPipeline
         public Texture2D OutputRTV = new Texture2D();
         public RenderPipeline renderPipeline;
         public CBufferGroup XBufferGroup = new CBufferGroup();
+        public SBufferGroup XSBufferGroup = new SBufferGroup();
 
         public void Onframe(RenderPipelineContext RPContext)
         {
@@ -30,6 +31,8 @@ namespace Coocoo3D.RenderPipeline
             cameraData = camera.GetCameraData();
             if (XBufferGroup.bufferSize == 0)
                 XBufferGroup.Reload(RPContext.deviceResources, 1024, 1024 * 256);
+            if (XSBufferGroup.bufferSize == 0)
+                XSBufferGroup.Reload(RPContext.deviceResources, 512, 65536);
         }
 
         public void Dispose()

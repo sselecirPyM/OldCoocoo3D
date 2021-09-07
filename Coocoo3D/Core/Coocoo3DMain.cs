@@ -329,12 +329,12 @@ namespace Coocoo3D.Core
                     _currentRenderPipeline = forwardRenderPipeline2;
                     RPContext.SetCurrentPassSetting(RPContext.deferredPassSetting);
                 }
-                //if (currentRenderPipelineIndex == 2)
-                //{
-                //    _currentRenderPipeline = rayTracingRenderPipeline1;
-                //}
-                //else if (currentRenderPipelineIndex == 3)
-                else if (currentRenderPipelineIndex == 2)
+                if (currentRenderPipelineIndex == 2)
+                {
+                    _currentRenderPipeline = rayTracingRenderPipeline1;
+                }
+                else if (currentRenderPipelineIndex == 3)
+                //else if (currentRenderPipelineIndex == 2)
                 {
                     if (RPContext.customPassSetting != null)
                     {
