@@ -43,8 +43,8 @@ namespace Coocoo3D.FileFormat
                 }
                 BoneKeyFrame keyFrame = new BoneKeyFrame();
                 keyFrame.Frame = reader.ReadInt32();
-                keyFrame.translation = ReadVector3(reader);
-                keyFrame.rotation = ReadQuaternion(reader);
+                keyFrame.translation = ReadVector3XInv(reader);
+                keyFrame.rotation = ReadQuaternionYZInv(reader);
                 keyFrame.xInterpolator = ReadBoneInterpolator(reader);
                 keyFrame.yInterpolator = ReadBoneInterpolator(reader);
                 keyFrame.zInterpolator = ReadBoneInterpolator(reader);
@@ -85,8 +85,8 @@ namespace Coocoo3D.FileFormat
                 CameraKeyFrame keyFrame = new CameraKeyFrame();
                 keyFrame.Frame = reader.ReadInt32();
                 keyFrame.distance = reader.ReadSingle();
-                keyFrame.position = ReadVector3(reader);
-                keyFrame.rotation = ReadVector3(reader);
+                keyFrame.position = ReadVector3XInv(reader);
+                keyFrame.rotation = ReadVector3YZInv(reader);
                 keyFrame.mxInterpolator = ReadCameraInterpolator(reader);
                 keyFrame.myInterpolator = ReadCameraInterpolator(reader);
                 keyFrame.mzInterpolator = ReadCameraInterpolator(reader);
@@ -107,14 +107,14 @@ namespace Coocoo3D.FileFormat
                 LightKeyFrame lightKeyFrame = new LightKeyFrame();
                 lightKeyFrame.Frame = reader.ReadInt32();
                 lightKeyFrame.Color = ReadVector3(reader);
-                lightKeyFrame.Position = ReadVector3(reader);
+                lightKeyFrame.Position = ReadVector3XInv(reader);
 
                 LightKeyFrames.Add(lightKeyFrame);
             }
             if (stream.Length - stream.Position == 0)
                 goto endlabel;
 
-        endlabel:
+            endlabel:
             foreach (var keyframes in BoneKeyFrameSet.Values)
             {
                 keyframes.Sort();
@@ -152,8 +152,8 @@ namespace Coocoo3D.FileFormat
                 {
                     writer.Write(sChars2);
                     writer.Write(keyFrame.Frame);
-                    WriteVector3(writer, keyFrame.translation);
-                    WriteQuaternion(writer, keyFrame.rotation);
+                    WriteVector3XInv(writer, keyFrame.translation);
+                    WriteQuaternionYZInv(writer, keyFrame.rotation);
                     WriteBoneInterpolator(writer, keyFrame.xInterpolator);
                     WriteBoneInterpolator(writer, keyFrame.yInterpolator);
                     WriteBoneInterpolator(writer, keyFrame.zInterpolator);
@@ -187,8 +187,8 @@ namespace Coocoo3D.FileFormat
             {
                 writer.Write(keyframe.Frame);
                 writer.Write(keyframe.distance);
-                WriteVector3(writer, keyframe.position);
-                WriteVector3(writer, keyframe.rotation);
+                WriteVector3XInv(writer, keyframe.position);
+                WriteVector3XInv(writer, keyframe.rotation);
                 WriteCameraInterpolator(writer, keyframe.mxInterpolator);
                 WriteCameraInterpolator(writer, keyframe.myInterpolator);
                 WriteCameraInterpolator(writer, keyframe.mzInterpolator);
@@ -204,8 +204,8 @@ namespace Coocoo3D.FileFormat
             foreach (var keyframe in LightKeyFrames)
             {
                 writer.Write(keyframe.Frame);
-                WriteVector3(writer, keyframe.Color);
-                WriteVector3(writer, keyframe.Position);
+                WriteVector3XInv(writer, keyframe.Color);
+                WriteVector3XInv(writer, keyframe.Position);
             }
         }
         public byte[] headerChars;
@@ -244,12 +244,28 @@ namespace Coocoo3D.FileFormat
             vector3.Z = reader.ReadSingle();
             return vector3;
         }
-        private Quaternion ReadQuaternion(BinaryReader reader)
+        private Vector3 ReadVector3XInv(BinaryReader reader)
+        {
+            Vector3 vector3 = new Vector3();
+            vector3.X = -reader.ReadSingle();
+            vector3.Y = reader.ReadSingle();
+            vector3.Z = reader.ReadSingle();
+            return vector3;
+        }
+        private Vector3 ReadVector3YZInv(BinaryReader reader)
+        {
+            Vector3 vector3 = new Vector3();
+            vector3.X = reader.ReadSingle();
+            vector3.Y = -reader.ReadSingle();
+            vector3.Z = -reader.ReadSingle();
+            return vector3;
+        }
+        private Quaternion ReadQuaternionYZInv(BinaryReader reader)
         {
             Quaternion quaternion = new Quaternion();
             quaternion.X = reader.ReadSingle();
-            quaternion.Y = reader.ReadSingle();
-            quaternion.Z = reader.ReadSingle();
+            quaternion.Y = -reader.ReadSingle();
+            quaternion.Z = -reader.ReadSingle();
             quaternion.W = reader.ReadSingle();
             return quaternion;
         }
@@ -267,17 +283,17 @@ namespace Coocoo3D.FileFormat
             writer.Write((((byte)Math.Round(interpolator.ay * 127) + 0x80) ^ 0x80) & 0xFF);
             writer.Write((((byte)Math.Round(interpolator.by * 127) + 0x80) ^ 0x80) & 0xFF);
         }
-        private void WriteVector3(BinaryWriter writer, Vector3 vector3)
+        private void WriteVector3XInv(BinaryWriter writer, Vector3 vector3)
         {
-            writer.Write(vector3.X);
+            writer.Write(-vector3.X);
             writer.Write(vector3.Y);
             writer.Write(vector3.Z);
         }
-        private void WriteQuaternion(BinaryWriter writer, Quaternion quaternion)
+        private void WriteQuaternionYZInv(BinaryWriter writer, Quaternion quaternion)
         {
             writer.Write(quaternion.X);
-            writer.Write(quaternion.Y);
-            writer.Write(quaternion.Z);
+            writer.Write(-quaternion.Y);
+            writer.Write(-quaternion.Z);
             writer.Write(quaternion.W);
         }
     }

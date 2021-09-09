@@ -370,8 +370,8 @@ namespace Coocoo3D.FileFormat
             for (int i = 0; i < countOfVertex; i++)
             {
                 ref PMX_Vertex vertex = ref Vertices[i];
-                vertex.Coordinate = ReadVector3(reader);
-                vertex.Normal = ReadVector3(reader);
+                vertex.Coordinate = ReadVector3XInv(reader);
+                vertex.Normal = ReadVector3XInv(reader);
                 vertex.UvCoordinate = ReadVector2(reader);
                 if (extraUVNumber > 0)
                 {
@@ -480,7 +480,7 @@ namespace Coocoo3D.FileFormat
                 PMX_Bone bone = new PMX_Bone();
                 bone.Name = ReadString(reader, encoding);
                 bone.NameEN = ReadString(reader, encoding);
-                bone.Position = ReadVector3(reader);
+                bone.Position = ReadVector3XInv(reader);
                 bone.ParentIndex = ReadIndex(reader, boneIndexSize);
                 bone.TransformLevel = reader.ReadInt32();
                 bone.Flags = (PMX_BoneFlag)reader.ReadUInt16();
@@ -490,7 +490,7 @@ namespace Coocoo3D.FileFormat
                 }
                 else
                 {
-                    bone.ChildOffset = ReadVector3(reader);
+                    bone.ChildOffset = ReadVector3XInv(reader);
                 }
                 if (bone.Flags.HasFlag(PMX_BoneFlag.RotAxisFixed))
                 {
@@ -507,8 +507,8 @@ namespace Coocoo3D.FileFormat
                 }
                 if (bone.Flags.HasFlag(PMX_BoneFlag.UseLocalAxis))
                 {
-                    bone.LocalAxisX = ReadVector3(reader);
-                    bone.LocalAxisZ = ReadVector3(reader);
+                    bone.LocalAxisX = ReadVector3XInv(reader);
+                    bone.LocalAxisZ = ReadVector3XInv(reader);
                     bone.LocalAxisY = Vector3.Cross(bone.LocalAxisX, bone.LocalAxisZ);
                     bone.LocalAxisZ = Vector3.Cross(bone.LocalAxisX, bone.LocalAxisY);
                     bone.LocalAxisX = Vector3.Normalize(bone.LocalAxisX);
@@ -573,7 +573,7 @@ namespace Coocoo3D.FileFormat
                         {
                             PMX_MorphVertexDesc vertexStruct = new PMX_MorphVertexDesc();
                             vertexStruct.VertexIndex = ReadUIndex(reader, vertexIndexSize);
-                            vertexStruct.Offset = ReadVector3(reader);
+                            vertexStruct.Offset = ReadVector3XInv(reader);
                             morph.MorphVertexs[j] = vertexStruct;
                         }
                         Array.Sort(morph.MorphVertexs, _morphVertexCmp);//optimize for cpu L1 cache
@@ -584,8 +584,8 @@ namespace Coocoo3D.FileFormat
                         {
                             PMX_MorphBoneDesc morphBoneStruct = new PMX_MorphBoneDesc();
                             morphBoneStruct.BoneIndex = ReadIndex(reader, boneIndexSize);
-                            morphBoneStruct.Translation = ReadVector3(reader);
-                            morphBoneStruct.Rotation = ReadQuaternion(reader);
+                            morphBoneStruct.Translation = ReadVector3XInv(reader);
+                            morphBoneStruct.Rotation = ReadQuaternionYZInv(reader);
                             morph.MorphBones[j] = morphBoneStruct;
                         }
                         break;
@@ -666,8 +666,8 @@ namespace Coocoo3D.FileFormat
                 rigidBody.CollisionMask = reader.ReadUInt16();
                 rigidBody.Shape = (PMX_RigidBodyShape)reader.ReadByte();
                 rigidBody.Dimemsions = ReadVector3(reader);
-                rigidBody.Position = ReadVector3(reader);
-                rigidBody.Rotation = ReadVector3(reader);
+                rigidBody.Position = ReadVector3XInv(reader);
+                rigidBody.Rotation = ReadVector3YZInv(reader);
                 rigidBody.Mass = reader.ReadSingle();
                 rigidBody.TranslateDamp = reader.ReadSingle();
                 rigidBody.RotateDamp = reader.ReadSingle();
@@ -689,8 +689,8 @@ namespace Coocoo3D.FileFormat
 
                 joint.AssociatedRigidBodyIndex1 = ReadIndex(reader, rigidBodyIndexSize);
                 joint.AssociatedRigidBodyIndex2 = ReadIndex(reader, rigidBodyIndexSize);
-                joint.Position = ReadVector3(reader);
-                joint.Rotation = ReadVector3(reader);
+                joint.Position = ReadVector3XInv(reader);
+                joint.Rotation = ReadVector3YZInv(reader);
                 joint.PositionMinimum = ReadVector3(reader);
                 joint.PositionMaximum = ReadVector3(reader);
                 joint.RotationMinimum = ReadVector3(reader);
@@ -735,6 +735,22 @@ namespace Coocoo3D.FileFormat
             vector3.Z = reader.ReadSingle();
             return vector3;
         }
+        private Vector3 ReadVector3XInv(BinaryReader reader)
+        {
+            Vector3 vector3 = new Vector3();
+            vector3.X = -reader.ReadSingle();
+            vector3.Y = reader.ReadSingle();
+            vector3.Z = reader.ReadSingle();
+            return vector3;
+        }
+        private Vector3 ReadVector3YZInv(BinaryReader reader)
+        {
+            Vector3 vector3 = new Vector3();
+            vector3.X = reader.ReadSingle();
+            vector3.Y = -reader.ReadSingle();
+            vector3.Z = -reader.ReadSingle();
+            return vector3;
+        }
         private Vector4 ReadVector4(BinaryReader reader)
         {
             Vector4 vector4 = new Vector4();
@@ -744,12 +760,12 @@ namespace Coocoo3D.FileFormat
             vector4.W = reader.ReadSingle();
             return vector4;
         }
-        private Quaternion ReadQuaternion(BinaryReader reader)
+        private Quaternion ReadQuaternionYZInv(BinaryReader reader)
         {
             Quaternion quaternion = new Quaternion();
             quaternion.X = reader.ReadSingle();
-            quaternion.Y = reader.ReadSingle();
-            quaternion.Z = reader.ReadSingle();
+            quaternion.Y = -reader.ReadSingle();
+            quaternion.Z = -reader.ReadSingle();
             quaternion.W = reader.ReadSingle();
             return quaternion;
         }
