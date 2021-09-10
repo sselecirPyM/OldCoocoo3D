@@ -67,8 +67,6 @@ namespace Coocoo3DGraphics
 		volatile UINT									m_cbvSrvUavHeapAllocCount;
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;
 		volatile UINT									m_rtvHeapAllocCount;
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_dsvHeap;
-		volatile UINT									m_dsvHeapAllocCount;
 
 		WCHAR m_deviceDescription[128];
 		UINT64 m_deviceVideoMem;

@@ -8,14 +8,8 @@ using Coocoo3D.Components;
 
 namespace Coocoo3D.Present
 {
-    public class GameObject : System.ComponentModel.INotifyPropertyChanged
+    public class GameObject
     {
-        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-        public void PropChange(System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            PropertyChanged?.Invoke(this, e);
-        }
-
         public string Name = "GameObject";
         public string Description = string.Empty;
         public int layoutMask;

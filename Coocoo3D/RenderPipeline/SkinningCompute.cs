@@ -26,7 +26,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
-                rendererComponent.shaders.TryGetValue("Skinning", out var shaderSkinning);
                 var psoSkinning = PSOSkinning;
                 SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
                 graphicsContext.SetMeshVertex(context.GetMesh(rendererComponent.meshPath));

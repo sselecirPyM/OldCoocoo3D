@@ -15,7 +15,7 @@ namespace Coocoo3D.UI
 {
     public static class UIHelper
     {
-        public static async Task Code(Coocoo3DMain appBody)
+        public static async Task OnFrame(Coocoo3DMain appBody)
         {
             if (UIImGui.requireOpenFolder.SetFalse())
             {
@@ -33,9 +33,9 @@ namespace Coocoo3D.UI
                 var picker = new FileSavePicker()
                 {
                     SuggestedStartLocation = PickerLocationId.ComputerFolder,
-                    
+
                 };
-                picker.FileTypeChoices.Add("gltf", new []{ ".gltf" });
+                picker.FileTypeChoices.Add("gltf", new[] { ".gltf" });
 
                 var file = await picker.PickSaveFileAsync();
                 if (file != null)
@@ -86,10 +86,17 @@ namespace Coocoo3D.UI
                         }
                         else
                         {
+
+                            Components.MMDMotion motion = new Components.MMDMotion();
+                            motion.Reload(motionSet);
+                            appBody.mainCaches.motions[file.Path] = motion;
+
                             foreach (var gameObject in appBody.SelectedGameObjects)
                             {
-                                gameObject.GetComponent<Components.MMDMotionComponent>()?.Reload(motionSet);
+                                var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
+                                if (renderer != null) { renderer.motionPath = file.Path; }
                             }
+
                             appBody.GameDriverContext.RequireResetPhysics = true;
                         }
                     }

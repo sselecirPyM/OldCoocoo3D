@@ -48,7 +48,7 @@ namespace Coocoo3D.Core
             await Dispatcher.RunAsync(CoreDispatcherPriority.Low, async () =>
             {
                 FrameUpdated?.Invoke(this, null);
-                await Coocoo3D.UI.UIHelper.Code(this);
+                await Coocoo3D.UI.UIHelper.OnFrame(this);
             });
         }
         #endregion
@@ -201,7 +201,7 @@ namespace Coocoo3D.Core
 
             if (RPContext.gameDriverContext.Playing || RPContext.gameDriverContext.RequireResetPhysics)
             {
-                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents, RPContext.gameDriverContext.RequireResetPhysics);
+                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents,mainCaches, RPContext.gameDriverContext.RequireResetPhysics);
                 RPContext.gameDriverContext.RequireResetPhysics = false;
             }
             for (int i = 0; i < rendererComponents.Count; i++)

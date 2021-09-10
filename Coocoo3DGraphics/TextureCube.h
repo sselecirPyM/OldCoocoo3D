@@ -1,9 +1,8 @@
 #pragma once
 #include "Interoperation/InteroperationTypes.h"
-#include "ITexture.h"
 namespace Coocoo3DGraphics
 {
-	public ref class TextureCube sealed : public IRenderTexture
+	public ref class TextureCube sealed
 	{
 	public:
 		void ReloadAsRTVUAV(int width, int height, int mipLevels, DxgiFormat format);
@@ -14,8 +13,8 @@ namespace Coocoo3DGraphics
 		property UINT m_mipLevels;
 	internal:
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
-		UINT m_dsvHeapRefIndex;
-		UINT m_rtvHeapRefIndex;
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_dsvHeap;
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;
 		DXGI_FORMAT m_format;
 		DXGI_FORMAT m_dsvFormat;
 		DXGI_FORMAT m_rtvFormat;

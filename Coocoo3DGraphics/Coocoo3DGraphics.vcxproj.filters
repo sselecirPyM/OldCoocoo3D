@@ -37,7 +37,6 @@
     <ClCompile Include="RayTracingScene.cpp" />
     <ClCompile Include="TextureCube.cpp" />
     <ClCompile Include="ReadBackTexture2D.cpp" />
-    <ClCompile Include="TwinBuffer.cpp" />
     <ClCompile Include="GPUProgram\ComputeShader.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
@@ -88,9 +87,7 @@
     </ClInclude>
     <ClInclude Include="RayTracingScene.h" />
     <ClInclude Include="TextureCube.h" />
-    <ClInclude Include="ITexture.h" />
     <ClInclude Include="ReadBackTexture2D.h" />
-    <ClInclude Include="TwinBuffer.h" />
     <ClInclude Include="GPUProgram\ComputeShader.h">
       <Filter>GPUProgram</Filter>
     </ClInclude>

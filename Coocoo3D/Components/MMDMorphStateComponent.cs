@@ -16,7 +16,7 @@ namespace Coocoo3D.Components
 
         public const float c_frameInterval = 1 / 30.0f;
         public Dictionary<string, int> stringMorphIndexMap = new Dictionary<string, int>();
-        public void SetPose(MMDMotionComponent motionComponent, float time)
+        public void SetPose(MMDMotion motionComponent, float time)
         {
             float currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
             foreach (var pair in stringMorphIndexMap)

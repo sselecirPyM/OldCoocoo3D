@@ -90,7 +90,6 @@ namespace Coocoo3D.RenderPipeline
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
-                if (!combinedPass.isRenderPass) continue;
 
                 if (combinedPass.Pass.Camera == "Main")
                 {
@@ -443,8 +442,6 @@ namespace Coocoo3D.RenderPipeline
                     {
                         graphicsContext.SetMeshIndex(context.GetMesh(rendererComponent.meshPath));
                         PSO pso = null;
-                        if (rendererComponent.shaders != null)
-                            rendererComponent.shaders.TryGetValue(_combinedPass.Name, out pso);
 
                         var PSODraw = PSOSelect(deviceResources, rootSignature, ref passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);
                         var Materials = rendererComponent.Materials;

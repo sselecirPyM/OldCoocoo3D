@@ -18,11 +18,11 @@ namespace Coocoo3D.Components
     public class MMDRendererComponent : Component
     {
         public string meshPath;
+        public string motionPath = "";
         public MMDMeshAppend meshAppend = new MMDMeshAppend();
         public Vector3 position;
         public Quaternion rotation;
         public MMDMorphStateComponent morphStateComponent = new MMDMorphStateComponent();
-        public MMDMotionComponent motionComponent;
         public bool LockMotion;
 
         public int meshVertexCount;
@@ -32,8 +32,6 @@ namespace Coocoo3D.Components
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
         public List<RuntimeMaterial.InnerStruct> materialsBaseData = new List<RuntimeMaterial.InnerStruct>();
         public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();
-
-        public Dictionary<string, PSO> shaders = new Dictionary<string, PSO>();
 
         public Vector3[] meshPosData1;
         public bool meshNeedUpdate;
@@ -138,21 +136,21 @@ namespace Coocoo3D.Components
 
         public Dictionary<int, List<List<int>>> IKNeedUpdateIndexs;
         public List<int> AppendNeedUpdateMatIndexs = new List<int>();
-        public List<int> PhysicsNeedUpdateMatIndexs = new List<int>();
+        public List<int> PhysicsNeedUpdateMatrixIndexs = new List<int>();
         public void WriteMatriticesData()
         {
             for (int i = 0; i < bones.Count; i++)
                 boneMatricesData[i] = Matrix4x4.Transpose(bones[i].GeneratedTransform);
         }
-        public void SetPoseWithMotion(float time)
+        public void SetPoseWithMotion(float time, MMDMotion motion)
         {
-            lock (motionComponent)
+            lock (motion)
             {
-                morphStateComponent.SetPose(motionComponent, time);
+                morphStateComponent.SetPose(motion, time);
                 morphStateComponent.ComputeWeight();
                 foreach (var bone in bones)
                 {
-                    var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
+                    var keyframe = motion.GetBoneMotion(bone.Name, time);
                     bone.rotation = keyframe.rotation;
                     bone.dynamicPosition = keyframe.translation;
                     cachedBoneKeyFrames[bone.index] = keyframe;
@@ -232,7 +230,7 @@ namespace Coocoo3D.Components
                 bones[index]._generatedTransform = Matrix4x4.CreateTranslation(-desc.Position) * Matrix4x4.CreateFromQuaternion(physics3DRigidBodys[i].GetRotation() / desc.Rotation * q1)
                     * Matrix4x4.CreateTranslation(Vector3.Transform(physics3DRigidBodys[i].GetPosition(), WorldToLocal));
             }
-            UpdateMatrices(PhysicsNeedUpdateMatIndexs);
+            UpdateMatrices(PhysicsNeedUpdateMatrixIndexs);
 
             UpdateAppendBones();
         }
@@ -419,7 +417,7 @@ namespace Coocoo3D.Components
                 }
             }
             Array.Clear(bonesTest, 0, bones.Count);
-            PhysicsNeedUpdateMatIndexs.Clear();
+            PhysicsNeedUpdateMatrixIndexs.Clear();
             for (int i = 0; i < bones.Count; i++)
             {
                 var bone = bones[i];
@@ -430,7 +428,7 @@ namespace Coocoo3D.Components
                 bonesTest[i] |= parent.IsPhysicsFreeBone;
                 if (bonesTest[i])
                 {
-                    PhysicsNeedUpdateMatIndexs.Add(i);
+                    PhysicsNeedUpdateMatrixIndexs.Add(i);
                 }
             }
         }
@@ -540,12 +538,12 @@ namespace Coocoo3D.Components
         #endregion
 
         #endregion
-        public void SetMotionTime(float time)
+        public void SetMotionTime(float time, MMDMotion motion)
         {
             if (!LockMotion)
             {
-                if (motionComponent != null)
-                    SetPoseWithMotion(time);
+                if (motion != null)
+                    SetPoseWithMotion(time, motion);
                 else
                     SetPoseDefault();
             }
@@ -557,16 +555,6 @@ namespace Coocoo3D.Components
             BoneMorphIKAppend();
             VertexMaterialMorph();
         }
-    }
-    [Flags]
-    public enum DrawFlag
-    {
-        None = 0,
-        DrawDoubleFace = 1,
-        DrawGroundShadow = 2,
-        CastSelfShadow = 4,
-        DrawSelfShadow = 8,
-        DrawEdge = 16,
     }
     public class RuntimeMaterial
     {
@@ -681,68 +669,6 @@ namespace Coocoo3D.Components
             return string.Format("{0}_{1}", Name, NameEN);
         }
     }
-    public enum IKTransformOrder
-    {
-        Yzx = 0,
-        Zxy = 1,
-        Xyz = 2,
-    }
-
-    public enum AxisFixType
-    {
-        FixNone,
-        FixX,
-        FixY,
-        FixZ,
-        FixAll
-    }
-
-    public enum RigidBodyType
-    {
-        Kinematic = 0,
-        Physics = 1,
-        PhysicsStrict = 2,
-        PhysicsGhost = 3
-    }
-
-    public enum RigidBodyShape
-    {
-        Sphere = 0,
-        Box = 1,
-        Capsule = 2
-    }
-
-    public struct RigidBodyDesc
-    {
-        public int AssociatedBoneIndex;
-        public byte CollisionGroup;
-        public ushort CollisionMask;
-        public RigidBodyShape Shape;
-        public Vector3 Dimemsions;
-        public Vector3 Position;
-        public Quaternion Rotation;
-        public float Mass;
-        public float LinearDamping;
-        public float AngularDamping;
-        public float Restitution;
-        public float Friction;
-        public RigidBodyType Type;
-    }
-
-    public struct JointDesc
-    {
-        public byte Type;
-        public int AssociatedRigidBodyIndex1;
-        public int AssociatedRigidBodyIndex2;
-        public Vector3 Position;
-        public Vector3 Rotation;
-        public Vector3 PositionMinimum;
-        public Vector3 PositionMaximum;
-        public Vector3 RotationMinimum;
-        public Vector3 RotationMaximum;
-        public Vector3 PositionSpring;
-        public Vector3 RotationSpring;
-    }
 }
 namespace Coocoo3D.FileFormat
 {
@@ -751,7 +677,6 @@ namespace Coocoo3D.FileFormat
         public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<string> textures)
         {
             rendererComponent.Initialize2(modelPack.pmx);
-            rendererComponent.shaders.Clear();
             rendererComponent.Materials.Clear();
             rendererComponent.materialsBaseData.Clear();
             rendererComponent.computedMaterialsData.Clear();
@@ -1004,7 +929,6 @@ namespace Coocoo3D.FileFormat
             var modelResource = modelPack.pmx;
             gameObject.Name = string.Format("{0} {1}", modelResource.Name, modelResource.NameEN);
             gameObject.Description = string.Format("{0}\n{1}", modelResource.Description, modelResource.DescriptionEN);
-            //entity.ModelPath = ModelPath;
 
             ReloadModel(gameObject, processingList, modelPack, textures);
         }
@@ -1015,7 +939,6 @@ namespace Coocoo3D.FileFormat
             var rendererComponent = new MMDRendererComponent();
             var morphStateComponent = rendererComponent.morphStateComponent;
             gameObject.AddComponent(rendererComponent);
-            gameObject.AddComponent(new MMDMotionComponent());
             morphStateComponent.Reload(modelResource);
 
             rendererComponent.ReloadModel(modelPack, textures);

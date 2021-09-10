@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.Components
 {
-    public class MMDMotionComponent : Component
+    public class MMDMotion
     {
         public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, List<BoneKeyFrame>>();
         public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, List<MorphKeyFrame>>();
@@ -113,7 +113,7 @@ namespace Coocoo3D.FileFormat
 {
     public static partial class VMDFormatExtension
     {
-        public static void ReloadEmpty(this MMDMotionComponent motionComponent)
+        public static void ReloadEmpty(this MMDMotion motionComponent)
         {
             lock (motionComponent)
             {
@@ -122,7 +122,7 @@ namespace Coocoo3D.FileFormat
             }
         }
 
-        public static void Reload(this MMDMotionComponent motionComponent, VMDFormat vmd)
+        public static void Reload(this MMDMotion motionComponent, VMDFormat vmd)
         {
             lock (motionComponent)
             {

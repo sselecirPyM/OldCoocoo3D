@@ -9,7 +9,6 @@
 #include "GPUProgram/ComputeShader.h"
 #include "GPUProgram/PSO.h"
 #include "ReadBackTexture2D.h"
-//#include "TwinBuffer.h"
 #include "MeshBuffer.h"
 #include "Uploader.h"
 #include "MMDMeshAppend.h"
@@ -67,14 +66,12 @@ namespace Coocoo3DGraphics
 		void SetUAVT(Texture2D^ texture, int index);
 		void SetComputeSRVT(Texture2D^ texture, int index);
 		void SetComputeSRVT(TextureCube^ texture, int index);
-		//void SetComputeSRVR(TwinBuffer^ mesh, int bufIndex, int index);
 		void SetComputeSRVR(MeshBuffer^ mesh, int startLocation, int index);
 		//void SetComputeSRVRIndex(MMDMesh^ mesh, int startLocation, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int index);
 		void SetComputeCBVR(CBuffer^ buffer, int offset256, int size256, int index);
 		void SetComputeCBVRSlot(CBuffer^ buffer, int offset256, int size256, int slot);
 		void SetComputeUAVR(MeshBuffer^ mesh, int startLocation, int index);
-		//void SetComputeUAVR(TwinBuffer^ buffer, int bufIndex, int index);
 		void SetComputeUAVT(Texture2D^ texture, int index);
 		void SetComputeUAVT(TextureCube^ texture, int mipIndex, int index);
 		void SetComputeUAVTSlot(Texture2D^ texture, int slot);
@@ -90,7 +87,8 @@ namespace Coocoo3DGraphics
 		void UploadMesh(MMDMesh^ mesh, Platform::String^ name,const Platform::Array<byte>^ data);
 		void UploadTexture(TextureCube^ texture, Uploader^ uploader);
 		void UploadTexture(Texture2D^ texture, Uploader^ uploader);
-		void UpdateRenderTexture(IRenderTexture^ texture);
+		void UpdateRenderTexture(Texture2D^ texture);
+		void UpdateRenderTexture(TextureCube^ texture);
 		void UpdateReadBackTexture(ReadBackTexture2D^ texture);
 		void CopyBackBuffer(ReadBackTexture2D^ target, int index);
 		void CopyTexture(ReadBackTexture2D^ target,Texture2D^ texture2d, int index);

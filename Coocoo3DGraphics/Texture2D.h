@@ -1,9 +1,8 @@
 #pragma once
 #include "Interoperation/InteroperationTypes.h"
-#include "ITexture.h"
 namespace Coocoo3DGraphics
 {
-	public ref class Texture2D sealed :public IRenderTexture
+	public ref class Texture2D sealed
 	{
 	public:
 		property GraphicsObjectStatus Status;
@@ -22,9 +21,9 @@ namespace Coocoo3DGraphics
 	internal:
 		void StateTransition(ID3D12GraphicsCommandList* commandList, D3D12_RESOURCE_STATES state);
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_dsvHeap;
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;
 
-		UINT m_dsvHeapRefIndex;
-		UINT m_rtvHeapRefIndex;
 		DXGI_FORMAT m_format;
 		DXGI_FORMAT m_dsvFormat;
 		DXGI_FORMAT m_rtvFormat;

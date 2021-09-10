@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
+using Coocoo3D.Components;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -18,6 +19,7 @@ namespace Coocoo3D.RenderPipeline
     {
         public Dictionary<string, Texture2DPack> TextureCaches = new Dictionary<string, Texture2DPack>();
         public Dictionary<string, Texture2DPack> TextureOnDemand = new Dictionary<string, Texture2DPack>();
+        public ConcurrentDictionary<string, MMDMotion> motions = new ConcurrentDictionary<string, MMDMotion>();
 
         public Dictionary<string, ModelPack> ModelPackCaches = new Dictionary<string, ModelPack>();
 

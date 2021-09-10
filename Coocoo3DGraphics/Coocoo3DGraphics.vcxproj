@@ -288,7 +288,6 @@
     <ClInclude Include="GPUProgram\VertexShader.h" />
     <ClInclude Include="GraphicsContext.h" />
     <ClInclude Include="GraphicsSignature.h" />
-    <ClInclude Include="ITexture.h" />
     <ClInclude Include="MeshBuffer.h" />
     <ClInclude Include="MMDMesh.h" />
     <ClInclude Include="MMDMeshAppend.h" />
@@ -299,7 +298,6 @@
     <ClInclude Include="Texture2D.h" />
     <ClInclude Include="TextureCube.h" />
     <ClInclude Include="TextUtil.h" />
-    <ClInclude Include="TwinBuffer.h" />
     <ClInclude Include="UnnamedInputLayout.h" />
     <ClInclude Include="Uploader.h" />
   </ItemGroup>
@@ -338,7 +336,6 @@
     <ClCompile Include="ReadBackTexture2D.cpp" />
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="TextureCube.cpp" />
-    <ClCompile Include="TwinBuffer.cpp" />
     <ClCompile Include="UnnamedInputLayout.cpp" />
     <ClCompile Include="Uploader.cpp" />
   </ItemGroup>

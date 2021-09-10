@@ -79,10 +79,10 @@ namespace Coocoo3D.Core
             physics3DScene.Simulation(1 / 60.0);
         }
 
-        public void _BoneUpdate(double playTime, float deltaTime, IList<MMDRendererComponent> rendererComponents)
+        public void _BoneUpdate(double playTime, float deltaTime, IList<MMDRendererComponent> rendererComponents, RenderPipeline.MainCaches caches)
         {
 
-            UpdateGameObjects((float)playTime);
+            UpdateGameObjects((float)playTime, caches);
 
             float t1 = Math.Clamp(deltaTime, -0.17f, 0.17f);
             for (int i = 0; i < rendererComponents.Count; i++)
@@ -96,16 +96,18 @@ namespace Coocoo3D.Core
                 rendererComponents[i].PhysicsSync(physics3DScene);
             }
         }
-        void UpdateGameObjects(float playTime1)
+        void UpdateGameObjects(float playTime1, RenderPipeline.MainCaches caches)
         {
             void UpdateGameObjects1(GameObject gameObject)
             {
                 var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
                 if (renderComponent != null)
                 {
-                    var motionComponent = gameObject.GetComponent<MMDMotionComponent>();
-                    renderComponent.motionComponent = motionComponent;
-                    renderComponent.SetMotionTime(playTime1);
+                    if (caches.motions.TryGetValue(renderComponent.motionPath, out var motion))
+                    {
+
+                    }
+                    renderComponent.SetMotionTime(playTime1, motion);
                 }
             }
             int threshold = 1;
@@ -119,7 +121,7 @@ namespace Coocoo3D.Core
                 }
         }
 
-        public void Simulation(double playTime, double deltaTime, IList<MMDRendererComponent> rendererComponents, bool resetPhysics)
+        public void Simulation(double playTime, double deltaTime, IList<MMDRendererComponent> rendererComponents, RenderPipeline.MainCaches caches, bool resetPhysics)
         {
             for (int i = 0; i < gameObjects.Count; i++)
             {
@@ -136,10 +138,10 @@ namespace Coocoo3D.Core
             if (resetPhysics)
             {
                 _ResetPhysics(rendererComponents);
-                _BoneUpdate(playTime, (float)deltaTime, rendererComponents);
+                _BoneUpdate(playTime, (float)deltaTime, rendererComponents, caches);
                 _ResetPhysics(rendererComponents);
             }
-            _BoneUpdate(playTime, (float)deltaTime, rendererComponents);
+            _BoneUpdate(playTime, (float)deltaTime, rendererComponents, caches);
         }
     }
 }

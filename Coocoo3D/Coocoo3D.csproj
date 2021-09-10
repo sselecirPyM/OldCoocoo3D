@@ -131,7 +131,7 @@
     <Compile Include="Components\CooRendererTypes.cs" />
     <Compile Include="Components\LightingComponent.cs" />
     <Compile Include="Components\MMDMorphStateComponent.cs" />
-    <Compile Include="Components\MMDMotionComponent.cs" />
+    <Compile Include="Components\MMDMotion.cs" />
     <Compile Include="Components\MMDRendererComponent.cs" />
     <Compile Include="Components\VolumeComponent.cs" />
     <Compile Include="Core\Input.cs" />
