@@ -27,7 +27,6 @@ namespace Coocoo3D.UI
         public static async Task LoadEntityIntoScene(Coocoo3DMain appBody, Scene scene, StorageFile pmxFile, StorageFolder storageFolder)
         {
             string pmxPath = pmxFile.Path;
-            string relatePath = pmxFile.Name;
             ModelPack modelPack = null;
             lock (appBody.mainCaches.ModelPackCaches)
             {
@@ -38,10 +37,7 @@ namespace Coocoo3D.UI
                     modelPack.LoadTask = Task.Run(async () =>
                     {
                         BinaryReader reader = new BinaryReader((await pmxFile.OpenReadAsync()).AsStreamForRead());
-                        modelPack.lastModifiedTime = (await pmxFile.GetBasicPropertiesAsync()).DateModified;
                         modelPack.Reload(reader);
-                        modelPack.folder = storageFolder;
-                        modelPack.relativePath = relatePath;
                         reader.Dispose();
                         appBody.ProcessingList.AddObject(modelPack.GetMesh());
                         modelPack.Status = GraphicsObjectStatus.loaded;
@@ -82,22 +78,6 @@ namespace Coocoo3D.UI
             appBody.CurrentScene.AddGameObject(volume);
             appBody.RequireRender();
         }
-        public static async Task<StorageFolder> OpenResourceFolder(Coocoo3DMain appBody)
-        {
-            FolderPicker folderPicker = new FolderPicker()
-            {
-                FileTypeFilter =
-                {
-                    "*"
-                },
-                SuggestedStartLocation = PickerLocationId.ComputerFolder,
-                ViewMode = PickerViewMode.Thumbnail,
-                SettingsIdentifier = "ResourceFolder",
-            };
-            StorageFolder folder = await folderPicker.PickSingleFolderAsync();
-            if (folder == null) return null;
-            return folder;
-        }
         public static async Task Record(Coocoo3DMain appBody)
         {
             FolderPicker folderPicker = new FolderPicker()
@@ -137,6 +117,13 @@ namespace Coocoo3D.UI
             return paths;
         }
 
+        public static void LoadTexture(Coocoo3DMain appBody, StorageFile storageFile, StorageFolder storageFolder)
+        {
+            string relatePath = Path.GetRelativePath(storageFolder.Path, storageFile.Path);
+            appBody.mainCaches.Texture(storageFolder.Path, relatePath, storageFolder);
+            appBody.mainCaches.TextureCaches.GetOrCreate(storageFolder.Path);
+        }
+
         public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)
         {
             var stream = (await file.OpenReadAsync()).AsStreamForRead();
@@ -163,53 +150,37 @@ namespace Coocoo3D.UI
                     if (!pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), p1.EntryPoint == null ? "main" : p1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile pixel shader failed.");
                     rpc.RPAssetsManager.PSAssets[p1.Name] = pixelShader;
                 }
-            if (passSetting.Texture2Ds != null)
-                foreach (var t1 in passSetting.Texture2Ds)
-                {
-                    Texture2D texture = null;
-                    rpc.RPAssetsManager.texture2ds.TryGetValue(t1.Name, out texture);
-                    if (texture == null)
-                    {
-                        texture = new Texture2D();
-                        rpc.RPAssetsManager.texture2ds[t1.Name] = texture;
-                    }
-                    texture.Status = GraphicsObjectStatus.loading;
-                    await ReloadTexture2DNoMip(texture, rpc.processingList, await storageFolder.GetFileAsync(t1.Path));
-                }
-            if (passSetting.TextureCubes != null)
-                foreach (var t1 in passSetting.TextureCubes)
-                {
-                    if (t1.Path == null || t1.Path.Length != 6) throw new Exception("TextureCubeError");
-                    TextureCube textureCube = null;
-                    rpc.RPAssetsManager.textureCubes.TryGetValue(t1.Name, out textureCube);
-                    if (textureCube == null)
-                    {
-                        textureCube = new TextureCube();
-                        rpc.RPAssetsManager.textureCubes[t1.Name] = textureCube;
-                    }
-                    Stream[] streams = new Stream[t1.Path.Length];
+            //if (passSetting.Texture2Ds != null)
+            //    foreach (var t1 in passSetting.Texture2Ds)
+            //    {
 
-                    for (int i = 0; i < t1.Path.Length; i++)
-                    {
-                        string path = t1.Path[i];
-                        streams[i] = await (await storageFolder.GetFileAsync(path)).OpenStreamForReadAsync();
-                    }
-                    appBody.ProcessingList.AddObject(TextureCubeUploadPack.FromFiles(textureCube, streams));
-                }
+            //        var file1 = await storageFolder.GetFileAsync(t1.Path);
+            //        LoadTexture(appBody, file1, storageFolder);
+            //    }
+            //if (passSetting.TextureCubes != null)
+            //    foreach (var t1 in passSetting.TextureCubes)
+            //    {
+            //        if (t1.Path == null || t1.Path.Length != 6) throw new Exception("TextureCubeError");
+            //        TextureCube textureCube = null;
+            //        rpc.RPAssetsManager.textureCubes.TryGetValue(t1.Name, out textureCube);
+            //        if (textureCube == null)
+            //        {
+            //            textureCube = new TextureCube();
+            //            rpc.RPAssetsManager.textureCubes[t1.Name] = textureCube;
+            //        }
+            //        Stream[] streams = new Stream[t1.Path.Length];
+
+            //        for (int i = 0; i < t1.Path.Length; i++)
+            //        {
+            //            string path = t1.Path[i];
+            //            streams[i] = await (await storageFolder.GetFileAsync(path)).OpenStreamForReadAsync();
+            //        }
+            //        appBody.ProcessingList.AddObject(TextureCubeUploadPack.FromFiles(textureCube, streams));
+            //    }
 
             rpc.SetCurrentPassSetting(passSetting);
             rpc.customPassSetting = passSetting;
 
-        }
-        private static async Task ReloadTexture2D(Texture2D texture2D, ProcessingList processingList, StorageFile storageFile)
-        {
-            Uploader uploader = await Texture2DPack.UploaderTex2D(storageFile);
-            processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
-        }
-        private static async Task ReloadTexture2DNoMip(Texture2D texture2D, ProcessingList processingList, StorageFile storageFile)
-        {
-            Uploader uploader = await Texture2DPack.UploaderTex2DNoMip(storageFile);
-            processingList.AddObject(new Texture2DUploadPack(texture2D, uploader));
         }
     }
 }

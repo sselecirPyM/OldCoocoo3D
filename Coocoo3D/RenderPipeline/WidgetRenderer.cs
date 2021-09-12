@@ -24,6 +24,7 @@ namespace Coocoo3D.RenderPipeline
         public void Reload(RenderPipelineContext context)
         {
             var deviceResources = context.deviceResources;
+            var caches = context.mainCaches;
             CBufferGroup.Reload(deviceResources, 256, 65536);
             ImGui.SetCurrentContext(ImGui.CreateContext());
             Uploader uploader = new Uploader();
@@ -41,8 +42,8 @@ namespace Coocoo3D.RenderPipeline
                 uploader.Texture2DRaw(pixelData, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM, width, height);
             }
             var texture2D = new Texture2D();
-            io.Fonts.TexID = context.RPAssetsManager.GetPtr("imgui_font");
-            context.RPAssetsManager.texture2ds["imgui_font"] = texture2D;
+            io.Fonts.TexID = caches.GetPtr("imgui_font");
+            caches.SetTexture("imgui_font", texture2D);
             context.processingList.AddObject(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
             Ready = true;
         }
@@ -117,12 +118,13 @@ namespace Coocoo3D.RenderPipeline
             };
 
             var rpAssets = context.RPAssetsManager;
+            var caches = context.mainCaches;
             var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs");
 
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
 
             graphicsContext.SetRootSignature(rsPP);
-            graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
+            //graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
 
             PSODesc desc;
             desc.blendState = EBlendState.alpha;
@@ -207,7 +209,7 @@ namespace Coocoo3D.RenderPipeline
                         for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
                         {
                             var cmd = cmdList.CmdBuffer[j];
-                            Texture2D tex = rpAssets.GetTexture(cmd.TextureId);
+                            Texture2D tex = caches.GetTexture(cmd.TextureId);
 
                             tex = _Tex(tex);
 

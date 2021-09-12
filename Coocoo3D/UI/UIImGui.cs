@@ -285,6 +285,13 @@ namespace Coocoo3D.UI
                 }
                 ImGui.TreePop();
             }
+            if(ImGui.TreeNode("天空盒"))
+            {
+                if(ImGui.BeginCombo("selece file","?"))
+                {
+                    ImGui.EndCombo();
+                }
+            }
             if (ImGui.TreeNode("帮助"))
             {
                 Help();
@@ -324,7 +331,7 @@ namespace Coocoo3D.UI
             var viewPort = ImGui.GetMainViewport();
             string texName= appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("FinalOutput");
             ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
-            IntPtr imageId = appBody.RPAssetsManager.GetPtr(texName);
+            IntPtr imageId = appBody.mainCaches.GetPtr(texName);
             ImGui.GetWindowDrawList().AddImage(imageId, viewPort.GetWorkPos(), viewPort.GetWorkPos() + viewPort.GetWorkSize());
             ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
         }
@@ -490,11 +497,11 @@ vmd格式动作");
                                 string key = "imgui/" + tex.Key;
                                 if (appBody.mainCaches.TextureCaches.TryGetValue(tex.Value, out var texPack))
                                 {
-                                    appBody.RPAssetsManager.texture2ds[key] = texPack.texture2D;
+                                    appBody.mainCaches.SetTexture(key ,texPack.texture2D);
                                 }
                                 Vector2 pos = ImGui.GetCursorScreenPos();
                                 Vector2 imageSize = new Vector2(120, 120);
-                                IntPtr imageId = appBody.RPAssetsManager.GetPtr(key);
+                                IntPtr imageId = appBody.mainCaches.GetPtr(key);
                                 ImGui.Image(imageId, imageSize);
                                 if (ImGui.IsItemHovered())
                                 {
@@ -532,9 +539,9 @@ vmd格式动作");
         static void SceneView(Coocoo3DMain appBody, RenderPipeline.VisualChannel channel, float mouseWheelDelta, Vector2 mouseMoveDelta)
         {
             var io = ImGui.GetIO();
-            IntPtr imageId = appBody.RPAssetsManager.GetPtr(channel.GetTexName("FinalOutput"));
+            IntPtr imageId = appBody.mainCaches.GetPtr(channel.GetTexName("FinalOutput"));
             Vector2 pos = ImGui.GetCursorScreenPos();
-            var tex = appBody.RPAssetsManager.GetTexture(imageId);
+            var tex = appBody.mainCaches.GetTexture(imageId);
             Vector2 spaceSize = Vector2.Max(ImGui.GetWindowSize() - new Vector2(20, 40), new Vector2(100, 100));
             channel.sceneViewSize = new Numerics.Int2((int)spaceSize.X, (int)spaceSize.Y);
             Vector2 texSize = new Vector2(tex.GetWidth(), tex.GetHeight());

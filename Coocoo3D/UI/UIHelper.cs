@@ -19,7 +19,7 @@ namespace Coocoo3D.UI
         {
             if (UIImGui.requireOpenFolder.SetFalse())
             {
-                var folder = await UISharedCode.OpenResourceFolder(appBody);
+                var folder = await OpenResourceFolder(appBody);
                 if (folder != null)
                 {
                     UIImGui.currentFolder = folder;
@@ -60,63 +60,75 @@ namespace Coocoo3D.UI
                 var folder = requireOpen.folder;
 
                 var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-                bool ExtEquals(string ext) => ext.Equals(file.FileType, StringComparison.CurrentCultureIgnoreCase);
-                if (ExtEquals(".pmx"))
+                string ext = file.FileType.ToLower();
+                switch (ext)
                 {
-                    try
-                    {
-                        await UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, folder);
-                    }
-                    catch (Exception exception)
-                    {
-                        MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_PMXError"), exception));
-                        await dialog.ShowAsync();
-                    }
-                }
-                else if (ExtEquals(".vmd"))
-                {
-                    try
-                    {
-                        BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
-                        VMDFormat motionSet = VMDFormat.Load(reader);
-                        if (motionSet.CameraKeyFrames.Count != 0)
+                    case ".pmx":
+                        try
                         {
-                            appBody.RPContext.currentChannel.camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
-                            appBody.RPContext.currentChannel.camera.CameraMotionOn = true;
+                            await UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, folder);
                         }
-                        else
+                        catch (Exception exception)
                         {
-
-                            Components.MMDMotion motion = new Components.MMDMotion();
-                            motion.Reload(motionSet);
-                            appBody.mainCaches.motions[file.Path] = motion;
-
-                            foreach (var gameObject in appBody.SelectedGameObjects)
+                            MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_PMXError"), exception));
+                            await dialog.ShowAsync();
+                        }
+                        break;
+                    case ".vmd":
+                        try
+                        {
+                            BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
+                            VMDFormat motionSet = VMDFormat.Load(reader);
+                            if (motionSet.CameraKeyFrames.Count != 0)
                             {
-                                var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
-                                if (renderer != null) { renderer.motionPath = file.Path; }
+                                appBody.RPContext.currentChannel.camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
+                                appBody.RPContext.currentChannel.camera.CameraMotionOn = true;
                             }
+                            else
+                            {
 
-                            appBody.GameDriverContext.RequireResetPhysics = true;
+                                Components.MMDMotion motion = new Components.MMDMotion();
+                                motion.Reload(motionSet);
+                                appBody.mainCaches.motions[file.Path] = motion;
+
+                                foreach (var gameObject in appBody.SelectedGameObjects)
+                                {
+                                    var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
+                                    if (renderer != null) { renderer.motionPath = file.Path; }
+                                }
+
+                                appBody.GameDriverContext.RequireResetPhysics = true;
+                            }
                         }
-                    }
-                    catch (Exception exception)
-                    {
-                        MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
-                        await dialog.ShowAsync();
-                    }
-                }
-                else if (ExtEquals(".coocoox"))
-                {
-                    try
-                    {
-                        await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
-                    }
-                    catch (Exception exception)
-                    {
-                        MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
-                        await dialog.ShowAsync();
-                    }
+                        catch (Exception exception)
+                        {
+                            MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
+                            await dialog.ShowAsync();
+                        }
+                        break;
+                    case ".jpg":
+                    case ".png":
+                    case ".tga":
+                        try
+                        {
+                            UISharedCode.LoadTexture(appBody, file, folder);
+                        }
+                        catch
+                        {
+
+                        }
+                        break;
+                    case ".coocoox":
+                        try
+                        {
+                            await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
+                        }
+                        catch (Exception exception)
+                        {
+                            MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
+                            await dialog.ShowAsync();
+                        }
+                        break;
                 }
                 appBody.RequireRender(true);
             }
@@ -129,6 +141,23 @@ namespace Coocoo3D.UI
         static void Export()
         {
 
+        }
+
+        static async Task<StorageFolder> OpenResourceFolder(Coocoo3DMain appBody)
+        {
+            FolderPicker folderPicker = new FolderPicker()
+            {
+                FileTypeFilter =
+                {
+                    "*"
+                },
+                SuggestedStartLocation = PickerLocationId.ComputerFolder,
+                ViewMode = PickerViewMode.Thumbnail,
+                SettingsIdentifier = "ResourceFolder",
+            };
+            StorageFolder folder = await folderPicker.PickSingleFolderAsync();
+            if (folder == null) return null;
+            return folder;
         }
 
         static void SetViewFolder(IReadOnlyList<IStorageItem> items)

@@ -20,10 +20,8 @@ namespace Coocoo3D.ResourceWarp
         public Texture2D texture2D = new Texture2D();
         public bool canReload = true;
         public bool useMipMap = true;
+        public string fullPath;
 
-        public DateTimeOffset lastModifiedTime;
-        public StorageFolder folder;
-        public string relativePath;
         public GraphicsObjectStatus Status;
 
         public Task loadTask;

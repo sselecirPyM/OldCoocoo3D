@@ -22,10 +22,8 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
         public Dictionary<string, ComputeShader> CSAssets = new Dictionary<string, ComputeShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
-        public Dictionary<string, Texture2D> texture2ds = new Dictionary<string, Texture2D>();
-        public Dictionary<string, TextureCube> textureCubes = new Dictionary<string, TextureCube>();
         public Dictionary<string, GraphicsSignature> signaturePass = new Dictionary<string, GraphicsSignature>();
-        public Dictionary<IntPtr, string> ptr2string = new Dictionary<IntPtr, string>();
+
 
         public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
         public GraphicsSignature rtLocal = new GraphicsSignature();
@@ -42,22 +40,7 @@ namespace Coocoo3D.RenderPipeline
                 rtGlobal.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
             }
         }
-        long count1 = 0;
-        public IntPtr GetPtr(string s)
-        {
-            long i = System.Threading.Interlocked.Increment(ref count1);
-            IntPtr ptr = new IntPtr(i);
-            ptr2string[ptr] = s;
-            return ptr;
-        }
-        public Texture2D GetTexture(IntPtr ptr)
-        {
-            if (ptr2string.TryGetValue(ptr, out string s) && texture2ds.TryGetValue(s, out var tex))
-            {
-                return tex;
-            }
-            return null;
-        }
+
         public async Task LoadAssets()
         {
             XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));

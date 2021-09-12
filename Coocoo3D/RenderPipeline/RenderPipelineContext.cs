@@ -313,11 +313,11 @@ namespace Coocoo3D.RenderPipeline
                 {
                     visualChannel1.OutputRTV.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, outputFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
-                    RPAssetsManager.texture2ds[visualChannel1.GetTexName("Output")] = visualChannel1.OutputRTV;
+                    mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
 
                     visualChannel1.FinalOutput.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, swapChainFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
-                    RPAssetsManager.texture2ds[visualChannel1.GetTexName("FinalOutput")] = visualChannel1.FinalOutput;
+                    mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
                 }
             }
         }
@@ -351,7 +351,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 Texture2D tex2d = new Texture2D();
                 await ReloadTexture2DNoMip(tex2d, processingList, tex2dDef.Path);
-                RPAssetsManager.texture2ds.Add(tex2dDef.Name, tex2d);
+                mainCaches.SetTexture(tex2dDef.Name, tex2d);
             }
 
             defaultPassSetting = (PassSetting)PassSettingSerializer.Deserialize(await OpenReadStream("ms-appx:///Samples/samplePasses.coocoox"));
@@ -542,9 +542,9 @@ namespace Coocoo3D.RenderPipeline
             {
                 return tex;
             }
-            else if (RPAssetsManager.texture2ds.TryGetValue(name, out var tex2))
+            else if (mainCaches.TextureCaches.TryGetValue(name, out var tex2))
             {
-                return tex2;
+                return tex2.texture2D;
             }
             return null;
         }

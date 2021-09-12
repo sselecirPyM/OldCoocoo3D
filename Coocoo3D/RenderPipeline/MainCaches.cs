@@ -17,6 +17,8 @@ namespace Coocoo3D.RenderPipeline
 {
     public class MainCaches
     {
+        public Dictionary<string, KnownFile> KnownFiles = new Dictionary<string, KnownFile>();
+
         public Dictionary<string, Texture2DPack> TextureCaches = new Dictionary<string, Texture2DPack>();
         public Dictionary<string, Texture2DPack> TextureOnDemand = new Dictionary<string, Texture2DPack>();
         public ConcurrentDictionary<string, MMDMotion> motions = new ConcurrentDictionary<string, MMDMotion>();
@@ -28,12 +30,13 @@ namespace Coocoo3D.RenderPipeline
 
         public bool ReloadTextures1 = false;
 
-        public void Texture(string name, string relativePath, StorageFolder folder)
+        public void Texture(string fullPath, string relativePath, StorageFolder folder)
         {
             lock (TextureOnDemand)
             {
-                if (!TextureOnDemand.ContainsKey(name))
-                    TextureOnDemand[name] = new Texture2DPack() { folder = folder, relativePath = relativePath };
+                if (!TextureOnDemand.ContainsKey(fullPath))
+                    TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath };
+                KnownFiles[fullPath] = new KnownFile { fullPath = fullPath, folder = folder, relativePath = relativePath };
             }
         }
 
@@ -42,22 +45,19 @@ namespace Coocoo3D.RenderPipeline
         {
             lock (TextureOnDemand)
             {
-                if (ReloadTextures1.SetFalse())
+                if (ReloadTextures1.SetFalse() && TextureCaches.Count > 0)
                 {
-                    if (TextureCaches.Count > 0)
+                    var packs = TextureCaches.ToList();
+                    foreach (var pair in packs)
                     {
-                        var packs = TextureCaches.ToList();
-                        foreach (var pair in packs)
-                        {
-                            if (!TextureOnDemand.ContainsKey(pair.Key))
-                                TextureOnDemand.Add(pair.Key, new Texture2DPack() { folder = pair.Value.folder, relativePath = pair.Value.relativePath, lastModifiedTime = pair.Value.lastModifiedTime });
-                        }
+                        if (!TextureOnDemand.ContainsKey(pair.Key) && pair.Value.canReload)
+                            TextureOnDemand.Add(pair.Key, new Texture2DPack() { fullPath = pair.Value.fullPath, });
                     }
                 }
 
                 if (TextureOnDemand.Count == 0) return;
 
-                foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null && u.Value.canReload; }))
+                foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null; }))
                 {
                     var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
                     tex1.Mark(GraphicsObjectStatus.loading);
@@ -66,14 +66,12 @@ namespace Coocoo3D.RenderPipeline
                             Texture2DPack texturePack1 = (Texture2DPack)a;
                             try
                             {
-                                var file = await texturePack1.folder.GetFileAsync(texturePack1.relativePath);
-                                var attr = await file.GetBasicPropertiesAsync();
-                                if (texturePack1.lastModifiedTime != attr.DateModified)
+                                var knownFile = KnownFiles[texturePack1.fullPath];
+                                if (await knownFile.IsModified())
                                 {
                                     Uploader uploader = new Uploader();
-                                    if (await texturePack1.ReloadTexture(file, uploader))
+                                    if (await texturePack1.ReloadTexture(knownFile.file, uploader))
                                     {
-                                        texturePack1.lastModifiedTime = attr.DateModified;
                                         texturePack1.Mark(GraphicsObjectStatus.loaded);
                                         uploaders[texturePack1] = uploader;
                                     }
@@ -104,9 +102,7 @@ namespace Coocoo3D.RenderPipeline
                         (loadCompleted.Value.Status == GraphicsObjectStatus.loaded ||
                         loadCompleted.Value.Status == GraphicsObjectStatus.error))
                     {
-                        tex1.lastModifiedTime = loadCompleted.Value.lastModifiedTime;
-                        tex1.folder = loadCompleted.Value.folder;
-                        tex1.relativePath = loadCompleted.Value.relativePath;
+                        tex1.fullPath = loadCompleted.Value.fullPath;
                         tex1.Mark(loadCompleted.Value.Status);
                         if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
                         {
@@ -116,6 +112,47 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
             }
+        }
+
+        public Dictionary<IntPtr, string> ptr2string = new Dictionary<IntPtr, string>();
+        public Dictionary<string, IntPtr> string2Ptr = new Dictionary<string, IntPtr>();
+        long ptrCount = 0;
+        public IntPtr GetPtr(string s)
+        {
+            if (string2Ptr.TryGetValue(s,out IntPtr ptr))
+            {
+                return ptr;
+            }
+            long i = System.Threading.Interlocked.Increment(ref ptrCount);
+            ptr = new IntPtr(i);
+            ptr2string[ptr] = s;
+            string2Ptr[s] = ptr;
+            return ptr;
+        }
+        public Texture2D GetTexture(IntPtr ptr)
+        {
+            if (ptr2string.TryGetValue(ptr, out string s) && TextureCaches.TryGetValue(s, out var tex))
+            {
+                return tex.texture2D;
+            }
+            return null;
+        }
+        public Texture2D GetTexture(string s)
+        {
+            if (TextureCaches.TryGetValue(s, out var tex))
+            {
+                return tex.texture2D;
+            }
+            return null;
+        }
+        public void SetTexture(Texture2D tex, IntPtr ptr)
+        {
+            string name = ptr2string[ptr];
+            TextureCaches[name] = new Texture2DPack() { canReload = false, fullPath = name, texture2D = tex };
+        }
+        public void SetTexture(string name, Texture2D tex)
+        {
+            TextureCaches[name] = new Texture2DPack() { canReload = false, fullPath = name, texture2D = tex };
         }
 
         public void ReloadTextures()
