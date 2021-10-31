@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "GraphicsSignature.h"
+#include "RootSignature.h"
 #include "DirectXHelper.h"
 
 using namespace Coocoo3DGraphics;
@@ -34,11 +34,11 @@ inline D3D12_STATIC_SAMPLER_DESC _StaticSamplerDesc()
 	staticSamplerDescs[3].Filter = D3D12_FILTER_MIN_MAG_MIP_POINT
 
 
-void GraphicsSignature::ReloadSkinning(DeviceResources^ deviceResources)
+void RootSignature::ReloadSkinning(GraphicsDevice^ graphicsDevice)
 {
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE featherData;
 	featherData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-	if (FAILED(deviceResources->GetD3DDevice()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featherData, sizeof(featherData))))
+	if (FAILED(graphicsDevice->GetD3DDevice()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featherData, sizeof(featherData))))
 	{
 		featherData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 	}
@@ -52,17 +52,17 @@ void GraphicsSignature::ReloadSkinning(DeviceResources^ deviceResources)
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
 	DX::ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featherData.HighestVersion, &signature, &error));
-	DX::ThrowIfFailed(deviceResources->GetD3DDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
+	DX::ThrowIfFailed(graphicsDevice->GetD3DDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
 }
 
-void GraphicsSignature::Sign1(DeviceResources^ deviceResources, const Platform::Array<GraphicSignatureDesc>^ Descs, Microsoft::WRL::ComPtr<ID3D12RootSignature>& m_sign, D3D12_ROOT_SIGNATURE_FLAGS flags)
+void RootSignature::Sign1(GraphicsDevice^ graphicsDevice, const Platform::Array<GraphicSignatureDesc>^ Descs, Microsoft::WRL::ComPtr<ID3D12RootSignature>& m_sign, D3D12_ROOT_SIGNATURE_FLAGS flags)
 {
 	m_cbv.clear();
 	m_srv.clear();
 	m_uav.clear();
 	D3D12_FEATURE_DATA_ROOT_SIGNATURE featherData;
 	//featherData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-	//if (FAILED(deviceResources->GetD3DDevice()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featherData, sizeof(featherData))))
+	//if (FAILED(graphicsDevice->GetD3DDevice()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featherData, sizeof(featherData))))
 	//{
 		featherData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 	//}
@@ -130,103 +130,23 @@ void GraphicsSignature::Sign1(DeviceResources^ deviceResources, const Platform::
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
 	DX::ThrowIfFailed(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featherData.HighestVersion, &signature, &error));
-	DX::ThrowIfFailed(deviceResources->GetD3DDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_sign)));
+	DX::ThrowIfFailed(graphicsDevice->GetD3DDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_sign)));
 
 }
 
-
-//void GraphicsSignature::Sign1(DeviceResources^ deviceResources, const Platform::Array<GraphicSignatureDesc>^ Descs, Microsoft::WRL::ComPtr<ID3D12RootSignature>& m_sign, D3D12_ROOT_SIGNATURE_FLAGS flags)
-//{
-//	m_cbv.clear();
-//	m_srv.clear();
-//	m_uav.clear();
-//	D3D12_FEATURE_DATA_ROOT_SIGNATURE featherData;
-//	featherData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_1;
-//	if (FAILED(deviceResources->GetD3DDevice()->CheckFeatureSupport(D3D12_FEATURE_ROOT_SIGNATURE, &featherData, sizeof(featherData))))
-//	{
-//		featherData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
-//	}
-//
-//	UINT descCount = Descs->Length;
-//	std::vector< CD3DX12_ROOT_PARAMETER>m1;
-//	std::vector< CD3DX12_DESCRIPTOR_RANGE>m2;
-//	m1.resize(descCount);
-//	m2.resize(descCount);
-//	CD3DX12_ROOT_PARAMETER* parameters = m1.data();
-//	CD3DX12_DESCRIPTOR_RANGE* ranges = m2.data();
-//
-//	int cbvCount = 0;
-//	int srvCount = 0;
-//	int uavCount = 0;
-//
-//	for (int i = 0; i < descCount; i++)
-//	{
-//		if (Descs[i] == GraphicSignatureDesc::CBV)
-//		{
-//			parameters[i].InitAsConstantBufferView(cbvCount);
-//			m_cbv[cbvCount] = i;
-//			cbvCount++;
-//		}
-//		else if (Descs[i] == GraphicSignatureDesc::SRV)
-//		{
-//			parameters[i].InitAsShaderResourceView(srvCount);
-//			m_srv[srvCount] = i;
-//			srvCount++;
-//		}
-//		else if (Descs[i] == GraphicSignatureDesc::UAV)
-//		{
-//			parameters[i].InitAsUnorderedAccessView(uavCount);
-//			m_uav[cbvCount] = i;
-//			uavCount++;
-//		}
-//		else if (Descs[i] == GraphicSignatureDesc::CBVTable)
-//		{
-//			ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, cbvCount);
-//			parameters[i].InitAsDescriptorTable(1, &ranges[i]);
-//			m_cbv[cbvCount] = i;
-//			cbvCount++;
-//		}
-//		else if (Descs[i] == GraphicSignatureDesc::SRVTable)
-//		{
-//			ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, srvCount, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE);
-//			parameters[i].InitAsDescriptorTable(1, &ranges[i]);
-//			m_srv[srvCount] = i;
-//			srvCount++;
-//		}
-//		else if (Descs[i] == GraphicSignatureDesc::UAVTable)
-//		{
-//			ranges[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, uavCount);
-//			parameters[i].InitAsDescriptorTable(1, &ranges[i]);
-//			m_uav[cbvCount] = i;
-//			uavCount++;
-//		}
-//	}
-//
-//	STATIC_SAMPLER_CODE_FRAG;
-//
-//	CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
-//	rootSignatureDesc.Init(descCount, parameters, _countof(staticSamplerDescs), staticSamplerDescs, flags);
-//
-//		Microsoft::WRL::ComPtr<ID3DBlob> signature;
-//	Microsoft::WRL::ComPtr<ID3DBlob> error;
-//	DX::ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1_0, &signature, &error));
-//	DX::ThrowIfFailed(deviceResources->GetD3DDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_sign)));
-//
-//}
-
-void GraphicsSignature::Reload(DeviceResources^ deviceResources, const Platform::Array<GraphicSignatureDesc>^ Descs)
+void RootSignature::Reload(GraphicsDevice^ graphicsDevice, const Platform::Array<GraphicSignatureDesc>^ Descs)
 {
-	Sign1(deviceResources, Descs, m_rootSignature, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT);
+	Sign1(graphicsDevice, Descs, m_rootSignature, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT);
 }
 
-void GraphicsSignature::ReloadCompute(DeviceResources^ deviceResources, const Platform::Array<GraphicSignatureDesc>^ Descs)
+void RootSignature::ReloadCompute(GraphicsDevice^ graphicsDevice, const Platform::Array<GraphicSignatureDesc>^ Descs)
 {
-	Sign1(deviceResources, Descs, m_rootSignature, D3D12_ROOT_SIGNATURE_FLAG_NONE);
+	Sign1(graphicsDevice, Descs, m_rootSignature, D3D12_ROOT_SIGNATURE_FLAG_NONE);
 }
 
-void GraphicsSignature::RayTracingLocal(DeviceResources^ deviceResources)
+void RootSignature::RayTracingLocal(GraphicsDevice^ graphicsDevice)
 {
-	auto device = deviceResources->GetD3DDevice5();
+	auto device = graphicsDevice->GetD3DDevice5();
 	CD3DX12_ROOT_PARAMETER rootParameters[8];
 	CD3DX12_DESCRIPTOR_RANGE range[5];
 	for (int i = 0; i < 5; i++)
@@ -251,7 +171,7 @@ void GraphicsSignature::RayTracingLocal(DeviceResources^ deviceResources)
 	DX::ThrowIfFailed(device->CreateRootSignature(1, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
 }
 
-void GraphicsSignature::Unload()
+void RootSignature::Unload()
 {
 	m_rootSignature.Reset();
 }

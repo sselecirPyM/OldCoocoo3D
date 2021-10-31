@@ -36,17 +36,6 @@ namespace Coocoo3D.RenderPipeline
         [ThreadStatic]
         static Random random;
 
-        //public CBuffer CameraDataBuffer = new CBuffer();
-
-        public RayTracingRenderPipeline1()
-        {
-        }
-
-        public void Reload(DeviceResources deviceResources)
-        {
-            //deviceResources.InitializeSBuffer(CameraDataBuffer, c_presentDataSize);
-        }
-
         #region graphics assets
         static readonly string[] c_rayGenShaderNames = { "MyRaygenShader", };
         static readonly string[] c_missShaderNames = { "MissShaderSurface", "MissShaderTest", };
@@ -63,7 +52,6 @@ namespace Coocoo3D.RenderPipeline
         public async Task ReloadAssets(RenderPipelineContext context)
         {
             rayTracingPso = await ReadFile("ms-appx:///Coocoo3DGraphics/Raytracing.cso");
-            DeviceResources deviceResources = context.deviceResources;
             Ready = true;
         }
         #endregion
@@ -75,7 +63,7 @@ namespace Coocoo3D.RenderPipeline
 
             var graphicsContext = visualChannel.graphicsContext;
             var rendererComponents = context.dynamicContextRead.renderers;
-            var deviceResources = context.deviceResources;
+            var graphicsDevice = context.graphicsDevice;
             var sBufferGroup = visualChannel.XSBufferGroup;
             int countMaterials = 0;
             for (int i = 0; i < rendererComponents.Count; i++)
@@ -83,8 +71,7 @@ namespace Coocoo3D.RenderPipeline
                 countMaterials += rendererComponents[i].Materials.Count;
             }
             visualChannel.XSBufferGroup.SetSlienceCount(countMaterials + 1);
-            //DesireMaterialBuffers(countMaterials);
-            //var cameras = context.dynamicContextRead.cameras;
+
             var camera = visualChannel.cameraData;
             ref var settings = ref context.dynamicContextRead.settings;
             var lightings = context.dynamicContextRead.lightings;
@@ -103,7 +90,6 @@ namespace Coocoo3D.RenderPipeline
 
             int countBufferIndex = 0;
             sBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, c_presentDataSize, 0);
-            //graphicsContext.UpdateResource(CameraDataBuffer, context.bigBuffer, c_presentDataSize, 0);
             countBufferIndex++;
 
             #region Update material data
@@ -178,15 +164,15 @@ namespace Coocoo3D.RenderPipeline
             var rendererComponents = context.dynamicContextRead.renderers;
             var sBufferGroup = visualChannel.XSBufferGroup;
 
-            var deviceResources = context.deviceResources;
+            var graphicsDevice = context.graphicsDevice;
             bool loaded = rayTracingScenes.TryGetValue(visualChannel.Name, out var rayTracingScene);
             if (!loaded)
             {
                 rayTracingScene = new RayTracingScene();
                 rayTracingScenes[visualChannel.Name] = rayTracingScene;
                 rayTracingScene.ReloadLibrary(rayTracingPso);
-                rayTracingScene.ReloadPipelineStates(deviceResources, context.RPAssetsManager.rtGlobal, context.RPAssetsManager.rtLocal, c_exportNames, hitGroupDescs, c_rayTracingSceneSettings);
-                rayTracingScene.ReloadAllocScratchAndInstance(deviceResources, 1024 * 1024 * 64, 1024);
+                rayTracingScene.ReloadPipelineStates(graphicsDevice, context.RPAssetsManager.rtGlobal, context.RPAssetsManager.rtLocal, c_exportNames, hitGroupDescs, c_rayTracingSceneSettings);
+                rayTracingScene.ReloadAllocScratchAndInstance(graphicsDevice, 1024 * 1024 * 64, 1024);
             }
 
             int countBufferIndex = 1;// use 1 for camera
@@ -227,7 +213,6 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.BuildShaderTable(rayTracingScene, c_rayGenShaderNames, c_missShaderNames, c_hitGroupNames, counter1.material);
                 graphicsContext.SetRootSignatureRayTracing(rayTracingScene);
                 graphicsContext.SetComputeUAVT(visualChannel.OutputRTV, 0);
-                //graphicsContext.SetComputeCBVR(CameraDataBuffer, 2);
                 sBufferGroup.SetComputeCBVR(graphicsContext, 0, 2);
                 graphicsContext.SetComputeSRVT(context.SkyBox, 3);
                 graphicsContext.SetComputeSRVT(context.IrradianceMap, 4);
@@ -237,27 +222,26 @@ namespace Coocoo3D.RenderPipeline
             }
             else
             {
-                var rootSignature = RPAssetsManager.GetRootSignature(context.deviceResources, "Cssss");
+                var rootSignature = RPAssetsManager.GetRootSignature(context.graphicsDevice, "Cssss");
                 #region Render Sky box
                 graphicsContext.SetRootSignature(rootSignature);
                 graphicsContext.SetRTV(visualChannel.OutputRTV, Vector4.Zero, true);
-                //graphicsContext.SetCBVRSlot(CameraDataBuffer, 0, 0, 0);
                 sBufferGroup.SetCBVRSlot(graphicsContext, 0, 0);//camera
                 graphicsContext.SetSRVTSlot(context.SkyBox, 3);
                 graphicsContext.SetMesh(context.ndcQuadMesh);
                 PSODesc descSkyBox;
-                descSkyBox.blendState = EBlendState.none;
-                descSkyBox.cullMode = ECullMode.back;
+                descSkyBox.blendState = BlendState.none;
+                descSkyBox.cullMode = CullMode.back;
                 descSkyBox.depthBias = 0;
                 descSkyBox.slopeScaledDepthBias = 1.0f;
-                descSkyBox.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
-                descSkyBox.inputLayout = EInputLayout.postProcess;
-                descSkyBox.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+                descSkyBox.dsvFormat = Format.Unknown;
+                descSkyBox.inputLayout = InputLayout.postProcess;
+                descSkyBox.ptt = PrimitiveTopologyType.Triangle;
                 descSkyBox.rtvFormat = context.outputFormat;
                 descSkyBox.renderTargetCount = 1;
                 descSkyBox.streamOutput = false;
                 descSkyBox.wireFrame = false;
-                SetPipelineStateVariant(context.deviceResources, graphicsContext, rootSignature, ref descSkyBox, RPAssetsManager.PSOs["SkyBox"]);
+                SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rootSignature, descSkyBox, RPAssetsManager.PSOs["SkyBox"]);
 
                 graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 #endregion

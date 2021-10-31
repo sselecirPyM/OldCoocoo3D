@@ -30,9 +30,9 @@ namespace Coocoo3D.RenderPipeline
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
             cameraData = camera.GetCameraData();
             if (XBufferGroup.bufferSize == 0)
-                XBufferGroup.Reload(RPContext.deviceResources, 1024, 1024 * 256);
+                XBufferGroup.Reload(RPContext.graphicsDevice, 1024, 1024 * 256);
             if (XSBufferGroup.bufferSize == 0)
-                XSBufferGroup.Reload(RPContext.deviceResources, 512, 65536);
+                XSBufferGroup.Reload(RPContext.graphicsDevice, 512, 65536);
         }
 
         public void Dispose()

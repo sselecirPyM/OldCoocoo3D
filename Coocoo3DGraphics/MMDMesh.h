@@ -1,51 +1,51 @@
 #pragma once
-#include "DeviceResources.h"
+#include "GraphicsDevice.h"
 namespace Coocoo3DGraphics
 {
 	public enum struct PrimitiveTopology
 	{
-		_UNDEFINED = 0,
-		_POINTLIST = 1,
-		_LINELIST = 2,
-		_LINESTRIP = 3,
-		_TRIANGLELIST = 4,
-		_TRIANGLESTRIP = 5,
-		_LINELIST_ADJ = 10,
-		_LINESTRIP_ADJ = 11,
-		_TRIANGLELIST_ADJ = 12,
-		_TRIANGLESTRIP_ADJ = 13,
-		_1_CONTROL_POINT_PATCHLIST = 33,
-		_2_CONTROL_POINT_PATCHLIST = 34,
-		_3_CONTROL_POINT_PATCHLIST = 35,
-		_4_CONTROL_POINT_PATCHLIST = 36,
-		_5_CONTROL_POINT_PATCHLIST = 37,
-		_6_CONTROL_POINT_PATCHLIST = 38,
-		_7_CONTROL_POINT_PATCHLIST = 39,
-		_8_CONTROL_POINT_PATCHLIST = 40,
-		_9_CONTROL_POINT_PATCHLIST = 41,
-		_10_CONTROL_POINT_PATCHLIST = 42,
-		_11_CONTROL_POINT_PATCHLIST = 43,
-		_12_CONTROL_POINT_PATCHLIST = 44,
-		_13_CONTROL_POINT_PATCHLIST = 45,
-		_14_CONTROL_POINT_PATCHLIST = 46,
-		_15_CONTROL_POINT_PATCHLIST = 47,
-		_16_CONTROL_POINT_PATCHLIST = 48,
-		_17_CONTROL_POINT_PATCHLIST = 49,
-		_18_CONTROL_POINT_PATCHLIST = 50,
-		_19_CONTROL_POINT_PATCHLIST = 51,
-		_20_CONTROL_POINT_PATCHLIST = 52,
-		_21_CONTROL_POINT_PATCHLIST = 53,
-		_22_CONTROL_POINT_PATCHLIST = 54,
-		_23_CONTROL_POINT_PATCHLIST = 55,
-		_24_CONTROL_POINT_PATCHLIST = 56,
-		_25_CONTROL_POINT_PATCHLIST = 57,
-		_26_CONTROL_POINT_PATCHLIST = 58,
-		_27_CONTROL_POINT_PATCHLIST = 59,
-		_28_CONTROL_POINT_PATCHLIST = 60,
-		_29_CONTROL_POINT_PATCHLIST = 61,
-		_30_CONTROL_POINT_PATCHLIST = 62,
-		_31_CONTROL_POINT_PATCHLIST = 63,
-		_32_CONTROL_POINT_PATCHLIST = 64,
+		Undefined = 0,
+		PointList = 1,
+		LineList = 2,
+		LineStrip = 3,
+		TriangleList = 4,
+		TriangleStrip = 5,
+		LineListAdjacency = 10,
+		LineStripAdjacency = 11,
+		TriangleListAdjacency = 12,
+		TriangleStripAdjacency = 13,
+		PatchListWith1ControlPoints = 33,
+		PatchListWith2ControlPoints = 34,
+		PatchListWith3ControlPoints = 35,
+		PatchListWith4ControlPoints = 36,
+		PatchListWith5ControlPoints = 37,
+		PatchListWith6ControlPoints = 38,
+		PatchListWith7ControlPoints = 39,
+		PatchListWith8ControlPoints = 40,
+		PatchListWith9ControlPoints = 41,
+		PatchListWith10ControlPoints = 42,
+		PatchListWith11ControlPoints = 43,
+		PatchListWith12ControlPoints = 44,
+		PatchListWith13ControlPoints = 45,
+		PatchListWith14ControlPoints = 46,
+		PatchListWith15ControlPoints = 47,
+		PatchListWith16ControlPoints = 48,
+		PatchListWith17ControlPoints = 49,
+		PatchListWith18ControlPoints = 50,
+		PatchListWith19ControlPoints = 51,
+		PatchListWith20ControlPoints = 52,
+		PatchListWith21ControlPoints = 53,
+		PatchListWith22ControlPoints = 54,
+		PatchListWith23ControlPoints = 55,
+		PatchListWith24ControlPoints = 56,
+		PatchListWith25ControlPoints = 57,
+		PatchListWith26ControlPoints = 58,
+		PatchListWith27ControlPoints = 59,
+		PatchListWith28ControlPoints = 60,
+		PatchListWith29ControlPoints = 61,
+		PatchListWith30ControlPoints = 62,
+		PatchListWith31ControlPoints = 63,
+		PatchListWith32ControlPoints = 64
 	};
 	public ref class MMDMesh sealed
 	{
@@ -55,12 +55,12 @@ namespace Coocoo3DGraphics
 		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<int>^ indexData, int vertexStride, PrimitiveTopology pt);
 		void Reload1(const Platform::Array<byte>^ verticeData, const Platform::Array<byte>^ indexData, int vertexStride, PrimitiveTopology pt);
 		void ReloadNDCQuad();
-		void ReloadCube();
-		void ReloadCubeWire();
+		//void ReloadCube();
+		//void ReloadCubeWire();
 		virtual ~MMDMesh();
 		int GetIndexCount();
 		int GetVertexCount();
-		void SetIndexFormat(DxgiFormat format);
+		void SetIndexFormat(Format format);
 		property Platform::Array<byte>^ m_verticeData;
 	internal:
 		bool updated = false;
@@ -71,8 +71,6 @@ namespace Coocoo3DGraphics
 		Microsoft::WRL::ComPtr<ID3DBlob> m_indexData;
 
 		D3D_PRIMITIVE_TOPOLOGY m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
-		std::map<std::string, Microsoft::WRL::ComPtr<ID3D12Resource>> m_vertexBuffers;
-		std::map<std::string, D3D12_VERTEX_BUFFER_VIEW> m_vertexBufferViews;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_vertexBuffer;
 		D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_indexBuffer;

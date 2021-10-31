@@ -118,17 +118,17 @@ namespace Coocoo3D.UI
 
                         }
                         break;
-                    case ".coocoox":
-                        try
-                        {
-                            await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
-                        }
-                        catch (Exception exception)
-                        {
-                            MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
-                            await dialog.ShowAsync();
-                        }
-                        break;
+                    //case ".coocoox":
+                    //    try
+                    //    {
+                    //        await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
+                    //    }
+                    //    catch (Exception exception)
+                    //    {
+                    //        MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
+                    //        await dialog.ShowAsync();
+                    //    }
+                    //    break;
                 }
                 appBody.RequireRender(true);
             }

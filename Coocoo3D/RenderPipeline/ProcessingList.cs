@@ -3,6 +3,7 @@ using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,71 +22,76 @@ namespace Coocoo3D.RenderPipeline
                 source.Clear();
             }
         }
-        public List<TextureCubeUploadPack> TextureCubeLoadList = new List<TextureCubeUploadPack>();
-        public List<Texture2DUploadPack> Texture2DLoadList = new List<Texture2DUploadPack>();
-        public List<MMDMesh> MMDMeshLoadList = new List<MMDMesh>();
-        public List<MeshAppendUploadPack> MMDMeshLoadList2 = new List<MeshAppendUploadPack>();
+
+        public List<Object> loadList = new List<object>();
 
         public void AddObject(MMDMesh mesh)
         {
-            lock (MMDMeshLoadList)
+            lock (loadList)
             {
-                MMDMeshLoadList.Add(mesh);
+                loadList.Add(mesh);
             }
         }
         public void AddObject(MeshAppendUploadPack mesh)
         {
-            lock (MMDMeshLoadList2)
+            lock (loadList)
             {
-                MMDMeshLoadList2.Add(mesh);
+                loadList.Add(mesh);
             }
         }
         public void AddObject(TextureCubeUploadPack texture)
         {
-            lock (TextureCubeLoadList)
+            lock (loadList)
             {
-                TextureCubeLoadList.Add(texture);
+                loadList.Add(texture);
             }
         }
         public void AddObject(Texture2DUploadPack texture)
         {
-            lock (Texture2DLoadList)
+            lock (loadList)
             {
-                Texture2DLoadList.Add(texture);
+                loadList.Add(texture);
+            }
+        }
+        public void AddObject(Texture2D texture2D, Uploader uploader)
+        {
+            lock (loadList)
+            {
+                loadList.Add(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
+            }
+        }
+        public void AddObject(Texture2D texture2D, int width, int height, Vector4 color)
+        {
+            lock (loadList)
+            {
+                loadList.Add(Texture2DUploadPack.Pure(texture2D, width, height, color));
             }
         }
 
         public void MoveToAnother(ProcessingList another)
         {
-            Move1(TextureCubeLoadList, another.TextureCubeLoadList);
-            Move1(Texture2DLoadList, another.Texture2DLoadList);
-            Move1(MMDMeshLoadList, another.MMDMeshLoadList);
-            Move1(MMDMeshLoadList2, another.MMDMeshLoadList2);
+            Move1(loadList, another.loadList);
         }
 
         public bool IsEmpty()
         {
-            return TextureCubeLoadList.Count == 0 &&
-                 Texture2DLoadList.Count == 0 &&
-                MMDMeshLoadList.Count == 0 &&
-                MMDMeshLoadList2.Count == 0;
+            return loadList.Count == 0;
         }
 
         public void _DealStep1(GraphicsContext graphicsContext)
         {
-            for (int i = 0; i < TextureCubeLoadList.Count; i++)
-                graphicsContext.UploadTexture(TextureCubeLoadList[i].texture, TextureCubeLoadList[i].uploader);
-            for (int i = 0; i < Texture2DLoadList.Count; i++)
-                graphicsContext.UploadTexture(Texture2DLoadList[i].texture, Texture2DLoadList[i].uploader);
-            for (int i = 0; i < MMDMeshLoadList.Count; i++)
-                graphicsContext.UploadMesh(MMDMeshLoadList[i]);
-            for (int i = 0; i < MMDMeshLoadList2.Count; i++)
-                graphicsContext.UploadMesh(MMDMeshLoadList2[i].mesh, MMDMeshLoadList2[i].data);
-
-            TextureCubeLoadList.Clear();
-            Texture2DLoadList.Clear();
-            MMDMeshLoadList.Clear();
-            MMDMeshLoadList2.Clear();
+            foreach (var obj in loadList)
+            {
+                if (obj is TextureCubeUploadPack p1)
+                    graphicsContext.UploadTexture(p1.texture, p1.uploader);
+                else if(obj is Texture2DUploadPack p2)
+                    graphicsContext.UploadTexture(p2.texture, p2.uploader);
+                else if(obj is MMDMesh p3)
+                    graphicsContext.UploadMesh(p3);
+                else if(obj is MeshAppendUploadPack p4)
+                    graphicsContext.UploadMesh(p4.mesh, p4.data);
+            }
+            loadList.Clear();
         }
     }
 }

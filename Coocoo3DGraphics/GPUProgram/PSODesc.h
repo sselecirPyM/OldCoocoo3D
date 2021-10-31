@@ -2,7 +2,7 @@
 #include "Interoperation/InteroperationTypes.h"
 namespace Coocoo3DGraphics
 {
-	public enum struct ECullMode
+	public enum struct CullMode
 	{
 		notSpecific = 0,
 		none = 1,
@@ -13,7 +13,7 @@ namespace Coocoo3DGraphics
 		Front = 2,
 		Back = 3,
 	};
-	public enum struct EBlendState
+	public enum struct BlendState
 	{
 		none = 0,
 		alpha = 1,
@@ -22,30 +22,30 @@ namespace Coocoo3DGraphics
 		Alpha = 1,
 		Add = 2,
 	};
-	public enum struct EInputLayout
+	public enum struct InputLayout
 	{
 		mmd = 0,
 		postProcess = 1,
 		skinned = 2,
 		imgui = 3,
 	};
-	public enum struct ED3D12PrimitiveTopologyType
+	public enum struct PrimitiveTopologyType
 	{
-		UNDEFINED = 0,
-		POINT = 1,
-		LINE = 2,
-		TRIANGLE = 3,
-		PATCH = 4
+		Undefined = 0,
+		Point = 1,
+		Line = 2,
+		Triangle = 3,
+		Patch = 4
 	};
 
 	public value struct PSODesc sealed
 	{
-		EInputLayout inputLayout;
-		EBlendState blendState;
-		ECullMode cullMode;
-		ED3D12PrimitiveTopologyType ptt;
-		DxgiFormat rtvFormat;
-		DxgiFormat dsvFormat;
+		InputLayout inputLayout;
+		BlendState blendState;
+		CullMode cullMode;
+		PrimitiveTopologyType ptt;
+		Format rtvFormat;
+		Format dsvFormat;
 		int renderTargetCount;
 		int depthBias;
 		float slopeScaledDepthBias;

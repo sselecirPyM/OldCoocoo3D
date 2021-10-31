@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+//using Vortice.DXGI;
 
 namespace Coocoo3D.ResourceWarp
 {
@@ -40,7 +41,7 @@ namespace Coocoo3D.ResourceWarp
                 datas[i].CopyTo(t, c);
                 c += datas[i].Length;
             }
-            uploader.TextureCubeRaw(t, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height, mipMap);
+            uploader.TextureCubeRaw(t, Format.R8G8B8A8_UNorm_SRgb, width, height, mipMap);
             return new TextureCubeUploadPack(texture, uploader);
         }
     }

@@ -61,16 +61,16 @@ namespace Coocoo3D.RenderPipeline
                 {
                     var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
                     tex1.Mark(GraphicsObjectStatus.loading);
-                    notLoad.Value.loadTask = Task.Factory.StartNew(async (object a) =>
+                    notLoad.Value.loadTask = Task.Factory.StartNew((object a) =>
                         {
                             Texture2DPack texturePack1 = (Texture2DPack)a;
                             try
                             {
                                 var knownFile = KnownFiles[texturePack1.fullPath];
-                                if (await knownFile.IsModified())
+                                if (knownFile.IsModified().Result)
                                 {
                                     Uploader uploader = new Uploader();
-                                    if (await texturePack1.ReloadTexture(knownFile.file, uploader))
+                                    if (texturePack1.ReloadTexture(knownFile.file, uploader).Result)
                                     {
                                         texturePack1.Mark(GraphicsObjectStatus.loaded);
                                         uploaders[texturePack1] = uploader;
@@ -106,7 +106,7 @@ namespace Coocoo3D.RenderPipeline
                         tex1.Mark(loadCompleted.Value.Status);
                         if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
                         {
-                            processingList.AddObject(new Texture2DUploadPack(tex1.texture2D, uploader));
+                            processingList.AddObject(tex1.texture2D, uploader);
                         }
                         TextureOnDemand.Remove(loadCompleted.Key);
                     }

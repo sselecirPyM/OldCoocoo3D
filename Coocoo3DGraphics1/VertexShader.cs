@@ -4,21 +4,29 @@ using System.Text;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 
-namespace Coocoo3DGraphics1
+namespace Coocoo3DGraphics
 {
     public class VertexShader
     {
-        public static VertexShader CompileAndCreate(GraphicsDevice graphicsDevice, byte[] source)
+        public static VertexShader CompileAndCreate(byte[] source)
         {
-            return CompileAndCreate(graphicsDevice, source, "main");
+            return CompileAndCreate(source, "main");
         }
-        public static VertexShader CompileAndCreate(GraphicsDevice graphicsDevice, byte[] source, string entryPoint)
+        public static VertexShader CompileAndCreate(byte[] source, string entryPoint)
         {
             VertexShader vertexShader = new VertexShader();
-            var hr = Compiler.Compile(source, entryPoint, null, "vs_5_0", out vertexShader.compiledCode, out Blob errorBlob);
+            var hr = Compiler.Compile(source, entryPoint, null, "vs_5_0", out Blob compiled, out Blob errorBlob);
 
+            vertexShader.compiledCode = compiled.GetBytes();
+            compiled.Dispose();
+            errorBlob.Dispose();
             return vertexShader;
         }
-        public Blob compiledCode;
+        public void Initialize(byte[] data)
+        {
+            this.compiledCode = new byte[data.Length];
+            Array.Copy(data, this.compiledCode, data.Length);
+        }
+        public byte[] compiledCode;
     }
 }

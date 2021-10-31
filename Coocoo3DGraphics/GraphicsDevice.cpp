@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "DeviceResources.h"
+#include "GraphicsDevice.h"
 #include "DirectXHelper.h"
 #include <windows.ui.xaml.media.dxinterop.h>
 
@@ -22,7 +22,7 @@ inline bool IsDirectXRaytracingSupported(ID3D12Device* testDevice)
 }
 
 // 配置 Direct3D 设备，并存储设备句柄和设备上下文。
-void DeviceResources::CreateDeviceResources()
+void GraphicsDevice::CreateDeviceResources()
 {
 #if defined(_DEBUG)
 	// 如果项目处于调试生成阶段，请通过 SDK 层启用调试。
@@ -127,7 +127,7 @@ void DeviceResources::CreateDeviceResources()
 	}
 }
 
-Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> DeviceResources::GetCommandList()
+Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GraphicsDevice::GetCommandList()
 {
 	if (m_commandLists.size())
 	{
@@ -145,12 +145,12 @@ Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> DeviceResources::GetCommandLi
 	}
 }
 
-void DeviceResources::ReturnCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList)
+void GraphicsDevice::ReturnCommandList(Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> commandList)
 {
 	m_commandLists1.push_back(commandList);
 }
 
-UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
+UINT GraphicsDevice::BitsPerPixel(DXGI_FORMAT format)
 {
 	switch (static_cast<int>(format))
 	{
@@ -297,19 +297,14 @@ UINT DeviceResources::BitsPerPixel(DXGI_FORMAT format)
 	}
 }
 
-void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res)
+void GraphicsDevice::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Object> res)
 {
 	if (res != nullptr)
 		m_recycleList.push_back(d3d12RecycleResource{ res,  m_currentFenceValue });
 }
-void DeviceResources::ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12PipelineState> res2)
-{
-	if (res2 != nullptr)
-		m_recycleList.push_back(d3d12RecycleResource{ res2,  m_currentFenceValue });
-}
 
 // 每次更改窗口大小时需要重新创建这些资源。
-void DeviceResources::CreateWindowSizeDependentResources()
+void GraphicsDevice::CreateWindowSizeDependentResources()
 {
 	// 等到以前的所有 GPU 工作完成。
 	WaitForGpu();
@@ -322,8 +317,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
 
 	UpdateRenderTargetSize();
 
-	UINT backBufferWidth = lround(m_d3dRenderTargetSize.Width);
-	UINT backBufferHeight = lround(m_d3dRenderTargetSize.Height);
+	UINT backBufferWidth = lround(m_d3dRenderTargetSize.x);
+	UINT backBufferHeight = lround(m_d3dRenderTargetSize.y);
 	bool setSwapChain = false;
 	if (m_swapChain != nullptr)
 	{
@@ -379,10 +374,8 @@ void DeviceResources::CreateWindowSizeDependentResources()
 	DXGI_MATRIX_3X2_F inverseScale = { 0 };
 	inverseScale._11 = 1.0f / m_compositionScaleX;
 	inverseScale._22 = 1.0f / m_compositionScaleY;
-	ComPtr<IDXGISwapChain2> spSwapChain2;
-	DX::ThrowIfFailed(m_swapChain.As<IDXGISwapChain2>(&spSwapChain2));
 
-	DX::ThrowIfFailed(spSwapChain2->SetMatrixTransform(&inverseScale));
+	DX::ThrowIfFailed(m_swapChain->SetMatrixTransform(&inverseScale));
 
 	// 创建交换链后台缓冲区的呈现目标视图。
 	{
@@ -401,31 +394,26 @@ void DeviceResources::CreateWindowSizeDependentResources()
 		}
 	}
 
-	// 设置用于确定整个窗口的 3D 渲染视区。
-	m_screenViewport = { 0.0f, 0.0f, m_d3dRenderTargetSize.Width, m_d3dRenderTargetSize.Height, 0.0f, 1.0f };
-
 	if (setSwapChain)
 	{
-		// 将交换链与 SwapChainPanel 关联
-		// UI 更改将需要调度回 UI 线程
-		m_swapChainPanel->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
-			{
+		//// 将交换链与 SwapChainPanel 关联
+		//// UI 更改将需要调度回 UI 线程
+		//m_swapChainPanel->Dispatcher->RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
+		//	{
 				//获取 SwapChainPanel 的受支持的本机接口
-				ComPtr<ISwapChainPanelNative> panelNative;
-				DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_swapChainPanel)->QueryInterface(IID_PPV_ARGS(&panelNative)));
+		ComPtr<ISwapChainPanelNative> panelNative;
+		DX::ThrowIfFailed(reinterpret_cast<IUnknown*>(m_swapChainPanel)->QueryInterface(IID_PPV_ARGS(&panelNative)));
 
-				DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
-			}, CallbackContext::Any));
+		DX::ThrowIfFailed(panelNative->SetSwapChain(m_swapChain.Get()));
+		//}, CallbackContext::Any));
 	}
 }
 
-DeviceResources::DeviceResources() :
+GraphicsDevice::GraphicsDevice() :
 	m_executeIndex(0),
-	m_screenViewport(),
 	m_rtvDescriptorSize(0),
 	m_fenceEvent(0),
 	m_backBufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
-	m_fenceValues{},
 	m_d3dRenderTargetSize(),
 	m_outputSize(),
 	m_logicalSize(),
@@ -436,23 +424,23 @@ DeviceResources::DeviceResources() :
 }
 
 // 当创建(或重新创建) CoreWindow 时调用此方法。
-void DeviceResources::SetSwapChainPanel(SwapChainPanel^ window)
+void GraphicsDevice::SetSwapChainPanel(SwapChainPanel^ window, float width, float height, float scaleX, float scaleY, float dpi)
 {
-	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
 
 	m_swapChainPanel = window;
-	m_logicalSize = Windows::Foundation::Size(window->Width, window->Height);
-	m_compositionScaleX = window->CompositionScaleX;
-	m_compositionScaleY = window->CompositionScaleY;
-	m_dpi = currentDisplayInformation->LogicalDpi;
+	m_logicalSize.x = width;
+	m_logicalSize.y = height;
+	m_compositionScaleX = scaleX;
+	m_compositionScaleY = scaleY;
+	m_dpi = dpi;
 
 	CreateWindowSizeDependentResources();
 }
 
 // 在 SizeChanged 事件的事件处理程序中调用此方法。
-void DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
+void GraphicsDevice::SetLogicalSize(Numerics::float2 logicalSize)
 {
-	if (m_logicalSize != logicalSize)
+	if ((m_logicalSize.x != logicalSize.x) || (m_logicalSize.y != logicalSize.y))
 	{
 		m_logicalSize = logicalSize;
 		CreateWindowSizeDependentResources();
@@ -460,7 +448,7 @@ void DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
 }
 
 //// 在 DpiChanged 事件的事件处理程序中调用此方法。
-//void DeviceResources::SetDpi(float dpi)
+//void GraphicsDevice::SetDpi(float dpi)
 //{
 //	if (dpi != m_dpi)
 //	{
@@ -474,7 +462,7 @@ void DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
 //}
 
 //// 在 DisplayContentsInvalidated 事件的事件处理程序中调用此方法。
-//void DeviceResources::ValidateDevice()
+//void GraphicsDevice::ValidateDevice()
 //{
 //	// 如果默认适配器更改，D3D 设备将不再有效，因为该设备
 //	// 已创建或该设备已移除。
@@ -513,7 +501,7 @@ void DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
 //	}
 //}
 
-void DeviceResources::Present(bool vsync)
+void GraphicsDevice::Present(bool vsync)
 {
 	// 第一个参数指示 DXGI 进行阻止直到 VSync，这使应用程序
 // 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
@@ -541,7 +529,7 @@ void DeviceResources::Present(bool vsync)
 	}
 }
 
-void DeviceResources::RenderComplete()
+void GraphicsDevice::RenderComplete()
 {
 	DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
 
@@ -549,20 +537,19 @@ void DeviceResources::RenderComplete()
 	m_executeIndex = (m_executeIndex < (c_frameCount - 1)) ? (m_executeIndex + 1) : 0;
 
 	// 检查下一帧是否准备好启动。
-	if (m_fence->GetCompletedValue() < m_fenceValues[m_executeIndex])
+	if (m_fence->GetCompletedValue() < m_currentFenceValue - c_frameCount + 1)
 	{
-		DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValues[m_executeIndex], m_fenceEvent));
+		DX::ThrowIfFailed(m_fence->SetEventOnCompletion(m_currentFenceValue - c_frameCount + 1, m_fenceEvent));
 		WaitForSingleObjectEx(m_fenceEvent, INFINITE, FALSE);
 	}
 	Recycle();
 
 	// 为下一帧设置围栏值。
 	m_currentFenceValue++;
-	m_fenceValues[m_executeIndex] = m_currentFenceValue;
 }
 
 // 等待挂起的 GPU 工作完成。
-void DeviceResources::WaitForGpu()
+void GraphicsDevice::WaitForGpu()
 {
 	// 在队列中安排信号命令。
 	DX::ThrowIfFailed(m_commandQueue->Signal(m_fence.Get(), m_currentFenceValue));
@@ -575,35 +562,34 @@ void DeviceResources::WaitForGpu()
 
 	// 对当前帧递增围栏值。
 	m_currentFenceValue++;
-	m_fenceValues[m_executeIndex] = m_currentFenceValue;
 }
 
-bool DeviceResources::IsRayTracingSupport()
+bool GraphicsDevice::IsRayTracingSupport()
 {
 	return m_isRayTracingSupport;
 }
 
-DxgiFormat DeviceResources::GetBackBufferFormat1()
+Format GraphicsDevice::GetBackBufferFormat1()
 {
-	return DxgiFormat(m_backBufferFormat);
+	return Format(m_backBufferFormat);
 }
 
-UINT DeviceResources::BitsPerPixel(DxgiFormat format)
+UINT GraphicsDevice::BitsPerPixel(Format format)
 {
 	return BitsPerPixel((DXGI_FORMAT)format);
 }
 
-Platform::String^ DeviceResources::GetDeviceDescription()
+Platform::String^ GraphicsDevice::GetDeviceDescription()
 {
 	return ref new Platform::String(m_deviceDescription);
 }
 
-UINT64 DeviceResources::GetDeviceVideoMemory()
+UINT64 GraphicsDevice::GetDeviceVideoMemory()
 {
 	return m_deviceVideoMem;
 }
 
-void DeviceResources::InitializeCBuffer(CBuffer^ cBuffer, int size)
+void GraphicsDevice::InitializeCBuffer(CBuffer^ cBuffer, int size)
 {
 	cBuffer->m_size = (size + 255) & ~255;
 
@@ -628,7 +614,7 @@ void DeviceResources::InitializeCBuffer(CBuffer^ cBuffer, int size)
 	cBuffer->Mutable = true;
 }
 
-void DeviceResources::InitializeSBuffer(CBuffer^ sBuffer, int size)
+void GraphicsDevice::InitializeSBuffer(CBuffer^ sBuffer, int size)
 {
 	sBuffer->m_size = (size + 255) & ~255;
 
@@ -655,7 +641,7 @@ void DeviceResources::InitializeSBuffer(CBuffer^ sBuffer, int size)
 	sBuffer->Mutable = false;
 }
 
-void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCount)
+void GraphicsDevice::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCount)
 {
 	meshBuffer->m_size = vertexCount;
 	auto d3dDevice = GetD3DDevice();
@@ -676,25 +662,25 @@ void DeviceResources::InitializeMeshBuffer(MeshBuffer^ meshBuffer, int vertexCou
 
 
 // 确定呈现器目标的尺寸及其是否将缩小。
-void DeviceResources::UpdateRenderTargetSize()
+void GraphicsDevice::UpdateRenderTargetSize()
 {
 	// 计算必要的呈现目标大小(以像素为单位)。
-	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_dpi);
-	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_dpi);
+	m_outputSize.x = DX::ConvertDipsToPixels(m_logicalSize.x, m_dpi);
+	m_outputSize.y = DX::ConvertDipsToPixels(m_logicalSize.y, m_dpi);
 
 	// 防止创建大小为零的 DirectX 内容。
-	m_outputSize.Width = max(m_outputSize.Width, 1);
-	m_outputSize.Height = max(m_outputSize.Height, 1);
+	m_outputSize.x = max(m_outputSize.x, 1);
+	m_outputSize.y = max(m_outputSize.y, 1);
 
-	m_d3dRenderTargetSize.Width = m_outputSize.Width;
-	m_d3dRenderTargetSize.Height = m_outputSize.Height;
+	m_d3dRenderTargetSize.x = m_outputSize.x;
+	m_d3dRenderTargetSize.y = m_outputSize.y;
 }
 
-void DeviceResources::Recycle()
+void GraphicsDevice::Recycle()
 {
 	std::vector<d3d12RecycleResource> temp;
 	for (int i = 0; i < m_recycleList.size(); i++)
-		if (m_recycleList[i].m_removeFrame > m_fenceValues[m_executeIndex])
+		if (m_recycleList[i].m_removeFrame > m_currentFenceValue - c_frameCount + 1)
 			temp.push_back(m_recycleList[i]);
 	m_recycleList = temp;
 	for (int i = 0; i < m_commandLists1.size(); i++)

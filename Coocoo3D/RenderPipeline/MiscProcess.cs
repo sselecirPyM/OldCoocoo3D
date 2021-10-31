@@ -16,27 +16,21 @@ namespace Coocoo3D.RenderPipeline
     {
         const int c_bufferSize = 65536;
         const int c_splitSize = 256;
-        //public ComputeShader IrradianceMap0 = new ComputeShader();
-        //public ComputeShader EnvironmentMap0 = new ComputeShader();
-        //public ComputeShader ClearIrradianceMap = new ComputeShader();
-        GraphicsSignature rootSignature = new GraphicsSignature();
+        RootSignature rootSignature = new RootSignature();
         public bool Ready = false;
         public const int c_maxIteration = 32;
         public CBuffer constantBuffer = new CBuffer();
         XYZData _XyzData;
-        public async Task ReloadAssets(DeviceResources deviceResources)
+        public void ReloadAssets(GraphicsDevice graphicsDevice)
         {
-            rootSignature.Reload(deviceResources, new GraphicSignatureDesc[]
+            rootSignature.Reload(graphicsDevice, new GraphicSignatureDesc[]
             {
                 GraphicSignatureDesc.CBV,
                 GraphicSignatureDesc.CBV,
                 GraphicSignatureDesc.SRVTable,
                 GraphicSignatureDesc.UAVTable,
             });
-            deviceResources.InitializeCBuffer(constantBuffer, c_bufferSize);
-            //IrradianceMap0.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_IrradianceMap0.cso"));
-            //EnvironmentMap0.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_PreFilterEnv.cso"));
-            //ClearIrradianceMap.Initialize(await ReadFile("ms-appx:///Coocoo3DGraphics/G_ClearIrradianceMap.cso"));
+            graphicsDevice.InitializeCBuffer(constantBuffer, c_bufferSize);
 
             Ready = true;
         }
@@ -47,17 +41,17 @@ namespace Coocoo3D.RenderPipeline
             if (rp.SkyBoxChanged)
             {
                 var csAssets = rp.RPAssetsManager.CSAssets;
-                ref byte[] bigBuffer = ref rp.bigBuffer;
+                byte[] bigBuffer = rp.bigBuffer;
                 GraphicsContext graphicsContext = rp.graphicsContext1;
-                graphicsContext.BeginCommand();
+                graphicsContext.Begin();
                 graphicsContext.SetDescriptorHeapDefault();
                 var texture0 = rp.SkyBox;
                 var texture1 = rp.IrradianceMap;
                 var texture2 = rp.ReflectMap;
-                _XyzData.x1 = (int)texture1.m_width;
-                _XyzData.y1 = (int)texture1.m_height;
-                _XyzData.x2 = (int)texture2.m_width;
-                _XyzData.y2 = (int)texture2.m_height;
+                _XyzData.x1 = (int)texture1.width;
+                _XyzData.y1 = (int)texture1.height;
+                _XyzData.x2 = (int)texture2.width;
+                _XyzData.y2 = (int)texture2.height;
                 _XyzData.Quality = 32;
                 int itCount = 32;
 
@@ -71,50 +65,47 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetRootSignatureCompute(rootSignature);
                 graphicsContext.SetComputeCBVR(constantBuffer, 0);
                 graphicsContext.SetComputeSRVT(texture0, 2);
-                //graphicsContext.SetPSO(ClearIrradianceMap);
                 graphicsContext.SetPSO(csAssets["G_ClearIrradianceMap"]);
 
                 int pow2a = 1;
-                for (int j = 0; j < texture1.m_mipLevels; j++)
+                for (int j = 0; j < texture1.mipLevels; j++)
                 {
                     graphicsContext.SetComputeUAVT(texture1, j, 3);
-                    graphicsContext.Dispatch((int)(texture1.m_width + 7) / 8 / pow2a, (int)(texture1.m_height + 7) / 8 / pow2a, 6);
+                    graphicsContext.Dispatch((int)(texture1.width + 7) / 8 / pow2a, (int)(texture1.height + 7) / 8 / pow2a, 6);
                     pow2a *= 2;
                 }
                 pow2a = 1;
-                for (int j = 0; j < texture2.m_mipLevels; j++)
+                for (int j = 0; j < texture2.mipLevels; j++)
                 {
                     graphicsContext.SetComputeUAVT(texture2, j, 3);
-                    graphicsContext.Dispatch((int)(texture2.m_width + 7) / 8 / pow2a, (int)(texture2.m_height + 7) / 8 / pow2a, 6);
+                    graphicsContext.Dispatch((int)(texture2.width + 7) / 8 / pow2a, (int)(texture2.height + 7) / 8 / pow2a, 6);
                     pow2a *= 2;
                 }
-                //graphicsContext.SetPSO(IrradianceMap0);
                 graphicsContext.SetPSO(csAssets["G_IrradianceMap0"]);
 
                 pow2a = 1;
-                for (int j = 0; j < texture1.m_mipLevels; j++)
+                for (int j = 0; j < texture1.mipLevels; j++)
                 {
                     for (int k = 0; k < itCount; k++)
                     {
                         graphicsContext.SetComputeUAVT(texture1, j, 3);
                         graphicsContext.SetComputeCBVR(constantBuffer, k, 1, 0);
-                        graphicsContext.Dispatch((int)(texture1.m_width + 7) / 8 / pow2a, (int)(texture1.m_height + 7) / 8 / pow2a, 6);
+                        graphicsContext.Dispatch((int)(texture1.width + 7) / 8 / pow2a, (int)(texture1.height + 7) / 8 / pow2a, 6);
                     }
                     pow2a *= 2;
                 }
 
                 graphicsContext.SetComputeSRVT(texture0, 2);
-                //graphicsContext.SetPSO(EnvironmentMap0);
                 graphicsContext.SetPSO(csAssets["G_PreFilterEnv"]);
                 pow2a = 1;
-                for (int j = 0; j < texture2.m_mipLevels; j++)
+                for (int j = 0; j < texture2.mipLevels; j++)
                 {
                     for (int k = 0; k < itCount; k++)
                     {
                         graphicsContext.SetComputeUAVT(texture2, j, 3);
                         graphicsContext.SetComputeCBVR(constantBuffer, k, 1, 0);
                         graphicsContext.SetComputeCBVR(constantBuffer, j, 1, 1);
-                        graphicsContext.Dispatch((int)(texture2.m_width + 7) / 8 / pow2a, (int)(texture2.m_height + 7) / 8 / pow2a, 6);
+                        graphicsContext.Dispatch((int)(texture2.width + 7) / 8 / pow2a, (int)(texture2.height + 7) / 8 / pow2a, 6);
                     }
                     pow2a *= 2;
                 }

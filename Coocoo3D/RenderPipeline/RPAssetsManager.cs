@@ -7,11 +7,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
-using System.Xml;
-using System.Xml.Serialization;
 using System.IO;
 using GSD = Coocoo3DGraphics.GraphicSignatureDesc;
 using System.Collections.Concurrent;
+using Newtonsoft.Json;
+using Vortice.Dxc;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -22,36 +22,36 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
         public Dictionary<string, ComputeShader> CSAssets = new Dictionary<string, ComputeShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
-        public Dictionary<string, GraphicsSignature> signaturePass = new Dictionary<string, GraphicsSignature>();
+        public Dictionary<string, RootSignature> signaturePass = new Dictionary<string, RootSignature>();
 
 
-        public GraphicsSignature rootSignatureSkinning = new GraphicsSignature();
-        public GraphicsSignature rtLocal = new GraphicsSignature();
-        public GraphicsSignature rtGlobal = new GraphicsSignature();
+        public RootSignature rootSignatureSkinning = new RootSignature();
+        public RootSignature rtLocal = new RootSignature();
+        public RootSignature rtGlobal = new RootSignature();
 
         public DefaultResource defaultResource;
         public bool Ready;
-        public void InitializeRootSignature(DeviceResources deviceResources)
+        public void InitializeRootSignature(GraphicsDevice graphicsDevice)
         {
-            rootSignatureSkinning.ReloadSkinning(deviceResources);
-            if (deviceResources.IsRayTracingSupport())
+            rootSignatureSkinning.ReloadSkinning(graphicsDevice);
+            if (graphicsDevice.IsRayTracingSupport())
             {
-                rtLocal.RayTracingLocal(deviceResources);
-                rtGlobal.ReloadCompute(deviceResources, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
+                rtLocal.RayTracingLocal(graphicsDevice);
+                rtGlobal.ReloadCompute(graphicsDevice, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
             }
         }
 
         public async Task LoadAssets()
         {
-            XmlSerializer xmlSerializer = new XmlSerializer(typeof(DefaultResource));
-            defaultResource = (DefaultResource)xmlSerializer.Deserialize(await OpenReadStream("ms-appx:///DefaultResources/DefaultResourceList.xml"));
+            defaultResource = ReadJsonStream<DefaultResource>(OpenReadStream("DefaultResources/DefaultResourceList.json").Result);
             ConcurrentDictionary<string, VertexShader> vss = new ConcurrentDictionary<string, VertexShader>();
             ConcurrentDictionary<string, PixelShader> pss = new ConcurrentDictionary<string, PixelShader>();
             ConcurrentDictionary<string, ComputeShader> css = new ConcurrentDictionary<string, ComputeShader>();
 
-            Parallel.ForEach(defaultResource.vertexShaders, async vertexShader => await RegVSAssets1(vertexShader.Name, vertexShader.Path, vss));
-            Parallel.ForEach(defaultResource.pixelShaders, async pixelShader => await RegPSAssets1(pixelShader.Name, pixelShader.Path, pss));
-            Parallel.ForEach(defaultResource.computeShaders, async computeShader => await RegCSAssets1(computeShader.Name, computeShader.Path, css));
+
+            Parallel.Invoke(() => Parallel.ForEach(defaultResource.vertexShaders, vertexShader => RegVSAssets1(vertexShader.Name, vertexShader.Path, vss)),
+             () => Parallel.ForEach(defaultResource.pixelShaders, pixelShader => RegPSAssets1(pixelShader.Name, pixelShader.Path, pss)),
+             () => Parallel.ForEach(defaultResource.computeShaders, computeShader => RegCSAssets1(computeShader.Name, computeShader.Path, css)));
 
             foreach (var vs in vss)
                 VSAssets.Add(vs.Key, vs.Value);
@@ -67,81 +67,114 @@ namespace Coocoo3D.RenderPipeline
                 VertexShader vs = null;
                 GeometryShader gs = null;
                 PixelShader ps = null;
-                if (pipelineState.VertexShader != null)
-                    vs = VSAssets[pipelineState.VertexShader];
-                if (pipelineState.GeometryShader != null)
-                    gs = GSAssets[pipelineState.GeometryShader];
-                if (pipelineState.PixelShader != null)
-                    ps = PSAssets[pipelineState.PixelShader];
+                if (pipelineState.vertexShader != null)
+                    vs = VSAssets[pipelineState.vertexShader];
+                if (pipelineState.geometryShader != null)
+                    gs = GSAssets[pipelineState.geometryShader];
+                if (pipelineState.pixelShader != null)
+                    ps = PSAssets[pipelineState.pixelShader];
                 pso.Initialize(vs, gs, ps);
-                PSOs.Add(pipelineState.Name, pso);
+                PSOs.Add(pipelineState.name, pso);
             }
             Ready = true;
         }
-        protected async Task RegVSAssets(string name, string path)
+        //protected void RegVSAssets(string name, string path)
+        //{
+        //    VertexShader vertexShader = new VertexShader();
+        //    if (Path.GetExtension(path) == ".hlsl")
+        //        vertexShader.CompileInitialize1(ReadFile(path).Result, "main", new MacroEntry[0]);
+        //    else
+        //        vertexShader.Initialize(ReadFile(path).Result);
+        //    VSAssets.Add(name, vertexShader);
+        //}
+        protected void RegVSAssets1(string name, string path, ConcurrentDictionary<string, VertexShader> assets)
         {
             VertexShader vertexShader = new VertexShader();
             if (Path.GetExtension(path) == ".hlsl")
-                vertexShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+                vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, ReadAllText(path), "main"));
             else
-                vertexShader.Initialize(await ReadFile(path));
-            VSAssets.Add(name, vertexShader);
-        }
-        protected async Task RegVSAssets1(string name, string path, ConcurrentDictionary<string, VertexShader> assets)
-        {
-            VertexShader vertexShader = new VertexShader();
-            if (Path.GetExtension(path) == ".hlsl")
-                vertexShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
-            else
-                vertexShader.Initialize(await ReadFile(path));
+                vertexShader.Initialize(ReadFile1(path).Result);
             assets.TryAdd(name, vertexShader);
         }
-        protected async Task RegPSAssets(string name, string path)
+        //protected void RegPSAssets(string name, string path)
+        //{
+        //    PixelShader pixelShader = new PixelShader();
+        //    if (Path.GetExtension(path) == ".hlsl")
+        //        pixelShader.CompileInitialize1(ReadFile(path).Result, "main", new MacroEntry[0]);
+        //    else
+        //        pixelShader.Initialize(ReadFile(path).Result);
+        //    PSAssets.Add(name, pixelShader);
+        //}
+        protected void RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
         {
             PixelShader pixelShader = new PixelShader();
             if (Path.GetExtension(path) == ".hlsl")
-                pixelShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+                pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, ReadAllText(path), "main"));
             else
-                pixelShader.Initialize(await ReadFile(path));
-            PSAssets.Add(name, pixelShader);
-        }
-        protected async Task RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
-        {
-            PixelShader pixelShader = new PixelShader();
-            if (Path.GetExtension(path) == ".hlsl")
-                pixelShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
-            else
-                pixelShader.Initialize(await ReadFile(path));
+                pixelShader.Initialize(ReadFile1(path).Result);
             assets.TryAdd(name, pixelShader);
         }
-        protected async Task RegCSAssets1(string name, string path, ConcurrentDictionary<string, ComputeShader> assets)
+        protected void RegCSAssets1(string name, string path, ConcurrentDictionary<string, ComputeShader> assets)
         {
             ComputeShader computeShader = new ComputeShader();
             if (Path.GetExtension(path) == ".hlsl")
-                computeShader.CompileInitialize1(await ReadFile(path), "main", new MacroEntry[0]);
+                computeShader.Initialize(LoadShader(DxcShaderStage.Compute, ReadAllText(path), "main"));
             else
-                computeShader.Initialize(await ReadFile(path));
+                computeShader.Initialize(ReadFile1(path).Result);
             assets.TryAdd(name, computeShader);
         }
 
+        public static T ReadJsonStream<T>(Stream stream)
+        {
+            JsonSerializer jsonSerializer = new JsonSerializer();
+            jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
+            using (StreamReader reader1 = new StreamReader(stream))
+            {
+                return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
+            }
+        }
+
+        byte[] LoadShader(DxcShaderStage shaderStage, string shaderCode, string entryPoint)
+        {
+            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { });
+            if (result.GetStatus() != SharpGen.Runtime.Result.Ok)
+                throw new Exception(result.GetErrors());
+            return result.GetResult().ToArray();
+        }
+
+        string ReadAllText(string uri)
+        {
+            var streamReader = new StreamReader(OpenReadStream(uri).Result);
+            string result = streamReader.ReadToEnd();
+            streamReader.Close();
+            return result;
+        }
 
         protected async Task<IBuffer> ReadFile(string uri)
         {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
+            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///" + uri));
             return await FileIO.ReadBufferAsync(file);
+        }
+
+        protected async Task<byte[]> ReadFile1(string uri)
+        {
+            var binaryReader = new BinaryReader(OpenReadStream(uri).Result);
+            byte[] result = binaryReader.ReadBytes((int)binaryReader.BaseStream.Length);
+            binaryReader.Close();
+            return result;
         }
 
         protected async Task<Stream> OpenReadStream(string uri)
         {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
+            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///" + uri));
             return (await file.OpenAsync(FileAccessMode.Read)).AsStreamForRead();
         }
-        public GraphicsSignature GetRootSignature(DeviceResources deviceResources, string s)
+        public RootSignature GetRootSignature(GraphicsDevice graphicsDevice, string s)
         {
-            if (signaturePass.TryGetValue(s, out GraphicsSignature g))
+            if (signaturePass.TryGetValue(s, out RootSignature g))
                 return g;
-            g = new GraphicsSignature();
-            g.Reload(deviceResources, fromString(s));
+            g = new RootSignature();
+            g.Reload(graphicsDevice, fromString(s));
             signaturePass[s] = g;
             return g;
         }
@@ -181,24 +214,18 @@ namespace Coocoo3D.RenderPipeline
     }
     public class DefaultResource
     {
-        [XmlElement(ElementName = "VertexShader")]
         public List<_AssetDefine> vertexShaders;
-        [XmlElement(ElementName = "GeometryShader")]
         public List<_AssetDefine> geometryShaders;
-        [XmlElement(ElementName = "PixelShader")]
         public List<_AssetDefine> pixelShaders;
-        [XmlElement(ElementName = "ComputeShader")]
         public List<_AssetDefine> computeShaders;
-        [XmlElement(ElementName = "Texture2D")]
         public List<_AssetDefine> texture2Ds;
-        [XmlElement(ElementName = "PipelineState")]
         public List<_ResourceStr3> pipelineStates;
     }
     public struct _ResourceStr3
     {
-        public string Name;
-        public string VertexShader;
-        public string GeometryShader;
-        public string PixelShader;
+        public string name;
+        public string vertexShader;
+        public string geometryShader;
+        public string pixelShader;
     }
 }

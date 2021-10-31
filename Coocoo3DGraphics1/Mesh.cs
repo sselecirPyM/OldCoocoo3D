@@ -4,7 +4,7 @@ using System.Text;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 
-namespace Coocoo3DGraphics1
+namespace Coocoo3DGraphics
 {
     public class Mesh : IDisposable
     {

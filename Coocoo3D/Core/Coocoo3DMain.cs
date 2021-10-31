@@ -9,22 +9,20 @@ using Coocoo3DGraphics;
 using Coocoo3D.Present;
 using Coocoo3D.Controls;
 using Coocoo3D.Utility;
-using Windows.Storage;
-using System.Collections.ObjectModel;
 using Windows.System.Threading;
 using Windows.UI.Core;
-using Windows.UI.Xaml.Controls;
 using Windows.Foundation;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Components;
 using Coocoo3D.RenderPipeline;
+//using Vortice.Direct3D12;
 
 namespace Coocoo3D.Core
 {
     ///<summary>是整个应用程序的上下文</summary>
     public class Coocoo3DMain
     {
-        public DeviceResources deviceResources { get => RPContext.deviceResources; }
+        public GraphicsDevice graphicsDevice { get => RPContext.graphicsDevice; }
         public MainCaches mainCaches { get => RPContext.mainCaches; }
 
         public Scene CurrentScene;
@@ -86,18 +84,17 @@ namespace Coocoo3D.Core
             RPContext.LoadTask = Task.Run(async () =>
             {
                 await RPAssetsManager.LoadAssets();
-                RPAssetsManager.InitializeRootSignature(deviceResources);
+                RPAssetsManager.InitializeRootSignature(graphicsDevice);
                 await RPContext.ReloadDefalutResources();
-                forwardRenderPipeline2.Reload(deviceResources);
-                postProcess.Reload(deviceResources);
+                forwardRenderPipeline2.Reload();
+                postProcess.Reload();
                 widgetRenderer.Reload(RPContext);
-                if (deviceResources.IsRayTracingSupport())
+                if (graphicsDevice.IsRayTracingSupport())
                 {
-                    rayTracingRenderPipeline1.Reload(deviceResources);
                     await rayTracingRenderPipeline1.ReloadAssets(RPContext);
                 }
 
-                await miscProcess.ReloadAssets(deviceResources);
+                miscProcess.ReloadAssets(graphicsDevice);
                 RequireRender();
             });
 
@@ -219,27 +216,23 @@ namespace Coocoo3D.Core
             if (RPContext.gameDriverContext.RequireResizeOuter)
             {
                 RPContext.gameDriverContext.RequireResizeOuter = false;
-                deviceResources.SetLogicalSize(RPContext.gameDriverContext.NewSize);
-                deviceResources.WaitForGpu();
+                graphicsDevice.SetLogicalSize(RPContext.gameDriverContext.NewSize);
+                graphicsDevice.WaitForGpu();
             }
             RPContext.ReloadScreenSizeResources();
             RPContext.PreConfig();
-            //if (RPContext.gameDriverContext.NeedReloadModel)
-            //{
-            //    RPContext.gameDriverContext.NeedReloadModel = false;
-            //    ModelReloader.ReloadModels(CurrentScene, mainCaches, _processingList, RPContext.gameDriverContext);
-            //}
+
             if (!Recording)
                 mainCaches.OnFrame();
             ProcessingList.MoveToAnother(_processingList);
             if (!_processingList.IsEmpty())
             {
-                GraphicsContext.BeginAlloctor(deviceResources);
-                graphicsContext.BeginCommand();
+                GraphicsContext.BeginAlloctor(graphicsDevice);
+                graphicsContext.Begin();
                 _processingList._DealStep1(graphicsContext);
                 graphicsContext.EndCommand();
                 graphicsContext.Execute();
-                deviceResources.WaitForGpu();
+                graphicsDevice.WaitForGpu();
             }
             #endregion
             if (!RPContext.dynamicContextRead.EnableDisplay)
@@ -253,7 +246,7 @@ namespace Coocoo3D.Core
             }
             if (swapChainReady)
             {
-                GraphicsContext.BeginAlloctor(deviceResources);
+                GraphicsContext.BeginAlloctor(graphicsDevice);
 
                 miscProcess.Process(RPContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
@@ -262,7 +255,7 @@ namespace Coocoo3D.Core
                 if (thisFrameReady)
                 {
                     UI.UIImGui.GUI(this);
-                    graphicsContext.BeginCommand();
+                    graphicsContext.Begin();
                     graphicsContext.SetDescriptorHeapDefault();
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
@@ -282,12 +275,11 @@ namespace Coocoo3D.Core
                 }
                 else
                 {
-                    deviceResources.RenderComplete();
+                    graphicsDevice.RenderComplete();
                 }
 
                 void _RenderFunction()
                 {
-                    graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._PRESENT, D3D12ResourceStates._RENDER_TARGET);
 
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
@@ -299,11 +291,12 @@ namespace Coocoo3D.Core
                         }
                     }
                     GameDriver.AfterRender(RPContext, graphicsContext);
+                    graphicsContext.ResourceBarrierScreen(ResourceStates.Present, ResourceStates.RenderTarget);
                     widgetRenderer.RenderCamera(RPContext, graphicsContext);
-                    graphicsContext.ResourceBarrierScreen(D3D12ResourceStates._RENDER_TARGET, D3D12ResourceStates._PRESENT);
+                    graphicsContext.ResourceBarrierScreen(ResourceStates.RenderTarget, ResourceStates.Present);
                     graphicsContext.EndCommand();
                     graphicsContext.Execute();
-                    deviceResources.Present(performaceSettings.VSync);
+                    graphicsDevice.Present(performaceSettings.VSync);
                     CompletedRenderCount++;
                 }
             }
@@ -352,7 +345,6 @@ namespace Coocoo3D.Core
         public bool SaveCpuPower;
         public bool AutoReloadShaders;
         public bool AutoReloadTextures;
-        //public bool AutoReloadModels;
         public bool VSync;
     }
 

@@ -22,7 +22,7 @@ inline void RayTracingScene::SubobjectHitGroup(CD3DX12_HIT_GROUP_SUBOBJECT* hitG
 	hitGroupSubobject->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
 }
 
-void RayTracingScene::ReloadPipelineStates(DeviceResources^ deviceResources, GraphicsSignature^ globalSignature, GraphicsSignature^ localSignature, const Platform::Array<Platform::String^>^ exportNames, const Platform::Array<HitGroupDesc^>^ hitGroups, RayTracingSceneSettings settings)
+void RayTracingScene::ReloadPipelineStates(GraphicsDevice^ deviceResources, RootSignature^ globalSignature, RootSignature^ localSignature, const Platform::Array<Platform::String^>^ exportNames, const Platform::Array<HitGroupDesc^>^ hitGroups, RayTracingSceneSettings settings)
 {
 	m_globalSignature = globalSignature;
 	m_localSignature = localSignature;
@@ -70,7 +70,7 @@ void RayTracingScene::ReloadPipelineStates(DeviceResources^ deviceResources, Gra
 	DX::ThrowIfFailed(device->CreateStateObject(raytracingStateObjectDesc, IID_PPV_ARGS(&m_dxrStateObject)));
 }
 
-void RayTracingScene::ReloadAllocScratchAndInstance(DeviceResources^ deviceResources, UINT scratchSize, UINT maxInstanceCount)
+void RayTracingScene::ReloadAllocScratchAndInstance(GraphicsDevice^ deviceResources, UINT scratchSize, UINT maxInstanceCount)
 {
 	auto device = deviceResources->GetD3DDevice();
 	m_scratchSize = scratchSize;

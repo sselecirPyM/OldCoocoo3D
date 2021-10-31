@@ -4,36 +4,30 @@
 using namespace Coocoo3DGraphics;
 using namespace Microsoft::WRL;
 
-void Uploader::Texture2DRaw(const Platform::Array<byte>^ rawData, DxgiFormat format, int width, int height)
+void Uploader::Texture2DRaw(const Platform::Array<byte>^ rawData, Format format, int width, int height)
 {
-	m_width = width;
-	m_height = height;
-	m_format = (DXGI_FORMAT)format;
-	m_mipLevels = 1;
-	m_data = std::vector<byte>();
-	m_data.resize(rawData->Length);
-	memcpy(m_data.data(), rawData->begin(), rawData->Length);
+	Texture2DRaw(rawData, format, width, height, 1);
 }
 
-void Uploader::Texture2DRaw(const Platform::Array<byte>^ rawData, DxgiFormat format, int width, int height, int mipLevel)
+void Uploader::Texture2DRaw(const Platform::Array<byte>^ rawData, Format format, int width, int height, int mipLevel)
 {
-	m_width = width;
-	m_height = height;
-	m_format = (DXGI_FORMAT)format;
-	m_mipLevels = mipLevel;
-	m_data = std::vector<byte>();
-	m_data.resize(rawData->Length);
+	this->width = width;
+	this->height = height;
+	this->m_format = (DXGI_FORMAT)format;
+	this->mipLevels = mipLevel;
+	this->m_data = std::vector<byte>();
+	this->m_data.resize(rawData->Length);
 	memcpy(m_data.data(), rawData->begin(), rawData->Length);
 }
 
 void Uploader::Texture2DPure(int width, int height, Windows::Foundation::Numerics::float4 color)
 {
-	m_width = width;
-	m_height = height;
-	m_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	m_mipLevels = 1;
+	this->width = width;
+	this->height = height;
+	this->m_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	this->mipLevels = 1;
 	int count = width * height;
-	m_data.resize(count * 16);
+	this->m_data.resize(count * 16);
 
 	void* p = m_data.data();
 	float* p1 = (float*)p;
@@ -46,28 +40,28 @@ void Uploader::Texture2DPure(int width, int height, Windows::Foundation::Numeric
 	}
 }
 
-void Uploader::TextureCubeRaw(const Platform::Array<byte>^ rawData, DxgiFormat format, int width, int height, int mipLevel)
+void Uploader::TextureCubeRaw(const Platform::Array<byte>^ rawData, Format format, int width, int height, int mipLevel)
 {
-	m_width = width;
-	m_height = height;
-	m_format = (DXGI_FORMAT)format;
-	m_mipLevels = mipLevel;
-	m_data = std::vector<byte>();
-	m_data.resize(rawData->Length);
-	memcpy(m_data.data(), rawData->begin(), rawData->Length);
+	this->width = width;
+	this->height = height;
+	this->m_format = (DXGI_FORMAT)format;
+	this->mipLevels = mipLevel;
+	this->m_data = std::vector<byte>();
+	this->m_data.resize(rawData->Length);
+	memcpy(this->m_data.data(), rawData->begin(), rawData->Length);
 }
 
 void Uploader::TextureCubePure(int width, int height, const Platform::Array<Windows::Foundation::Numerics::float4>^ color)
 {
-	m_width = width;
-	m_height = height;
-	m_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	m_mipLevels = 1;
+	this->width = width;
+	this->height = height;
+	this->m_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	this->mipLevels = 1;
 	int count = width * height;
 	if (count < 256)throw ref new Platform::NotImplementedException("Texture too small");
-	m_data.resize(count * 16 * 6);
+	this->m_data.resize(count * 16 * 6);
 
-	void* p = m_data.data();
+	void* p = this->m_data.data();
 	float* p1 = (float*)p;
 	for (int c = 0; c < 6; c++)
 	{

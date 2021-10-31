@@ -55,9 +55,9 @@
     <ClCompile Include="MeshBuffer.cpp" />
     <ClCompile Include="Uploader.cpp" />
     <ClCompile Include="MMDMeshAppend.cpp" />
-    <ClCompile Include="DeviceResources.cpp" />
+    <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="GraphicsContext.cpp" />
-    <ClCompile Include="GraphicsSignature.cpp" />
+    <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="CBuffer.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp">
       <Filter>Interoperation</Filter>
@@ -65,15 +65,6 @@
     <ClCompile Include="GPUProgram\PSODesc.cpp">
       <Filter>GPUProgram</Filter>
     </ClCompile>
-    <ClCompile Include="GPUProgram\ShaderMacro.cpp">
-      <Filter>GPUProgram</Filter>
-    </ClCompile>
-    <ClCompile Include="RayTracingStateObject.cpp" />
-    <ClCompile Include="RayTracingASGroup.cpp" />
-    <ClCompile Include="RayTracingShaderTable.cpp" />
-    <ClCompile Include="RayTracingTopAS.cpp" />
-    <ClCompile Include="RayTracingInstanceGroup.cpp" />
-    <ClCompile Include="UnnamedInputLayout.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
@@ -103,19 +94,13 @@
     <ClInclude Include="GPUProgram\PSO.h">
       <Filter>GPUProgram</Filter>
     </ClInclude>
-    <ClInclude Include="GPUProgram\ShaderMacro.h">
-      <Filter>GPUProgram</Filter>
-    </ClInclude>
-    <ClInclude Include="TextUtil.h">
-      <Filter>Utility</Filter>
-    </ClInclude>
     <ClInclude Include="MeshBuffer.h" />
     <ClInclude Include="Uploader.h" />
     <ClInclude Include="MMDMeshAppend.h" />
-    <ClInclude Include="DeviceResources.h" />
+    <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="GraphicsContext.h" />
-    <ClInclude Include="GraphicsSignature.h" />
+    <ClInclude Include="RootSignature.h" />
     <ClInclude Include="CBuffer.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h">
       <Filter>Interoperation</Filter>
@@ -124,12 +109,6 @@
       <Filter>GPUProgram</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsConstance.h" />
-    <ClInclude Include="RayTracingStateObject.h" />
-    <ClInclude Include="RayTracingASGroup.h" />
-    <ClInclude Include="RayTracingShaderTable.h" />
-    <ClInclude Include="RayTracingTopAS.h" />
-    <ClInclude Include="RayTracingInstanceGroup.h" />
-    <ClInclude Include="UnnamedInputLayout.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="RayTracing\Raytracing.hlsl">

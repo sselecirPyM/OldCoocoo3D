@@ -10,6 +10,9 @@ using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3D.Core;
 using ImGuiNET;
 using Coocoo3D.Utility;
+//using Vortice.Direct3D;
+//using Vortice.DXGI;
+//using Vortice.Direct3D12;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -18,14 +21,11 @@ namespace Coocoo3D.RenderPipeline
         CBufferGroup CBufferGroup = new CBufferGroup();
         public MMDMesh imguiMesh = new MMDMesh();
 
-        public WidgetRenderer()
-        {
-        }
         public void Reload(RenderPipelineContext context)
         {
-            var deviceResources = context.deviceResources;
+            var graphicsDevice = context.graphicsDevice;
             var caches = context.mainCaches;
-            CBufferGroup.Reload(deviceResources, 256, 65536);
+            CBufferGroup.Reload(graphicsDevice, 256, 65536);
             ImGui.SetCurrentContext(ImGui.CreateContext());
             Uploader uploader = new Uploader();
             var io = ImGui.GetIO();
@@ -39,12 +39,12 @@ namespace Coocoo3D.RenderPipeline
                 byte[] pixelData = new byte[size];
                 spanByte1.CopyTo(pixelData);
 
-                uploader.Texture2DRaw(pixelData, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM, width, height);
+                uploader.Texture2DRaw(pixelData, Format.R8G8B8A8_UNorm, width, height);
             }
             var texture2D = new Texture2D();
             io.Fonts.TexID = caches.GetPtr("imgui_font");
             caches.SetTexture("imgui_font", texture2D);
-            context.processingList.AddObject(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
+            context.processingList.AddObject(texture2D, uploader);
             Ready = true;
         }
 
@@ -119,7 +119,7 @@ namespace Coocoo3D.RenderPipeline
 
             var rpAssets = context.RPAssetsManager;
             var caches = context.mainCaches;
-            var rsPP = context.RPAssetsManager.GetRootSignature(context.deviceResources, "CCs");
+            var rsPP = context.RPAssetsManager.GetRootSignature(context.graphicsDevice, "CCs");
 
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
 
@@ -127,13 +127,13 @@ namespace Coocoo3D.RenderPipeline
             //graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
 
             PSODesc desc;
-            desc.blendState = EBlendState.alpha;
-            desc.cullMode = ECullMode.none;
+            desc.blendState = BlendState.alpha;
+            desc.cullMode = CullMode.None;
             desc.depthBias = 0;
             desc.slopeScaledDepthBias = 0;
-            desc.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
-            desc.inputLayout = EInputLayout.postProcess;
-            desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+            desc.dsvFormat = Format.Unknown;
+            desc.inputLayout = InputLayout.postProcess;
+            desc.ptt = PrimitiveTopologyType.Triangle;
             desc.rtvFormat = context.swapChainFormat;
             desc.renderTargetCount = 1;
             desc.streamOutput = false;
@@ -146,7 +146,7 @@ namespace Coocoo3D.RenderPipeline
             //{
             //    desc.ptt = ED3D12PrimitiveTopologyType.LINE;
             //    graphicsContext.SetMesh(context.cubeWireMesh);
-            //    SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PSOWidgetUILight"]);
+            //    SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PSOWidgetUILight"]);
             //    for (int i = 0; i < renderCount; i++)
             //    {
             //        CBufferGroup.SetCBVR(graphicsContext, ofs, 0);
@@ -159,18 +159,18 @@ namespace Coocoo3D.RenderPipeline
 
             Vector2 clip_off = data.DisplayPos;
 
-            desc.blendState = EBlendState.alpha;
-            desc.cullMode = ECullMode.none;
+            desc.blendState = BlendState.alpha;
+            desc.cullMode = CullMode.None;
             desc.depthBias = 0;
             desc.slopeScaledDepthBias = 0;
-            desc.dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN;
-            desc.ptt = ED3D12PrimitiveTopologyType.TRIANGLE;
+            desc.dsvFormat = Format.Unknown;
+            desc.ptt = PrimitiveTopologyType.Triangle;
             desc.rtvFormat = context.swapChainFormat;
             desc.renderTargetCount = 1;
             desc.streamOutput = false;
             desc.wireFrame = false;
-            desc.inputLayout = EInputLayout.imgui;
-            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPP, ref desc, rpAssets.PSOs["ImGui"]);
+            desc.inputLayout = InputLayout.imgui;
+            SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPP, ref desc, rpAssets.PSOs["ImGui"]);
             CBufferGroup.SetCBVRSlot(graphicsContext, ofs, 0);
             ofs++;
             if (data.CmdListsCount > 0)
@@ -192,35 +192,33 @@ namespace Coocoo3D.RenderPipeline
                         vtxByteOfs += vertBytes;
                         idxByteOfs += indexBytes;
                     }
-                    imguiMesh.Reload1(vertexDatas, indexDatas, 20, PrimitiveTopology._TRIANGLELIST);
+                    imguiMesh.Reload1(vertexDatas, indexDatas, 20, PrimitiveTopology.TriangleList);
                     graphicsContext.UploadMesh(imguiMesh);
                 }
-                unsafe
+                int vtxOfs = 0;
+                int idxOfs = 0;
+                for (int i = 0; i < data.CmdListsCount; i++)
                 {
-                    int vtxOfs = 0;
-                    int idxOfs = 0;
-                    for (int i = 0; i < data.CmdListsCount; i++)
+                    var cmdList = data.CmdListsRange[i];
+
+                    imguiMesh.SetIndexFormat(Format.R16_UInt);
+                    graphicsContext.SetMesh(imguiMesh);
+
+                    for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
                     {
-                        var cmdList = data.CmdListsRange[i];
+                        var cmd = cmdList.CmdBuffer[j];
+                        Texture2D tex = caches.GetTexture(cmd.TextureId);
 
-                        imguiMesh.SetIndexFormat(DxgiFormat.DXGI_FORMAT_R16_UINT);
-                        graphicsContext.SetMesh(imguiMesh);
+                        tex = _Tex(tex);
 
-                        for (int j = 0; j < cmdList.CmdBuffer.Size; j++)
-                        {
-                            var cmd = cmdList.CmdBuffer[j];
-                            Texture2D tex = caches.GetTexture(cmd.TextureId);
-
-                            tex = _Tex(tex);
-
-                            graphicsContext.SetSRVTSlot(tex, 0);
-                            graphicsContext.RSSetScissorRect((int)(cmd.ClipRect.X - clip_off.X), (int)(cmd.ClipRect.Y - clip_off.Y), (int)(cmd.ClipRect.Z - clip_off.X), (int)(cmd.ClipRect.W - clip_off.Y));
-                            graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset) + idxOfs, (int)(cmd.VtxOffset) + vtxOfs);
-                        }
-                        vtxOfs += cmdList.VtxBuffer.Size;
-                        idxOfs += cmdList.IdxBuffer.Size;
+                        graphicsContext.SetSRVTSlot(tex, 0);
+                        graphicsContext.RSSetScissorRect((int)(cmd.ClipRect.X - clip_off.X), (int)(cmd.ClipRect.Y - clip_off.Y), (int)(cmd.ClipRect.Z - clip_off.X), (int)(cmd.ClipRect.W - clip_off.Y));
+                        graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset) + idxOfs, (int)(cmd.VtxOffset) + vtxOfs);
                     }
+                    vtxOfs += cmdList.VtxBuffer.Size;
+                    idxOfs += cmdList.IdxBuffer.Size;
                 }
+
             }
         }
 
@@ -239,14 +237,14 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected PSO PSOSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
+        protected PSO PSOSelect(GraphicsDevice graphicsDevice, RootSignature graphicsSignature, ref PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
         {
             if (pso == null) return unload;
             if (pso.Status == GraphicsObjectStatus.unload)
                 return unload;
             else if (pso.Status == GraphicsObjectStatus.loaded)
             {
-                if (pso.GetVariantIndex(deviceResources, graphicsSignature, desc) != -1)
+                if (pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc) != -1)
                     return pso;
                 else
                     return error;
@@ -257,9 +255,9 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
+        protected void SetPipelineStateVariant(GraphicsDevice graphicsDevice, GraphicsContext graphicsContext, RootSignature graphicsSignature, ref PSODesc desc, PSO pso)
         {
-            int variant = pso.GetVariantIndex(deviceResources, graphicsSignature, desc);
+            int variant = pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc);
             graphicsContext.SetPSO(pso, variant);
         }
     }

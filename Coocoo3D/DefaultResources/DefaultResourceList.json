@@ -1,0 +1,172 @@
+﻿{
+  "vertexShaders": [
+    {
+      "name": "VSMMDSkinning",
+      "path": "Shaders/VSMMDSkinning.hlsl"
+    },
+    {
+      "name": "VSPostProcess",
+      "path": "Shaders/VSPostProcess.hlsl"
+    },
+    {
+      "name": "VSWidgetUI1",
+      "path": "Shaders/VSWidgetUI1.hlsl"
+    },
+    {
+      "name": "VSWidgetUI2",
+      "path": "Shaders/VSWidgetUI2.hlsl"
+    },
+    {
+      "name": "VSWidgetUILight",
+      "path": "Shaders/VSWidgetUILight.hlsl"
+    },
+    {
+      "name": "VS_ShadowMap",
+      "path": "Shaders/VS_Pass1.hlsl"
+    },
+    {
+      "name": "VS_Pass1",
+      "path": "Shaders/VS_Pass1.hlsl"
+    },
+    {
+      "name": "VS_SkyBox",
+      "path": "Shaders/VS_SkyBox.hlsl"
+    },
+    {
+      "name": "VSMMDTransform",
+      "path": "Shaders/VSMMDTransform.hlsl"
+    },
+    {
+      "name": "ImGui_VS",
+      "path": "Shaders/ImGui_VS.hlsl"
+    }
+  ],
+  "pixelShaders": [
+    {
+      "name": "PSPostProcess",
+      "path": "Shaders/PSPostProcess.hlsl"
+    },
+    {
+      "name": "PSWidgetUI1",
+      "path": "Shaders/PSWidgetUI1.hlsl"
+    },
+    {
+      "name": "PSWidgetUI2",
+      "path": "Shaders/PSWidgetUI2.hlsl"
+    },
+    {
+      "name": "PSWidgetUILight",
+      "path": "Shaders/PSWidgetUILight.hlsl"
+    },
+    {
+      "name": "PS_Loading",
+      "path": "Shaders/PSLoading.hlsl"
+    },
+    {
+      "name": "PS_Error",
+      "path": "Shaders/PSError.hlsl"
+    },
+    {
+      "name": "PS_Pass1",
+      "path": "Shaders/PS_Pass1.hlsl"
+    },
+    {
+      "name": "PS_SkyBox",
+      "path": "Shaders/PS_SkyBox.hlsl"
+    },
+    {
+      "name": "PS_DeferredGBuffer",
+      "path": "Shaders/PS_DeferredGBuffer.hlsl"
+    },
+    {
+      "name": "PS_DeferredFinal",
+      "path": "Shaders/PS_DeferredFinal.hlsl"
+    },
+    {
+      "name": "PS_BloomBlur1",
+      "path": "Shaders/PS_BloomBlur1.hlsl"
+    },
+    {
+      "name": "PS_BloomBlur2",
+      "path": "Shaders/PS_BloomBlur2.hlsl"
+    },
+    {
+      "name": "ImGui_PS",
+      "path": "Shaders/ImGui_PS.hlsl"
+    }
+  ],
+  "computeShaders": [
+    {
+      "name": "G_IrradianceMap0",
+      "path": "Shaders/G_IrradianceMap0.hlsl"
+    },
+    {
+      "name": "G_PreFilterEnv",
+      "path": "Shaders/G_PreFilterEnv.hlsl"
+    },
+    {
+      "name": "G_ClearIrradianceMap",
+      "path": "Shaders/G_ClearIrradianceMap.hlsl"
+    }
+  ],
+  "pipelineStates": [
+    {
+      "name": "Loading",
+      "vertexShader": "VS_Pass1",
+      "pixelShader": "PS_Loading"
+    },
+    {
+      "name": "Error",
+      "vertexShader": "VS_Pass1",
+      "pixelShader": "PS_Error"
+    },
+    {
+      "name": "PostProcess",
+      "vertexShader": "VSPostProcess",
+      "pixelShader": "PSPostProcess"
+    },
+    {
+      "name": "SkyBox",
+      "vertexShader": "VS_SkyBox",
+      "pixelShader": "PS_SkyBox"
+    },
+    {
+      "name": "PSOMMDShadowDepth",
+      "vertexShader": "VSMMDTransform"
+    },
+    {
+      "name": "PSOMMDSkinning",
+      "vertexShader": "VSMMDSkinning"
+    },
+    {
+      "name": "PSOWidgetUI1",
+      "vertexShader": "VSWidgetUI1",
+      "pixelShader": "PSWidgetUI1"
+    },
+    {
+      "name": "PSOWidgetUI2",
+      "vertexShader": "VSWidgetUI2",
+      "pixelShader": "PSWidgetUI2"
+    },
+    {
+      "name": "PSOWidgetUILight",
+      "vertexShader": "VSWidgetUILight",
+      "pixelShader": "PSWidgetUILight"
+    },
+    {
+      "name": "ImGui",
+      "vertexShader": "ImGui_VS",
+      "pixelShader": "ImGui_PS"
+    }
+  ],
+  "texture2Ds": [
+    {
+      "name": "_BRDFLUT",
+      "path": "Assets/Textures/brdflut.png"
+    },
+    {
+      "name": "_UI1Texture",
+      "path": "Assets/Textures/UI_1.png"
+    }
+  ]
+}

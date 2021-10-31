@@ -12,6 +12,7 @@ using System.IO;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.Processing;
+//using Vortice.DXGI;
 
 namespace Coocoo3D.ResourceWarp
 {
@@ -45,7 +46,7 @@ namespace Coocoo3D.ResourceWarp
                 //uploader.Texture2D(await FileIO.ReadBufferAsync(texFile), true, true);
                 //byte[] data = GetImageData(await texFile.OpenStreamForReadAsync(), out int width, out int height, out _);
                 byte[] data = GetImageData(await texFile.OpenStreamForReadAsync(), out int width, out int height, out _, out int mipMap);
-                uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height, mipMap);
+                uploader.Texture2DRaw(data, Format.R8G8B8A8_UNorm_SRgb, width, height, mipMap);
 
                 Status = GraphicsObjectStatus.loaded;
                 return true;
@@ -60,7 +61,7 @@ namespace Coocoo3D.ResourceWarp
         private void GetImageData(Stream stream, Uploader uploader)
         {
             byte[] data = GetImageData(stream, out int width, out int height, out _);
-            uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height);
+            uploader.Texture2DRaw(data, Format.R8G8B8A8_UNorm_SRgb, width, height);
         }
 
         public static async Task<Uploader> UploaderTex2DNoMip(string uri)
@@ -77,7 +78,7 @@ namespace Coocoo3D.ResourceWarp
         {
             Uploader uploader = new Uploader();
             byte[] data = Texture2DPack.GetImageData(await file.OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel);
-            uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM, width, height, 1);
+            uploader.Texture2DRaw(data, Format.R8G8B8A8_UNorm, width, height, 1);
             return uploader;
         }
 
@@ -85,7 +86,7 @@ namespace Coocoo3D.ResourceWarp
         {
             Uploader uploader = new Uploader();
             byte[] data = Texture2DPack.GetImageData(await file.OpenStreamForReadAsync(), out int width, out int height, out int bitPerPixel, out int mipMap);
-            uploader.Texture2DRaw(data, DxgiFormat.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, width, height, mipMap);
+            uploader.Texture2DRaw(data, Format.R8G8B8A8_UNorm_SRgb, width, height, mipMap);
             return uploader;
         }
 

@@ -7,16 +7,14 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+//using Vortice.Direct3D12;
+//using Vortice.DXGI;
 
 namespace Coocoo3D.RenderPipeline
 {
     public class PostProcess : RenderPipeline
     {
-        public PostProcess()
-        {
-        }
-
-        public void Reload(DeviceResources deviceResources)
+        public void Reload()
         {
             Ready = true;
         }
@@ -28,7 +26,7 @@ namespace Coocoo3D.RenderPipeline
 
         public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
-            var rsPostProcess = context.RPAssetsManager.GetRootSignature(context.deviceResources,"CCs");
+            var rsPostProcess = context.RPAssetsManager.GetRootSignature(context.graphicsDevice,"CCs");
             var graphicsContext = visualChannel.graphicsContext;
             graphicsContext.SetRootSignature(rsPostProcess);
             graphicsContext.SetRTV(visualChannel.FinalOutput, System.Numerics.Vector4.Zero, true);
@@ -36,20 +34,20 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetMesh(context.ndcQuadMesh);
             PSODesc desc = new PSODesc
             {
-                blendState = EBlendState.none,
-                cullMode = ECullMode.back,
+                blendState = BlendState.none,
+                cullMode = CullMode.Back,
                 depthBias = 0,
                 slopeScaledDepthBias = 0,
-                dsvFormat = DxgiFormat.DXGI_FORMAT_UNKNOWN,
-                inputLayout = EInputLayout.postProcess,
-                ptt = ED3D12PrimitiveTopologyType.TRIANGLE,
+                dsvFormat = Format.Unknown,
+                inputLayout = InputLayout.postProcess,
+                ptt = PrimitiveTopologyType.Triangle,
                 rtvFormat = context.swapChainFormat,
                 renderTargetCount = 1,
                 streamOutput = false,
                 wireFrame = false,
             };
 
-            SetPipelineStateVariant(context.deviceResources, graphicsContext, rsPostProcess, ref desc, context.RPAssetsManager.PSOs["PostProcess"]);
+            SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPostProcess, desc, context.RPAssetsManager.PSOs["PostProcess"]);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
             //graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
             //graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);

@@ -5,6 +5,7 @@
 #include "MeshBuffer.h"
 namespace Coocoo3DGraphics
 {
+	using namespace Windows::Foundation;
 	static const UINT c_graphicsPipelineHeapMaxCount = 65536;
 	struct d3d12RecycleResource
 	{
@@ -12,18 +13,18 @@ namespace Coocoo3DGraphics
 		UINT64 m_removeFrame;
 	};
 	// 控制所有 DirectX 设备资源。
-	public ref class DeviceResources sealed
+	public ref class GraphicsDevice sealed
 	{
 	public:
-		DeviceResources();
+		GraphicsDevice();
 		void CreateDeviceResources();
 
-		void SetSwapChainPanel(Windows::UI::Xaml::Controls::SwapChainPanel^ window);
-		void SetLogicalSize(Windows::Foundation::Size logicalSize);
+		void SetSwapChainPanel(Windows::UI::Xaml::Controls::SwapChainPanel^ window, float width, float height, float scaleX, float scaleY, float dpi);
+		void SetLogicalSize(Numerics::float2 logicalSize);
 		// 呈现器目标的大小，以像素为单位。
-		Windows::Foundation::Size	GetOutputSize() { return m_outputSize; }
+		Numerics::float2 GetOutputSize() { return m_outputSize; }
 		// 呈现器目标的大小，以 dip 为单位。
-		Windows::Foundation::Size	GetLogicalSize() { return m_logicalSize; }
+		Numerics::float2	GetLogicalSize() { return m_logicalSize; }
 		//void SetDpi(float dpi);
 		float GetDpi() { return m_dpi; }
 		//void ValidateDevice();
@@ -31,8 +32,8 @@ namespace Coocoo3DGraphics
 		void RenderComplete();
 		void WaitForGpu();
 		bool IsRayTracingSupport();
-		DxgiFormat GetBackBufferFormat1();
-		static UINT BitsPerPixel(DxgiFormat format);
+		Format GetBackBufferFormat1();
+		static UINT BitsPerPixel(Format format);
 		Platform::String^ GetDeviceDescription();
 		UINT64 GetDeviceVideoMemory();
 
@@ -50,7 +51,6 @@ namespace Coocoo3DGraphics
 		ID3D12CommandQueue*			GetCommandQueue() const { return m_commandQueue.Get(); }
 		ID3D12CommandAllocator*		GetCommandAllocator() const { return m_commandAllocators[m_executeIndex].Get(); }
 		DXGI_FORMAT					GetBackBufferFormat() const { return m_backBufferFormat; }
-		D3D12_VIEWPORT				GetScreenViewport() const { return m_screenViewport; }
 		UINT						GetCurrentExecuteIndex() const { return m_executeIndex; }
 
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> GetCommandList();
@@ -71,13 +71,17 @@ namespace Coocoo3DGraphics
 		WCHAR m_deviceDescription[128];
 		UINT64 m_deviceVideoMem;
 
-		UINT64											m_fenceValues[c_frameCount];
-		UINT64											m_currentFenceValue;
-		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Resource> res);
-		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12PipelineState> res2);
+		UINT64											m_currentFenceValue = 3;
+		void ResourceDelayRecycle(Microsoft::WRL::ComPtr<ID3D12Object> res);
 		std::vector<d3d12RecycleResource> m_recycleList;
 		std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>>	m_commandLists;
 		std::vector<Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4>>	m_commandLists1;
+
+		// 缓存的设备属性。
+		Numerics::float2						m_d3dRenderTargetSize;
+		Numerics::float2						m_outputSize;
+		Numerics::float2						m_logicalSize;
+		float											m_dpi;
 	private:
 		void CreateWindowSizeDependentResources();
 		void UpdateRenderTargetSize();
@@ -93,7 +97,6 @@ namespace Coocoo3DGraphics
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue>		m_commandQueue;
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	m_commandAllocators[c_frameCount];
 		DXGI_FORMAT										m_backBufferFormat;
-		D3D12_VIEWPORT									m_screenViewport;
 		UINT											m_rtvDescriptorSize;
 		bool											m_deviceRemoved;
 
@@ -107,11 +110,6 @@ namespace Coocoo3DGraphics
 		// 对窗口的缓存引用。
 		Windows::UI::Xaml::Controls::SwapChainPanel^	m_swapChainPanel;
 
-		// 缓存的设备属性。
-		Windows::Foundation::Size						m_d3dRenderTargetSize;
-		Windows::Foundation::Size						m_outputSize;
-		Windows::Foundation::Size						m_logicalSize;
-		float											m_dpi;
 
 		float											m_compositionScaleX;
 		float											m_compositionScaleY;

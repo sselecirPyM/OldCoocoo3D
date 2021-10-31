@@ -8,8 +8,9 @@ using Vortice.DXGI;
 using System.Threading;
 using Vortice.Mathematics;
 using Vortice.Direct3D12.Debug;
+using static Coocoo3DGraphics.DXHelper;
 
-namespace Coocoo3DGraphics1
+namespace Coocoo3DGraphics
 {
     public class GraphicsDevice
     {
@@ -26,7 +27,7 @@ namespace Coocoo3DGraphics1
 
         public DescriptorHeapX cbvsrvuavHeap;
         public DescriptorHeapX rtvHeap;
-        public DescriptorHeapX dsvHeap;
+        //public DescriptorHeapX dsvHeap;
 
         string m_deviceDescription;
         UInt64 m_deviceVideoMem;
@@ -34,9 +35,9 @@ namespace Coocoo3DGraphics1
         UInt64[] m_fenceValues = new UInt64[c_frameCount];
         UInt64 m_currentFenceValue;
 
-        List<d3d12RecycleResource> m_recycleList;
-        List<ID3D12GraphicsCommandList4> m_commandLists;
-        List<ID3D12GraphicsCommandList4> m_commandLists1;
+        List<d3d12RecycleResource> m_recycleList = new List<d3d12RecycleResource>();
+        List<ID3D12GraphicsCommandList4> m_commandLists = new List<ID3D12GraphicsCommandList4>();
+        List<ID3D12GraphicsCommandList4> m_commandLists1 = new List<ID3D12GraphicsCommandList4>();
 
         IDXGIFactory4 m_dxgiFactory;
         IDXGISwapChain3 m_swapChain;
@@ -46,7 +47,6 @@ namespace Coocoo3DGraphics1
 
         Format m_backBufferFormat;
         Viewport m_screenViewport;
-        uint m_rtvDescriptorSize;
         bool m_deviceRemoved;
 
         bool m_isRayTracingSupport;
@@ -56,7 +56,7 @@ namespace Coocoo3DGraphics1
         public uint executeIndex = 0;
         public ulong executeCount = 3;
 
-        public ISwapChainPanelNative m_swapChainPanel;
+        //public ISwapChainPanelNative m_swapChainPanel;
 
         public Vector2 m_d3dRenderTargetSize;
         public Vector2 m_outputSize;
@@ -69,6 +69,8 @@ namespace Coocoo3DGraphics1
         public float m_compositionScaleY;
 
         public float m_effectiveDpi;
+
+        public object panel;
 
         public static uint BitsPerPixel(Format format)
         {
@@ -169,6 +171,7 @@ namespace Coocoo3DGraphics1
 
                 case Format.NV12:
                 //case Format.420_OPAQUE:
+                case Format.Opaque420:
                 case Format.NV11:
                     return 12;
 
@@ -216,6 +219,16 @@ namespace Coocoo3DGraphics1
             }
         }
 
+        public float GetDpi() => m_dpi;
+
+        public Vector2 GetOutputSize() => m_outputSize;
+
+        public GraphicsDevice()
+        {
+            m_backBufferFormat = Format.R8G8B8A8_UNorm;
+            CreateDeviceResource();
+        }
+
         public void CreateDeviceResource()
         {
 #if DEBUG
@@ -235,29 +248,33 @@ namespace Coocoo3DGraphics1
                 }
                 index1++;
             }
+            m_deviceDescription = adapter.Description.Description;
+            m_deviceVideoMem = (ulong)(long)adapter.Description.DedicatedVideoMemory;
             ThrowIfFailed(D3D12.D3D12CreateDevice(this.adapter, out device));
-            CommandQueueDescription description;
-            description.Flags = CommandQueueFlags.None;
-            description.Type = CommandListType.Direct;
-            description.NodeMask = 0;
-            description.Priority = 0;
-            ThrowIfFailed(device.CreateCommandQueue(description, out commandQueue));
+            CommandQueueDescription commandQueuDdescription;
+            commandQueuDdescription.Flags = CommandQueueFlags.None;
+            commandQueuDdescription.Type = CommandListType.Direct;
+            commandQueuDdescription.NodeMask = 0;
+            commandQueuDdescription.Priority = 0;
+            ThrowIfFailed(device.CreateCommandQueue(commandQueuDdescription, out commandQueue));
 
             DescriptorHeapDescription descriptorHeapDescription;
             descriptorHeapDescription.DescriptorCount = CBVSRVUAVDescriptorCount;
             descriptorHeapDescription.Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView;
             descriptorHeapDescription.Flags = DescriptorHeapFlags.ShaderVisible;
             descriptorHeapDescription.NodeMask = 0;
+            cbvsrvuavHeap = new DescriptorHeapX();
             cbvsrvuavHeap.Initialize(this, descriptorHeapDescription);
 
-            descriptorHeapDescription.DescriptorCount = 16;
-            descriptorHeapDescription.Type = DescriptorHeapType.DepthStencilView;
-            descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
-            dsvHeap.Initialize(this, descriptorHeapDescription);
+            //descriptorHeapDescription.DescriptorCount = 16;
+            //descriptorHeapDescription.Type = DescriptorHeapType.DepthStencilView;
+            //descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
+            //dsvHeap.Initialize(this, descriptorHeapDescription);
 
             descriptorHeapDescription.DescriptorCount = 16;
             descriptorHeapDescription.Type = DescriptorHeapType.RenderTargetView;
             descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
+            rtvHeap = new DescriptorHeapX();
             rtvHeap.Initialize(this, descriptorHeapDescription);
             fenceEvent = new EventWaitHandle(false, EventResetMode.AutoReset);
 
@@ -282,10 +299,8 @@ namespace Coocoo3DGraphics1
             else
             {
                 ID3D12GraphicsCommandList4 commandList;
-                //ThrowIfFailed(GetD3DDevice()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, GetCommandAllocator(), nullptr, IID_PPV_ARGS(&commandList)));
                 ThrowIfFailed(device.CreateCommandList(0, CommandListType.Direct, GetCommandAllocator(), null, out commandList));
-                NAME_D3D12_OBJECT(commandList);
-                commandList.Close();
+                //commandList.Close();
                 return commandList;
             }
         }
@@ -300,24 +315,164 @@ namespace Coocoo3DGraphics1
             return m_renderTargets[m_swapChain.GetCurrentBackBufferIndex()];
         }
 
-        public void ResourceDelayRecycle(ID3D12Resource res)
+        public CpuDescriptorHandle GetRenderTargetView()
+        {
+            var handle = rtvHeap.heap.GetCPUDescriptorHandleForHeapStart() + rtvHeap.IncrementSize * m_swapChain.GetCurrentBackBufferIndex();
+            device.CreateRenderTargetView(GetRenderTarget(), null, handle);
+            return handle;
+        }
+
+        public void ResourceDelayRecycle(ID3D12Object res)
         {
             if (res != null)
                 m_recycleList.Add(new d3d12RecycleResource { m_recycleResource = res, m_removeFrame = m_currentFenceValue });
         }
-        public void ResourceDelayRecycle(ID3D12PipelineState res2)
-        {
-            if (res2 != null)
-                m_recycleList.Add(new d3d12RecycleResource { m_recycleResource = res2, m_removeFrame = m_currentFenceValue });
-        }
 
         public void CreateWindowSizeDependentResources()
         {
+            // 等到以前的所有 GPU 工作完成。
             WaitForGpu();
+
+            // 清除特定于先前窗口大小的内容。
             for (int n = 0; n < c_frameCount; n++)
             {
-                m_renderTargets[n].Dispose();
+                m_renderTargets[n]?.Dispose();
+                m_renderTargets[n] = null;
             }
+
+            UpdateRenderTargetSize();
+
+            int backBufferWidth = (int)Math.Round(m_d3dRenderTargetSize.X);
+            int backBufferHeight = (int)Math.Round(m_d3dRenderTargetSize.Y);
+            bool setSwapChain = false;
+            if (m_swapChain != null)
+            {
+                // 如果交换链已存在，请调整其大小。
+                Result hr = m_swapChain.ResizeBuffers(c_frameCount, backBufferWidth, backBufferHeight, m_backBufferFormat, SwapChainFlags.AllowTearing);
+
+
+                ThrowIfFailed(hr);
+            }
+            else
+            {
+                // 否则，使用与现有 Direct3D 设备相同的适配器新建一个。
+                Scaling scaling = Scaling.Stretch;
+                SwapChainDescription1 swapChainDesc = new SwapChainDescription1();
+
+                swapChainDesc.Width = backBufferWidth;                      // 匹配窗口的大小。
+                swapChainDesc.Height = backBufferHeight;
+                swapChainDesc.Format = m_backBufferFormat;
+                swapChainDesc.Stereo = false;
+                swapChainDesc.SampleDescription.Count = 1;                         // 请不要使用多采样。
+                swapChainDesc.SampleDescription.Quality = 0;
+                swapChainDesc.Usage = Usage.RenderTargetOutput;
+                swapChainDesc.BufferCount = c_frameCount;                   // 使用三重缓冲最大程度地减小延迟。
+                swapChainDesc.SwapEffect = SwapEffect.FlipSequential;
+                swapChainDesc.Flags = SwapChainFlags.AllowTearing;
+                swapChainDesc.Scaling = Scaling.Stretch;
+                swapChainDesc.AlphaMode = AlphaMode.Ignore;
+
+                IDXGISwapChain1 swapChain =
+                    m_dxgiFactory.CreateSwapChainForComposition(
+                        commandQueue,                          // 交换链需要对 DirectX 12 中的命令队列的引用。
+                        swapChainDesc
+                    );
+
+                m_swapChain = swapChain.QueryInterface<IDXGISwapChain3>();
+                swapChain.Dispose();
+                setSwapChain = true;
+            }
+
+            // 在交换链上设置反向缩放
+            Matrix3x2 inverseScale = new Matrix3x2();
+            inverseScale.M11 = 1.0f / m_compositionScaleX;
+            inverseScale.M22 = 1.0f / m_compositionScaleY;
+
+            ComObject comObject = new ComObject(panel);
+            Vortice.DXGI.ISwapChainPanelNative swapchainPanelNative = comObject.QueryInterfaceOrNull<ISwapChainPanelNative>();
+            comObject.Dispose();
+            ThrowIfFailed(swapchainPanelNative.SetSwapChain(m_swapChain));
+            swapchainPanelNative.Dispose();
+
+            m_swapChain.MatrixTransform = inverseScale;
+
+            // 创建交换链后台缓冲区的呈现目标视图。
+            {
+                rtvHeap.GetTempCpuHandle();
+                CpuDescriptorHandle rtvDescriptor = rtvHeap.heap.GetCPUDescriptorHandleForHeapStart();
+                for (int n = 0; n < c_frameCount; n++)
+                {
+                    ThrowIfFailed(m_swapChain.GetBuffer(n, out m_renderTargets[n]));
+                    device.CreateRenderTargetView(m_renderTargets[n], null, rtvDescriptor);
+                    rtvDescriptor.Ptr += rtvHeap.IncrementSize;
+                    m_renderTargets[n].Name = "backbuffer";
+                }
+            }
+
+            if (setSwapChain)
+            {
+                //// 将交换链与 SwapChainPanel 关联
+                //// UI 更改将需要调度回 UI 线程
+                //m_swapChainPanel.Dispatcher.RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
+                //	{
+                //获取 SwapChainPanel 的受支持的本机接口
+                ComObject comObject1 = new ComObject(panel);
+                ISwapChainPanelNative panelNative = comObject1.QueryInterface<ISwapChainPanelNative>();
+                comObject1.Dispose();
+
+                ThrowIfFailed(panelNative.SetSwapChain(m_swapChain));
+                panelNative.Dispose();
+                //}, CallbackContext::Any));
+            }
+        }
+
+        public void SetLogicalSize(Vector2 logicalSize)
+        {
+            if (m_logicalSize != logicalSize)
+            {
+                m_logicalSize = logicalSize;
+                CreateWindowSizeDependentResources();
+            }
+        }
+
+
+        public void Present(bool vsync)
+        {
+            // 第一个参数指示 DXGI 进行阻止直到 VSync，这使应用程序
+            // 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
+            // 从不会在屏幕上显示的帧。
+            Result hr;
+            if (vsync)
+            {
+                hr = m_swapChain.Present(1, 0);
+            }
+            else
+            {
+                hr = m_swapChain.Present(0, PresentFlags.AllowTearing);
+            }
+
+            ThrowIfFailed(hr);
+            RenderComplete();
+        }
+
+        public void RenderComplete()
+        {
+            commandQueue.Signal(fence, m_currentFenceValue);
+
+            // 提高帧索引。
+            executeIndex = (executeIndex < (c_frameCount - 1)) ? (executeIndex + 1) : 0;
+
+            // 检查下一帧是否准备好启动。
+            if (fence.CompletedValue < m_fenceValues[executeIndex])
+            {
+                fence.SetEventOnCompletion(m_currentFenceValue, fenceEvent);
+                fenceEvent.WaitOne();
+            }
+            Recycle();
+
+            // 为下一帧设置围栏值。
+            m_currentFenceValue++;
+            m_fenceValues[executeIndex] = m_currentFenceValue;
         }
 
         public void WaitForGpu()
@@ -351,17 +506,47 @@ namespace Coocoo3DGraphics1
             m_commandLists1.Clear();
         }
 
-        public void SetupSwapChain(object panel)
-        {
-            ComObject comObject = new ComObject(panel);
-            ISwapChainPanelNative swapChainPanelNative = comObject.QueryInterface<ISwapChainPanelNative>();
-            swapChainPanelNative.SetSwapChain(m_swapChain);
 
+        // 确定呈现器目标的尺寸及其是否将缩小。
+        void UpdateRenderTargetSize()
+        {
+            // 计算必要的呈现目标大小(以像素为单位)。
+            m_outputSize.X = ConvertDipsToPixels(m_logicalSize.X, m_dpi);
+            m_outputSize.Y = ConvertDipsToPixels(m_logicalSize.Y, m_dpi);
+
+            // 防止创建大小为零的 DirectX 内容。
+            m_outputSize.X = Math.Max(m_outputSize.X, 1);
+            m_outputSize.Y = Math.Max(m_outputSize.Y, 1);
+
+            m_d3dRenderTargetSize.X = m_outputSize.X;
+            m_d3dRenderTargetSize.Y = m_outputSize.Y;
         }
 
-        void NAME_D3D12_OBJECT(ID3D12Object d3D12Object)
+        public bool IsRayTracingSupport()
         {
+            return m_isRayTracingSupport;
+        }
 
+        public string GetDeviceDescription()
+        {
+            return m_deviceDescription;
+        }
+
+        public ulong GetDeviceVideoMemory()
+        {
+            return m_deviceVideoMem;
+        }
+
+        public void SetSwapChainPanel(object panel, float width, float height, float scaleX, float scaleY, float dpi)
+        {
+            this.panel = panel;
+
+            m_logicalSize = new Vector2(width, height);
+            m_compositionScaleX = scaleX;
+            m_compositionScaleY = scaleY;
+            m_dpi = dpi;
+
+            CreateWindowSizeDependentResources();
         }
 
         static bool CheckRayTracingSupport(ID3D12Device device)
@@ -370,12 +555,68 @@ namespace Coocoo3DGraphics1
             return device.CheckFeatureSupport(Vortice.Direct3D12.Feature.Options5, ref featureDataD3D12Options5);
         }
 
-        ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
+        public ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
 
-        public static void ThrowIfFailed(SharpGen.Runtime.Result hr)
+
+        public void InitializeCBuffer(CBuffer cBuffer, int size)
         {
-            if (hr != SharpGen.Runtime.Result.Ok)
-                throw new NotImplementedException(hr.ToString());
+            cBuffer.size = (size + 255) & ~255;
+
+            var d3dDevice = device;
+            ResourceDelayRecycle(cBuffer.resource);
+            ThrowIfFailed(d3dDevice.CreateCommittedResource(
+                new HeapProperties(HeapType.Upload),
+                HeapFlags.None,
+                ResourceDescription.Buffer((ulong)(c_frameCount * cBuffer.size)),
+                ResourceStates.GenericRead,
+                null,
+                out cBuffer.resource));
+            cBuffer.resource.Name = "cbuffer";
+            cBuffer.mappedResource = cBuffer.resource.Map(0);
+            cBuffer.Mutable = true;
+        }
+
+        public void InitializeSBuffer(CBuffer sBuffer, int size)
+        {
+            sBuffer.size = (size + 255) & ~255;
+
+            var d3dDevice = device;
+            ResourceDelayRecycle(sBuffer.resource);
+            ThrowIfFailed(d3dDevice.CreateCommittedResource(
+                new HeapProperties(HeapType.Default),
+                HeapFlags.None,
+                ResourceDescription.Buffer((ulong)sBuffer.size),
+                ResourceStates.GenericRead,
+                null,
+                out sBuffer.resource));
+            sBuffer.resource.Name = "sbuffer";
+            ResourceDelayRecycle(sBuffer.resourceUpload);
+            ThrowIfFailed(d3dDevice.CreateCommittedResource(
+                new HeapProperties(HeapType.Upload),
+                HeapFlags.None,
+                ResourceDescription.Buffer((ulong)(c_frameCount * sBuffer.size)),
+                ResourceStates.GenericRead,
+                null,
+                out sBuffer.resourceUpload));
+            sBuffer.resourceUpload.Name = "sbuffer upload";
+            sBuffer.Mutable = false;
+        }
+
+        public void InitializeMeshBuffer(MeshBuffer meshBuffer, int vertexCount)
+        {
+            meshBuffer.m_size = vertexCount;
+            var d3dDevice = device;
+            ResourceDescription vertexBufferDesc = ResourceDescription.Buffer((ulong)(meshBuffer.m_size * MeshBuffer.c_vbvStride + MeshBuffer.c_vbvOffset), ResourceFlags.AllowUnorderedAccess);
+            ResourceDelayRecycle(meshBuffer.resource);
+            ThrowIfFailed(d3dDevice.CreateCommittedResource(
+                new HeapProperties(HeapType.Default),
+                HeapFlags.None,
+                vertexBufferDesc,
+                ResourceStates.GenericRead,
+                null,
+                out meshBuffer.resource));
+            meshBuffer.resource.Name = "mesh buffer";
+            meshBuffer.resourceStates = ResourceStates.GenericRead;
         }
     }
 }

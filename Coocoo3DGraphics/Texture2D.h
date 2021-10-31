@@ -6,21 +6,20 @@ namespace Coocoo3DGraphics
 	{
 	public:
 		property GraphicsObjectStatus Status;
-		property UINT m_width;
-		property UINT m_height;
-		property UINT m_mipLevels;
-		void ReloadAsDepthStencil(int width, int height, DxgiFormat format);
-		void ReloadAsRenderTarget(int width, int height, DxgiFormat format);
-		void ReloadAsRTVUAV(int width, int height, DxgiFormat format);
-		int GetWidth() { return m_width; }
-		int GetHeight() { return m_height; }
-		DxgiFormat GetFormat();
+		property UINT width;
+		property UINT height;
+		property UINT mipLevels;
+		void ReloadAsDepthStencil(int width, int height, Format format);
+		void ReloadAsRenderTarget(int width, int height, Format format);
+		void ReloadAsRTVUAV(int width, int height, Format format);
+		int GetWidth() { return width; }
+		int GetHeight() { return height; }
+		Format GetFormat();
 		void Reload(Texture2D^ texture);
 		void Unload();
-		virtual Platform::String^ ToString() override;
 	internal:
 		void StateTransition(ID3D12GraphicsCommandList* commandList, D3D12_RESOURCE_STATES state);
-		Microsoft::WRL::ComPtr<ID3D12Resource>				m_texture;
+		Microsoft::WRL::ComPtr<ID3D12Resource>			resource;
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_dsvHeap;
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;
 
@@ -28,7 +27,6 @@ namespace Coocoo3DGraphics
 		DXGI_FORMAT m_dsvFormat;
 		DXGI_FORMAT m_rtvFormat;
 		DXGI_FORMAT m_uavFormat;
-		D3D12_RESOURCE_FLAGS m_resourceFlags;
 		D3D12_RESOURCE_STATES prevResourceState;
 	};
 }

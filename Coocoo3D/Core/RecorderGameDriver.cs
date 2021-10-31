@@ -31,7 +31,6 @@ namespace Coocoo3D.Core
                 context.Playing = true;
                 context.PlaySpeed = 2.0f;
                 context.PlayTime = 0.0f;
-                float logicSizeScale = rpContext.deviceResources.GetDpi() / 96.0f;
                 var visualchannel = rpContext.visualChannels["main"];
                 visualchannel.outputSize = new Numerics.Int2(recordSettings.Width, recordSettings.Height);
                 visualchannel.camera.AspectRatio = (float)recordSettings.Width / (float)recordSettings.Height;
@@ -68,7 +67,7 @@ namespace Coocoo3D.Core
             public int height;
             public async Task task1()
             {
-                Image<Rgba32> image = GetImage();
+                Image<Rgba32> image = Image.WrapMemory<Rgba32>(imageData, width, height);
 
                 StorageFile file = await saveFolder.CreateFileAsync(string.Format("{0}.png", renderIndex), CreationCollisionOption.ReplaceExisting);
                 var stream = await file.OpenStreamForWriteAsync();
@@ -76,13 +75,6 @@ namespace Coocoo3D.Core
 
                 //await stream.FlushAsync();
                 stream.Close();
-            }
-            Image<Rgba32> GetImage()
-            {
-                Image<Rgba32> image = new Image<Rgba32>(width, height);
-                image.Frames[0].TryGetSinglePixelSpan(out var span1);
-                imageData.CopyTo(MemoryMarshal.Cast<Rgba32, byte>(span1));
-                return image;
             }
         }
         const int encFrameCount = 8;
@@ -105,7 +97,6 @@ namespace Coocoo3D.Core
                 graphicsContext.CopyTexture(rpContext.ReadBackTexture2D, visualchannel.FinalOutput, index1);
                 if (RecordCount >= c_frameCount)
                 {
-                    rpContext.ReadBackTexture2D.GetDataTolocal(index1);
                     if (packs[exIndex] == null)
                     {
                         int width = rpContext.ReadBackTexture2D.GetWidth();
@@ -123,7 +114,6 @@ namespace Coocoo3D.Core
                         packs[exIndex].runningTask.Wait();
                     }
 
-                    //packs[exIndex].imageData = rpContext.ReadBackTexture2D.GetRaw(index1);
                     rpContext.ReadBackTexture2D.GetRaw(index1, packs[exIndex].imageData);
 
                     packs[exIndex].renderIndex = RecordCount - c_frameCount;

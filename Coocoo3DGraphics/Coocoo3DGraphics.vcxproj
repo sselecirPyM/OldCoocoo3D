@@ -268,26 +268,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="RayTracingASGroup.h" />
     <ClInclude Include="CBuffer.h" />
     <ClInclude Include="GPUProgram\PSODesc.h" />
     <ClInclude Include="GraphicsConstance.h" />
     <ClInclude Include="Interoperation\InteroperationTypes.h" />
-    <ClInclude Include="RayTracingInstanceGroup.h" />
-    <ClInclude Include="RayTracingShaderTable.h" />
-    <ClInclude Include="RayTracingStateObject.h" />
-    <ClInclude Include="RayTracingTopAS.h" />
     <ClInclude Include="d3dx12.h" />
-    <ClInclude Include="DeviceResources.h" />
+    <ClInclude Include="GraphicsDevice.h" />
     <ClInclude Include="DirectXHelper.h" />
     <ClInclude Include="GPUProgram\ComputeShader.h" />
     <ClInclude Include="GPUProgram\GeometryShader.h" />
     <ClInclude Include="GPUProgram\PixelShader.h" />
     <ClInclude Include="GPUProgram\PSO.h" />
-    <ClInclude Include="GPUProgram\ShaderMacro.h" />
     <ClInclude Include="GPUProgram\VertexShader.h" />
     <ClInclude Include="GraphicsContext.h" />
-    <ClInclude Include="GraphicsSignature.h" />
+    <ClInclude Include="RootSignature.h" />
     <ClInclude Include="MeshBuffer.h" />
     <ClInclude Include="MMDMesh.h" />
     <ClInclude Include="MMDMeshAppend.h" />
@@ -297,28 +291,20 @@
     <ClInclude Include="ReadBackTexture2D.h" />
     <ClInclude Include="Texture2D.h" />
     <ClInclude Include="TextureCube.h" />
-    <ClInclude Include="TextUtil.h" />
-    <ClInclude Include="UnnamedInputLayout.h" />
     <ClInclude Include="Uploader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="RayTracingASGroup.cpp" />
     <ClCompile Include="CBuffer.cpp" />
     <ClCompile Include="GPUProgram\PSODesc.cpp" />
-    <ClCompile Include="GPUProgram\ShaderMacro.cpp" />
     <ClCompile Include="Interoperation\InteroperationTypes.cpp" />
-    <ClCompile Include="RayTracingInstanceGroup.cpp" />
-    <ClCompile Include="RayTracingShaderTable.cpp" />
-    <ClCompile Include="RayTracingStateObject.cpp" />
-    <ClCompile Include="RayTracingTopAS.cpp" />
-    <ClCompile Include="DeviceResources.cpp" />
+    <ClCompile Include="GraphicsDevice.cpp" />
     <ClCompile Include="GPUProgram\ComputeShader.cpp" />
     <ClCompile Include="GPUProgram\GeometryShader.cpp" />
     <ClCompile Include="GPUProgram\PixelShader.cpp" />
     <ClCompile Include="GPUProgram\PSO.cpp" />
     <ClCompile Include="GPUProgram\VertexShader.cpp" />
     <ClCompile Include="GraphicsContext.cpp" />
-    <ClCompile Include="GraphicsSignature.cpp" />
+    <ClCompile Include="RootSignature.cpp" />
     <ClCompile Include="MeshBuffer.cpp" />
     <ClCompile Include="MMDMesh.cpp" />
     <ClCompile Include="MMDMeshAppend.cpp" />
@@ -336,7 +322,6 @@
     <ClCompile Include="ReadBackTexture2D.cpp" />
     <ClCompile Include="Texture2D.cpp" />
     <ClCompile Include="TextureCube.cpp" />
-    <ClCompile Include="UnnamedInputLayout.cpp" />
     <ClCompile Include="Uploader.cpp" />
   </ItemGroup>
   <ItemGroup>

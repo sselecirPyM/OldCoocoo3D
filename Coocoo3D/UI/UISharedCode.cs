@@ -124,63 +124,63 @@ namespace Coocoo3D.UI
             appBody.mainCaches.TextureCaches.GetOrCreate(storageFolder.Path);
         }
 
-        public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)
-        {
-            var stream = (await file.OpenReadAsync()).AsStreamForRead();
-            var passSetting = (RenderPipeline.PassSetting)appBody.RPContext.PassSettingSerializer.Deserialize(stream);
-            var rpc = appBody.RPContext;
-            if (passSetting.VertexShaders != null)
-                foreach (var v1 in passSetting.VertexShaders)
-                {
-                    VertexShader vertexShader = new VertexShader();
-                    if (!vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), v1.EntryPoint == null ? "main" : v1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile vertex shader failed.");
-                    rpc.RPAssetsManager.VSAssets[v1.Name] = vertexShader;
-                }
-            if (passSetting.GeometryShaders != null)
-                foreach (var g1 in passSetting.GeometryShaders)
-                {
-                    GeometryShader geometryShader = new GeometryShader();
-                    if (!geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), g1.EntryPoint == null ? "main" : g1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile gemoetry shader failed.");
-                    rpc.RPAssetsManager.GSAssets[g1.Name] = geometryShader;
-                }
-            if (passSetting.PixelShaders != null)
-                foreach (var p1 in passSetting.PixelShaders)
-                {
-                    PixelShader pixelShader = new PixelShader();
-                    if (!pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), p1.EntryPoint == null ? "main" : p1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile pixel shader failed.");
-                    rpc.RPAssetsManager.PSAssets[p1.Name] = pixelShader;
-                }
-            //if (passSetting.Texture2Ds != null)
-            //    foreach (var t1 in passSetting.Texture2Ds)
-            //    {
+        //public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)
+        //{
+        //    var stream = (await file.OpenReadAsync()).AsStreamForRead();
+        //    var passSetting = (RenderPipeline.PassSetting)appBody.RPContext.PassSettingSerializer.Deserialize(stream);
+        //    var rpc = appBody.RPContext;
+        //    if (passSetting.VertexShaders != null)
+        //        foreach (var v1 in passSetting.VertexShaders)
+        //        {
+        //            VertexShader vertexShader = new VertexShader();
+        //            if (!vertexShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(v1.Path)), v1.EntryPoint == null ? "main" : v1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile vertex shader failed.");
+        //            rpc.RPAssetsManager.VSAssets[v1.Name] = vertexShader;
+        //        }
+        //    if (passSetting.GeometryShaders != null)
+        //        foreach (var g1 in passSetting.GeometryShaders)
+        //        {
+        //            GeometryShader geometryShader = new GeometryShader();
+        //            if (!geometryShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(g1.Path)), g1.EntryPoint == null ? "main" : g1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile gemoetry shader failed.");
+        //            rpc.RPAssetsManager.GSAssets[g1.Name] = geometryShader;
+        //        }
+        //    if (passSetting.PixelShaders != null)
+        //        foreach (var p1 in passSetting.PixelShaders)
+        //        {
+        //            PixelShader pixelShader = new PixelShader();
+        //            if (!pixelShader.CompileInitialize1(await FileIO.ReadBufferAsync(await storageFolder.GetFileAsync(p1.Path)), p1.EntryPoint == null ? "main" : p1.EntryPoint, new MacroEntry[0])) throw new Exception("Compile pixel shader failed.");
+        //            rpc.RPAssetsManager.PSAssets[p1.Name] = pixelShader;
+        //        }
+        //    //if (passSetting.Texture2Ds != null)
+        //    //    foreach (var t1 in passSetting.Texture2Ds)
+        //    //    {
 
-            //        var file1 = await storageFolder.GetFileAsync(t1.Path);
-            //        LoadTexture(appBody, file1, storageFolder);
-            //    }
-            //if (passSetting.TextureCubes != null)
-            //    foreach (var t1 in passSetting.TextureCubes)
-            //    {
-            //        if (t1.Path == null || t1.Path.Length != 6) throw new Exception("TextureCubeError");
-            //        TextureCube textureCube = null;
-            //        rpc.RPAssetsManager.textureCubes.TryGetValue(t1.Name, out textureCube);
-            //        if (textureCube == null)
-            //        {
-            //            textureCube = new TextureCube();
-            //            rpc.RPAssetsManager.textureCubes[t1.Name] = textureCube;
-            //        }
-            //        Stream[] streams = new Stream[t1.Path.Length];
+        //    //        var file1 = await storageFolder.GetFileAsync(t1.Path);
+        //    //        LoadTexture(appBody, file1, storageFolder);
+        //    //    }
+        //    //if (passSetting.TextureCubes != null)
+        //    //    foreach (var t1 in passSetting.TextureCubes)
+        //    //    {
+        //    //        if (t1.Path == null || t1.Path.Length != 6) throw new Exception("TextureCubeError");
+        //    //        TextureCube textureCube = null;
+        //    //        rpc.RPAssetsManager.textureCubes.TryGetValue(t1.Name, out textureCube);
+        //    //        if (textureCube == null)
+        //    //        {
+        //    //            textureCube = new TextureCube();
+        //    //            rpc.RPAssetsManager.textureCubes[t1.Name] = textureCube;
+        //    //        }
+        //    //        Stream[] streams = new Stream[t1.Path.Length];
 
-            //        for (int i = 0; i < t1.Path.Length; i++)
-            //        {
-            //            string path = t1.Path[i];
-            //            streams[i] = await (await storageFolder.GetFileAsync(path)).OpenStreamForReadAsync();
-            //        }
-            //        appBody.ProcessingList.AddObject(TextureCubeUploadPack.FromFiles(textureCube, streams));
-            //    }
+        //    //        for (int i = 0; i < t1.Path.Length; i++)
+        //    //        {
+        //    //            string path = t1.Path[i];
+        //    //            streams[i] = await (await storageFolder.GetFileAsync(path)).OpenStreamForReadAsync();
+        //    //        }
+        //    //        appBody.ProcessingList.AddObject(TextureCubeUploadPack.FromFiles(textureCube, streams));
+        //    //    }
 
-            rpc.SetCurrentPassSetting(passSetting);
-            rpc.customPassSetting = passSetting;
+        //    rpc.SetCurrentPassSetting(passSetting);
+        //    rpc.customPassSetting = passSetting;
 
-        }
+        //}
     }
 }

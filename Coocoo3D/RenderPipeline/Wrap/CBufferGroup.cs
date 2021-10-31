@@ -15,11 +15,11 @@ namespace Coocoo3D.RenderPipeline.Wrap
         public int sizeD256;
         public int count = 0;
         public List<CBuffer> constantBuffers = new List<CBuffer>();
-        public DeviceResources deviceResources;
+        public GraphicsDevice deviceResources;
 
         byte[] tempBuffer;
         int lastUpdateBufferIndex = 0;
-        public void Reload(DeviceResources deviceResources, int slienceSize, int bufferSize)
+        public void Reload(GraphicsDevice deviceResources, int slienceSize, int bufferSize)
         {
             this.slienceSize = slienceSize;
             this.bufferSize = bufferSize;
@@ -58,7 +58,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
             }
             else
             {
-                graphicsContext.UpdateResource(constantBuffers[lastUpdateBufferIndex], tempBuffer, (uint)bufferSize, 0);
+                graphicsContext.UpdateResource(constantBuffers[lastUpdateBufferIndex], tempBuffer, bufferSize, 0);
                 SetSlienceCount(slience1 + 1);
                 lastUpdateBufferIndex = slience1;
                 Array.Copy(data, dataOffset, tempBuffer, slience2 * slienceSize, dataLength);
@@ -69,7 +69,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
         public void UpdateSlienceComplete(GraphicsContext graphicsContext)
         {
             if (count == 0) return;
-            graphicsContext.UpdateResource(constantBuffers[lastUpdateBufferIndex], tempBuffer, (uint)bufferSize, 0);
+            graphicsContext.UpdateResource(constantBuffers[lastUpdateBufferIndex], tempBuffer, bufferSize, 0);
             lastUpdateBufferIndex = 0;
         }
 

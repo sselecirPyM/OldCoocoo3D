@@ -65,92 +65,92 @@ void MMDMesh::ReloadNDCQuad()
 	memcpy(m_indexData->GetBufferPointer(), indices, sizeof(indices));
 }
 
-void MMDMesh::ReloadCube()
-{
-	OnlyPosition positions[]
-	{
-		XMFLOAT3(-0.5f,-0.5f,-0.5f),
-		XMFLOAT3(-0.5f,-0.5f,0.5f),
-		XMFLOAT3(-0.5f,0.5f,-0.5f),
-		XMFLOAT3(-0.5f,0.5f,0.5f),
-		XMFLOAT3(0.5f,-0.5f,-0.5f),
-		XMFLOAT3(0.5f,-0.5f,0.5f),
-		XMFLOAT3(0.5f,0.5f,-0.5f),
-		XMFLOAT3(0.5f,0.5f,0.5f),
-	};
-	unsigned int indices[] =
-	{
-		0, 2, 1,
-		1, 2, 3,
-
-		4, 5, 6,
-		5, 7, 6,
-
-		0, 1, 5,
-		0, 5, 4,
-
-		2, 6, 7,
-		2, 7, 3,
-
-		0, 4, 6,
-		0, 6, 2,
-
-		1, 3, 7,
-		1, 7, 5,
-	};
-	m_vertexStride = sizeof(OnlyPosition);
-	m_vertexCount = _countof(positions);
-	m_indexCount = _countof(indices);
-	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	m_verticeData = ref new Platform::Array<byte, 1>(sizeof(positions));
-
-
-	memcpy(m_verticeData->begin(), positions, sizeof(positions));
-	D3DCreateBlob(sizeof(indices), &m_indexData);
-	memcpy(m_indexData->GetBufferPointer(), indices, sizeof(indices));
-}
-
-void MMDMesh::ReloadCubeWire()
-{
-	OnlyPosition positions[]
-	{
-		XMFLOAT3(-0.5f,-0.5f,-0.5f),
-		XMFLOAT3(-0.5f,-0.5f,0.5f),
-		XMFLOAT3(-0.5f,0.5f,-0.5f),
-		XMFLOAT3(-0.5f,0.5f,0.5f),
-		XMFLOAT3(0.5f,-0.5f,-0.5f),
-		XMFLOAT3(0.5f,-0.5f,0.5f),
-		XMFLOAT3(0.5f,0.5f,-0.5f),
-		XMFLOAT3(0.5f,0.5f,0.5f),
-	};
-	unsigned int indices[] =
-	{
-		0, 1,
-		2, 3,
-		4, 5,
-		6, 7,
-
-		0, 2,
-		1, 3,
-		4, 6,
-		5, 7,
-
-		0, 4,
-		1, 5,
-		2, 6,
-		3, 7,
-	};
-	m_vertexStride = sizeof(OnlyPosition);
-	m_vertexCount = _countof(positions);
-	m_indexCount = _countof(indices);
-	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
-	m_verticeData = ref new Platform::Array<byte, 1>(sizeof(positions));
-
-
-	memcpy(m_verticeData->begin(), positions, sizeof(positions));
-	D3DCreateBlob(sizeof(indices), &m_indexData);
-	memcpy(m_indexData->GetBufferPointer(), indices, sizeof(indices));
-}
+//void MMDMesh::ReloadCube()
+//{
+//	OnlyPosition positions[]
+//	{
+//		XMFLOAT3(-0.5f,-0.5f,-0.5f),
+//		XMFLOAT3(-0.5f,-0.5f,0.5f),
+//		XMFLOAT3(-0.5f,0.5f,-0.5f),
+//		XMFLOAT3(-0.5f,0.5f,0.5f),
+//		XMFLOAT3(0.5f,-0.5f,-0.5f),
+//		XMFLOAT3(0.5f,-0.5f,0.5f),
+//		XMFLOAT3(0.5f,0.5f,-0.5f),
+//		XMFLOAT3(0.5f,0.5f,0.5f),
+//	};
+//	unsigned int indices[] =
+//	{
+//		0, 2, 1,
+//		1, 2, 3,
+//
+//		4, 5, 6,
+//		5, 7, 6,
+//
+//		0, 1, 5,
+//		0, 5, 4,
+//
+//		2, 6, 7,
+//		2, 7, 3,
+//
+//		0, 4, 6,
+//		0, 6, 2,
+//
+//		1, 3, 7,
+//		1, 7, 5,
+//	};
+//	m_vertexStride = sizeof(OnlyPosition);
+//	m_vertexCount = _countof(positions);
+//	m_indexCount = _countof(indices);
+//	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+//	m_verticeData = ref new Platform::Array<byte, 1>(sizeof(positions));
+//
+//
+//	memcpy(m_verticeData->begin(), positions, sizeof(positions));
+//	D3DCreateBlob(sizeof(indices), &m_indexData);
+//	memcpy(m_indexData->GetBufferPointer(), indices, sizeof(indices));
+//}
+//
+//void MMDMesh::ReloadCubeWire()
+//{
+//	OnlyPosition positions[]
+//	{
+//		XMFLOAT3(-0.5f,-0.5f,-0.5f),
+//		XMFLOAT3(-0.5f,-0.5f,0.5f),
+//		XMFLOAT3(-0.5f,0.5f,-0.5f),
+//		XMFLOAT3(-0.5f,0.5f,0.5f),
+//		XMFLOAT3(0.5f,-0.5f,-0.5f),
+//		XMFLOAT3(0.5f,-0.5f,0.5f),
+//		XMFLOAT3(0.5f,0.5f,-0.5f),
+//		XMFLOAT3(0.5f,0.5f,0.5f),
+//	};
+//	unsigned int indices[] =
+//	{
+//		0, 1,
+//		2, 3,
+//		4, 5,
+//		6, 7,
+//
+//		0, 2,
+//		1, 3,
+//		4, 6,
+//		5, 7,
+//
+//		0, 4,
+//		1, 5,
+//		2, 6,
+//		3, 7,
+//	};
+//	m_vertexStride = sizeof(OnlyPosition);
+//	m_vertexCount = _countof(positions);
+//	m_indexCount = _countof(indices);
+//	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+//	m_verticeData = ref new Platform::Array<byte, 1>(sizeof(positions));
+//
+//
+//	memcpy(m_verticeData->begin(), positions, sizeof(positions));
+//	D3DCreateBlob(sizeof(indices), &m_indexData);
+//	memcpy(m_indexData->GetBufferPointer(), indices, sizeof(indices));
+//}
 
 MMDMesh::~MMDMesh()
 {
@@ -166,7 +166,7 @@ int MMDMesh::GetVertexCount()
 	return m_vertexCount;
 }
 
-void MMDMesh::SetIndexFormat(DxgiFormat format)
+void MMDMesh::SetIndexFormat(Format format)
 {
 	m_indexBufferView.Format = (DXGI_FORMAT)format;
 }

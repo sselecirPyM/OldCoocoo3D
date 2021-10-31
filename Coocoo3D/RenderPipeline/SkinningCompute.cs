@@ -8,13 +8,12 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.RenderPipeline
 {
-    public class SkinningCompute
+    public static class SkinningCompute
     {
-
         public static void Process(RenderPipelineContext context)
         {
             var rpAssets = context.RPAssetsManager;
-            var deviceResources = context.deviceResources;
+            var graphicsDevice = context.graphicsDevice;
             var rendererComponents = context.dynamicContextRead.renderers;
 
             PSO PSOSkinning = rpAssets.PSOs["PSOMMDSkinning"];
@@ -27,7 +26,7 @@ namespace Coocoo3D.RenderPipeline
                 var Materials = rendererComponent.Materials;
                 graphicsContext.SetCBVRSlot(entityBoneDataBuffer, 0, 0, 0);
                 var psoSkinning = PSOSkinning;
-                SetPipelineStateVariant(deviceResources, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
+                SetPipelineStateVariant(graphicsDevice, graphicsContext, rpAssets.rootSignatureSkinning, ref context.SkinningDesc, psoSkinning);
                 graphicsContext.SetMeshVertex(context.GetMesh(rendererComponent.meshPath));
                 graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
                 graphicsContext.Draw(rendererComponent.meshVertexCount, 0);
@@ -37,9 +36,9 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetSOMeshNone();
         }
 
-        private static void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
+        private static void SetPipelineStateVariant(GraphicsDevice graphicsDevice, GraphicsContext graphicsContext, RootSignature graphicsSignature, ref PSODesc desc, PSO pso)
         {
-            int variant = pso.GetVariantIndex(deviceResources, graphicsSignature, desc);
+            int variant = pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc);
             graphicsContext.SetPSO(pso, variant);
         }
     }

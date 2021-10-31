@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Vortice.Direct3D12;
 
-namespace Coocoo3DGraphics1
+namespace Coocoo3DGraphics
 {
     public class UnnamedInputLayout : IEquatable<UnnamedInputLayout>
     {

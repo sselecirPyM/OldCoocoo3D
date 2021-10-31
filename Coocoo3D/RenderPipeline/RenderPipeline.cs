@@ -32,14 +32,14 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected PSO PSOSelect(DeviceResources deviceResources, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
+        protected PSO PSOSelect(GraphicsDevice graphicsDevice, RootSignature graphicsSignature, in PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
         {
             if (pso == null) return unload;
             if (pso.Status == GraphicsObjectStatus.unload)
                 return unload;
             else if (pso.Status == GraphicsObjectStatus.loaded)
             {
-                if (pso.GetVariantIndex(deviceResources, graphicsSignature, desc) != -1)
+                if (pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc) != -1)
                     return pso;
                 else
                     return error;
@@ -50,24 +50,12 @@ namespace Coocoo3D.RenderPipeline
                 return error;
         }
 
-        protected void SetPipelineStateVariant(DeviceResources deviceResources, GraphicsContext graphicsContext, GraphicsSignature graphicsSignature, ref PSODesc desc, PSO pso)
+        protected void SetPipelineStateVariant(GraphicsDevice graphicsDevice, GraphicsContext graphicsContext, RootSignature graphicsSignature, in PSODesc desc, PSO pso)
         {
-            int variant = pso.GetVariantIndex(deviceResources, graphicsSignature, desc);
+            int variant = pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc);
             graphicsContext.SetPSO(pso, variant);
         }
 
-        protected async Task ReloadPixelShader(PixelShader pixelShader, string uri)
-        {
-            pixelShader.Initialize(await ReadFile(uri));
-        }
-        protected async Task ReloadVertexShader(VertexShader vertexShader, string uri)
-        {
-            vertexShader.Initialize(await ReadFile(uri));
-        }
-        protected async Task ReloadGeometryShader(GeometryShader geometryShader, string uri)
-        {
-            geometryShader.Initialize(await ReadFile(uri));
-        }
         protected async Task<IBuffer> ReadFile(string uri)
         {
             StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));

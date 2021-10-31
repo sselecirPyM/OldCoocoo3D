@@ -1,6 +1,6 @@
 #pragma once
-#include "DeviceResources.h"
-#include "GraphicsSignature.h"
+#include "GraphicsDevice.h"
+#include "RootSignature.h"
 #include "MMDMesh.h"
 namespace Coocoo3DGraphics
 {
@@ -35,8 +35,8 @@ namespace Coocoo3DGraphics
 	{
 	public:
 		void ReloadLibrary(IBuffer^ rtShader);
-		void ReloadPipelineStates(DeviceResources^ deviceResources, GraphicsSignature^ globalSignature, GraphicsSignature^ localSignature, const Platform::Array<Platform::String^>^ exportNames, const Platform::Array<HitGroupDesc^>^ hitGroups, RayTracingSceneSettings settings);
-		void ReloadAllocScratchAndInstance(DeviceResources^ deviceResources, UINT scratchSize, UINT maxIinstanceCount);
+		void ReloadPipelineStates(GraphicsDevice^ deviceResources, RootSignature^ globalSignature, RootSignature^ localSignature, const Platform::Array<Platform::String^>^ exportNames, const Platform::Array<HitGroupDesc^>^ hitGroups, RayTracingSceneSettings settings);
+		void ReloadAllocScratchAndInstance(GraphicsDevice^ deviceResources, UINT scratchSize, UINT maxIinstanceCount);
 		virtual ~RayTracingScene();
 	internal:
 		D3D12_SHADER_BYTECODE m_byteCode;
@@ -66,8 +66,8 @@ namespace Coocoo3DGraphics
 
 		UINT m_scratchSize;
 		UINT m_maxInstanceCount;
-		GraphicsSignature^ m_globalSignature;
-		GraphicsSignature^ m_localSignature;
+		RootSignature^ m_globalSignature;
+		RootSignature^ m_localSignature;
 	private:
 		void SubobjectHitGroup(CD3DX12_HIT_GROUP_SUBOBJECT* hitGroupSubobject, LPCWSTR hitGroupName, LPCWSTR anyHitShaderName, LPCWSTR closestHitShaderName);
 	};

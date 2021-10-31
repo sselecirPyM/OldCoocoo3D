@@ -50,35 +50,35 @@
       <Size>
         <Source>ShadowMapSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_D32_FLOAT</Format>
+      <Format>D32_Float</Format>
     </RenderTarget>
     <RenderTarget>
       <Name>_ScreenDepth0</Name>
       <Size>
         <Source>OutputSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_D32_FLOAT</Format>
+      <Format>D32_Float</Format>
     </RenderTarget>
     <RenderTarget>
       <Name>_ScreenColor0</Name>
       <Size>
         <Source>OutputSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+      <Format>R16G16B16A16_UNorm</Format>
     </RenderTarget>
     <RenderTarget>
       <Name>_ScreenColor1</Name>
       <Size>
         <Source>OutputSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+      <Format>R16G16B16A16_UNorm</Format>
     </RenderTarget>
     <RenderTarget>
       <Name>_ScreenColor2</Name>
       <Size>
         <Source>OutputSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_R16G16B16A16_UNORM</Format>
+      <Format>R16G16B16A16_UNorm</Format>
     </RenderTarget>
     <RenderTarget>
       <Name>_Blur0</Name>
@@ -86,7 +86,7 @@
         <Multiplier>0.5</Multiplier>
         <Source>OutputSize</Source>
       </Size>
-      <Format>DXGI_FORMAT_R16G16B16A16_FLOAT</Format>
+      <Format>R16G16B16A16_Float</Format>
     </RenderTarget>
   </RenderTargets>
   <Passes>

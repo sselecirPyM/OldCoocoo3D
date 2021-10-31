@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using Vortice.Direct3D12;
+using static Coocoo3DGraphics.DXHelper;
 
-namespace Coocoo3DGraphics1
+namespace Coocoo3DGraphics
 {
     public class DescriptorHeapX : IDisposable
     {
@@ -18,7 +19,7 @@ namespace Coocoo3DGraphics1
             this.graphicsDevice = graphicsDevice;
             allocatedCount = 0;
             descriptorCount = descriptorHeapDescription.DescriptorCount;
-            GraphicsDevice.ThrowIfFailed(graphicsDevice.device.CreateDescriptorHeap(descriptorHeapDescription, out heap));
+            ThrowIfFailed(graphicsDevice.device.CreateDescriptorHeap(descriptorHeapDescription, out heap));
             IncrementSize = graphicsDevice.device.GetDescriptorHandleIncrementSize(descriptorHeapDescription.Type);
         }
 

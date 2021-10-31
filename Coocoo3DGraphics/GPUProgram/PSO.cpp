@@ -56,13 +56,13 @@ inline D3D12_BLEND_DESC BlendDescAdd()
 	blendDescAlpha.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 	return blendDescAlpha;
 }
-inline D3D12_BLEND_DESC BlendDescSelect(EBlendState blendState)
+inline D3D12_BLEND_DESC BlendDescSelect(BlendState blendState)
 {
-	if (blendState == EBlendState::none)
+	if (blendState == BlendState::none)
 		return CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-	else if (blendState == EBlendState::alpha)
+	else if (blendState == BlendState::alpha)
 		return BlendDescAlpha();
-	else if (blendState == EBlendState::add)
+	else if (blendState == BlendState::add)
 		return BlendDescAdd();
 	return D3D12_BLEND_DESC{};
 }
@@ -74,10 +74,33 @@ inline const D3D12_INPUT_LAYOUT_DESC& inputLayoutSelect()
 void PSO::Initialize(VertexShader^ vs, GeometryShader^ gs, PixelShader^ ps)
 {
 	ClearState();
-	m_vertexShader = vs;
-	m_geometryShader = gs;
-	m_pixelShader = ps;
+	if (vs != nullptr)
+		m_vertexShader = vs->byteCode;
+	if (gs != nullptr)
+		m_geometryShader = gs->byteCode;
+	if (ps != nullptr)
+		m_pixelShader = ps->byteCode;
 	Status = GraphicsObjectStatus::loaded;
+}
+
+void PSO::Initialize(const Array<byte>^ vs, const Array<byte>^ gs, const Array<byte>^ ps)
+{
+	if (vs != nullptr)
+	{
+		D3DCreateBlob(vs->Length, &m_vertexShader);
+		memcpy(m_vertexShader->GetBufferPointer(), vs->begin(), vs->Length);
+	}
+	if (gs != nullptr)
+	{
+		D3DCreateBlob(gs->Length, &m_geometryShader);
+		memcpy(m_geometryShader->GetBufferPointer(), gs->begin(), gs->Length);
+
+	}
+	if (ps != nullptr)
+	{
+		D3DCreateBlob(ps->Length, &m_pixelShader);
+		memcpy(m_pixelShader->GetBufferPointer(), ps->begin(), ps->Length);
+	}
 }
 
 void PSO::Unload()
@@ -86,7 +109,7 @@ void PSO::Unload()
 	Status = GraphicsObjectStatus::unload;
 }
 
-int PSO::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ graphicsSignature, PSODesc psoDesc)
+int PSO::GetVariantIndex(GraphicsDevice^ deviceResources, RootSignature^ graphicsSignature, PSODesc psoDesc)
 {
 	_PSODesc1 _psoDesc1;
 	_psoDesc1.desc = psoDesc;
@@ -112,21 +135,21 @@ int PSO::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ gr
 		UINT bufferStrides[] = { 64 };
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
-		if (psoDesc.inputLayout == EInputLayout::mmd)
+		if (psoDesc.inputLayout == InputLayout::mmd)
 			state.InputLayout = { inputLayoutMMD, _countof(inputLayoutMMD) };
-		else if (psoDesc.inputLayout == EInputLayout::postProcess)
+		else if (psoDesc.inputLayout == InputLayout::postProcess)
 			state.InputLayout = { inputLayoutPosOnly, _countof(inputLayoutPosOnly) };
-		else if (psoDesc.inputLayout == EInputLayout::skinned)
+		else if (psoDesc.inputLayout == InputLayout::skinned)
 			state.InputLayout = { inputLayoutSkinned, _countof(inputLayoutSkinned) };
-		else if (psoDesc.inputLayout == EInputLayout::imgui)
+		else if (psoDesc.inputLayout == InputLayout::imgui)
 			state.InputLayout = { _inputLayoutImGui, _countof(_inputLayoutImGui) };
 		state.pRootSignature = graphicsSignature->m_rootSignature.Get();
 		if (m_vertexShader != nullptr)
-			state.VS = CD3DX12_SHADER_BYTECODE(m_vertexShader->byteCode.Get());
+			state.VS = CD3DX12_SHADER_BYTECODE(m_vertexShader.Get());
 		if (m_geometryShader != nullptr)
-			state.GS = CD3DX12_SHADER_BYTECODE(m_geometryShader->byteCode.Get());
+			state.GS = CD3DX12_SHADER_BYTECODE(m_geometryShader.Get());
 		if (m_pixelShader != nullptr)
-			state.PS = CD3DX12_SHADER_BYTECODE(m_pixelShader->byteCode.Get());
+			state.PS = CD3DX12_SHADER_BYTECODE(m_pixelShader.Get());
 		if ((DXGI_FORMAT)psoDesc.dsvFormat != DXGI_FORMAT_UNKNOWN)
 		{
 			state.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
@@ -168,7 +191,7 @@ int PSO::GetVariantIndex(DeviceResources^ deviceResources, GraphicsSignature^ gr
 	return index;
 }
 
-void PSO::DelayDestroy(DeviceResources^ deviceResources)
+void PSO::DelayDestroy(GraphicsDevice^ deviceResources)
 {
 	for (int i = 0; i < m_pipelineStates.size(); i++)
 	{

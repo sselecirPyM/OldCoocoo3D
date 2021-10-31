@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+//using Vortice.Direct3D;
 using Windows.Storage;
 
 namespace Coocoo3D.ResourceWarp
@@ -58,7 +59,7 @@ namespace Coocoo3D.ResourceWarp
         public MMDMesh GetMesh()
         {
             if (meshInstance == null)
-                meshInstance = MMDMesh.Load1(verticesDataAnotherPart, pmx.TriangleIndexs, c_vertexStride, PrimitiveTopology._POINTLIST);
+                meshInstance = MMDMesh.Load1(verticesDataAnotherPart, pmx.TriangleIndexs, c_vertexStride, PrimitiveTopology.PointList);
             return meshInstance;
         }
     }

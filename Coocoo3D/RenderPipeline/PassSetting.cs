@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Coocoo3DGraphics;
+//using Vortice.Direct3D12;
+//using Vortice.DXGI;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -88,10 +90,10 @@ namespace Coocoo3D.RenderPipeline
         [XmlElement("Parameter")]
         public List<PassParameter> passParameters;
         public string DepthStencil;
-        public EBlendState BlendMode;
+        public BlendState BlendMode;
         public bool ClearDepth;
         public bool ClearRenderTarget;
-        public ECullMode CullMode;
+        public CullMode CullMode;
         public string Filter;
 
         //public string Foreach;
@@ -152,7 +154,7 @@ namespace Coocoo3D.RenderPipeline
     {
         public string Name;
         public VarSize Size;
-        public DxgiFormat Format;
+        public Format Format;
     }
     public struct PParameter
     {

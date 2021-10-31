@@ -196,7 +196,6 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
-    <Content Include="DefaultResources\DrawGizmo.xml" />
     <Content Include="Samples\PS_BloomBlur2.hlsl" />
     <Content Include="Samples\PS_BloomBlur1.hlsl" />
     <Content Include="Samples\PS_DeferredFinal.hlsl" />
@@ -231,6 +230,7 @@
     <None Include="Coocoo3D_TemporaryKey.pfx" />
     <Content Include="Samples\PS_Pass1.hlsl" />
     <Content Include="Samples\samplePasses.coocoox" />
+    <Content Include="DefaultResources\DefaultResourceList.json" />
     <PRIResource Include="Strings\ja-JP\Resources.resw" />
     <PRIResource Include="Strings\en-US\Resources.resw" />
     <PRIResource Include="Strings\zh-CN\Resources.resw" />
@@ -239,8 +239,6 @@
     <Content Include="Assets\Textures\brdflut.png" />
     <Content Include="Assets\Textures\UI_1.png" />
     <Content Include="Assets\Textures\UI_0.png" />
-    <Content Include="DefaultResources\DefaultResourceList.xml" />
-    <Content Include="DefaultResources\DeferredRayTracingPassSetting.xml" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -274,11 +272,17 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.12</Version>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.1</Version>
+    </PackageReference>
     <PackageReference Include="SixLabors.ImageSharp">
-      <Version>1.0.3</Version>
+      <Version>1.0.4</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
       <Version>4.5.4</Version>
+    </PackageReference>
+    <PackageReference Include="Vortice.Dxc">
+      <Version>1.9.143</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -287,7 +291,6 @@
       <Name>Coocoo3DGraphics</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
