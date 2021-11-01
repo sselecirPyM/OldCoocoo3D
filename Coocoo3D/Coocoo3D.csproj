@@ -201,7 +201,6 @@
     <Content Include="Samples\PS_DeferredFinal.hlsl" />
     <Content Include="Samples\PS_DeferredGBuffer.hlsl" />
     <Content Include="Samples\sampleDeferredPasses.coocoox" />
-    <Content Include="Samples\VS_Pass1.hlsl" />
     <Content Include="Shaders\G_ClearIrradianceMap.hlsl" />
     <Content Include="Shaders\G_IrradianceMap0.hlsl" />
     <Content Include="Shaders\G_PreFilterEnv.hlsl" />
@@ -219,6 +218,7 @@
     <Content Include="Shaders\PS_DeferredGBuffer.hlsl" />
     <Content Include="Shaders\PS_Pass1.hlsl" />
     <Content Include="Shaders\PS_SkyBox.hlsl" />
+    <Content Include="Shaders\CSMMDSkinning.hlsl" />
     <Content Include="Shaders\VSMMDSkinning.hlsl" />
     <Content Include="Shaders\VSMMDTransform.hlsl" />
     <Content Include="Shaders\VSPostProcess.hlsl" />
@@ -228,7 +228,6 @@
     <Content Include="Shaders\VS_Pass1.hlsl" />
     <Content Include="Shaders\VS_SkyBox.hlsl" />
     <None Include="Coocoo3D_TemporaryKey.pfx" />
-    <Content Include="Samples\PS_Pass1.hlsl" />
     <Content Include="Samples\samplePasses.coocoox" />
     <Content Include="DefaultResources\DefaultResourceList.json" />
     <PRIResource Include="Strings\ja-JP\Resources.resw" />
@@ -286,9 +285,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Coocoo3DGraphics\Coocoo3DGraphics.vcxproj">
-      <Project>{8f8bf5cc-3dee-4f9f-abd5-8fa89ba6109c}</Project>
-      <Name>Coocoo3DGraphics</Name>
+    <ProjectReference Include="..\Coocoo3DGraphics1\Coocoo3DGraphics1.csproj">
+      <Project>{c8f1a2a5-d662-49a1-94ba-971a8610e3be}</Project>
+      <Name>Coocoo3DGraphics1</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

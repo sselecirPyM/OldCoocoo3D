@@ -5,7 +5,7 @@ struct LightInfo2
 	uint LightType;
 	float4 LightColor;
 };
-cbuffer cb0 : register(b0)
+cbuffer cb0 : register(b1)
 {
 	float4x4 _worldToProj;
 	LightInfo2 Lightings2[1];

@@ -44,6 +44,8 @@ namespace Coocoo3DGraphics
             Array.Copy(verticeData, m_verticeData, verticeData.Length);
             this.m_indexData = new byte[indexData.Length * 4];
             MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
+            this.m_indexCount = indexData.Length;
+            this.m_vertexCount = verticeData.Length / vertexStride;
         }
         public void Reload1(byte[] verticeData, byte[] indexData, int vertexStride, PrimitiveTopology pt)
         {
@@ -53,6 +55,8 @@ namespace Coocoo3DGraphics
             Array.Copy(verticeData, m_verticeData, verticeData.Length);
             this.m_indexData = new byte[indexData.Length];
             Array.Copy(indexData, m_indexData, indexData.Length);
+            m_indexCount = indexData.Length ;
+            m_vertexCount = verticeData.Length / vertexStride;
         }
         public void ReloadNDCQuad()
         {

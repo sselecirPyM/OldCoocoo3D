@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-//using Vortice.DXGI;
+using Vortice.DXGI;
 
 namespace Coocoo3D.ResourceWarp
 {

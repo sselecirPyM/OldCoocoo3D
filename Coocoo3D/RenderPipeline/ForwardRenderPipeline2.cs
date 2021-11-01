@@ -11,8 +11,8 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-//using Vortice.Direct3D12;
-//using Vortice.DXGI;
+using Vortice.Direct3D12;
+using Vortice.DXGI;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -416,9 +416,11 @@ namespace Coocoo3D.RenderPipeline
                 _PassSetRes1(null, combinedPass);
                 if (combinedPass.DrawObjects)
                 {
-                    passPsoDesc.inputLayout = InputLayout.skinned;
+                    passPsoDesc.inputLayout = InputLayout.mmd;
                     passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
-                    graphicsContext.SetMesh(context.SkinningMeshBuffer);
+
+                    //graphicsContext.SetMesh(context.SkinningMeshBuffer);
+
                     _PassRender(rendererComponents, combinedPass);
                 }
                 else if (combinedPass.Type == "DrawScreen")
@@ -436,9 +438,13 @@ namespace Coocoo3D.RenderPipeline
                 void _PassRender(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
                 {
                     _Counters counterX = new _Counters();
-                    foreach (var rendererComponent in _rendererComponents)
+                    for (int i = 0; i < _rendererComponents.Count; i++)
                     {
-                        graphicsContext.SetMeshIndex(context.GetMesh(rendererComponent.meshPath));
+                        MMDRendererComponent rendererComponent = _rendererComponents[i];
+                        graphicsContext.SetCBVRSlot(context.CBs_Bone[i], 0, 0, 0);
+                        graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
+                        graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
+                        graphicsContext.m_commandList.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
                         PSO pso = null;
 
                         var PSODraw = PSOSelect(graphicsDevice, rootSignature, passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);

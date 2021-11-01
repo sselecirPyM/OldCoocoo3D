@@ -15,7 +15,7 @@ using Windows.Foundation;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Components;
 using Coocoo3D.RenderPipeline;
-//using Vortice.Direct3D12;
+using Vortice.Direct3D12;
 
 namespace Coocoo3D.Core
 {
@@ -91,7 +91,7 @@ namespace Coocoo3D.Core
                 widgetRenderer.Reload(RPContext);
                 if (graphicsDevice.IsRayTracingSupport())
                 {
-                    await rayTracingRenderPipeline1.ReloadAssets(RPContext);
+                    //await rayTracingRenderPipeline1.ReloadAssets(RPContext);
                 }
 
                 miscProcess.ReloadAssets(graphicsDevice);
@@ -124,7 +124,7 @@ namespace Coocoo3D.Core
         #region Rendering
         public RPAssetsManager RPAssetsManager { get => RPContext.RPAssetsManager; }
         ForwardRenderPipeline2 forwardRenderPipeline2 = new ForwardRenderPipeline2();
-        RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
+        //RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
         public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         MiscProcess miscProcess = new MiscProcess();
@@ -324,7 +324,7 @@ namespace Coocoo3D.Core
                 }
                 if (currentRenderPipelineIndex == 2)
                 {
-                    _currentRenderPipeline = rayTracingRenderPipeline1;
+                    //_currentRenderPipeline = rayTracingRenderPipeline1;
                 }
                 else if (currentRenderPipelineIndex == 3)
                 //else if (currentRenderPipelineIndex == 2)

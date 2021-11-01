@@ -24,7 +24,7 @@ namespace Coocoo3DGraphics
         public static void memcpy<T>(Span<T> t1, Span<T> t2, int size) where T : unmanaged
         {
             int d1 = Marshal.SizeOf(typeof(T));
-            t1.Slice(0, size / d1).CopyTo(t2);
+            t2.Slice(0, size / d1).CopyTo(t1);
         }
 
         unsafe public static void memcpy<T>(Span<T> t2, void* p1, int size) where T : unmanaged

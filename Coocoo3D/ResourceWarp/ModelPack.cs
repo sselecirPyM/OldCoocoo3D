@@ -9,7 +9,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-//using Vortice.Direct3D;
+using Vortice.Direct3D;
 using Windows.Storage;
 
 namespace Coocoo3D.ResourceWarp

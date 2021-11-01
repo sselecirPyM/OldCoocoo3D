@@ -285,7 +285,6 @@ namespace Coocoo3DGraphics
                 declarations[4].SemanticName = "EDGESCALE";
                 declarations[4].ComponentCount = 1;
 
-                int[] bufferStrides = { 64 };
 
                 GraphicsPipelineStateDescription state = new GraphicsPipelineStateDescription();
                 if (psoDesc.inputLayout == InputLayout.mmd)
@@ -315,7 +314,8 @@ namespace Coocoo3DGraphics
                 state.PrimitiveTopologyType = psoDesc.ptt;
                 if (psoDesc.streamOutput)
                 {
-                    state.StreamOutput.Elements = declarations;
+                    int[] bufferStrides = { 64 };
+                    state.StreamOutput = new StreamOutputDescription(declarations);
                     state.StreamOutput.Strides = bufferStrides;
                 }
                 else
@@ -325,6 +325,7 @@ namespace Coocoo3DGraphics
                 }
 
                 //state.NumRenderTargets = psoDesc.renderTargetCount;
+
                 state.RenderTargetFormats = new Format[psoDesc.renderTargetCount];
                 for (int i = 0; i < psoDesc.renderTargetCount; i++)
                 {
@@ -332,12 +333,10 @@ namespace Coocoo3DGraphics
                 }
                 CullMode cullMode = psoDesc.cullMode;
                 if (cullMode == 0) cullMode = CullMode.None;
-                RasterizerDescription rasterizerDescription = new RasterizerDescription();
-                rasterizerDescription.FillMode = psoDesc.wireFrame ? FillMode.Wireframe : FillMode.Solid;
-                rasterizerDescription.CullMode = cullMode;
+                RasterizerDescription rasterizerDescription = new RasterizerDescription(cullMode, psoDesc.wireFrame ? FillMode.Wireframe : FillMode.Solid);
                 rasterizerDescription.DepthBias = psoDesc.depthBias;
                 rasterizerDescription.SlopeScaledDepthBias = psoDesc.slopeScaledDepthBias;
-                rasterizerDescription.DepthClipEnable = true;
+                rasterizerDescription.DepthClipEnable = psoDesc.streamOutput ? false : true;
 
                 state.RasterizerState = rasterizerDescription;
                 ID3D12PipelineState pipelineState;

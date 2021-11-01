@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
+using static Coocoo3DGraphics.DXHelper;
 
 namespace Coocoo3DGraphics
 {
@@ -86,7 +87,7 @@ namespace Coocoo3DGraphics
         {
             if (renderTargetView == null)
             {
-                device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, 1), out renderTargetView);
+                ThrowIfFailed(device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, 1), out renderTargetView));
                 device.CreateRenderTargetView(resource, null, renderTargetView.GetCPUDescriptorHandleForHeapStart());
             }
             return renderTargetView.GetCPUDescriptorHandleForHeapStart();

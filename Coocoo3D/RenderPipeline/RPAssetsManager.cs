@@ -26,8 +26,8 @@ namespace Coocoo3D.RenderPipeline
 
 
         public RootSignature rootSignatureSkinning = new RootSignature();
-        public RootSignature rtLocal = new RootSignature();
-        public RootSignature rtGlobal = new RootSignature();
+        //public RootSignature rtLocal = new RootSignature();
+        //public RootSignature rtGlobal = new RootSignature();
 
         public DefaultResource defaultResource;
         public bool Ready;
@@ -36,8 +36,8 @@ namespace Coocoo3D.RenderPipeline
             rootSignatureSkinning.ReloadSkinning(graphicsDevice);
             if (graphicsDevice.IsRayTracingSupport())
             {
-                rtLocal.RayTracingLocal(graphicsDevice);
-                rtGlobal.ReloadCompute(graphicsDevice, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
+                //rtLocal.RayTracingLocal(graphicsDevice);
+                //rtGlobal.ReloadCompute(graphicsDevice, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
             }
         }
 

@@ -15,7 +15,7 @@ namespace Coocoo3DGraphics
         const int D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING = 5768;
 
         GraphicsDevice graphicsDevice;
-        ID3D12GraphicsCommandList4 m_commandList;
+        public ID3D12GraphicsCommandList4 m_commandList;
         public RootSignature currentRootSignature;
 
         public Dictionary<int, object> slots = new Dictionary<int, object>();
@@ -78,12 +78,20 @@ namespace Coocoo3DGraphics
         {
             texture.StateChange(m_commandList, ResourceStates.GenericRead);
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
-            graphicsDevice.device.CreateShaderResourceView(texture.resource, null, cpuDescriptorHandle);
+
+            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.Format = texture.format;
+            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D;
+            srvDesc.Texture2D.MipLevels = texture.mipLevels;
+
+            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
             m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], gpuDescriptorHandle);
         }
         public void SetSRVTSlot(TextureCube texture, int slot)
         {
             int index = currentRootSignature.srv[slot];
+            texture.StateChange(m_commandList, ResourceStates.GenericRead);
             ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
             srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             srvDesc.Format = texture.format;
@@ -119,13 +127,12 @@ namespace Coocoo3DGraphics
 
         public unsafe void UpdateCBResource<T>(CBuffer buffer, ID3D12GraphicsCommandList commandList, Span<T> data) where T : unmanaged
         {
-            buffer.lastUpdateIndex = (buffer.lastUpdateIndex < (GraphicsDevice.c_frameCount - 1)) ? (buffer.lastUpdateIndex + 1) : 0;
+            buffer.lastUpdateIndex = (buffer.lastUpdateIndex + 1) % GraphicsDevice.c_frameCount;
             int lastUpdateIndex = buffer.lastUpdateIndex;
 
             int size1 = Marshal.SizeOf(typeof(T));
             var range = new Span<T>((buffer.mappedResource + buffer.size * lastUpdateIndex).ToPointer(), data.Length);
             data.CopyTo(range);
-            buffer.resourceUpload.Unmap(0, null);
         }
 
         unsafe public void UploadMesh(MMDMesh mesh)
@@ -234,6 +241,7 @@ namespace Coocoo3DGraphics
         }
         public void UpdateResource<T>(CBuffer buffer, T[] data, int sizeInByte, int dataOffset) where T : unmanaged
         {
+            UpdateResource(buffer, new Span<T>(data, dataOffset, sizeInByte));
         }
         public void UpdateResource<T>(CBuffer buffer, Span<T> data) where T : unmanaged
         {
@@ -526,7 +534,12 @@ namespace Coocoo3DGraphics
         {
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
             texture.StateChange(m_commandList, ResourceStates.GenericRead);
-            graphicsDevice.device.CreateShaderResourceView(texture.resource, null, cpuHandle);
+            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.Format = texture.format;
+            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D;
+            srvDesc.Texture2D.MipLevels = texture.mipLevels;
+            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuHandle);
 
             m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
         }
@@ -650,6 +663,7 @@ namespace Coocoo3DGraphics
         public void Begin()
         {
             m_commandList = graphicsDevice.GetCommandList();
+            m_commandList.Reset(graphicsDevice.GetCommandAllocator());
         }
 
         //public void SetPipelineState(PipelineStateObject pipelineStateObject, PSODesc psoDesc)
@@ -673,7 +687,7 @@ namespace Coocoo3DGraphics
             var dsv = texture.GetDepthStencilView(graphicsDevice.device);
             if (clear)
                 m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
-            m_commandList.OMSetRenderTargets(null, dsv);
+            m_commandList.OMSetRenderTargets(new CpuDescriptorHandle[0], dsv);
         }
         public void SetRTV(Texture2D RTV, Vector4 color, bool clear)
         {

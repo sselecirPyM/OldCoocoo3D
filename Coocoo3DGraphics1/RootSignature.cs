@@ -37,10 +37,10 @@ namespace Coocoo3DGraphics
 
 
             RootSignatureDescription1 rootSignatureDescription = new RootSignatureDescription1();
-            rootSignatureDescription.Flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput;
+            rootSignatureDescription.Flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput | RootSignatureFlags.DenyPixelShaderRootAccess;
             rootSignatureDescription.Parameters = rootParameters;
 
-
+            cbv[0] = 0;
             ThrowIfFailed(graphicsDevice.device.CreateRootSignature(0, rootSignatureDescription, out rootSignature));
         }
 

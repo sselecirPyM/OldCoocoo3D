@@ -17,8 +17,8 @@ using System.Xml.Serialization;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Coocoo3D.Utility;
-//using Vortice.DXGI;
-//using Vortice.Direct3D12;
+using Vortice.DXGI;
+using Vortice.Direct3D12;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -81,7 +81,7 @@ namespace Coocoo3D.RenderPipeline
         public TextureCube ReflectMap = new TextureCube();
 
         public MMDMesh ndcQuadMesh = new MMDMesh();
-        public MeshBuffer SkinningMeshBuffer = new MeshBuffer();
+        //public MeshBuffer SkinningMeshBuffer = new MeshBuffer();
         public int SkinningMeshBufferSize;
         public int frameRenderCount;
 
@@ -155,7 +155,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext1.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
             AddVisualChannel("second");
-            graphicsDevice.InitializeMeshBuffer(SkinningMeshBuffer, 0);
+            //graphicsDevice.InitializeMeshBuffer(SkinningMeshBuffer, 0);
         }
 
         public VisualChannel AddVisualChannel(string name)
@@ -238,7 +238,7 @@ namespace Coocoo3D.RenderPipeline
             if (SceneObjectVertexCount > SkinningMeshBufferSize)
             {
                 SkinningMeshBufferSize = SceneObjectVertexCount;
-                graphicsDevice.InitializeMeshBuffer(SkinningMeshBuffer, SceneObjectVertexCount);
+                //graphicsDevice.InitializeMeshBuffer(SkinningMeshBuffer, SceneObjectVertexCount);
             }
         }
         public void PrepareRenderTarget(PassSetting passSetting, VisualChannel visualChannel)

@@ -241,6 +241,7 @@ namespace Coocoo3DGraphics
             int index1 = 0;
             while (true)
             {
+                adapter?.Dispose();
                 var hr = m_dxgiFactory.EnumAdapters(index1, out adapter);
                 if (hr == SharpGen.Runtime.Result.Ok)
                 {
@@ -250,6 +251,7 @@ namespace Coocoo3DGraphics
             }
             m_deviceDescription = adapter.Description.Description;
             m_deviceVideoMem = (ulong)(long)adapter.Description.DedicatedVideoMemory;
+            device?.Dispose();
             ThrowIfFailed(D3D12.D3D12CreateDevice(this.adapter, out device));
             CommandQueueDescription commandQueuDdescription;
             commandQueuDdescription.Flags = CommandQueueFlags.None;
@@ -300,7 +302,7 @@ namespace Coocoo3DGraphics
             {
                 ID3D12GraphicsCommandList4 commandList;
                 ThrowIfFailed(device.CreateCommandList(0, CommandListType.Direct, GetCommandAllocator(), null, out commandList));
-                //commandList.Close();
+                commandList.Close();
                 return commandList;
             }
         }
@@ -377,24 +379,12 @@ namespace Coocoo3DGraphics
                         commandQueue,                          // 交换链需要对 DirectX 12 中的命令队列的引用。
                         swapChainDesc
                     );
-
+                m_swapChain?.Dispose();
                 m_swapChain = swapChain.QueryInterface<IDXGISwapChain3>();
                 swapChain.Dispose();
                 setSwapChain = true;
             }
 
-            // 在交换链上设置反向缩放
-            Matrix3x2 inverseScale = new Matrix3x2();
-            inverseScale.M11 = 1.0f / m_compositionScaleX;
-            inverseScale.M22 = 1.0f / m_compositionScaleY;
-
-            ComObject comObject = new ComObject(panel);
-            Vortice.DXGI.ISwapChainPanelNative swapchainPanelNative = comObject.QueryInterfaceOrNull<ISwapChainPanelNative>();
-            comObject.Dispose();
-            ThrowIfFailed(swapchainPanelNative.SetSwapChain(m_swapChain));
-            swapchainPanelNative.Dispose();
-
-            m_swapChain.MatrixTransform = inverseScale;
 
             // 创建交换链后台缓冲区的呈现目标视图。
             {
@@ -421,6 +411,13 @@ namespace Coocoo3DGraphics
                 comObject1.Dispose();
 
                 ThrowIfFailed(panelNative.SetSwapChain(m_swapChain));
+
+                // 在交换链上设置反向缩放
+                Matrix3x2 inverseScale = new Matrix3x2();
+                inverseScale.M11 = 1.0f / m_compositionScaleX;
+                inverseScale.M22 = 1.0f / m_compositionScaleY;
+
+                m_swapChain.MatrixTransform = inverseScale;
                 panelNative.Dispose();
                 //}, CallbackContext::Any));
             }

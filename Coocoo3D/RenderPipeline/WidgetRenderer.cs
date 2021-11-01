@@ -10,9 +10,9 @@ using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3D.Core;
 using ImGuiNET;
 using Coocoo3D.Utility;
-//using Vortice.Direct3D;
-//using Vortice.DXGI;
-//using Vortice.Direct3D12;
+using Vortice.Direct3D;
+using Vortice.DXGI;
+using Vortice.Direct3D12;
 
 namespace Coocoo3D.RenderPipeline
 {

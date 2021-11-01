@@ -7,8 +7,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-//using Vortice.Direct3D12;
-//using Vortice.DXGI;
+using Vortice.Direct3D12;
+using Vortice.DXGI;
 
 namespace Coocoo3D.RenderPipeline
 {

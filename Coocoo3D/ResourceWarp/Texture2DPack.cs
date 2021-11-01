@@ -12,7 +12,7 @@ using System.IO;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.Processing;
-//using Vortice.DXGI;
+using Vortice.DXGI;
 
 namespace Coocoo3D.ResourceWarp
 {

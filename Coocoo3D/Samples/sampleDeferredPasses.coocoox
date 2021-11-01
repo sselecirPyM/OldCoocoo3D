@@ -95,7 +95,7 @@
       <Camera>ShadowMap</Camera>
       <VertexShader>VS_ShadowMap</VertexShader>
       <CBV>
-        <Index>0</Index>
+        <Index>1</Index>
         <Datas>
           <Data>Camera</Data>
         </Datas>
@@ -107,7 +107,7 @@
       <VertexShader>VS_Pass1</VertexShader>
       <PixelShader>PS_DeferredGBuffer</PixelShader>
       <CBV>
-        <Index>0</Index>
+        <Index>1</Index>
         <Datas>
           <Data>Camera</Data>
           <Data>DirectionalLight</Data>
