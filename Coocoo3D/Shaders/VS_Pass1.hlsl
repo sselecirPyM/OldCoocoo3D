@@ -17,7 +17,6 @@ struct VSSkinnedIn
 	float3 Norm : NORMAL;			//Normal
 	float2 Tex	: TEXCOORD;		    //Texture coordinate
 	float3 Tan : TANGENT;		    //Normalized Tangent vector
-	float EdgeScale : EDGESCALE;
 };
 
 
@@ -110,7 +109,6 @@ struct PSSkinnedIn
 	float3 Norm : NORMAL;			//Normal
 	float2 Tex	: TEXCOORD;		    //Texture coordinate
 	float3 Tangent : TANGENT;		//Normalized Tangent vector
-	float EdgeScale : EDGESCALE;
 };
 
 PSSkinnedIn main(VSSkinnedIn input)
@@ -122,7 +120,6 @@ PSSkinnedIn main(VSSkinnedIn input)
 	output.Norm = normalize(mul(vSkinned.Norm, (float3x3)g_mWorld));
 	output.Tangent = normalize(mul(vSkinned.Tan, (float3x3)g_mWorld));
 	output.Tex = input.Tex;
-	output.EdgeScale = input.EdgeScale;
 
 	output.Pos = mul(float4(pos, 1), g_mWorldToProj);
 	output.wPos = float4(pos, 1);

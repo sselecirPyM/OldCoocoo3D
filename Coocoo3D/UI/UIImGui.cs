@@ -556,7 +556,7 @@ vmd格式动作");
                 if (io.MouseDown[1])
                     channel.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, mouseMoveDelta.X, 0) / 200);
                 if (io.MouseDown[2])
-                    channel.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
+                    channel.camera.MoveDelta(new Vector3(mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
                 appBody.RPContext.currentChannel = channel;
             }
             if (ImGui.IsItemHovered())

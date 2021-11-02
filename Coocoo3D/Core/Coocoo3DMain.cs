@@ -175,15 +175,12 @@ namespace Coocoo3D.Core
                 RPContext.dynamicContextWrite.gameObjects.AddRange(CurrentScene.gameObjects);
             }
 
-            //lock (SelectedGameObjects)
-            //{
             for (int i = 0; i < SelectedGameObjects.Count; i++)
             {
                 LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
                 if (lightingComponent != null)
                     RPContext.dynamicContextWrite.selectedLightings.Add(lightingComponent.GetLightingData());
             }
-            //}
 
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
             var rendererComponents = RPContext.dynamicContextWrite.renderers;
@@ -256,7 +253,6 @@ namespace Coocoo3D.Core
                 {
                     UI.UIImGui.GUI(this);
                     graphicsContext.Begin();
-                    graphicsContext.SetDescriptorHeapDefault();
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
                         foreach (var visualChannel in RPContext.visualChannels.Values)
@@ -280,7 +276,6 @@ namespace Coocoo3D.Core
 
                 void _RenderFunction()
                 {
-
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
                         SkinningCompute.Process(RPContext);

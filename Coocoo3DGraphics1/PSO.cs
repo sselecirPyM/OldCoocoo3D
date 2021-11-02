@@ -119,14 +119,14 @@ namespace Coocoo3DGraphics
     public class PSO
     {
         static readonly InputLayoutDescription inputLayoutMMD = new InputLayoutDescription(
-            new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 1),
-            new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 0, 0),
-            new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 12, 0),
-            new InputElementDescription("EDGESCALE", 0, Format.R32_Float, 20, 0),
-            new InputElementDescription("BONES", 0, Format.R16G16B16A16_UInt, 24, 0),
-            new InputElementDescription("WEIGHTS", 0, Format.R32G32B32A32_Float, 32, 0),
-            new InputElementDescription("TANGENT", 0, Format.R32G32B32_Float, 48, 0)
+            new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
+            new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 0, 1),
+            new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0, 2),
+            new InputElementDescription("BONES", 0, Format.R16G16B16A16_UInt, 0, 3),
+            new InputElementDescription("WEIGHTS", 0, Format.R32G32B32A32_Float, 0, 4),
+            new InputElementDescription("TANGENT", 0, Format.R32G32B32_Float, 0, 5)
             );
+
         static readonly InputLayoutDescription inputLayoutSkinned = new InputLayoutDescription(
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0),
             new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 0),
@@ -154,7 +154,6 @@ namespace Coocoo3DGraphics
             return new BlendDescription();
         }
 
-        //public List<PSOCombind> pipelineStates = new List<PSOCombind>();
         public byte[] vertexShader;
         public byte[] pixelShader;
         public byte[] geometryShader;
@@ -186,55 +185,6 @@ namespace Coocoo3DGraphics
             this.geometryShader = geometryShader?.compiledCode;
             this.pixelShader = pixelShader?.compiledCode;
         }
-
-        //public ID3D12PipelineState GetState(GraphicsDevice device, PSODesc desc, RootSignature rootSignature, UnnamedInputLayout inputLayout)
-        //{
-        //    foreach (var psoCombind in pipelineStates)
-        //    {
-        //        if (psoCombind.PSODesc == desc && psoCombind.rootSignature == rootSignature && psoCombind.unnamedInputLayout == inputLayout)
-        //        {
-        //            if (psoCombind.pipelineState == null)
-        //                throw new Exception("pipeline state error");
-        //            return psoCombind.pipelineState;
-        //        }
-        //    }
-        //    InputLayoutDescription inputLayoutDescription = inputLayout.inputElementDescriptions;
-
-        //    GraphicsPipelineStateDescription graphicsPipelineStateDescription = new GraphicsPipelineStateDescription();
-        //    graphicsPipelineStateDescription.RootSignature = rootSignature.rootSignature;
-        //    graphicsPipelineStateDescription.VertexShader = vertexShader;
-        //    graphicsPipelineStateDescription.GeometryShader = geometryShader;
-        //    graphicsPipelineStateDescription.PixelShader = pixelShader;
-        //    graphicsPipelineStateDescription.PrimitiveTopologyType = PrimitiveTopologyType.Triangle;
-        //    graphicsPipelineStateDescription.InputLayout = inputLayoutDescription;
-        //    graphicsPipelineStateDescription.DepthStencilFormat = desc.dsvFormat;
-        //    graphicsPipelineStateDescription.RenderTargetFormats = new Format[desc.renderTargetCount];
-        //    for (int i = 0; i < graphicsPipelineStateDescription.RenderTargetFormats.Length; i++)
-        //    {
-        //        graphicsPipelineStateDescription.RenderTargetFormats[i] = desc.rtvFormat;
-        //    }
-
-        //    if (desc.blendState == "Alpha")
-        //        graphicsPipelineStateDescription.BlendState = blendStateAlpha();
-        //    else if (desc.blendState == "Add")
-        //        graphicsPipelineStateDescription.BlendState = BlendDescription.Additive;
-        //    else
-        //        graphicsPipelineStateDescription.BlendState = BlendDescription.Opaque;
-
-
-        //    graphicsPipelineStateDescription.DepthStencilState = new DepthStencilDescription(desc.dsvFormat != Format.Unknown, desc.dsvFormat != Format.Unknown);
-        //    graphicsPipelineStateDescription.SampleMask = uint.MaxValue;
-        //    var RasterizerState = new RasterizerDescription(CullMode.None, FillMode.Solid);
-        //    RasterizerState.DepthBias = desc.depthBias;
-        //    RasterizerState.SlopeScaledDepthBias = desc.slopeScaledDepthBias;
-        //    graphicsPipelineStateDescription.RasterizerState = RasterizerState;
-
-        //    var pipelineState = device.device.CreateGraphicsPipelineState<ID3D12PipelineState>(graphicsPipelineStateDescription);
-        //    if (pipelineState == null)
-        //        throw new Exception("pipeline state error");
-        //    pipelineStates.Add(new PSOCombind { PSODesc = desc, pipelineState = pipelineState, rootSignature = rootSignature, unnamedInputLayout = inputLayout });
-        //    return pipelineState;
-        //}
 
         BlendDescription blendStateAlpha()
         {
@@ -323,8 +273,6 @@ namespace Coocoo3DGraphics
                     state.BlendState = BlendDescSelect(psoDesc.blendState);
                     state.SampleDescription = new SampleDescription(1, 0);
                 }
-
-                //state.NumRenderTargets = psoDesc.renderTargetCount;
 
                 state.RenderTargetFormats = new Format[psoDesc.renderTargetCount];
                 for (int i = 0; i < psoDesc.renderTargetCount; i++)

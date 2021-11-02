@@ -19,24 +19,17 @@ namespace Coocoo3D.FileFormat
 
     public struct PMX_Vertex
     {
-        public struct VertexStruct
-        {
-            public Vector3 Normal;
-            public Vector2 UvCoordinate;
-            public float EdgeScale;
-        }
+        public Vector3 Coordinate;
+        public Vector3 Normal;
+        public Vector2 UvCoordinate;
+        public float EdgeScale;
 
-        public Vector3 Normal { get => innerStruct.Normal; set { innerStruct.Normal = value; } }
-        public Vector2 UvCoordinate { get => innerStruct.UvCoordinate; set { innerStruct.UvCoordinate = value; } }
         public Vector4[] ExtraUvCoordinate;
         public int boneId0;
         public int boneId1;
         public int boneId2;
         public int boneId3;
         public Vector4 Weights;
-        public float EdgeScale { get => innerStruct.EdgeScale; set { innerStruct.EdgeScale = value; } }
-        public Vector3 Coordinate;
-        public VertexStruct innerStruct;
         public override string ToString()
         {
             return Coordinate.ToString();

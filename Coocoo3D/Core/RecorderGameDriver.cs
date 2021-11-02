@@ -34,7 +34,6 @@ namespace Coocoo3D.Core
                 var visualchannel = rpContext.visualChannels["main"];
                 visualchannel.outputSize = new Numerics.Int2(recordSettings.Width, recordSettings.Height);
                 visualchannel.camera.AspectRatio = (float)recordSettings.Width / (float)recordSettings.Height;
-                //context.RequireResize = true;
                 context.RequireResetPhysics = true;
                 StartTime = recordSettings.StartTime;
                 StopTime = recordSettings.StopTime;
@@ -114,7 +113,7 @@ namespace Coocoo3D.Core
                         packs[exIndex].runningTask.Wait();
                     }
 
-                    rpContext.ReadBackTexture2D.GetRaw(index1, packs[exIndex].imageData);
+                    rpContext.ReadBackTexture2D.GetRaw<byte>(index1, packs[exIndex].imageData);
 
                     packs[exIndex].renderIndex = RecordCount - c_frameCount;
                     packs[exIndex].runningTask = Task.Run(packs[exIndex].task1);

@@ -44,7 +44,6 @@ namespace Coocoo3D.RenderPipeline
                 byte[] bigBuffer = rp.bigBuffer;
                 GraphicsContext graphicsContext = rp.graphicsContext1;
                 graphicsContext.Begin();
-                graphicsContext.SetDescriptorHeapDefault();
                 var texture0 = rp.SkyBox;
                 var texture1 = rp.IrradianceMap;
                 var texture2 = rp.ReflectMap;

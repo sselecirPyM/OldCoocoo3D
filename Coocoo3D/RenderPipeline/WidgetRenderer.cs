@@ -192,7 +192,7 @@ namespace Coocoo3D.RenderPipeline
                         vtxByteOfs += vertBytes;
                         idxByteOfs += indexBytes;
                     }
-                    imguiMesh.Reload1(vertexDatas, indexDatas, 20, PrimitiveTopology.TriangleList);
+                    imguiMesh.Reload1(vertexDatas, indexDatas, 20);
                     graphicsContext.UploadMesh(imguiMesh);
                 }
                 int vtxOfs = 0;

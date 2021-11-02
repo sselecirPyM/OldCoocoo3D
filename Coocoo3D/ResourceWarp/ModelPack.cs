@@ -16,7 +16,6 @@ namespace Coocoo3D.ResourceWarp
 {
     public class ModelPack
     {
-        const int c_vertexStride = 64;
         const int c_vertexStride2 = 12;
 
         public PMXFormat pmx = new PMXFormat();
@@ -24,29 +23,40 @@ namespace Coocoo3D.ResourceWarp
         public string fullPath;
         public volatile Task LoadTask;
 
-        public byte[] verticesDataAnotherPart;
         public byte[] verticesDataPosPart;
+        public Vector3[] position;
+        public Vector3[] normal;
+        public Vector2[] uv;
+        public ushort[] boneId;
+        public Vector4[] boneWeights;
+        public Vector3[] tangent;
         MMDMesh meshInstance;
+        public int vertexCount;
 
         public GraphicsObjectStatus Status;
 
         public void Reload(BinaryReader reader)
         {
             pmx.Reload(reader);
-
-            verticesDataAnotherPart = new byte[pmx.Vertices.Length * c_vertexStride];
+            vertexCount = pmx.Vertices.Length;
             verticesDataPosPart = new byte[pmx.Vertices.Length * c_vertexStride2];
+            position = new Vector3[pmx.Vertices.Length];
+            normal = new Vector3[pmx.Vertices.Length];
+            uv = new Vector2[pmx.Vertices.Length];
+            boneId = new ushort[pmx.Vertices.Length * 4];
+            boneWeights = new Vector4[pmx.Vertices.Length];
+            tangent = new Vector3[pmx.Vertices.Length];
             for (int i = 0; i < pmx.Vertices.Length; i++)
             {
-                Span<PMX_Vertex.VertexStruct> vertData = MemoryMarshal.Cast<byte, PMX_Vertex.VertexStruct>(new Span<byte>(verticesDataAnotherPart, i * c_vertexStride, 24));
-                Span<ushort> boneIdSpan = MemoryMarshal.Cast<byte, ushort>(new Span<byte>(verticesDataAnotherPart, i * c_vertexStride + 24, 8));
-                Span<Vector4> boneWeightSpan = MemoryMarshal.Cast<byte, Vector4>(new Span<byte>(verticesDataAnotherPart, i * c_vertexStride + 32, 16));
-                vertData[0] = pmx.Vertices[i].innerStruct;
-                boneIdSpan[0] = (ushort)pmx.Vertices[i].boneId0;
-                boneIdSpan[1] = (ushort)pmx.Vertices[i].boneId1;
-                boneIdSpan[2] = (ushort)pmx.Vertices[i].boneId2;
-                boneIdSpan[3] = (ushort)pmx.Vertices[i].boneId3;
-                boneWeightSpan[0] = pmx.Vertices[i].Weights;
+                position[i] = pmx.Vertices[i].Coordinate;
+                normal[i] = pmx.Vertices[i].Normal;
+                uv[i] = pmx.Vertices[i].UvCoordinate;
+                boneId[i * 4 + 0] = (ushort)pmx.Vertices[i].boneId0;
+                boneId[i * 4 + 1] = (ushort)pmx.Vertices[i].boneId1;
+                boneId[i * 4 + 2] = (ushort)pmx.Vertices[i].boneId2;
+                boneId[i * 4 + 3] = (ushort)pmx.Vertices[i].boneId3;
+                boneWeights[i] = pmx.Vertices[i].Weights;
+
             }
 
             Span<Vector3> vector3s = MemoryMarshal.Cast<byte, Vector3>(verticesDataPosPart);
@@ -54,12 +64,21 @@ namespace Coocoo3D.ResourceWarp
             {
                 vector3s[i] = pmx.Vertices[i].Coordinate;
             }
-
         }
+
         public MMDMesh GetMesh()
         {
             if (meshInstance == null)
-                meshInstance = MMDMesh.Load1(verticesDataAnotherPart, pmx.TriangleIndexs, c_vertexStride, PrimitiveTopology.PointList);
+            {
+                meshInstance = new MMDMesh();
+                meshInstance.ReloadIndex(vertexCount, pmx.TriangleIndexs);
+                meshInstance.AddBuffer<Vector3>(position, 0);
+                meshInstance.AddBuffer<Vector3>(normal, 1);
+                meshInstance.AddBuffer<Vector2>(uv, 2);
+                meshInstance.AddBuffer<ushort>(boneId, 3);
+                meshInstance.AddBuffer<Vector4>(boneWeights, 4);
+                meshInstance.AddBuffer<Vector3>(tangent, 5);
+            }
             return meshInstance;
         }
     }

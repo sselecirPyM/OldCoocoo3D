@@ -32,8 +32,7 @@ namespace Coocoo3DGraphics
         string m_deviceDescription;
         UInt64 m_deviceVideoMem;
 
-        UInt64[] m_fenceValues = new UInt64[c_frameCount];
-        UInt64 m_currentFenceValue;
+        UInt64 m_currentFenceValue = 3;
 
         List<d3d12RecycleResource> m_recycleList = new List<d3d12RecycleResource>();
         List<ID3D12GraphicsCommandList4> m_commandLists = new List<ID3D12GraphicsCommandList4>();
@@ -46,8 +45,6 @@ namespace Coocoo3DGraphics
         ID3D12CommandAllocator[] commandAllocators = new ID3D12CommandAllocator[c_frameCount];
 
         Format m_backBufferFormat;
-        Viewport m_screenViewport;
-        bool m_deviceRemoved;
 
         bool m_isRayTracingSupport;
 
@@ -55,8 +52,6 @@ namespace Coocoo3DGraphics
         EventWaitHandle fenceEvent;
         public uint executeIndex = 0;
         public ulong executeCount = 3;
-
-        //public ISwapChainPanelNative m_swapChainPanel;
 
         public Vector2 m_d3dRenderTargetSize;
         public Vector2 m_outputSize;
@@ -401,11 +396,6 @@ namespace Coocoo3DGraphics
 
             if (setSwapChain)
             {
-                //// 将交换链与 SwapChainPanel 关联
-                //// UI 更改将需要调度回 UI 线程
-                //m_swapChainPanel.Dispatcher.RunAsync(CoreDispatcherPriority::High, ref new DispatchedHandler([=]()
-                //	{
-                //获取 SwapChainPanel 的受支持的本机接口
                 ComObject comObject1 = new ComObject(panel);
                 ISwapChainPanelNative panelNative = comObject1.QueryInterface<ISwapChainPanelNative>();
                 comObject1.Dispose();
@@ -419,7 +409,6 @@ namespace Coocoo3DGraphics
 
                 m_swapChain.MatrixTransform = inverseScale;
                 panelNative.Dispose();
-                //}, CallbackContext::Any));
             }
         }
 
@@ -460,7 +449,7 @@ namespace Coocoo3DGraphics
             executeIndex = (executeIndex < (c_frameCount - 1)) ? (executeIndex + 1) : 0;
 
             // 检查下一帧是否准备好启动。
-            if (fence.CompletedValue < m_fenceValues[executeIndex])
+            if (fence.CompletedValue < m_currentFenceValue - c_frameCount + 1)
             {
                 fence.SetEventOnCompletion(m_currentFenceValue, fenceEvent);
                 fenceEvent.WaitOne();
@@ -469,7 +458,6 @@ namespace Coocoo3DGraphics
 
             // 为下一帧设置围栏值。
             m_currentFenceValue++;
-            m_fenceValues[executeIndex] = m_currentFenceValue;
         }
 
         public void WaitForGpu()
@@ -480,20 +468,18 @@ namespace Coocoo3DGraphics
             // 等待跨越围栏。
             fence.SetEventOnCompletion(m_currentFenceValue, fenceEvent);
             fenceEvent.WaitOne();
-            //WaitForSingleObjectEx(mfenceEvent, INFINITE, FALSE);
 
             Recycle();
 
             // 对当前帧递增围栏值。
             m_currentFenceValue++;
-            m_fenceValues[executeIndex] = m_currentFenceValue;
         }
 
         void Recycle()
         {
             List<d3d12RecycleResource> temp = new List<d3d12RecycleResource>();
             for (int i = 0; i < m_recycleList.Count; i++)
-                if (m_recycleList[i].m_removeFrame > m_fenceValues[executeIndex])
+                if (m_recycleList[i].m_removeFrame > m_currentFenceValue - c_frameCount + 1)
                     temp.Add(m_recycleList[i]);
                 else
                     m_recycleList[i].m_recycleResource.Dispose();

@@ -9,57 +9,83 @@ using Vortice.DXGI;
 
 namespace Coocoo3DGraphics
 {
+    public class _mesh1
+    {
+        public ID3D12Resource vertex;
+        public VertexBufferView vertexBufferView;
+        public byte[] data;
+        public int slot;
+    }
     public class MMDMesh
     {
-        public ID3D12Resource vertexBuffer;
         public ID3D12Resource indexBuffer;
+
+        public List<_mesh1> vtBuffers = new List<_mesh1>();
+        public List<_mesh1> vtBuffersDisposed = new List<_mesh1>();
 
         public int m_indexCount;
         public int m_vertexCount;
 
-        public VertexBufferView vertexBufferView;
         public IndexBufferView indexBufferView;
-
-        public PrimitiveTopology primitiveTopology;
 
         public bool updated;
 
-        public byte[] m_verticeData;
         public byte[] m_indexData;
 
-        public int vertexStride = 0;
-
-        public static MMDMesh Load1(byte[] verticeData, int[] indexData, int vertexStride, PrimitiveTopology pt)
+        public static MMDMesh Load1(byte[] verticeData, int[] indexData, int vertexStride)
         {
             MMDMesh mesh = new MMDMesh();
-            mesh.Reload1(verticeData, indexData, vertexStride, pt);
+            mesh.Reload1(verticeData, indexData, vertexStride);
             return mesh;
         }
 
-        public void Reload1(byte[] verticeData, int[] indexData, int vertexStride, PrimitiveTopology pt)
+        public void AddBuffer<T>(Span<T> verticeData, int slot) where T : unmanaged
         {
-            this.vertexStride = vertexStride;
-            primitiveTopology = pt;
-            this.m_verticeData = new byte[verticeData.Length];
-            Array.Copy(verticeData, m_verticeData, verticeData.Length);
+            Span<byte> dat = MemoryMarshal.Cast<T, byte>(verticeData);
+            byte[] verticeData1 = new byte[dat.Length];
+            dat.CopyTo(verticeData1);
+            var bufDef = new _mesh1();
+            bufDef.data = verticeData1;
+            bufDef.slot = slot;
+            bufDef.vertexBufferView.SizeInBytes = verticeData1.Length;
+            bufDef.vertexBufferView.StrideInBytes = verticeData1.Length / m_vertexCount;
+
+            vtBuffers.Add(bufDef);
+        }
+
+        public void Reload1(byte[] verticeData, int[] indexData, int vertexStride)
+        {
+            vtBuffersDisposed.AddRange(vtBuffers);
+            vtBuffers.Clear();
+            this.m_vertexCount = verticeData.Length / vertexStride;
+            AddBuffer<byte>(verticeData, 0);
             this.m_indexData = new byte[indexData.Length * 4];
             MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
             this.m_indexCount = indexData.Length;
-            this.m_vertexCount = verticeData.Length / vertexStride;
         }
-        public void Reload1(byte[] verticeData, byte[] indexData, int vertexStride, PrimitiveTopology pt)
+        public void Reload1(byte[] verticeData, byte[] indexData, int vertexStride)
         {
-            this.vertexStride = vertexStride;
-            primitiveTopology = pt;
-            this.m_verticeData = new byte[verticeData.Length];
-            Array.Copy(verticeData, m_verticeData, verticeData.Length);
+            vtBuffersDisposed.AddRange(vtBuffers);
+            vtBuffers.Clear();
+            this.m_vertexCount = verticeData.Length / vertexStride;
+            AddBuffer<byte>(verticeData, 0);
+
             this.m_indexData = new byte[indexData.Length];
             Array.Copy(indexData, m_indexData, indexData.Length);
-            m_indexCount = indexData.Length ;
-            m_vertexCount = verticeData.Length / vertexStride;
+            m_indexCount = indexData.Length;
+        }
+        public void ReloadIndex(int vertexCount,int[] indexData)
+        {
+            vtBuffersDisposed.AddRange(vtBuffers);
+            vtBuffers.Clear();
+            this.m_vertexCount = vertexCount;
+            this.m_indexData = new byte[indexData.Length * 4];
+            MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
+            this.m_indexCount = indexData.Length;
         }
         public void ReloadNDCQuad()
         {
+            this.m_vertexCount = 4;
             Vector3[] positions = {
                 new Vector3(-1, -1, 0),
                 new Vector3(-1, 1, 0),
@@ -71,12 +97,10 @@ namespace Coocoo3DGraphics
                 0, 1, 2,
                 2, 1, 3,
             };
-            vertexStride = 12;
-            m_vertexCount = 4;
+            byte[] _data = new byte[12 * 4];
+            MemoryMarshal.Cast<Vector3, byte>(positions).CopyTo(_data);
+            AddBuffer<byte>(_data, 0);
             m_indexCount = 6;
-            primitiveTopology = PrimitiveTopology.TriangleList;
-            m_verticeData = new byte[12 * 4];
-            MemoryMarshal.Cast<Vector3, byte>(positions).CopyTo(m_verticeData);
             m_indexData = new byte[4 * 6];
             MemoryMarshal.Cast<int, byte>(indices).CopyTo(m_indexData);
         }

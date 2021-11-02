@@ -444,7 +444,7 @@ namespace Coocoo3D.RenderPipeline
                         graphicsContext.SetCBVRSlot(context.CBs_Bone[i], 0, 0, 0);
                         graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
                         graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
-                        graphicsContext.m_commandList.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+                        //graphicsContext.m_commandList.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
                         PSO pso = null;
 
                         var PSODraw = PSOSelect(graphicsDevice, rootSignature, passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);
@@ -467,7 +467,7 @@ namespace Coocoo3D.RenderPipeline
                             if (_combinedPass.CullMode == 0)
                                 passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
                             SetPipelineStateVariant(graphicsDevice, graphicsContext, rootSignature, passPsoDesc, PSODraw);
-                            graphicsContext.DrawIndexed(material.indexCount, indexOffset, counterX.vertex);
+                            graphicsContext.DrawIndexed(material.indexCount, indexOffset, 0);
                             counterX.material++;
                             indexOffset += material.indexCount;
                         }

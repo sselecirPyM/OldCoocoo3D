@@ -15,7 +15,7 @@ namespace Coocoo3DGraphics
         const int D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING = 5768;
 
         GraphicsDevice graphicsDevice;
-        public ID3D12GraphicsCommandList4 m_commandList;
+        ID3D12GraphicsCommandList4 m_commandList;
         public RootSignature currentRootSignature;
 
         public Dictionary<int, object> slots = new Dictionary<int, object>();
@@ -23,11 +23,6 @@ namespace Coocoo3DGraphics
         public void Reload(GraphicsDevice device)
         {
             this.graphicsDevice = device;
-        }
-
-        public void SetDescriptorHeapDefault()
-        {
-            m_commandList.SetDescriptorHeaps(1, new ID3D12DescriptorHeap[] { graphicsDevice.cbvsrvuavHeap.heap });
         }
 
         public void SetPSO(ComputeShader computeShader)
@@ -54,11 +49,10 @@ namespace Coocoo3DGraphics
 
         unsafe void _UpdateVerticesPos<T>(ID3D12GraphicsCommandList commandList, ID3D12Resource resource, ID3D12Resource uploaderResource, T[] dataBegin, int dataLength, int offset) where T : unmanaged
         {
-            Range readRange = new Range(0, 0);
             Range writeRange = new Range(offset, offset + dataLength);
-            void* pMapped = null;
-            IntPtr ptr1 = uploaderResource.Map(0, readRange);
-            pMapped = ptr1.ToPointer();
+
+            IntPtr ptr1 = uploaderResource.Map(0);
+            void* pMapped = ptr1.ToPointer();
             memcpy((byte*)pMapped + offset, dataBegin, dataLength);
             uploaderResource.Unmap(0, writeRange);
             commandList.ResourceBarrierTransition(resource, ResourceStates.GenericRead, ResourceStates.CopyDestination);
@@ -74,34 +68,9 @@ namespace Coocoo3DGraphics
                 verticeData, verticeData.Length * Marshal.SizeOf(typeof(Vector3)), mesh.lastUpdateIndexs * mesh.bufferSize);
         }
 
-        public void SetSRVTSlot(Texture2D texture, int slot)
-        {
-            texture.StateChange(m_commandList, ResourceStates.GenericRead);
-            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+        public void SetSRVTSlot(Texture2D texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
 
-            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Format = texture.format;
-            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D;
-            srvDesc.Texture2D.MipLevels = texture.mipLevels;
-
-            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
-            m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], gpuDescriptorHandle);
-        }
-        public void SetSRVTSlot(TextureCube texture, int slot)
-        {
-            int index = currentRootSignature.srv[slot];
-            texture.StateChange(m_commandList, ResourceStates.GenericRead);
-            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Format = texture.format;
-            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.TextureCube;
-            srvDesc.TextureCube.MipLevels = texture.mipLevels;
-
-            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
-            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
-            m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], gpuDescriptorHandle);
-        }
+        public void SetSRVTSlot(TextureCube texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
 
         public void SetCBVRSlot(CBuffer buffer, int offset256, int size256, int slot)
         {
@@ -137,55 +106,43 @@ namespace Coocoo3DGraphics
 
         unsafe public void UploadMesh(MMDMesh mesh)
         {
-            var d3dDevice = graphicsDevice.device;
-
-            ID3D12Resource bufferUpload;
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)(mesh.m_verticeData.Length + mesh.m_indexCount * 4)),
-                ResourceStates.GenericRead,
-                null,
-                out bufferUpload));
+            ID3D12Resource bufferUpload = null;
+            int totalBufferLength = mesh.m_indexCount * 4;
+            foreach (var vtBuf in mesh.vtBuffers)
+            {
+                totalBufferLength += vtBuf.data.Length;
+            }
+            int offset = 0;
+            CreateBuffer(totalBufferLength, ref bufferUpload, HeapType.Upload, ResourceStates.GenericRead);
             bufferUpload.Name = "uploadbuffer mesh";
             graphicsDevice.ResourceDelayRecycle(bufferUpload);
-            int offset = 0;
 
             IntPtr ptr1 = bufferUpload.Map(0);
             void* mapped = ptr1.ToPointer();
-            if (mesh.m_verticeData.Length > 0)
+            foreach (var vtBuf in mesh.vtBuffers)
+                graphicsDevice.ResourceDelayRecycle(vtBuf.vertex);
+            mesh.vtBuffersDisposed.Clear();
+
+            foreach (var vtBuf in mesh.vtBuffers)
             {
-                if (mesh.vertexBufferView.SizeInBytes != mesh.m_verticeData.Length)
-                {
-                    graphicsDevice.ResourceDelayRecycle(mesh.vertexBuffer);
-                    ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                        new HeapProperties(HeapType.Default),
-                        HeapFlags.None,
-                        ResourceDescription.Buffer((ulong)mesh.m_verticeData.Length),
-                        ResourceStates.CopyDestination,
-                        null,
-                        out mesh.vertexBuffer));
-                    mesh.vertexBuffer.Name = "vertex buffer";
-                }
+                CreateBuffer(vtBuf.data.Length, ref vtBuf.vertex);
+                vtBuf.vertex.Name = "vertex buffer" + vtBuf.slot;
 
-                memcpy((byte*)mapped + offset, mesh.m_verticeData, mesh.m_verticeData.Length);
-                m_commandList.CopyBufferRegion(mesh.vertexBuffer, 0, bufferUpload, (ulong)offset, (ulong)mesh.m_verticeData.Length);
-                offset += mesh.m_verticeData.Length;
+                memcpy((byte*)mapped + offset, vtBuf.data, vtBuf.data.Length);
+                m_commandList.CopyBufferRegion(vtBuf.vertex, 0, bufferUpload, (ulong)offset, (ulong)vtBuf.data.Length);
 
-                m_commandList.ResourceBarrierTransition(mesh.vertexBuffer, ResourceStates.CopyDestination, ResourceStates.GenericRead);
+                m_commandList.ResourceBarrierTransition(vtBuf.vertex, ResourceStates.CopyDestination, ResourceStates.GenericRead);
+                offset += vtBuf.data.Length;
+                vtBuf.vertexBufferView.BufferLocation = vtBuf.vertex.GPUVirtualAddress;
+                vtBuf.vertexBufferView.StrideInBytes = vtBuf.data.Length / mesh.m_vertexCount;
+                vtBuf.vertexBufferView.SizeInBytes = vtBuf.data.Length;
             }
+
             if (mesh.m_indexCount > 0)
             {
                 if (mesh.indexBufferView.SizeInBytes != mesh.m_indexCount * 4)
                 {
-                    graphicsDevice.ResourceDelayRecycle(mesh.indexBuffer);
-                    ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                        new HeapProperties(HeapType.Default),
-                        HeapFlags.None,
-                        ResourceDescription.Buffer((ulong)(mesh.m_indexCount * 4)),
-                        ResourceStates.CopyDestination,
-                        null,
-                        out mesh.indexBuffer));
+                    CreateBuffer(mesh.m_indexCount * 4, ref mesh.indexBuffer);
                     mesh.indexBuffer.Name = "index buffer";
                 }
 
@@ -194,45 +151,21 @@ namespace Coocoo3DGraphics
                 offset += mesh.m_indexData.Length;
 
                 m_commandList.ResourceBarrierTransition(mesh.indexBuffer, ResourceStates.CopyDestination, ResourceStates.IndexBuffer);
-            }
-            bufferUpload.Unmap(0, null);
-
-            // 创建顶点/索引缓冲区视图。
-            if (mesh.m_verticeData.Length > 0)
-            {
-                mesh.vertexBufferView.BufferLocation = mesh.vertexBuffer.GPUVirtualAddress;
-                mesh.vertexBufferView.StrideInBytes = mesh.vertexStride;
-                mesh.vertexBufferView.SizeInBytes = mesh.vertexStride * mesh.m_vertexCount;
-            }
-            if (mesh.m_indexCount > 0)
-            {
                 mesh.indexBufferView.BufferLocation = mesh.indexBuffer.GPUVirtualAddress;
                 mesh.indexBufferView.SizeInBytes = mesh.m_indexCount * 4;
                 mesh.indexBufferView.Format = Format.R32_UInt;
             }
+            bufferUpload.Unmap(0, null);
+
             mesh.updated = true;
         }
 
         public void UploadMesh(MMDMeshAppend mesh, byte[] data)
         {
-            var d3dDevice = graphicsDevice.device;
-            graphicsDevice.ResourceDelayRecycle(mesh.vertexBufferPos);
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)mesh.bufferSize),
-                ResourceStates.GenericRead,
-                null,
-                out mesh.vertexBufferPos));
+            CreateBuffer(mesh.bufferSize, ref mesh.vertexBufferPos, HeapType.Default, ResourceStates.GenericRead);
             mesh.vertexBufferPos.Name = "meshappend";
-            graphicsDevice.ResourceDelayRecycle(mesh.vertexBufferPosUpload);
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)(mesh.bufferSize * GraphicsDevice.c_frameCount * 2)),
-                ResourceStates.GenericRead,
-                null,
-                out mesh.vertexBufferPosUpload));
+            CreateBuffer(mesh.bufferSize * GraphicsDevice.c_frameCount * 2, ref mesh.vertexBufferPosUpload, HeapType.Upload, ResourceStates.GenericRead);
+
             mesh.vertexBufferPosUpload.Name = "uploadBuf meshappend";
             _UpdateVerticesPos(m_commandList, mesh.vertexBufferPos, mesh.vertexBufferPosUpload, data, data.Length, 0);
             mesh.vertexBufferPosViews.BufferLocation = mesh.vertexBufferPos.GPUVirtualAddress;
@@ -280,20 +213,12 @@ namespace Coocoo3DGraphics
                 null,
                 out texture.resource));
             texture.resource.Name = "texCube";
-            ID3D12Resource uploadBuffer;
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)uploader.m_data.Length),
-                ResourceStates.GenericRead,
-                null,
-                out uploadBuffer));
+            ID3D12Resource uploadBuffer = null;
+            CreateBuffer(uploader.m_data.Length, ref uploadBuffer, HeapType.Upload, ResourceStates.GenericRead);
             uploadBuffer.Name = "uploadbuffer texcube";
             graphicsDevice.ResourceDelayRecycle(uploadBuffer);
 
             SubresourceData[] subresources = new SubresourceData[textureDesc.MipLevels * 6];
-
-            SubresourceData[] textureDatas = new SubresourceData[6];
             for (int i = 0; i < 6; i++)
             {
                 int width = (int)textureDesc.Width;
@@ -330,16 +255,7 @@ namespace Coocoo3DGraphics
 
             var d3dDevice = graphicsDevice.device;
 
-            ResourceDescription textureDesc = new ResourceDescription();
-            textureDesc.MipLevels = (ushort)uploader.m_mipLevels;
-            textureDesc.Format = uploader.m_format;
-            textureDesc.Width = (ulong)uploader.m_width;
-            textureDesc.Height = uploader.m_height;
-            textureDesc.Flags = ResourceFlags.None;
-            textureDesc.DepthOrArraySize = 1;
-            textureDesc.SampleDescription.Count = 1;
-            textureDesc.SampleDescription.Quality = 0;
-            textureDesc.Dimension = ResourceDimension.Texture2D;
+            ResourceDescription textureDesc = Texture2DDescription(texture);
             graphicsDevice.ResourceDelayRecycle(texture.resource);
             graphicsDevice.ResourceDelayRecycle(texture.depthStencilView);
             texture.depthStencilView = null;
@@ -353,14 +269,8 @@ namespace Coocoo3DGraphics
                 null,
                 out texture.resource));
             texture.resource.Name = "tex2d";
-            ID3D12Resource uploadBuffer;
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)uploader.m_data.Length),
-                 ResourceStates.GenericRead,
-                null,
-                out uploadBuffer));
+            ID3D12Resource uploadBuffer = null;
+            CreateBuffer(uploader.m_data.Length, ref uploadBuffer, HeapType.Upload, ResourceStates.GenericRead);
             uploadBuffer.Name = "uploadbuffer tex";
             graphicsDevice.ResourceDelayRecycle(uploadBuffer);
 
@@ -395,6 +305,31 @@ namespace Coocoo3DGraphics
         {
             var d3dDevice = graphicsDevice.device;
 
+            var textureDesc = Texture2DDescription(texture);
+
+            graphicsDevice.ResourceDelayRecycle(texture.resource);
+            graphicsDevice.ResourceDelayRecycle(texture.depthStencilView);
+            texture.depthStencilView = null;
+            graphicsDevice.ResourceDelayRecycle(texture.renderTargetView);
+            texture.renderTargetView = null;
+            ClearValue clearValue = texture.dsvFormat != Format.Unknown
+                ? new ClearValue(texture.dsvFormat, new DepthStencilValue(1.0f, 0))
+                : new ClearValue(texture.format, new Vortice.Mathematics.Color4());
+            ThrowIfFailed(d3dDevice.CreateCommittedResource(
+                new HeapProperties(HeapType.Default),
+                HeapFlags.None,
+                textureDesc,
+                ResourceStates.GenericRead,
+                clearValue,
+                out texture.resource));
+            texture.resourceStates = ResourceStates.GenericRead;
+            texture.resource.Name = "render tex2D";
+
+            texture.Status = GraphicsObjectStatus.loaded;
+        }
+
+        ResourceDescription Texture2DDescription(Texture2D texture)
+        {
             ResourceDescription textureDesc = new ResourceDescription();
             textureDesc.MipLevels = (ushort)texture.mipLevels;
             if (texture.dsvFormat != Format.Unknown)
@@ -416,26 +351,7 @@ namespace Coocoo3DGraphics
             textureDesc.SampleDescription.Count = 1;
             textureDesc.SampleDescription.Quality = 0;
             textureDesc.Dimension = ResourceDimension.Texture2D;
-
-            graphicsDevice.ResourceDelayRecycle(texture.resource);
-            graphicsDevice.ResourceDelayRecycle(texture.depthStencilView);
-            texture.depthStencilView = null;
-            graphicsDevice.ResourceDelayRecycle(texture.renderTargetView);
-            texture.renderTargetView = null;
-            ClearValue clearValue = texture.dsvFormat != Format.Unknown
-                ? new ClearValue(texture.dsvFormat, new DepthStencilValue(1.0f, 0))
-                : new ClearValue(texture.format, new Vortice.Mathematics.Color4());
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
-                HeapFlags.None,
-                textureDesc,
-                ResourceStates.GenericRead,
-                clearValue,
-                out texture.resource));
-            texture.resourceStates = ResourceStates.GenericRead;
-            texture.resource.Name = "render tex2D";
-
-            texture.Status = GraphicsObjectStatus.loaded;
+            return textureDesc;
         }
 
         public void UpdateRenderTexture(TextureCube texture)
@@ -461,7 +377,6 @@ namespace Coocoo3DGraphics
             textureDesc.SampleDescription.Count = 1;
             textureDesc.SampleDescription.Quality = 0;
             textureDesc.Dimension = ResourceDimension.Texture2D;
-
 
             ClearValue clearValue = texture.dsvFormat != Format.Unknown
                 ? new ClearValue(texture.dsvFormat, new DepthStencilValue(1.0f, 0))
@@ -489,29 +404,29 @@ namespace Coocoo3DGraphics
                 texture.m_textureReadBack = new ID3D12Resource[3];
             for (int i = 0; i < texture.m_textureReadBack.Length; i++)
             {
-                ThrowIfFailed(graphicsDevice.device.CreateCommittedResource<ID3D12Resource>(new HeapProperties(HeapType.Readback), HeapFlags.None,
-                new ResourceDescription(ResourceDimension.Buffer, 0, (ulong)(texture.m_width * texture.m_height), 1, 1, 1, Vortice.DXGI.Format.Unknown, 0, 0, TextureLayout.Unknown, ResourceFlags.None),
-                ResourceStates.CopyDestination, out texture.m_textureReadBack[i]));
+                CreateBuffer(texture.m_width * texture.m_height * texture.bytesPerPixel, ref texture.m_textureReadBack[i], HeapType.Readback);
                 texture.m_textureReadBack[i].Name = "texture readback";
             }
         }
 
         public void SetMesh(MMDMesh mesh)
         {
-            m_commandList.IASetPrimitiveTopology(mesh.primitiveTopology);
-            m_commandList.IASetVertexBuffers(0, mesh.vertexBufferView);
+            m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+            foreach (var vtBuf in mesh.vtBuffers)
+                m_commandList.IASetVertexBuffers(vtBuf.slot, vtBuf.vertexBufferView);
             m_commandList.IASetIndexBuffer(mesh.indexBufferView);
         }
 
         public void SetMeshVertex(MMDMesh mesh)
         {
-            m_commandList.IASetPrimitiveTopology(mesh.primitiveTopology);
-            m_commandList.IASetVertexBuffers(0, mesh.vertexBufferView);
+            m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+            foreach (var vtBuf in mesh.vtBuffers)
+                m_commandList.IASetVertexBuffers(vtBuf.slot, vtBuf.vertexBufferView);
         }
 
         public void SetMeshVertex(MMDMeshAppend mesh)
         {
-            m_commandList.IASetVertexBuffers(1, mesh.vertexBufferPosViews);
+            m_commandList.IASetVertexBuffers(0, mesh.vertexBufferPosViews);
         }
 
         public void SetMeshIndex(MMDMesh mesh)
@@ -530,47 +445,17 @@ namespace Coocoo3DGraphics
             m_commandList.IASetVertexBuffers(0, vbv);
         }
 
-        public void SetComputeSRVT(Texture2D texture, int index)
-        {
-            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
-            texture.StateChange(m_commandList, ResourceStates.GenericRead);
-            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
-            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.Format = texture.format;
-            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D;
-            srvDesc.Texture2D.MipLevels = texture.mipLevels;
-            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuHandle);
+        public void SetComputeSRVT(Texture2D texture, int index) => m_commandList.SetComputeRootDescriptorTable(index, GetSRVHandle(texture));
 
-            m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
-        }
+        public void SetComputeSRVT(TextureCube texture, int index) => m_commandList.SetComputeRootDescriptorTable(index, GetSRVHandle(texture));
 
-        public void SetComputeSRVT(TextureCube texture, int index)
-        {
-            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
-            texture.StateChange(m_commandList, ResourceStates.GenericRead);
-            ShaderResourceViewDescription srvd = new ShaderResourceViewDescription();
-            srvd.Format = texture.format;
-            srvd.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.TextureCube;
-            srvd.TextureCube.MipLevels = texture.mipLevels;
-            srvd.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvd, cpuHandle);
-            m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
-        }
+        public void SetComputeCBVR(CBuffer buffer, int index) => m_commandList.SetComputeRootConstantBufferView(index, buffer.GetCurrentVirtualAddress());
 
-        public void SetComputeCBVR(CBuffer buffer, int index)
-        {
-            m_commandList.SetComputeRootConstantBufferView(index, buffer.GetCurrentVirtualAddress());
-        }
-
-        public void SetComputeCBVR(CBuffer buffer, int offset256, int size256, int index)
-        {
-            m_commandList.SetComputeRootConstantBufferView(index, buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
-        }
+        public void SetComputeCBVR(CBuffer buffer, int offset256, int size256, int index) => m_commandList.SetComputeRootConstantBufferView(index, buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
 
         public void SetComputeCBVRSlot(CBuffer buffer, int offset256, int size256, int slot)
         {
-            int index = currentRootSignature.cbv[slot];
-            SetComputeCBVR(buffer, offset256, size256, index);
+            SetComputeCBVR(buffer, offset256, size256, currentRootSignature.cbv[slot]);
         }
 
         public void SetComputeUAVT(Texture2D texture2D, int index)
@@ -583,26 +468,19 @@ namespace Coocoo3DGraphics
         public void SetComputeUAVT(TextureCube texture, int mipIndex, int index)
         {
             var d3dDevice = graphicsDevice.device;
-            if (texture != null)
+            texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
+            if (!(mipIndex < texture.mipLevels))
             {
-                texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
-                if (!(mipIndex < texture.mipLevels))
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
-                graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
-                d3dDevice.CreateUnorderedAccessView(texture.resource, null, new UnorderedAccessViewDescription()
-                {
-                    ViewDimension = UnorderedAccessViewDimension.Texture2DArray,
-                    Texture2DArray = new Texture2DArrayUnorderedAccessView() { MipSlice = mipIndex, ArraySize = 6 },
-                    Format = texture.uavFormat,
-                }, cpuHandle);
-                m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
+                throw new ArgumentOutOfRangeException();
             }
-            else
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
+            d3dDevice.CreateUnorderedAccessView(texture.resource, null, new UnorderedAccessViewDescription()
             {
-                throw new NotImplementedException();
-            }
+                ViewDimension = UnorderedAccessViewDimension.Texture2DArray,
+                Texture2DArray = new Texture2DArrayUnorderedAccessView() { MipSlice = mipIndex, ArraySize = 6 },
+                Format = texture.uavFormat,
+            }, cpuHandle);
+            m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
         }
         public void SetComputeUAVTSlot(Texture2D texture2D, int slot)
         {
@@ -611,26 +489,19 @@ namespace Coocoo3DGraphics
 
         public void SetSOMesh(MeshBuffer mesh)
         {
-            if (mesh != null)
-            {
-                mesh.StateChange(m_commandList, ResourceStates.CopyDestination);
-                WriteBufferImmediateParameter[] parameter = { new WriteBufferImmediateParameter(mesh.resource.GPUVirtualAddress + (ulong)mesh.m_size * MeshBuffer.c_vbvStride, 0) };
+            mesh.StateChange(m_commandList, ResourceStates.CopyDestination);
+            WriteBufferImmediateParameter[] parameter = { new WriteBufferImmediateParameter(mesh.resource.GPUVirtualAddress + (ulong)mesh.m_size * MeshBuffer.c_vbvStride, 0) };
 
-                m_commandList.WriteBufferImmediate(1, parameter, new[] { WriteBufferImmediateMode.MarkerIn });
+            m_commandList.WriteBufferImmediate(1, parameter, new[] { WriteBufferImmediateMode.MarkerIn });
 
-                mesh.StateChange(m_commandList, ResourceStates.StreamOut);
+            mesh.StateChange(m_commandList, ResourceStates.StreamOut);
 
-                StreamOutputBufferView temp = new StreamOutputBufferView();
-                temp.BufferLocation = mesh.resource.GPUVirtualAddress;
-                temp.BufferFilledSizeLocation = mesh.resource.GPUVirtualAddress + (ulong)(mesh.m_size * MeshBuffer.c_vbvStride);
-                temp.SizeInBytes = (ulong)(mesh.m_size * MeshBuffer.c_vbvStride);
+            StreamOutputBufferView temp = new StreamOutputBufferView();
+            temp.BufferLocation = mesh.resource.GPUVirtualAddress;
+            temp.BufferFilledSizeLocation = mesh.resource.GPUVirtualAddress + (ulong)(mesh.m_size * MeshBuffer.c_vbvStride);
+            temp.SizeInBytes = (ulong)(mesh.m_size * MeshBuffer.c_vbvStride);
 
-                m_commandList.SOSetTargets(0, 1, new[] { temp });
-            }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            m_commandList.SOSetTargets(0, 1, new[] { temp });
         }
 
         static readonly StreamOutputBufferView[] zeroStreamOutputBufferView = new StreamOutputBufferView[1];
@@ -664,6 +535,7 @@ namespace Coocoo3DGraphics
         {
             m_commandList = graphicsDevice.GetCommandList();
             m_commandList.Reset(graphicsDevice.GetCommandAllocator());
+            m_commandList.SetDescriptorHeaps(1, new ID3D12DescriptorHeap[] { graphicsDevice.cbvsrvuavHeap.heap });
         }
 
         //public void SetPipelineState(PipelineStateObject pipelineStateObject, PSODesc psoDesc)
@@ -689,54 +561,36 @@ namespace Coocoo3DGraphics
                 m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
             m_commandList.OMSetRenderTargets(new CpuDescriptorHandle[0], dsv);
         }
-        public void SetRTV(Texture2D RTV, Vector4 color, bool clear)
-        {
-            m_commandList.RSSetScissorRect(RTV.width, RTV.height);
-            m_commandList.RSSetViewport(0, 0, RTV.width, RTV.height);
-            RTV.StateChange(m_commandList, ResourceStates.RenderTarget);
-            var rtv = RTV.GetRenderTargetView(graphicsDevice.device);
-            if (clear)
-                m_commandList.ClearRenderTargetView(rtv, new Vortice.Mathematics.Color4(color));
-            m_commandList.OMSetRenderTargets(rtv);
-        }
-        public void SetRTV(Texture2D[] RTVs, Vector4 color, bool clear)
-        {
-            m_commandList.RSSetScissorRect(RTVs[0].width, RTVs[0].height);
-            m_commandList.RSSetViewport(0, 0, RTVs[0].width, RTVs[0].height);
-            CpuDescriptorHandle[] handles = new CpuDescriptorHandle[RTVs.Length];
-            for (int i = 0; i < RTVs.Length; i++)
-            {
-                Texture2D tex = RTVs[i];
-                tex.StateChange(m_commandList, ResourceStates.RenderTarget);
-                handles[i] = RTVs[i].GetRenderTargetView(graphicsDevice.device);
-                if (clear)
-                    m_commandList.ClearRenderTargetView(handles[i], new Vortice.Mathematics.Color4(color));
-            }
+        public void SetRTV(Texture2D RTV, Vector4 color, bool clear) => SetRTVDSV(RTV, null, color, clear, false);
 
-            m_commandList.OMSetRenderTargets(handles);
-        }
+        public void SetRTV(Texture2D[] RTVs, Vector4 color, bool clear) => SetRTVDSV(RTVs, null, color, clear, false);
 
         public void SetRTVDSV(Texture2D RTV, Texture2D DSV, Vector4 color, bool clearRTV, bool clearDSV)
         {
             m_commandList.RSSetScissorRect(RTV.width, RTV.height);
             m_commandList.RSSetViewport(0, 0, RTV.width, RTV.height);
             RTV.StateChange(m_commandList, ResourceStates.RenderTarget);
-            DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
             var rtv = RTV.GetRenderTargetView(graphicsDevice.device);
-            var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
             if (clearRTV)
                 m_commandList.ClearRenderTargetView(rtv, new Vortice.Mathematics.Color4(color));
-            if (clearDSV)
-                m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
-            m_commandList.OMSetRenderTargets(rtv, dsv);
+            if (DSV != null)
+            {
+                DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
+                var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
+                if (clearDSV)
+                    m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
+                m_commandList.OMSetRenderTargets(rtv, dsv);
+            }
+            else
+            {
+                m_commandList.OMSetRenderTargets(rtv);
+            }
         }
 
         public void SetRTVDSV(Texture2D[] RTVs, Texture2D DSV, Vector4 color, bool clearRTV, bool clearDSV)
         {
             m_commandList.RSSetScissorRect(RTVs[0].width, RTVs[0].height);
             m_commandList.RSSetViewport(0, 0, RTVs[0].width, RTVs[0].height);
-            DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
-            var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
 
             CpuDescriptorHandle[] handles = new CpuDescriptorHandle[RTVs.Length];
             for (int i = 0; i < RTVs.Length; i++)
@@ -747,10 +601,19 @@ namespace Coocoo3DGraphics
                 if (clearRTV)
                     m_commandList.ClearRenderTargetView(handles[i], new Vortice.Mathematics.Color4(color));
             }
+            if (DSV != null)
+            {
+                DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
+                var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
+                if (clearDSV)
+                    m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
 
-            if (clearDSV)
-                m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
-            m_commandList.OMSetRenderTargets(handles, dsv);
+                m_commandList.OMSetRenderTargets(handles, dsv);
+            }
+            else
+            {
+                m_commandList.OMSetRenderTargets(handles);
+            }
         }
 
         public void SetRootSignature(RootSignature rootSignature)
@@ -827,6 +690,46 @@ namespace Coocoo3DGraphics
         void SetCBVR(CBuffer buffer, int offset256, int size256, int index)
         {
             m_commandList.SetGraphicsRootConstantBufferView(index, buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
+        }
+
+        void CreateBuffer(int bufferLength, ref ID3D12Resource resource, HeapType heapType = HeapType.Default, ResourceStates resourceStates = ResourceStates.CopyDestination)
+        {
+            graphicsDevice.ResourceDelayRecycle(resource);
+            ThrowIfFailed(graphicsDevice.device.CreateCommittedResource(
+                new HeapProperties(heapType),
+                HeapFlags.None,
+                ResourceDescription.Buffer((ulong)bufferLength),
+                resourceStates,
+                null,
+                out resource));
+        }
+
+        GpuDescriptorHandle GetSRVHandle(Texture2D texture)
+        {
+            texture.StateChange(m_commandList, ResourceStates.GenericRead);
+            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.Format = texture.format;
+            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Texture2D;
+            srvDesc.Texture2D.MipLevels = texture.mipLevels;
+
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
+            return gpuDescriptorHandle;
+        }
+
+        GpuDescriptorHandle GetSRVHandle(TextureCube texture)
+        {
+            texture.StateChange(m_commandList, ResourceStates.GenericRead);
+            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.Format = texture.format;
+            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.TextureCube;
+            srvDesc.TextureCube.MipLevels = texture.mipLevels;
+
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
+            return gpuDescriptorHandle;
         }
 
         public PSODesc psoDesc;
