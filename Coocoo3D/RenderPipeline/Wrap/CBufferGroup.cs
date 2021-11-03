@@ -49,21 +49,26 @@ namespace Coocoo3D.RenderPipeline.Wrap
 
         public void UpdateSlience(GraphicsContext graphicsContext, byte[] data, int dataOffset, int dataLength, int slienceIndex)
         {
+            UpdateSlience(graphicsContext, new Span<byte>(data, dataOffset, dataLength),slienceIndex);
+        }
+
+        public void UpdateSlience(GraphicsContext graphicsContext, Span<byte> data, int slienceIndex)
+        {
             int slience1 = slienceIndex / sliencesPerBuffer;
             int slience2 = slienceIndex % sliencesPerBuffer;
 
             if (lastUpdateBufferIndex == slience1)
             {
-                Array.Copy(data, dataOffset, tempBuffer, slience2 * slienceSize, dataLength);
+                data.CopyTo(new Span<byte>(tempBuffer, slience2 * slienceSize, data.Length));
             }
             else
             {
                 graphicsContext.UpdateResource(constantBuffers[lastUpdateBufferIndex], tempBuffer, bufferSize, 0);
                 SetSlienceCount(slience1 + 1);
                 lastUpdateBufferIndex = slience1;
-                Array.Copy(data, dataOffset, tempBuffer, slience2 * slienceSize, dataLength);
-            }
 
+                data.CopyTo(new Span<byte>(tempBuffer, slience2 * slienceSize, data.Length));
+            }
         }
 
         public void UpdateSlienceComplete(GraphicsContext graphicsContext)

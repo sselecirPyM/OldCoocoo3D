@@ -59,7 +59,7 @@ namespace Coocoo3D.RenderPipeline
             //MemoryMarshal.Write(new Span<byte>(context.bigBuffer, 0, 64), ref tvp);
 
             CBufferGroup.SetSlienceCount(/*selectedLightings.Count + context.dynamicContextRead.volumes.Count +*/ 1);
-
+            var bigBuffer = MemUtil.MegaBuffer;
 
             var data = ImGui.GetDrawData();
             float L = data.DisplayPos.X;
@@ -94,9 +94,9 @@ namespace Coocoo3D.RenderPipeline
                 int ofs = 0;
                 for (int i = 0; i < mvp.Length; i++)
                 {
-                    ofs += CooUtility.Write(context.bigBuffer, ofs, mvp[i]);
+                    ofs += CooUtility.Write(bigBuffer, ofs, mvp[i]);
                 }
-                CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
+                CBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, 256, matC);
                 matC++;
             }
             CBufferGroup.UpdateSlienceComplete(graphicsContext);

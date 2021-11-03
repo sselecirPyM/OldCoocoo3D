@@ -13,7 +13,7 @@ namespace Coocoo3D.UI
         {
             appBody.GameDriverContext.Playing = true;
             appBody.GameDriverContext.PlaySpeed = 1.0f;
-            appBody.LatestRenderTime = DateTime.Now -TimeSpan.FromSeconds( appBody.GameDriverContext.FrameInterval);
+            appBody.LatestRenderTime = appBody.stopwatch1.ElapsedTicks - (long)(appBody.GameDriverContext.FrameInterval * 1e7);
             appBody.RequireRender();
         }
         public static void Pause(Coocoo3DMain appBody)

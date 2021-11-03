@@ -47,9 +47,14 @@ namespace Coocoo3DGraphics
             var bufDef = new _mesh1();
             bufDef.data = verticeData1;
             bufDef.slot = slot;
-            bufDef.vertexBufferView.SizeInBytes = verticeData1.Length;
-            bufDef.vertexBufferView.StrideInBytes = verticeData1.Length / m_vertexCount;
 
+            vtBuffers.Add(bufDef);
+        }
+
+        internal void AddBuffer(int slot, int length)
+        {
+            var bufDef = new _mesh1();
+            bufDef.slot = slot;
             vtBuffers.Add(bufDef);
         }
 
@@ -59,9 +64,13 @@ namespace Coocoo3DGraphics
             vtBuffers.Clear();
             this.m_vertexCount = verticeData.Length / vertexStride;
             AddBuffer<byte>(verticeData, 0);
-            this.m_indexData = new byte[indexData.Length * 4];
-            MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
-            this.m_indexCount = indexData.Length;
+
+            if (indexData != null)
+            {
+                this.m_indexData = new byte[indexData.Length * 4];
+                MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
+                this.m_indexCount = indexData.Length;
+            }
         }
         public void Reload1(byte[] verticeData, byte[] indexData, int vertexStride)
         {
@@ -70,18 +79,25 @@ namespace Coocoo3DGraphics
             this.m_vertexCount = verticeData.Length / vertexStride;
             AddBuffer<byte>(verticeData, 0);
 
-            this.m_indexData = new byte[indexData.Length];
-            Array.Copy(indexData, m_indexData, indexData.Length);
-            m_indexCount = indexData.Length;
+            if (indexData != null)
+            {
+                this.m_indexData = new byte[indexData.Length];
+                Array.Copy(indexData, m_indexData, indexData.Length);
+                m_indexCount = indexData.Length;
+            }
         }
-        public void ReloadIndex(int vertexCount,int[] indexData)
+        public void ReloadIndex<T>(int vertexCount, Span<T> indexData) where T : unmanaged
         {
             vtBuffersDisposed.AddRange(vtBuffers);
             vtBuffers.Clear();
             this.m_vertexCount = vertexCount;
-            this.m_indexData = new byte[indexData.Length * 4];
-            MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
-            this.m_indexCount = indexData.Length;
+            if (indexData != null)
+            {
+                Span<byte> d1 = MemoryMarshal.Cast<T, byte>(indexData);
+                this.m_indexData = new byte[d1.Length];
+                d1.CopyTo(this.m_indexData);
+                this.m_indexCount = indexData.Length;
+            }
         }
         public void ReloadNDCQuad()
         {

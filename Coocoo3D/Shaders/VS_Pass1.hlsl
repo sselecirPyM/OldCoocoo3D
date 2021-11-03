@@ -120,6 +120,10 @@ PSSkinnedIn main(VSSkinnedIn input)
 	output.Norm = normalize(mul(vSkinned.Norm, (float3x3)g_mWorld));
 	output.Tangent = normalize(mul(vSkinned.Tan, (float3x3)g_mWorld));
 	output.Tex = input.Tex;
+	//float3 pos = input.Pos;
+	//output.Norm = input.Norm;
+	//output.Tangent = input.Tan;
+	//output.Tex = input.Tex;
 
 	output.Pos = mul(float4(pos, 1), g_mWorldToProj);
 	output.wPos = float4(pos, 1);

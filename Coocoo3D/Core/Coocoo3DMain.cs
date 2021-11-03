@@ -35,7 +35,8 @@ namespace Coocoo3D.Core
         #region Time
         ThreadPoolTimer threadPoolTimer;
 
-        public DateTime LatestRenderTime = DateTime.Now;
+        //public DateTime LatestRenderTime = DateTime.Now;
+        public long LatestRenderTime = 0;
         public CoreDispatcher Dispatcher;
         public event EventHandler FrameUpdated;
 
@@ -67,7 +68,6 @@ namespace Coocoo3D.Core
             SaveCpuPower = true,
             AutoReloadShaders = true,
             AutoReloadTextures = true,
-            //AutoReloadModels = true,
             VSync = false,
         };
 
@@ -110,8 +110,8 @@ namespace Coocoo3D.Core
                 var token = canRenderThread.Token;
                 while (!token.IsCancellationRequested)
                 {
-                    DateTime now = DateTime.Now;
-                    if (now - LatestRenderTime < TimeSpan.FromSeconds(RPContext.gameDriverContext.FrameInterval)) continue;
+                    long now = stopwatch1.ElapsedTicks;
+                    if ((now - LatestRenderTime) / 1e7f < RPContext.gameDriverContext.FrameInterval) continue;
                     bool actualRender = RenderFrame();
                     if ((performaceSettings.SaveCpuPower && !Recording) && (!performaceSettings.VSync || !actualRender))
                         System.Threading.Thread.Sleep(1);
@@ -128,7 +128,6 @@ namespace Coocoo3D.Core
         public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         MiscProcess miscProcess = new MiscProcess();
-        public RenderPipeline.RenderPipeline CurrentRenderPipeline { get => _currentRenderPipeline; }
         RenderPipeline.RenderPipeline _currentRenderPipeline;
 
         public void RequireRender(bool updateEntities)
@@ -146,7 +145,7 @@ namespace Coocoo3D.Core
 
         public bool swapChainReady;
         //public long[] StopwatchTimes = new long[8];
-        //System.Diagnostics.Stopwatch stopwatch1 = new System.Diagnostics.Stopwatch();
+        public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
         public GraphicsContext graphicsContext { get => RPContext.graphicsContext; }
         Task RenderTask1;
         private bool RenderFrame()
@@ -158,11 +157,11 @@ namespace Coocoo3D.Core
             #region Scene Simulation
 
             RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
-            DateTime now = DateTime.Now;
+            long now = stopwatch1.ElapsedTicks;
             var deltaTime = now - LatestRenderTime;
             LatestRenderTime = now;
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
-            RPContext.dynamicContextWrite.RealDeltaTime = deltaTime.TotalSeconds;
+            RPContext.dynamicContextWrite.RealDeltaTime = deltaTime / 1e7f;
             if (RPContext.gameDriverContext.Playing)
                 RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
             else
@@ -195,7 +194,7 @@ namespace Coocoo3D.Core
 
             if (RPContext.gameDriverContext.Playing || RPContext.gameDriverContext.RequireResetPhysics)
             {
-                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents,mainCaches, RPContext.gameDriverContext.RequireResetPhysics);
+                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents, mainCaches, RPContext.gameDriverContext.RequireResetPhysics);
                 RPContext.gameDriverContext.RequireResetPhysics = false;
             }
             for (int i = 0; i < rendererComponents.Count; i++)
@@ -255,6 +254,7 @@ namespace Coocoo3D.Core
                     graphicsContext.Begin();
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
+                        currentRenderPipeline.BeginFrame();
                         foreach (var visualChannel in RPContext.visualChannels.Values)
                         {
                             currentRenderPipeline.PrepareRenderData(RPContext, visualChannel);
@@ -284,6 +284,7 @@ namespace Coocoo3D.Core
                             currentRenderPipeline.RenderCamera(RPContext, visualChannel);
                             postProcess.RenderCamera(RPContext, visualChannel);
                         }
+                        currentRenderPipeline.EndFrame();
                     }
                     GameDriver.AfterRender(RPContext, graphicsContext);
                     graphicsContext.ResourceBarrierScreen(ResourceStates.Present, ResourceStates.RenderTarget);

@@ -43,7 +43,7 @@ namespace Coocoo3D.RenderPipeline
             var rendererComponents = context.dynamicContextRead.renderers;
             var lightings = context.dynamicContextRead.lightings;
             var camera = visualChannel.cameraData;
-            var bigBuffer = context.bigBuffer;
+            var bigBuffer = MemUtil.MegaBuffer;
             List<LightingData> pointLights = new List<LightingData>();
 
             #region Lighting
@@ -77,9 +77,9 @@ namespace Coocoo3D.RenderPipeline
             }
             #endregion
 
-            int numMaterials = 0;
-            foreach (MMDRendererComponent v in rendererComponents)
-                numMaterials += v.Materials.Count;
+            //int numMaterials = 0;
+            //foreach (MMDRendererComponent v in rendererComponents)
+            //    numMaterials += v.Materials.Count;
 
             var XBufferGroup = visualChannel.XBufferGroup;
 
@@ -151,7 +151,7 @@ namespace Coocoo3D.RenderPipeline
             //着色器可读取数据
             int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
-                Array.Clear(_buffer, 0, _buffer.Length);
+                Array.Clear(_buffer, 0,  65536);
                 int ofs = 0;
                 foreach (var s in cbv.Datas)
                 {
@@ -443,8 +443,7 @@ namespace Coocoo3D.RenderPipeline
                         MMDRendererComponent rendererComponent = _rendererComponents[i];
                         graphicsContext.SetCBVRSlot(context.CBs_Bone[i], 0, 0, 0);
                         graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
-                        graphicsContext.SetMeshVertex(rendererComponent.meshAppend);
-                        //graphicsContext.m_commandList.IASetPrimitiveTopology(Vortice.Direct3D.PrimitiveTopology.TriangleList);
+                        graphicsContext.SetMeshVertex(context.meshOverride[rendererComponent]);
                         PSO pso = null;
 
                         var PSODraw = PSOSelect(graphicsDevice, rootSignature, passPsoDesc, pso, psoLoading, _combinedPass.PSODefault, psoError);

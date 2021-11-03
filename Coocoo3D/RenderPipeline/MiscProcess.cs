@@ -41,7 +41,7 @@ namespace Coocoo3D.RenderPipeline
             if (rp.SkyBoxChanged)
             {
                 var csAssets = rp.RPAssetsManager.CSAssets;
-                byte[] bigBuffer = rp.bigBuffer;
+                byte[] bigBuffer = MemUtil.MegaBuffer;
                 GraphicsContext graphicsContext = rp.graphicsContext1;
                 graphicsContext.Begin();
                 var texture0 = rp.SkyBox;

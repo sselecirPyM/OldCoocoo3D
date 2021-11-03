@@ -19,7 +19,6 @@ namespace Coocoo3D.Components
     {
         public string meshPath;
         public string motionPath = "";
-        public MMDMeshAppend meshAppend = new MMDMeshAppend();
         public Vector3 position;
         public Quaternion rotation;
         public MMDMorphStateComponent morphStateComponent = new MMDMorphStateComponent();
@@ -27,7 +26,7 @@ namespace Coocoo3D.Components
 
         public int meshVertexCount;
         public int meshIndexCount;
-        public byte[] meshPosData;
+        public Vector3[] meshPosData;
 
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
         public List<RuntimeMaterial.InnerStruct> materialsBaseData = new List<RuntimeMaterial.InnerStruct>();
@@ -52,7 +51,8 @@ namespace Coocoo3D.Components
                         meshNeedUpdate = true;
                 }
             }
-            MemoryMarshal.Cast<byte, Vector3>(meshPosData).CopyTo(meshPosData1);
+
+            new Span<Vector3>(meshPosData).CopyTo(meshPosData1);
 
             for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             {
@@ -141,6 +141,7 @@ namespace Coocoo3D.Components
         {
             for (int i = 0; i < bones.Count; i++)
                 boneMatricesData[i] = Matrix4x4.Transpose(bones[i].GeneratedTransform);
+            //boneMatricesData[i] = bones[i].GeneratedTransform;
         }
         public void SetPoseWithMotion(float time, MMDMotion motion)
         {
@@ -682,12 +683,10 @@ namespace Coocoo3D.FileFormat
             rendererComponent.computedMaterialsData.Clear();
             var mesh = modelPack.GetMesh();
             rendererComponent.meshPath = modelPack.fullPath;
-            rendererComponent.meshPosData = modelPack.verticesDataPosPart;
+            rendererComponent.meshPosData = modelPack.position;
             rendererComponent.meshVertexCount = mesh.GetVertexCount();
             rendererComponent.meshIndexCount = mesh.GetIndexCount();
             rendererComponent.meshPosData1 = new Vector3[mesh.GetVertexCount()];
-
-            rendererComponent.meshAppend.Reload(rendererComponent.meshVertexCount);
 
             var modelResource = modelPack.pmx;
             for (int i = 0; i < modelResource.Materials.Count; i++)
@@ -737,6 +736,7 @@ namespace Coocoo3D.FileFormat
                 {
                 }
             }
+            rendererComponent.ComputeVertexMorph();
             //Dictionary<int, int> reportFrequency = new Dictionary<int, int>(10000);
             //for (int i = 0; i < morphCount; i++)
             //{
@@ -942,8 +942,6 @@ namespace Coocoo3D.FileFormat
             morphStateComponent.Reload(modelResource);
 
             rendererComponent.ReloadModel(modelPack, textures);
-            processingList.AddObject(new MeshAppendUploadPack(rendererComponent.meshAppend, modelPack.verticesDataPosPart));
-
         }
     }
 }

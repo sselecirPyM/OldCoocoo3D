@@ -175,7 +175,6 @@
     <Compile Include="RenderPipeline\Wrap\SBufferGroup.cs" />
     <Compile Include="ResourceWarp\KnownFile.cs" />
     <Compile Include="ResourceWarp\LoadedAsset.cs" />
-    <Compile Include="ResourceWarp\MeshAppendUploadPack.cs" />
     <Compile Include="ResourceWarp\ModelPack.cs" />
     <Compile Include="ResourceWarp\Texture2DPack.cs" />
     <Compile Include="ResourceWarp\Texture2DUploadPack.cs" />
@@ -191,6 +190,8 @@
     <Compile Include="RenderPipeline\MainCaches.cs" />
     <Compile Include="Utility\DoubleVector3.cs" />
     <Compile Include="Numerics\MathHelper.cs" />
+    <Compile Include="Utility\LinearPool.cs" />
+    <Compile Include="Utility\MemUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

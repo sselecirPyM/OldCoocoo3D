@@ -32,13 +32,6 @@ namespace Coocoo3D.RenderPipeline
                 loadList.Add(mesh);
             }
         }
-        public void AddObject(MeshAppendUploadPack mesh)
-        {
-            lock (loadList)
-            {
-                loadList.Add(mesh);
-            }
-        }
         public void AddObject(TextureCubeUploadPack texture)
         {
             lock (loadList)
@@ -88,8 +81,6 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.UploadTexture(p2.texture, p2.uploader);
                 else if(obj is MMDMesh p3)
                     graphicsContext.UploadMesh(p3);
-                else if(obj is MeshAppendUploadPack p4)
-                    graphicsContext.UploadMesh(p4.mesh, p4.data);
             }
             loadList.Clear();
         }
