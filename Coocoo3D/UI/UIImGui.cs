@@ -151,9 +151,9 @@ namespace Coocoo3D.UI
             {
                 ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
                 ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}",visualChannel.Name)))
+                if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name)))
                 {
-                    SceneView(appBody,visualChannel, mouseWheelDelta, mouseMoveDelta);
+                    SceneView(appBody, visualChannel, mouseWheelDelta, mouseMoveDelta);
                 }
                 ImGui.End();
             }
@@ -279,15 +279,29 @@ namespace Coocoo3D.UI
                     if (a == a)
                         appBody.GameDriverContext.FrameInterval = 1 / a;
                 }
-                if (ImGui.Combo("渲染管线", ref appBody.renderPipelineIndex, renderPipelines, renderPipelines.Length))
+                if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
                 {
-                    appBody.SwitchToRenderPipeline(appBody.renderPipelineIndex);
+                    renderPipelines = new string[appBody.mainCaches.PassSettings.Count];
+                    renderPipelineKeys = new string[appBody.mainCaches.PassSettings.Count];
+                }
+                int _i = 0;
+                foreach (var pair in appBody.mainCaches.PassSettings)
+                {
+                    renderPipelines[_i] = pair.Value.Name;
+                    renderPipelineKeys[_i] = pair.Key;
+                    _i++;
+                }
+                appBody.mainCaches.PassSettings.Select(u => u.Value.Name);
+                if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
+                {
+                    //appBody.SwitchToRenderPipeline(renderPipelineIndex);
+                    appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
                 }
                 ImGui.TreePop();
             }
-            if(ImGui.TreeNode("天空盒"))
+            if (ImGui.TreeNode("天空盒"))
             {
-                if(ImGui.BeginCombo("selece file","?"))
+                if (ImGui.BeginCombo("selece file", "?"))
                 {
                     ImGui.EndCombo();
                 }
@@ -329,7 +343,7 @@ namespace Coocoo3D.UI
         static void DockSpace(Coocoo3DMain appBody)
         {
             var viewPort = ImGui.GetMainViewport();
-            string texName= appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("FinalOutput");
+            string texName = appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("FinalOutput");
             ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
             IntPtr imageId = appBody.mainCaches.GetPtr(texName);
             ImGui.GetWindowDrawList().AddImage(imageId, viewPort.GetWorkPos(), viewPort.GetWorkPos() + viewPort.GetWorkSize());
@@ -497,7 +511,7 @@ vmd格式动作");
                                 string key = "imgui/" + tex.Key;
                                 if (appBody.mainCaches.TextureCaches.TryGetValue(tex.Value, out var texPack))
                                 {
-                                    appBody.mainCaches.SetTexture(key ,texPack.texture2D);
+                                    appBody.mainCaches.SetTexture(key, texPack.texture2D);
                                 }
                                 Vector2 pos = ImGui.GetCursorScreenPos();
                                 Vector2 imageSize = new Vector2(120, 120);
@@ -643,7 +657,10 @@ vmd格式动作");
         }
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
-        static string[] renderPipelines = new[] { "前向", "延迟", "光线追踪", "自定义" };
+        //static string[] renderPipelines = new[] { "前向", "延迟", "光线追踪", "自定义" };
+        static int renderPipelineIndex = 0;
+        static string[] renderPipelines = new string[0] { };
+        static string[] renderPipelineKeys = new string[0] { };
     }
     class _openRequest
     {

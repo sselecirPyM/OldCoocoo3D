@@ -16,28 +16,17 @@ namespace Coocoo3D.RenderPipeline
     {
         const int c_bufferSize = 65536;
         const int c_splitSize = 256;
-        RootSignature rootSignature = new RootSignature();
-        public bool Ready = false;
+        bool Ready = false;
         public const int c_maxIteration = 32;
+
         public CBuffer constantBuffer = new CBuffer();
-        XYZData _XyzData;
-        public void ReloadAssets(GraphicsDevice graphicsDevice)
-        {
-            rootSignature.Reload(graphicsDevice, new GraphicSignatureDesc[]
-            {
-                GraphicSignatureDesc.CBV,
-                GraphicSignatureDesc.CBV,
-                GraphicSignatureDesc.SRVTable,
-                GraphicSignatureDesc.UAVTable,
-            });
-            graphicsDevice.InitializeCBuffer(constantBuffer, c_bufferSize);
-
-            Ready = true;
-        }
-
         public void Process(RenderPipelineContext rp)
         {
-            if (!Ready) return;
+            if (!Ready)
+            {
+                Ready = true;
+                rp.graphicsDevice.InitializeCBuffer(constantBuffer, c_bufferSize);
+            }
             if (rp.SkyBoxChanged)
             {
                 var csAssets = rp.RPAssetsManager.CSAssets;
@@ -47,6 +36,7 @@ namespace Coocoo3D.RenderPipeline
                 var texture0 = rp.SkyBox;
                 var texture1 = rp.IrradianceMap;
                 var texture2 = rp.ReflectMap;
+                XYZData _XyzData;
                 _XyzData.x1 = (int)texture1.width;
                 _XyzData.y1 = (int)texture1.height;
                 _XyzData.x2 = (int)texture2.width;
@@ -60,7 +50,7 @@ namespace Coocoo3D.RenderPipeline
                     MemoryMarshal.Write<XYZData>(new Span<byte>(bigBuffer, j * c_splitSize, c_splitSize), ref _XyzData);
                 }
                 graphicsContext.UpdateResource(constantBuffer, bigBuffer, c_bufferSize, 0);
-
+                var rootSignature = rp.RPAssetsManager.GetRootSignature(rp.graphicsDevice, "CCsu");
                 graphicsContext.SetRootSignatureCompute(rootSignature);
                 graphicsContext.SetComputeCBVR(constantBuffer, 0);
                 graphicsContext.SetComputeSRVT(texture0, 2);

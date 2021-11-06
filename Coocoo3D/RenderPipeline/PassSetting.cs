@@ -13,6 +13,7 @@ namespace Coocoo3D.RenderPipeline
 {
     public class PassSetting
     {
+        public string Name;
         [XmlArrayItem("RenderTarget")]
         public List<RenderTarget> RenderTargets;
         [XmlArrayItem("Pass")]
@@ -34,15 +35,13 @@ namespace Coocoo3D.RenderPipeline
         [XmlArrayItem("TextureCube")]
         public List<_AssetDefine2> TextureCubes;
 
-        //[XmlArrayItem("RayTracingStateObject")]
-        public PSRTSO RayTracingStateObject;
+        [XmlIgnore]
+        public Dictionary<string, string> aliases = new Dictionary<string, string>();
 
         [XmlIgnore]
         public bool configured;
         [XmlIgnore]
         public HashSet<string> renderTargets;
-        //[XmlIgnore]
-        //public RayTracingStateObject RTSO;
 
         public bool Verify()
         {
@@ -95,10 +94,6 @@ namespace Coocoo3D.RenderPipeline
         public bool ClearRenderTarget;
         public CullMode CullMode;
         public string Filter;
-
-        //public string Foreach;
-        //[XmlElement("Pass")]
-        //public List<PassMatch1> passes;
 
         [XmlIgnore]
         public string[] RayGenShaders;
@@ -182,31 +177,6 @@ namespace Coocoo3D.RenderPipeline
         public int y = 1;
         [DefaultValue(1)]
         public int z = 1;
-    }
-    public class PSRTSO
-    {
-        public string Name;
-        public string Path;
-        public int MaxPayloadSize;
-        public int MaxAttributeSize;
-        public int MaxRecursionDepth;
-        [XmlElement(ElementName = "RayGenShader")]
-        public RTShader[] rayGenShaders;
-        [XmlElement(ElementName = "MissShader")]
-        public List<RTShader> missShaders;
-        [XmlElement("HitGroupSubobject")]
-        public List<RTHitGroup> hitGroups;
-
-    }
-    public class RTShader
-    {
-        public string Name;
-    }
-    public class RTHitGroup
-    {
-        public string Name;
-        public string AnyHitShader;
-        public string ClosestHitShader;
     }
     public struct _AssetDefine
     {

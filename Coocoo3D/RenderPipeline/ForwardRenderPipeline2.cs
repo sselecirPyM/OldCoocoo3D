@@ -18,10 +18,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class ForwardRenderPipeline2 : RenderPipeline
     {
-        public void Reload()
-        {
-            Ready = true;
-        }
         [ThreadStatic]
         static Random random = new Random();
 
@@ -38,7 +34,6 @@ namespace Coocoo3D.RenderPipeline
 
             var deviceResources = context.graphicsDevice;
             var graphicsDevice = visualChannel.graphicsContext;
-            //var cameras = context.dynamicContextRead.cameras;
             var settings = context.dynamicContextRead.settings;
             var rendererComponents = context.dynamicContextRead.renderers;
             var lightings = context.dynamicContextRead.lightings;
@@ -47,18 +42,15 @@ namespace Coocoo3D.RenderPipeline
             List<LightingData> pointLights = new List<LightingData>();
 
             #region Lighting
-            VolumeComponent volume = null;
-            if (context.dynamicContextRead.volumes.Count > 0)
-                volume = context.dynamicContextRead.volumes[0];
 
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
             Matrix4x4 invLightCameraMatrix0 = Matrix4x4.Identity;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
-                if (volume == null)
+                if (context.dynamicContextRead.volumes.Count == 0)
                     lightCameraMatrix0 = lightings[0].GetLightingMatrix(camera.pvMatrix);
                 else
-                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(new BoundingBox() { position = volume.Position, extension = volume.Size });
+                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(visualChannel, context.dynamicContextRead);
 
 
                 Matrix4x4.Invert(lightCameraMatrix0, out invLightCameraMatrix0);
@@ -92,7 +84,6 @@ namespace Coocoo3D.RenderPipeline
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
-
                 if (combinedPass.Pass.Camera == "Main")
                 {
                 }
@@ -151,7 +142,7 @@ namespace Coocoo3D.RenderPipeline
             //着色器可读取数据
             int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
-                Array.Clear(_buffer, 0,  65536);
+                Array.Clear(_buffer, 0, 65536);
                 int ofs = 0;
                 foreach (var s in cbv.Datas)
                 {
@@ -290,28 +281,28 @@ namespace Coocoo3D.RenderPipeline
                         case "IndirectMultiplier":
                             ofs += CooUtility.Write(_buffer, ofs, settings.SkyBoxLightMultiplier);
                             break;
-                        case "ShadowVolume":
-                            if (volume != null)
-                            {
-                                ofs += CooUtility.Write(_buffer, ofs, volume.Position);
-                                ofs += 4;
-                                ofs += CooUtility.Write(_buffer, ofs, volume.Size);
-                                ofs += 4;
-                            }
-                            else
-                                ofs += 32;
-                            break;
-                        case "ReflectVolume":
-                            if (volume != null)
-                            {
-                                ofs += CooUtility.Write(_buffer, ofs, volume.Position);
-                                ofs += 4;
-                                ofs += CooUtility.Write(_buffer, ofs, volume.Size);
-                                ofs += 4;
-                            }
-                            else
-                                ofs += 32;
-                            break;
+                        //case "ShadowVolume":
+                        //    if (volume != null)
+                        //    {
+                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Position);
+                        //        ofs += 4;
+                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Size);
+                        //        ofs += 4;
+                        //    }
+                        //    else
+                        //        ofs += 32;
+                        //    break;
+                        //case "ReflectVolume":
+                        //    if (volume != null)
+                        //    {
+                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Position);
+                        //        ofs += 4;
+                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Size);
+                        //        ofs += 4;
+                        //    }
+                        //    else
+                        //        ofs += 32;
+                        //    break;
                         case "RandomValue":
                             ofs += CooUtility.Write(_buffer, ofs, (float)random.NextDouble());
                             break;
@@ -418,8 +409,6 @@ namespace Coocoo3D.RenderPipeline
                 {
                     passPsoDesc.inputLayout = InputLayout.mmd;
                     passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
-
-                    //graphicsContext.SetMesh(context.SkinningMeshBuffer);
 
                     _PassRender(rendererComponents, combinedPass);
                 }
@@ -536,8 +525,6 @@ namespace Coocoo3D.RenderPipeline
         bool FilterObj(RenderPipelineContext context, string filter, MMDRendererComponent renderer, RuntimeMaterial material)
         {
             if (string.IsNullOrEmpty(filter)) return true;
-            //if (filter == "SelectedObject")
-            //    return context.dynamicContextRead.selectedEntity.rendererComponent == renderer;
             if (filter == "Transparent")
                 return material.Transparent;
             if (filter == "Opaque")

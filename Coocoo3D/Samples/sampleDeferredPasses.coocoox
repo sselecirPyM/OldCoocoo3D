@@ -2,6 +2,7 @@
 <!--如果你刚入门，请看samplePasses.coocoox文件-->
 <!--延迟渲染光源部分尚未完善-->
 <PassSetting>
+  <Name>延迟渲染</Name>
   <RenderSequence>
     <Pass>
       <Name>ShadowMapPass</Name>
@@ -214,7 +215,7 @@
       <VertexShader>VS_Pass1</VertexShader>
       <PixelShader>PS_Pass1</PixelShader>
       <CBV>
-        <Index>0</Index>
+        <Index>1</Index>
         <Datas>
           <Data>Camera</Data>
           <Data>DirectionalLight</Data>

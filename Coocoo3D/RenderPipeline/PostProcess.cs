@@ -14,11 +14,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class PostProcess : RenderPipeline
     {
-        public void Reload()
-        {
-            Ready = true;
-        }
-
         public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
         {
 
@@ -49,8 +44,6 @@ namespace Coocoo3D.RenderPipeline
 
             SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPostProcess, desc, context.RPAssetsManager.PSOs["PostProcess"]);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
-            //graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
-            //graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
         }
     }
 }

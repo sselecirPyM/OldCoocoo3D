@@ -24,7 +24,7 @@ namespace Coocoo3D.UI
 {
     public static class UISharedCode
     {
-        public static async Task LoadEntityIntoScene(Coocoo3DMain appBody, Scene scene, StorageFile pmxFile, StorageFolder storageFolder)
+        public static void LoadEntityIntoScene(Coocoo3DMain appBody, Scene scene, StorageFile pmxFile, StorageFolder storageFolder)
         {
             string pmxPath = pmxFile.Path;
             ModelPack modelPack = null;
@@ -34,9 +34,9 @@ namespace Coocoo3D.UI
                 modelPack.fullPath = pmxPath;
                 if (modelPack.LoadTask == null && modelPack.Status != GraphicsObjectStatus.loaded)
                 {
-                    modelPack.LoadTask = Task.Run(async () =>
+                    modelPack.LoadTask = Task.Run(() =>
                     {
-                        BinaryReader reader = new BinaryReader((await pmxFile.OpenReadAsync()).AsStreamForRead());
+                        BinaryReader reader = OpenReader(pmxFile).Result;
                         modelPack.Reload(reader);
                         reader.Dispose();
                         appBody.ProcessingList.AddObject(modelPack.GetMesh());
@@ -45,10 +45,10 @@ namespace Coocoo3D.UI
                     });
                 }
             }
-            if (modelPack.Status != GraphicsObjectStatus.loaded && modelPack.LoadTask != null) await modelPack.LoadTask;
+            if (modelPack.Status != GraphicsObjectStatus.loaded && modelPack.LoadTask != null) modelPack.LoadTask.Wait();
 
             GameObject gameObject = new GameObject();
-            gameObject.Reload2(appBody.ProcessingList, modelPack, GetTextureList(appBody, storageFolder, modelPack.pmx), pmxPath);
+            gameObject.Reload2(appBody.ProcessingList, modelPack, GetTextureList(appBody, storageFolder.Path, modelPack.pmx), pmxPath);
             scene.AddGameObject(gameObject);
 
             appBody.RequireRender();
@@ -59,7 +59,7 @@ namespace Coocoo3D.UI
             Components.LightingComponent lightingComponent = new Components.LightingComponent();
             lighting.AddComponent(lightingComponent);
             lighting.Name = "Lighting";
-            lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.570796326794f, 0);
+            lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.3962634015954636615389526147909f, 0);
             lighting.Position = new Vector3(0, 1, 0);
             lightingComponent.Color = new Vector4(3, 3, 3, 1);
             lightingComponent.Range = 10;
@@ -98,31 +98,28 @@ namespace Coocoo3D.UI
             appBody.Recording = true;
         }
 
-        public static List<string> GetTextureList(Coocoo3DMain appBody, StorageFolder storageFolder, PMXFormat pmx)
+        public static List<string> GetTextureList(Coocoo3DMain appBody, string storageFolder, PMXFormat pmx)
         {
             List<string> paths = new List<string>();
-            List<string> relativePaths = new List<string>();
             foreach (var vTex in pmx.Textures)
             {
                 string relativePath = vTex.TexturePath.Replace("//", "\\").Replace('/', '\\');
-                string texPath = Path.Combine(storageFolder.Path, relativePath);
+                string texPath = Path.Combine(storageFolder, relativePath);
                 paths.Add(texPath);
-                relativePaths.Add(relativePath);
             }
             for (int i = 0; i < pmx.Textures.Count; i++)
             {
-                appBody.mainCaches.Texture(paths[i], relativePaths[i], storageFolder);
-                Texture2DPack tex = appBody.mainCaches.TextureCaches.GetOrCreate(paths[i]);
+                appBody.mainCaches.Texture(paths[i]);
             }
             return paths;
         }
 
         public static void LoadTexture(Coocoo3DMain appBody, StorageFile storageFile, StorageFolder storageFolder)
         {
-            string relatePath = Path.GetRelativePath(storageFolder.Path, storageFile.Path);
-            appBody.mainCaches.Texture(storageFolder.Path, relatePath, storageFolder);
-            appBody.mainCaches.TextureCaches.GetOrCreate(storageFolder.Path);
+            appBody.mainCaches.Texture(storageFolder.Path);
         }
+
+        public static async Task<BinaryReader> OpenReader(StorageFile file) => new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
 
         //public static async Task LoadPassSetting(Coocoo3DMain appBody, StorageFile file, StorageFolder storageFolder)
         //{

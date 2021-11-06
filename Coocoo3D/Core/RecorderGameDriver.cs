@@ -49,7 +49,7 @@ namespace Coocoo3D.Core
             context.PlayTime = FrameIntervalF * RenderCount;
             RenderCount++;
 
-            if (context.PlayTime >= StartTime || context.RequireResizeOuter)
+            if (context.PlayTime >= StartTime || context.RequireResize)
                 context.EnableDisplay = true;
             else
                 context.EnableDisplay = false;
@@ -87,19 +87,20 @@ namespace Coocoo3D.Core
             {
                 int index1 = RecordCount % c_frameCount;
                 var visualchannel = rpContext.visualChannels["main"];
-                if (rpContext.ReadBackTexture2D.GetWidth() != visualchannel.outputSize.X || rpContext.ReadBackTexture2D.GetHeight() != visualchannel.outputSize.Y)
+                var ReadBackTexture2D = rpContext.ReadBackTexture2D;
+                if (ReadBackTexture2D.GetWidth() != visualchannel.outputSize.X || ReadBackTexture2D.GetHeight() != visualchannel.outputSize.Y)
                 {
-                    rpContext.ReadBackTexture2D.Reload(visualchannel.outputSize.X, visualchannel.outputSize.Y, 4);
-                    graphicsContext.UpdateReadBackTexture(rpContext.ReadBackTexture2D);
+                    ReadBackTexture2D.Reload(visualchannel.outputSize.X, visualchannel.outputSize.Y, 4);
+                    graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
                 }
 
-                graphicsContext.CopyTexture(rpContext.ReadBackTexture2D, visualchannel.FinalOutput, index1);
+                graphicsContext.CopyTexture(ReadBackTexture2D, visualchannel.FinalOutput, index1);
                 if (RecordCount >= c_frameCount)
                 {
                     if (packs[exIndex] == null)
                     {
-                        int width = rpContext.ReadBackTexture2D.GetWidth();
-                        int height = rpContext.ReadBackTexture2D.GetHeight();
+                        int width = ReadBackTexture2D.GetWidth();
+                        int height = ReadBackTexture2D.GetHeight();
                         packs[exIndex] = new Pack1()
                         {
                             saveFolder = saveFolder,
@@ -113,7 +114,7 @@ namespace Coocoo3D.Core
                         packs[exIndex].runningTask.Wait();
                     }
 
-                    rpContext.ReadBackTexture2D.GetRaw<byte>(index1, packs[exIndex].imageData);
+                    ReadBackTexture2D.GetRaw<byte>(index1, packs[exIndex].imageData);
 
                     packs[exIndex].renderIndex = RecordCount - c_frameCount;
                     packs[exIndex].runningTask = Task.Run(packs[exIndex].task1);

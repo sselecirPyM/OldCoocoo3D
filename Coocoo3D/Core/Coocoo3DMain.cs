@@ -35,7 +35,6 @@ namespace Coocoo3D.Core
         #region Time
         ThreadPoolTimer threadPoolTimer;
 
-        //public DateTime LatestRenderTime = DateTime.Now;
         public long LatestRenderTime = 0;
         public CoreDispatcher Dispatcher;
         public event EventHandler FrameUpdated;
@@ -84,17 +83,13 @@ namespace Coocoo3D.Core
             RPContext.LoadTask = Task.Run(async () =>
             {
                 await RPAssetsManager.LoadAssets();
-                RPAssetsManager.InitializeRootSignature(graphicsDevice);
                 await RPContext.ReloadDefalutResources();
-                forwardRenderPipeline2.Reload();
-                postProcess.Reload();
                 widgetRenderer.Reload(RPContext);
                 if (graphicsDevice.IsRayTracingSupport())
                 {
                     //await rayTracingRenderPipeline1.ReloadAssets(RPContext);
                 }
 
-                miscProcess.ReloadAssets(graphicsDevice);
                 RequireRender();
             });
 
@@ -144,7 +139,6 @@ namespace Coocoo3D.Core
         public RenderPipeline.RenderPipelineContext RPContext = new RenderPipeline.RenderPipelineContext();
 
         public bool swapChainReady;
-        //public long[] StopwatchTimes = new long[8];
         public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
         public GraphicsContext graphicsContext { get => RPContext.graphicsContext; }
         Task RenderTask1;
@@ -209,9 +203,8 @@ namespace Coocoo3D.Core
             RPContext.dynamicContextWrite = RPContext.dynamicContextRead;
             RPContext.dynamicContextRead = temp1;
 
-            if (RPContext.gameDriverContext.RequireResizeOuter)
+            if (RPContext.gameDriverContext.RequireResize.SetFalse())
             {
-                RPContext.gameDriverContext.RequireResizeOuter = false;
                 graphicsDevice.SetLogicalSize(RPContext.gameDriverContext.NewSize);
                 graphicsDevice.WaitForGpu();
             }
@@ -247,7 +240,7 @@ namespace Coocoo3D.Core
                 miscProcess.Process(RPContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
-                bool thisFrameReady = RPAssetsManager.Ready && currentRenderPipeline.Ready && postProcess.Ready && widgetRenderer.Ready;
+                bool thisFrameReady = RPAssetsManager.Ready  && widgetRenderer.Ready;
                 if (thisFrameReady)
                 {
                     UI.UIImGui.GUI(this);
@@ -301,38 +294,6 @@ namespace Coocoo3D.Core
         #endregion
         public bool Recording = false;
 
-        public int currentRenderPipelineIndex;
-        public int renderPipelineIndex;
-        public void SwitchToRenderPipeline(int index)
-        {
-            if (currentRenderPipelineIndex != index)
-            {
-                currentRenderPipelineIndex = index;
-                if (currentRenderPipelineIndex == 0)
-                {
-                    _currentRenderPipeline = forwardRenderPipeline2;
-                    RPContext.SetCurrentPassSetting(RPContext.defaultPassSetting);
-                }
-                if (currentRenderPipelineIndex == 1)
-                {
-                    _currentRenderPipeline = forwardRenderPipeline2;
-                    RPContext.SetCurrentPassSetting(RPContext.deferredPassSetting);
-                }
-                if (currentRenderPipelineIndex == 2)
-                {
-                    //_currentRenderPipeline = rayTracingRenderPipeline1;
-                }
-                else if (currentRenderPipelineIndex == 3)
-                //else if (currentRenderPipelineIndex == 2)
-                {
-                    if (RPContext.customPassSetting != null)
-                    {
-                        _currentRenderPipeline = forwardRenderPipeline2;
-                        RPContext.SetCurrentPassSetting(RPContext.customPassSetting);
-                    }
-                }
-            }
-        }
     }
 
     public struct PerformaceSettings

@@ -24,22 +24,8 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
         public Dictionary<string, RootSignature> signaturePass = new Dictionary<string, RootSignature>();
 
-
-        public RootSignature rootSignatureSkinning = new RootSignature();
-        //public RootSignature rtLocal = new RootSignature();
-        //public RootSignature rtGlobal = new RootSignature();
-
         public DefaultResource defaultResource;
         public bool Ready;
-        public void InitializeRootSignature(GraphicsDevice graphicsDevice)
-        {
-            rootSignatureSkinning.ReloadSkinning(graphicsDevice);
-            if (graphicsDevice.IsRayTracingSupport())
-            {
-                //rtLocal.RayTracingLocal(graphicsDevice);
-                //rtGlobal.ReloadCompute(graphicsDevice, new GraphicSignatureDesc[] { GSD.UAVTable, GSD.SRV, GSD.CBV, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, GSD.SRVTable, });
-            }
-        }
 
         public async Task LoadAssets()
         {
@@ -78,15 +64,6 @@ namespace Coocoo3D.RenderPipeline
             }
             Ready = true;
         }
-        //protected void RegVSAssets(string name, string path)
-        //{
-        //    VertexShader vertexShader = new VertexShader();
-        //    if (Path.GetExtension(path) == ".hlsl")
-        //        vertexShader.CompileInitialize1(ReadFile(path).Result, "main", new MacroEntry[0]);
-        //    else
-        //        vertexShader.Initialize(ReadFile(path).Result);
-        //    VSAssets.Add(name, vertexShader);
-        //}
         protected void RegVSAssets1(string name, string path, ConcurrentDictionary<string, VertexShader> assets)
         {
             VertexShader vertexShader = new VertexShader();
@@ -96,15 +73,6 @@ namespace Coocoo3D.RenderPipeline
                 vertexShader.Initialize(ReadFile1(path).Result);
             assets.TryAdd(name, vertexShader);
         }
-        //protected void RegPSAssets(string name, string path)
-        //{
-        //    PixelShader pixelShader = new PixelShader();
-        //    if (Path.GetExtension(path) == ".hlsl")
-        //        pixelShader.CompileInitialize1(ReadFile(path).Result, "main", new MacroEntry[0]);
-        //    else
-        //        pixelShader.Initialize(ReadFile(path).Result);
-        //    PSAssets.Add(name, pixelShader);
-        //}
         protected void RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
         {
             PixelShader pixelShader = new PixelShader();
@@ -171,12 +139,12 @@ namespace Coocoo3D.RenderPipeline
         }
         public RootSignature GetRootSignature(GraphicsDevice graphicsDevice, string s)
         {
-            if (signaturePass.TryGetValue(s, out RootSignature g))
-                return g;
-            g = new RootSignature();
-            g.Reload(graphicsDevice, fromString(s));
-            signaturePass[s] = g;
-            return g;
+            if (signaturePass.TryGetValue(s, out RootSignature rs))
+                return rs;
+            rs = new RootSignature();
+            rs.Reload(graphicsDevice, fromString(s));
+            signaturePass[s] = rs;
+            return rs;
         }
         public GraphicSignatureDesc[] fromString(string s)
         {

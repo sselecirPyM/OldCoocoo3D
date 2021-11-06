@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 using Coocoo3DGraphics;
 using Coocoo3D.Components;
 using Coocoo3D.Numerics;
+using Coocoo3D.RenderPipeline;
+using Coocoo3D.Core;
+using Vortice.Mathematics;
 
 namespace Coocoo3D.Present
 {
@@ -30,41 +33,6 @@ namespace Coocoo3D.Present
             return ((int)LightingType).CompareTo((int)other.LightingType);
         }
 
-        public Matrix4x4 GetLightingMatrix(float ExtendRange, Vector3 cameraLookAt, Vector3 cameraRotation, float cameraDistance)
-        {
-            Matrix4x4 vp = Matrix4x4.Identity;
-            if (LightingType == LightingType.Directional)
-            {
-                Matrix4x4 rot = Matrix4x4.CreateFromYawPitchRoll(-cameraRotation.Y, -cameraRotation.X, -cameraRotation.Z);
-                bool extendY = ((cameraRotation.X + MathF.PI / 4) % MathF.PI + MathF.PI) % MathF.PI < MathF.PI / 2;
-
-
-                Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
-                var pos = Vector3.Transform(-Vector3.UnitZ * 512, rotateMatrix);
-                var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
-                Matrix4x4 pMatrix;
-
-                float a = MathF.Abs((cameraRotation.X % MathF.PI + MathF.PI) % MathF.PI - MathF.PI / 2) / (MathF.PI / 4) - 0.5f;
-                a = Math.Clamp(a * a - 0.25f, 0, 1);
-                float dist = MathF.Abs(cameraDistance) * 1.5f;
-                if (!extendY)
-                    pMatrix = Matrix4x4.CreateOrthographic(dist + ExtendRange, dist + ExtendRange, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
-                else
-                {
-                    pMatrix = Matrix4x4.CreateOrthographic(dist + ExtendRange * (3 * a + 1), dist + ExtendRange * (3 * a + 1), 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
-                }
-                Vector3 viewdirXZ = Vector3.Normalize(Vector3.Transform(new Vector3(0, 0, 1), rot));
-                Vector3 lookat = cameraLookAt + Vector3.UnitY * 8 + a * viewdirXZ * ExtendRange * 2;
-                Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos + lookat, lookat, up);
-                vp = Matrix4x4.Multiply(vMatrix, pMatrix);
-
-            }
-            else if (LightingType == LightingType.Point)
-            {
-
-            }
-            return vp;
-        }
         public Matrix4x4 GetLightingMatrix(Matrix4x4 cameraInvert)
         {
             Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
@@ -91,31 +59,49 @@ namespace Coocoo3D.Present
             Vector3 real = Vector3.Transform((whMax + whMin) * 0.5f, rotateMatrix);
             return Matrix4x4.CreateLookAt(real + pos, real, up) * Matrix4x4.CreateOrthographic(whMax2.X, whMax2.Y, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
         }
-        public Matrix4x4 GetLightingMatrix(BoundingBox bb)
+
+        public Matrix4x4 GetLightingMatrix(VisualChannel vc, RenderPipelineDynamicContext dc)
         {
             Matrix4x4 vp = Matrix4x4.Identity;
-            if (LightingType == LightingType.Directional)
+            Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
+            Matrix4x4.Invert(rotateMatrix, out Matrix4x4 iRot);
+            var pos = Vector3.Transform(-Vector3.UnitZ * 512, rotateMatrix);
+            var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
+            Vector3 whMin = Vector3.Zero;
+            Vector3 whMax = Vector3.Zero;
+            Matrix4x4 v = Matrix4x4.CreateLookAt(pos, Vector3.Zero, up);
+            if (dc.volumes.Count > 0)
             {
-                Matrix4x4 rotateMatrix = Matrix4x4.CreateFromQuaternion(Rotation);
-                Matrix4x4.Invert(rotateMatrix, out Matrix4x4 iRot);
-                var pos = Vector3.Transform(-Vector3.UnitZ * 512, rotateMatrix);
-                var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
-                Matrix4x4 v = Matrix4x4.CreateLookAt(pos + bb.position, bb.position, up);
-                Vector3 whMin = Vector3.Zero;
-                Vector3 whMax = Vector3.Zero;
+                var volume = dc.volumes[0];
+                var size1 = Vector3.Abs(volume.Size);
+                var bb = new BoundingBox(volume.Position - size1 * 0.5f, volume.Position + size1 * 0.5f);
+
+                Vector3 v1 = Vector3.Transform(bb.Extent * new Vector3(-1, -1, -1), iRot) + bb.Center;
+                whMin = v1;
+                whMax = v1;
+            }
+            foreach (var volume in dc.volumes)
+            {
+                var size1 = Vector3.Abs(volume.Size);
+                var bb = new BoundingBox(volume.Position - size1 * 0.5f, volume.Position + size1 * 0.5f);
+
                 for (int i = -1; i <= 1; i += 2)
                     for (int j = -1; j <= 1; j += 2)
                         for (int k = -1; k <= 1; k += 2)
                         {
-                            Vector3 v1 = Vector3.Transform(bb.extension * new Vector3(i, j, k) * 0.5f, iRot);
+                            Vector3 v1 = Vector3.Transform(bb.Extent * new Vector3(i, j, k), iRot) + bb.Center;
                             whMin = Vector3.Min(v1, whMin);
                             whMax = Vector3.Max(v1, whMax);
                         }
-
-                whMax = whMax - whMin;
-                Matrix4x4 p = Matrix4x4.CreateOrthographic(whMax.X, whMax.Y, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
-                vp = v * p;
             }
+
+
+            Vector3 range = whMax - whMin;
+            Vector3 pos1 = whMin + range * 0.5f;
+            Matrix4x4 v2 = Matrix4x4.CreateLookAt(pos + pos1, pos1, up);
+            Matrix4x4 p = Matrix4x4.CreateOrthographic(range.X, range.Y, 0.0f, 1024) * Matrix4x4.CreateScale(-1, 1, 1);
+            vp = v2 * p;
+
             return vp;
         }
         public Vector3 GetPositionOrDirection()

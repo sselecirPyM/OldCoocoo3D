@@ -10,12 +10,12 @@ namespace Coocoo3D.ResourceWarp
     public class KnownFile
     {
         public DateTimeOffset lastModifiedTime;
-        public StorageFolder folder;
         public StorageFile file;
         public string fullPath;
         public string relativePath;
+        public bool requireReload;
 
-        public async Task<bool> IsModified()
+        public async Task<bool> IsModified(StorageFolder folder)
         {
             try
             {

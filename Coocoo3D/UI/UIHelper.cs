@@ -25,6 +25,7 @@ namespace Coocoo3D.UI
                     UIImGui.currentFolder = folder;
                     var items = await folder.GetItemsAsync();
                     SetViewFolder(items);
+                    appBody.mainCaches.AddFolder(folder);
                 }
                 appBody.RequireRender();
             }
@@ -66,7 +67,7 @@ namespace Coocoo3D.UI
                     case ".pmx":
                         try
                         {
-                            await UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, folder);
+                            UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, folder);
                         }
                         catch (Exception exception)
                         {
@@ -86,11 +87,6 @@ namespace Coocoo3D.UI
                             }
                             else
                             {
-
-                                Components.MMDMotion motion = new Components.MMDMotion();
-                                motion.Reload(motionSet);
-                                appBody.mainCaches.motions[file.Path] = motion;
-
                                 foreach (var gameObject in appBody.SelectedGameObjects)
                                 {
                                     var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();

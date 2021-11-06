@@ -163,10 +163,6 @@
     {
       "name": "_BRDFLUT",
       "path": "Assets/Textures/brdflut.png"
-    },
-    {
-      "name": "_UI1Texture",
-      "path": "Assets/Textures/UI_1.png"
     }
   ]
 }

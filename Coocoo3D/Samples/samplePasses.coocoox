@@ -3,6 +3,7 @@
 <!--RenderSequence决定渲染流程-->
 <!--加入vertex shader/geometry shader/pixel shader来直接使用或者覆盖默认资源-->
 <PassSetting>
+  <Name>前向渲染</Name>
   <RenderSequence>
     <!--Type为DrawScreen时会绘制一个正方形，为空时绘制场景里的所有物体-->
      <Pass>

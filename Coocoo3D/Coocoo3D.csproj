@@ -136,7 +136,6 @@
     <Compile Include="Components\VolumeComponent.cs" />
     <Compile Include="Core\Input.cs" />
     <Compile Include="Base\Physics3DScene.cs" />
-    <Compile Include="Numerics\BoundingBox.cs" />
     <Compile Include="Numerics\Int2.cs" />
     <Compile Include="Present\CameraMotion.cs" />
     <Compile Include="Core\GameDriver.cs" />
@@ -237,8 +236,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\Textures\brdflut.png" />
-    <Content Include="Assets\Textures\UI_1.png" />
-    <Content Include="Assets\Textures\UI_0.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />

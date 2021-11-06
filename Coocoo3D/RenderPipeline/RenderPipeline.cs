@@ -19,8 +19,6 @@ namespace Coocoo3D.RenderPipeline
 
         public virtual void BeginFrame() { }
 
-        public volatile bool Ready;
-
         protected Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
         {
             if (texture == null) return error;
@@ -56,24 +54,6 @@ namespace Coocoo3D.RenderPipeline
         {
             int variant = pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc);
             graphicsContext.SetPSO(pso, variant);
-        }
-
-        protected async Task<IBuffer> ReadFile(string uri)
-        {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
-            return await FileIO.ReadBufferAsync(file);
-        }
-        protected async Task<byte[]> ReadAllBytes(string uri)
-        {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
-            var stream = await file.OpenReadAsync();
-            DataReader dataReader = new DataReader(stream);
-            await dataReader.LoadAsync((uint)stream.Size);
-            byte[] data = new byte[stream.Size];
-            dataReader.ReadBytes(data);
-            stream.Dispose();
-            dataReader.Dispose();
-            return data;
         }
     }
 }

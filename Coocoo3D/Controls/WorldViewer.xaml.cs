@@ -13,8 +13,6 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Coocoo3DGraphics;
-using Windows.Storage;
-using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.Devices.Input;
@@ -46,7 +44,7 @@ namespace Coocoo3D.Controls
             var info = DisplayInformation.GetForCurrentView();
             AppBody.graphicsDevice.SetSwapChainPanel(swapChainPanel, (float)swapChainPanel.ActualWidth, (float)swapChainPanel.ActualHeight, swapChainPanel.CompositionScaleX, swapChainPanel.CompositionScaleY, info.LogicalDpi);
             AppBody.GameDriverContext.NewSize = new Vector2((float)ActualWidth, (float)ActualHeight);
-            AppBody.GameDriverContext.RequireResizeOuter = true;
+            AppBody.GameDriverContext.RequireResize = true;
             AppBody.swapChainReady = true;
             AppBody.RequireRender();
             swapChainPanel.SizeChanged -= SwapChainPanel_SizeChanged;
@@ -56,7 +54,7 @@ namespace Coocoo3D.Controls
         private void SwapChainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             AppBody.GameDriverContext.NewSize = e.NewSize.ToVector2();
-            AppBody.GameDriverContext.RequireResizeOuter = true;
+            AppBody.GameDriverContext.RequireResize = true;
             AppBody.RequireRender();
         }
 

@@ -40,8 +40,7 @@ namespace Coocoo3D.RenderPipeline
         public float FrameInterval;
         public float PlaySpeed;
         public volatile bool RequireResetPhysics;
-        //public bool RequireResize;
-        public bool RequireResizeOuter;
+        public bool RequireResize;
         public Vector2 NewSize;
         public RecordSettings recordSettings;
 
@@ -79,8 +78,6 @@ namespace Coocoo3D.RenderPipeline
         public TextureCube ReflectMap = new TextureCube();
 
         public MMDMesh ndcQuadMesh = new MMDMesh();
-        //public MeshBuffer SkinningMeshBuffer = new MeshBuffer();
-        //public int SkinningMeshBufferSize;
         public int frameRenderCount;
 
         public RPAssetsManager RPAssetsManager = new RPAssetsManager();
@@ -116,12 +113,7 @@ namespace Coocoo3D.RenderPipeline
         public Format outputFormat = Format.R16G16B16A16_Float;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
 
-        public XmlSerializer PassSettingSerializer = new XmlSerializer(typeof(PassSetting));
-        public PassSetting defaultPassSetting;
-        public PassSetting deferredPassSetting;
-        //public PassSetting RTPassSetting;
-        public PassSetting currentPassSetting;
-        public PassSetting customPassSetting;
+        public string currentPassSetting1 = "ms-appx:///Samples\\samplePasses.coocoox";
 
         public Int2 screenSize;
         public float dpi = 96.0f;
@@ -146,7 +138,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext1.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
             AddVisualChannel("second");
-            //graphicsDevice.InitializeMeshBuffer(SkinningMeshBuffer, 0);
+
         }
 
         public VisualChannel AddVisualChannel(string name)
@@ -160,10 +152,14 @@ namespace Coocoo3D.RenderPipeline
 
         public void BeginDynamicContext(bool enableDisplay, Settings settings)
         {
+            mainCaches.GetPassSetting("ms-appx:///Samples\\samplePasses.coocoox");
+            mainCaches.GetPassSetting("ms-appx:///Samples\\sampleDeferredPasses.coocoox");
             dynamicContextWrite.FrameBegin();
             dynamicContextWrite.EnableDisplay = enableDisplay;
             dynamicContextWrite.settings = settings;
-            dynamicContextWrite.currentPassSetting = currentPassSetting;
+
+            dynamicContextWrite.currentPassSetting = mainCaches.GetPassSetting(currentPassSetting1);
+
             dynamicContextWrite.frameRenderIndex = frameRenderCount;
             frameRenderCount++;
         }
@@ -194,7 +190,6 @@ namespace Coocoo3D.RenderPipeline
                 CBs_Bone.Add(constantBuffer);
             }
             _Data1 data1 = new _Data1();
-            //Vector3 camPos = dynamicContextRead.cameras[0].Pos;
             Span<Vector3> d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
             for (int i = 0; i < count; i++)
             {
@@ -286,7 +281,7 @@ namespace Coocoo3D.RenderPipeline
                 //graphicsContext.UploadMesh(mesh);
 
                 graphicsContext.BeginUpdateMesh(mesh);
-                graphicsContext.UpdateMesh<Vector3>(mesh, rendererComponent.meshPosData1,0);
+                graphicsContext.UpdateMesh<Vector3>(mesh, rendererComponent.meshPosData1, 0);
                 graphicsContext.EndUpdateMesh(mesh);
             }
             #endregion
@@ -345,10 +340,8 @@ namespace Coocoo3D.RenderPipeline
 
         public void ReloadScreenSizeResources()
         {
-            int x = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
-            int y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
-            screenSize.X = x;
-            screenSize.Y = y;
+            screenSize.X = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
+            screenSize.Y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
 
             dpi = graphicsDevice.GetDpi();
             logicScale = dpi / 96.0f;
@@ -394,26 +387,10 @@ namespace Coocoo3D.RenderPipeline
 
             foreach (var tex2dDef in RPAssetsManager.defaultResource.texture2Ds)
             {
-                Texture2D tex2d = new Texture2D();
-                await ReloadTexture2DNoMip(tex2d, processingList, tex2dDef.Path);
-                mainCaches.SetTexture(tex2dDef.Name, tex2d);
+                ReloadTexture2DNoSrgb(tex2dDef.Path);
             }
 
-            defaultPassSetting = (PassSetting)PassSettingSerializer.Deserialize(OpenReadStream("Samples/samplePasses.coocoox").Result);
-            deferredPassSetting = (PassSetting)PassSettingSerializer.Deserialize(OpenReadStream("Samples/sampleDeferredPasses.coocoox").Result);
-            //RTPassSetting = (PassSetting)PassSettingSerializer.Deserialize(OpenReadStream("DefaultResources/DeferredRayTracingPassSetting.xml").Result);
-
-            //RTs["_Output0"] = outputRTV;
-            //RPAssetsManager.texture2ds["_Final0"] = finalOutput;
-
-            SetCurrentPassSetting(defaultPassSetting);
-
             Initilized = true;
-        }
-
-        public void SetCurrentPassSetting(PassSetting passSetting)
-        {
-            currentPassSetting = passSetting;
         }
 
         public bool ConfigPassSettings(PassSetting passSetting)
@@ -539,25 +516,9 @@ namespace Coocoo3D.RenderPipeline
                 return SkyBox;
             return null;
         }
-        private async Task ReloadTexture2D(Texture2D texture2D, ProcessingList processingList, string uri)
+        private void ReloadTexture2DNoSrgb( string uri)
         {
-            Uploader uploader = await Texture2DPack.UploaderTex2D(uri);
-            processingList.AddObject(texture2D, uploader);
-        }
-        private async Task ReloadTexture2DNoMip(Texture2D texture2D, ProcessingList processingList, string uri)
-        {
-            Uploader uploader = await Texture2DPack.UploaderTex2DNoMip("ms-appx:///" + uri);
-            processingList.AddObject(texture2D, uploader);
-        }
-        protected async Task<IBuffer> ReadFile(string uri)
-        {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///" + uri));
-            return await FileIO.ReadBufferAsync(file);
-        }
-        protected async Task<Stream> OpenReadStream(string uri)
-        {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///" + uri));
-            return (await file.OpenAsync(FileAccessMode.Read)).AsStreamForRead();
+            mainCaches.Texture("ms-appx:///" + uri, false);
         }
     }
 }

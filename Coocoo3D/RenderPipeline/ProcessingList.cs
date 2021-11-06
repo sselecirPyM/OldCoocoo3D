@@ -11,18 +11,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class ProcessingList
     {
-        static void Move1<T>(IList<T> source, IList<T> target)
-        {
-            lock (source)
-            {
-                for (int i = 0; i < source.Count; i++)
-                {
-                    target.Add(source[i]);
-                }
-                source.Clear();
-            }
-        }
-
         public List<Object> loadList = new List<object>();
 
         public void AddObject(MMDMesh mesh)
@@ -63,7 +51,10 @@ namespace Coocoo3D.RenderPipeline
 
         public void MoveToAnother(ProcessingList another)
         {
-            Move1(loadList, another.loadList);
+            var temp = another.loadList;
+            another.loadList = loadList;
+            loadList = temp;
+            loadList.Clear();
         }
 
         public bool IsEmpty()
@@ -77,9 +68,9 @@ namespace Coocoo3D.RenderPipeline
             {
                 if (obj is TextureCubeUploadPack p1)
                     graphicsContext.UploadTexture(p1.texture, p1.uploader);
-                else if(obj is Texture2DUploadPack p2)
+                else if (obj is Texture2DUploadPack p2)
                     graphicsContext.UploadTexture(p2.texture, p2.uploader);
-                else if(obj is MMDMesh p3)
+                else if (obj is MMDMesh p3)
                     graphicsContext.UploadMesh(p3);
             }
             loadList.Clear();
