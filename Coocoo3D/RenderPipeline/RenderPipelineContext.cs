@@ -13,7 +13,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Coocoo3D.Utility;
@@ -44,7 +43,7 @@ namespace Coocoo3D.RenderPipeline
         public Vector2 NewSize;
         public RecordSettings recordSettings;
 
-        public DateTime LatestRenderTime;
+        public long LatestRenderTime;
 
         public void RequireRender(bool updateEntities)
         {
@@ -94,21 +93,6 @@ namespace Coocoo3D.RenderPipeline
 
         public ProcessingList processingList = new ProcessingList();
 
-        public PSODesc SkinningDesc = new PSODesc
-        {
-            blendState = BlendState.none,
-            cullMode = CullMode.Back,
-            depthBias = 0,
-            slopeScaledDepthBias = 0,
-            dsvFormat = Format.Unknown,
-            inputLayout = InputLayout.mmd,
-            ptt = PrimitiveTopologyType.Point,
-            rtvFormat = Format.Unknown,
-            renderTargetCount = 0,
-            streamOutput = true,
-            wireFrame = false,
-        };
-
         public Format gBufferFormat = Format.R16G16B16A16_UNorm;
         public Format outputFormat = Format.R16G16B16A16_Float;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
@@ -137,9 +121,14 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.Reload(graphicsDevice);
             graphicsContext1.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
-            AddVisualChannel("second");
 
         }
+
+        public void DelayAddVisualChannel(string name)
+        {
+            delayAddVc.Enqueue(name);
+        }
+        Queue<string> delayAddVc = new Queue<string>();
 
         public VisualChannel AddVisualChannel(string name)
         {
@@ -289,7 +278,11 @@ namespace Coocoo3D.RenderPipeline
 
         public void PreConfig()
         {
-            if (!Initilized) return;
+            if (!Initialized) return;
+            if(delayAddVc.TryDequeue(out var vcName))
+            {
+                AddVisualChannel(vcName);
+            }
             ConfigVisualChannels();
             ConfigPassSettings(dynamicContextRead.currentPassSetting);
             foreach (var visualChannel in visualChannels.Values)
@@ -351,20 +344,21 @@ namespace Coocoo3D.RenderPipeline
         {
             foreach (var visualChannel1 in visualChannels.Values)
             {
-                if (visualChannel1.outputSize.X != visualChannel1.FinalOutput.width || visualChannel1.outputSize.Y != visualChannel1.FinalOutput.height)
+                var outputSize = visualChannel1.outputSize;
+                if (outputSize.X != visualChannel1.FinalOutput.width || outputSize.Y != visualChannel1.FinalOutput.height)
                 {
-                    visualChannel1.OutputRTV.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, outputFormat);
+                    visualChannel1.OutputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
                     mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
 
-                    visualChannel1.FinalOutput.ReloadAsRTVUAV(visualChannel1.outputSize.X, visualChannel1.outputSize.Y, swapChainFormat);
+                    visualChannel1.FinalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
                     mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
                 }
             }
         }
 
-        public bool Initilized = false;
+        public bool Initialized = false;
         public Task LoadTask;
         public async Task ReloadDefalutResources()
         {
@@ -373,7 +367,7 @@ namespace Coocoo3D.RenderPipeline
 
             Uploader upTexEnvCube = new Uploader();
             upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
-            processingList.AddObject(new TextureCubeUploadPack(SkyBox, upTexEnvCube));
+            processingList.AddObject(SkyBox, upTexEnvCube);
 
             IrradianceMap.ReloadAsRTVUAV(32, 32, 1, Format.R32G32B32A32_Float);
             ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, Format.R16G16B16A16_Float);
@@ -387,10 +381,10 @@ namespace Coocoo3D.RenderPipeline
 
             foreach (var tex2dDef in RPAssetsManager.defaultResource.texture2Ds)
             {
-                ReloadTexture2DNoSrgb(tex2dDef.Path);
+                mainCaches.Texture("ms-appx:///" + tex2dDef.Path, false);
             }
 
-            Initilized = true;
+            Initialized = true;
         }
 
         public bool ConfigPassSettings(PassSetting passSetting)
@@ -515,10 +509,6 @@ namespace Coocoo3D.RenderPipeline
             else if (name == "_SkyBox")
                 return SkyBox;
             return null;
-        }
-        private void ReloadTexture2DNoSrgb( string uri)
-        {
-            mainCaches.Texture("ms-appx:///" + uri, false);
         }
     }
 }

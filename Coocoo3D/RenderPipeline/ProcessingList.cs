@@ -20,18 +20,11 @@ namespace Coocoo3D.RenderPipeline
                 loadList.Add(mesh);
             }
         }
-        public void AddObject(TextureCubeUploadPack texture)
+        public void AddObject(TextureCube texture, Uploader uploader)
         {
             lock (loadList)
             {
-                loadList.Add(texture);
-            }
-        }
-        public void AddObject(Texture2DUploadPack texture)
-        {
-            lock (loadList)
-            {
-                loadList.Add(texture);
+                loadList.Add(new TextureCubeUploadPack( texture,uploader));
             }
         }
         public void AddObject(Texture2D texture2D, Uploader uploader)

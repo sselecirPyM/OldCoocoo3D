@@ -1,266 +1,225 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<!--入门-->
-<!--RenderSequence决定渲染流程-->
-<!--加入vertex shader/geometry shader/pixel shader来直接使用或者覆盖默认资源-->
-<PassSetting>
-  <Name>前向渲染</Name>
-  <RenderSequence>
-    <!--Type为DrawScreen时会绘制一个正方形，为空时绘制场景里的所有物体-->
-     <Pass>
-      <Name>DrawSkyBox</Name>
-      <Type>DrawScreen</Type>
-      <ClearDepth>1</ClearDepth>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass> 
-    <Pass>
-      <Name>ShadowMapPass</Name>
-      <!--Filter可以指定为以下值-->
-      <!--Opaque,Transparent,SelectedObject-->
-      <!--仅当渲染物体时生效-->
-      <!--当存在指定名称纹理时Filter也为真-->
-      <Filter>Opaque</Filter>
-      <ClearDepth>1</ClearDepth>
-      <DepthBias>3000</DepthBias>
-      <SlopeScaledDepthBias>1.0</SlopeScaledDepthBias>
-      <DepthStencil>_ShadowMap0</DepthStencil>
-    </Pass>
-    <Pass>
-      <Name>Pass1</Name>
-      <!--混合模式有Alpha/Add-->
-      <BlendMode>Alpha</BlendMode>
-      <ClearDepth>1</ClearDepth>
-      <DepthStencil>_ScreenDepth0</DepthStencil>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur1</Name>
-      <Type>DrawScreen</Type>
-      <RenderTarget>_Blur0</RenderTarget>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur2</Name>
-      <Type>DrawScreen</Type>
-      <BlendMode>Add</BlendMode>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass>
-  </RenderSequence>
-  <!--渲染所需的中间缓冲区-->
-  <RenderTargets>
-    <RenderTarget>
-      <Name>_ShadowMap0</Name>
-      <!--Size由RenderPipelineContext.cs里的PrepareRenderTarget函数决定-->
-      <Size>
-        <!--ShadowMapSize,
-        OutputSize,-->
-        <Source>ShadowMapSize</Source>
-      </Size>
-      <!--Direct3D的DXGI格式，例如-->
-      <!--D32_Float-->
-      <!--R8G8B8A8_UNorm-->
-      <!--R16G16B16A16_Float-->
-      <!--R16G16B16A16_UNorm-->
-      <Format>D32_Float</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_ScreenDepth0</Name>
-      <Size>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>D32_Float</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_Blur0</Name>
-      <Size>
-        <Multiplier>0.5</Multiplier>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>R16G16B16A16_Float</Format>
-    </RenderTarget>
-  </RenderTargets>
-  <Passes>
-    <!--这里的pass名称和RenderSequence匹配-->
-    <!--源文件ForwardRenderPipeline2.cs可能提供更多信息-->
-    <!--渲染ShadowMap-->
-    <Pass>
-      <Name>ShadowMapPass</Name>
-      <!--主光源阴影摄像机-->
-      <Camera>ShadowMap</Camera>
-      <VertexShader>VS_ShadowMap</VertexShader>
-      <!--请看ForwardRenderPipeline2.cs里的_WriteCBV函数-->
-      <!--可输入到缓冲区的值-->
-      <!--Metallic:float,
-        Roughness:float,
-        Emission:float,
-        Diffuse:float4,
-        SpecularColor:float4,
-        Specular:float,
-        AmbientColor:float3,
-        ToonIndex:int,
-        TextureIndex:int,
-        Transparent:int,
-        CameraPosition:float3,
-        DrawFlags:int,
-        DeltaTime:float,
-        Time:float,
-        WidthHeight:int2,
-        Camera:float4x4,
-        CameraInvert:float4x4,
-        DirectionalLight:float4x4 float3 int float4,
-        IndirectMultiplier:float,
-        PointLights4: (float3 int float4)[4],
-        RandomValue:float,
-        ShadowVolume:float3 float float3 float-->
-      <!--如果与表情匹配则可以拿到表情值，类型为float-->
-      <!--如果不存在则视为float 0.0-->
-      <CBV>
-        <Index>1</Index>
-        <Datas>
-          <Data>Camera</Data>
-        </Datas>
-      </CBV>
-    </Pass>
-    <!--渲染天空盒-->
-    <Pass>
-      <Name>DrawSkyBox</Name>
-      <Camera>Main</Camera>
-      <!--默认资源在Coocoo3D/DefaultResources/DefaultResourceList.xml定义-->
-      <VertexShader>VS_SkyBox</VertexShader>
-      <PixelShader>PS_SkyBox</PixelShader>
-      <CBV>
-        <Index>0</Index>
-        <Datas>
-          <Data>Camera</Data>
-          <Data>CameraInvert</Data>
-          <Data>CameraPosition</Data>
-          <Data>IndirectMultiplier</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>3</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <!--天空盒立方体贴图-->
-        <Resource>_SkyBox</Resource>
-      </SRV>
-    </Pass>
-    <!--渲染物体-->
-    <Pass>
-      <Name>Pass1</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Pass1</PixelShader>
-      <CBV>
-        <Index>1</Index>
-        <Datas>
-          <Data>Camera</Data>
-          <Data>DirectionalLight</Data>
-          <Data>PointLights4</Data>
-          <Data>Metallic</Data>
-          <Data>Roughness</Data>
-          <Data>Emission</Data>
-          <Data>Specular</Data>
-          <Data>Diffuse</Data>
-          <Data>CameraPosition</Data>
-          <Data>IndirectMultiplier</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <!--模型纹理-->
-        <!--可以在材质页面滚动到底添加纹理，如果存在指定名称的纹理还可以在CBV里获得float值1.0，无论是否输入SRV中-->
-        <Resource>_Albedo</Resource>
-      </SRV>
-      <SRV>
-        <Index>1</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Albedo</Resource>
-      </SRV>
-      <SRV>
-        <Index>2</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ShadowMap0</Resource>
-      </SRV>
-      <SRV>
-        <Index>3</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <!--环境光高光-->
-        <Resource>_SkyBoxReflect</Resource>
-      </SRV>
-      <SRV>
-        <Index>4</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <!--环境光漫反射-->
-        <Resource>_SkyBoxIrradiance</Resource>
-      </SRV>
-      <SRV>
-        <Index>5</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <!--环境光高光预过滤积分表-->
-        <Resource>_BRDFLUT</Resource>
-      </SRV>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur1</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_SkyBox</VertexShader>
-      <PixelShader>PS_BloomBlur1</PixelShader>
-      <CBV>
-        <Index>0</Index>
-        <Datas>
-          <Data>WidthHeight</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Output0</Resource>
-      </SRV>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur2</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_SkyBox</VertexShader>
-      <PixelShader>PS_BloomBlur2</PixelShader>
-      <CBV>
-        <Index>0</Index>
-        <Datas>
-          <Data>WidthHeight</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Blur0</Resource>
-      </SRV>
-    </Pass>
-  </Passes>
-  <!--载入自定义着色器，可以覆盖默认值-->
-  <VertexShaders>
-    <VertexShader>
-      <!--<EntryPoint>main</EntryPoint>-->
-      <Name>VS_Pass1</Name>
-      <Path>VS_Pass1.hlsl</Path>
-    </VertexShader>
-  </VertexShaders>
-  <PixelShaders>
-    <PixelShader>
-      <Name>PS_Pass1</Name>
-      <Path>PS_Pass1.hlsl</Path>
-    </PixelShader>
-    <PixelShader>
-      <Name>PS_BloomBlur1</Name>
-      <Path>PS_BloomBlur1.hlsl</Path>
-    </PixelShader>
-    <PixelShader>
-      <Name>PS_BloomBlur2</Name>
-      <Path>PS_BloomBlur2.hlsl</Path>
-    </PixelShader>
-  </PixelShaders>
-  <!--可以载入纹理资源，可以覆盖默认值-->
-  <!--<Texture2Ds>
-    <Texture2D>
-      <Name></Name>
-      <Path></Path>
-    </Texture2D>
-  </Texture2Ds>-->
-</PassSetting>
+﻿{
+  "Name": "前向渲染",
+  "RenderSequence": [
+    {
+      "Name": "DrawSkyBox",
+      "Type": "DrawScreen",
+      "ClearDepth": "true",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    },
+    {
+      "Name": "ShadowMapPass",
+      "Filter": "Opaque",
+      "ClearDepth": "true",
+      "DepthBias": "3000",
+      "SlopeScaledDepthBias": "1.0",
+      "DepthStencil": "_ShadowMap0"
+    },
+    {
+      "Name": "Pass1",
+      "BlendMode": "Alpha",
+      "ClearDepth": "true",
+      "DepthStencil": "_ScreenDepth0",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    },
+    {
+      "Name": "BloomBlur1",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Blur0"
+      ]
+    },
+    {
+      "Name": "BloomBlur2",
+      "Type": "DrawScreen",
+      "BlendMode": "Add",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    }
+  ],
+  "RenderTargets": [
+    {
+      "Name": "_ShadowMap0",
+      "Size": {
+        "Source": "ShadowMapSize"
+      },
+      "Format": "D32_Float"
+    },
+    {
+      "Name": "_ScreenDepth0",
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "D32_Float"
+    },
+    {
+      "Name": "_Blur0",
+      "Size": {
+        "Multiplier": "0.5",
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_Float"
+    }
+  ],
+  "Passes": [
+    {
+      "Name": "ShadowMapPass",
+      "Camera": "ShadowMap",
+      "VertexShader": "VS_ShadowMap",
+      "CBVs": [
+        {
+          "Index": "1",
+          "Datas": [
+            "Camera"
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "DrawSkyBox",
+      "Camera": "Main",
+      "VertexShader": "VS_SkyBox",
+      "PixelShader": "PS_SkyBox",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "Camera",
+            "CameraInvert",
+            "CameraPosition",
+            "IndirectMultiplier"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "3",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBox"
+        }
+      ]
+    },
+    {
+      "Name": "Pass1",
+      "Camera": "Main",
+      "VertexShader": "VS_Pass1",
+      "PixelShader": "PS_Pass1",
+      "CBVs": [
+        {
+          "Index": "1",
+          "Datas": [
+            "Camera",
+            "DirectionalLight",
+            "PointLights4",
+            "Metallic",
+            "Roughness",
+            "Emission",
+            "Specular",
+            "Diffuse",
+            "CameraPosition",
+            "IndirectMultiplier"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Albedo"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_Albedo"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_ShadowMap0"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        },
+        {
+          "Index": "4",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxIrradiance"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        }
+      ]
+    },
+    {
+      "Name": "BloomBlur1",
+      "Camera": "Main",
+      "VertexShader": "VS_SkyBox",
+      "PixelShader": "PS_BloomBlur1",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "WidthHeight"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Output0"
+        }
+      ]
+    },
+    {
+      "Name": "BloomBlur2",
+      "Camera": "Main",
+      "VertexShader": "VS_SkyBox",
+      "PixelShader": "PS_BloomBlur2",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "WidthHeight"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Blur0"
+        }
+      ]
+    }
+  ],
+  "VertexShaders": [
+    {
+      "Name": "VS_Pass1",
+      "Path": "VS_Pass1.hlsl"
+    }
+  ],
+  "PixelShaders": [
+    {
+      "Name": "PS_Pass1",
+      "Path": "PS_Pass1.hlsl"
+    },
+    {
+      "Name": "PS_BloomBlur1",
+      "Path": "PS_BloomBlur1.hlsl"
+    },
+    {
+      "Name": "PS_BloomBlur2",
+      "Path": "PS_BloomBlur2.hlsl"
+    }
+  ]
+}

@@ -1,327 +1,355 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<!--如果你刚入门，请看samplePasses.coocoox文件-->
-<!--延迟渲染光源部分尚未完善-->
-<PassSetting>
-  <Name>延迟渲染</Name>
-  <RenderSequence>
-    <Pass>
-      <Name>ShadowMapPass</Name>
-      <Filter>Opaque</Filter>
-      <ClearDepth>1</ClearDepth>
-      <DepthBias>3000</DepthBias>
-      <SlopeScaledDepthBias>1.0</SlopeScaledDepthBias>
-      <DepthStencil>_ShadowMap0</DepthStencil>
-    </Pass>
-    <Pass>
-      <Name>GBuffer</Name>
-      <Filter>Opaque</Filter>
-      <ClearDepth>1</ClearDepth>
-      <DepthStencil>_ScreenDepth0</DepthStencil>
-      <RenderTarget>_ScreenColor0</RenderTarget>
-      <RenderTarget>_ScreenColor1</RenderTarget>
-      <RenderTarget>_ScreenColor2</RenderTarget>
-    </Pass>
-    <Pass>
-      <Name>Final</Name>
-      <Type>DrawScreen</Type>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass>
-    <Pass>
-      <Name>Pass1</Name>
-      <Filter>Transparent</Filter>
-      <BlendMode>Alpha</BlendMode>
-      <DepthStencil>_ScreenDepth0</DepthStencil>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur1</Name>
-      <Type>DrawScreen</Type>
-      <RenderTarget>_Blur0</RenderTarget>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur2</Name>
-      <Type>DrawScreen</Type>
-      <BlendMode>Add</BlendMode>
-      <RenderTarget>_Output0</RenderTarget>
-    </Pass>
-  </RenderSequence>
-  <RenderTargets>
-    <RenderTarget>
-      <Name>_ShadowMap0</Name>
-      <Size>
-        <Source>ShadowMapSize</Source>
-      </Size>
-      <Format>D32_Float</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_ScreenDepth0</Name>
-      <Size>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>D32_Float</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_ScreenColor0</Name>
-      <Size>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>R16G16B16A16_UNorm</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_ScreenColor1</Name>
-      <Size>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>R16G16B16A16_UNorm</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_ScreenColor2</Name>
-      <Size>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>R16G16B16A16_UNorm</Format>
-    </RenderTarget>
-    <RenderTarget>
-      <Name>_Blur0</Name>
-      <Size>
-        <Multiplier>0.5</Multiplier>
-        <Source>OutputSize</Source>
-      </Size>
-      <Format>R16G16B16A16_Float</Format>
-    </RenderTarget>
-  </RenderTargets>
-  <Passes>
-    <Pass>
-      <Name>ShadowMapPass</Name>
-      <Camera>ShadowMap</Camera>
-      <VertexShader>VS_ShadowMap</VertexShader>
-      <CBV>
-        <Index>1</Index>
-        <Datas>
-          <Data>Camera</Data>
-        </Datas>
-      </CBV>
-    </Pass>
-    <Pass>
-      <Name>GBuffer</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_DeferredGBuffer</PixelShader>
-      <CBV>
-        <Index>1</Index>
-        <Datas>
-          <Data>Camera</Data>
-          <Data>DirectionalLight</Data>
-          <Data>Metallic</Data>
-          <Data>Roughness</Data>
-          <Data>Emission</Data>
-          <Data>Specular</Data>
-          <Data>Diffuse</Data>
-          <Data>CameraPosition</Data>
-          <Data>IndirectMultiplier</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Albedo</Resource>
-      </SRV>
-      <SRV>
-        <Index>1</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Albedo</Resource>
-      </SRV>
-      <SRV>
-        <Index>2</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ShadowMap0</Resource>
-      </SRV>
-      <SRV>
-        <Index>3</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <Resource>_SkyBoxReflect</Resource>
-      </SRV>
-      <SRV>
-        <Index>4</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <Resource>_SkyBoxIrradiance</Resource>
-      </SRV>
-      <SRV>
-        <Index>5</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_BRDFLUT</Resource>
-      </SRV>
-    </Pass>
-    <Pass>
-      <Name>Final</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_SkyBox</VertexShader>
-      <PixelShader>PS_DeferredFinal</PixelShader>
-      <CBV>
-        <Index>0</Index>
-        <Datas>
-          <Data>Camera</Data>
-          <Data>CameraInvert</Data>
-          <Data>CameraPosition</Data>
-          <Data>IndirectMultiplier</Data>
-          <Data>DirectionalLight</Data>
-          <Data>PointLights4</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ScreenColor0</Resource>
-      </SRV>
-      <SRV>
-        <Index>1</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ScreenColor1</Resource>
-      </SRV>
-      <SRV>
-        <Index>2</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ScreenColor2</Resource>
-      </SRV>
-      <SRV>
-        <Index>3</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ScreenDepth0</Resource>
-      </SRV>
-      <SRV>
-        <Index>4</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <Resource>_SkyBoxReflect</Resource>
-      </SRV>
-      <SRV>
-        <Index>5</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <Resource>_SkyBoxIrradiance</Resource>
-      </SRV>
-      <SRV>
-        <Index>6</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_BRDFLUT</Resource>
-      </SRV>
-      <SRV>
-        <Index>7</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ShadowMap0</Resource>
-      </SRV>
-    </Pass>
-    <Pass>
-      <Name>Pass1</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_Pass1</VertexShader>
-      <PixelShader>PS_Pass1</PixelShader>
-      <CBV>
-        <Index>1</Index>
-        <Datas>
-          <Data>Camera</Data>
-          <Data>DirectionalLight</Data>
-          <Data>PointLights4</Data>
-          <Data>Metallic</Data>
-          <Data>Roughness</Data>
-          <Data>Emission</Data>
-          <Data>Specular</Data>
-          <Data>Diffuse</Data>
-          <Data>CameraPosition</Data>
-          <Data>IndirectMultiplier</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Albedo</Resource>
-      </SRV>
-      <SRV>
-        <Index>1</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Albedo</Resource>
-      </SRV>
-      <SRV>
-        <Index>2</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_ShadowMap0</Resource>
-      </SRV>
-      <SRV>
-        <Index>3</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <Resource>_SkyBoxReflect</Resource>
-      </SRV>
-      <SRV>
-        <Index>4</Index>
-        <ResourceType>TextureCube</ResourceType>
-        <Resource>_SkyBoxIrradiance</Resource>
-      </SRV>
-      <SRV>
-        <Index>5</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_BRDFLUT</Resource>
-      </SRV>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur1</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_SkyBox</VertexShader>
-      <PixelShader>PS_BloomBlur1</PixelShader>
-      <CBV>
-        <Index>0</Index>
-        <Datas>
-          <Data>WidthHeight</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Output0</Resource>
-      </SRV>
-    </Pass>
-    <Pass>
-      <Name>BloomBlur2</Name>
-      <Camera>Main</Camera>
-      <VertexShader>VS_SkyBox</VertexShader>
-      <PixelShader>PS_BloomBlur2</PixelShader>
-      <CBV>
-        <Index>0</Index>
-        <Datas>
-          <Data>WidthHeight</Data>
-        </Datas>
-      </CBV>
-      <SRV>
-        <Index>0</Index>
-        <ResourceType>Texture2D</ResourceType>
-        <Resource>_Blur0</Resource>
-      </SRV>
-    </Pass>
-  </Passes>
-  <VertexShaders>
-    <VertexShader>
-      <!--<EntryPoint>main</EntryPoint>-->
-      <Name>VS_Pass1</Name>
-      <Path>VS_Pass1.hlsl</Path>
-    </VertexShader>
-  </VertexShaders>
-  <PixelShaders>
-    <PixelShader>
-      <Name>PS_DeferredFinal</Name>
-      <Path>PS_DeferredFinal.hlsl</Path>
-    </PixelShader>
-    <PixelShader>
-      <Name>PS_DeferredGBuffer</Name>
-      <Path>PS_DeferredGBuffer.hlsl</Path>
-    </PixelShader>
-    <PixelShader>
-      <Name>PS_BloomBlur1</Name>
-      <Path>PS_BloomBlur1.hlsl</Path>
-    </PixelShader>
-    <PixelShader>
-      <Name>PS_BloomBlur2</Name>
-      <Path>PS_BloomBlur2.hlsl</Path>
-    </PixelShader>
-    <PixelShader>
-      <Name>PS_Pass1</Name>
-      <Path>PS_Pass1.hlsl</Path>
-    </PixelShader>
-  </PixelShaders>
-</PassSetting>
+﻿{
+  "Name": "延迟渲染",
+  "RenderSequence": [
+    {
+      "Name": "ShadowMapPass",
+      "Filter": "Opaque",
+      "ClearDepth": "true",
+      "DepthBias": "3000",
+      "SlopeScaledDepthBias": "1.0",
+      "DepthStencil": "_ShadowMap0"
+    },
+    {
+      "Name": "GBuffer",
+      "Filter": "Opaque",
+      "ClearDepth": "true",
+      "DepthStencil": "_ScreenDepth0",
+      "RenderTargets": [
+        "_ScreenColor0",
+        "_ScreenColor1",
+        "_ScreenColor2"
+      ]
+    },
+    {
+      "Name": "Final",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    },
+    {
+      "Name": "Pass1",
+      "Filter": "Transparent",
+      "BlendMode": "Alpha",
+      "DepthStencil": "_ScreenDepth0",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    },
+    {
+      "Name": "BloomBlur1",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Blur0"
+      ]
+    },
+    {
+      "Name": "BloomBlur2",
+      "Type": "DrawScreen",
+      "BlendMode": "Add",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    }
+  ],
+  "RenderTargets": [
+    {
+      "Name": "_ShadowMap0",
+      "Size": {
+        "Source": "ShadowMapSize"
+      },
+      "Format": "D32_Float"
+    },
+    {
+      "Name": "_ScreenDepth0",
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "D32_Float"
+    },
+    {
+      "Name": "_ScreenColor0",
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_UNorm"
+    },
+    {
+      "Name": "_ScreenColor1",
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_UNorm"
+    },
+    {
+      "Name": "_ScreenColor2",
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_UNorm"
+    },
+    {
+      "Name": "_Blur0",
+      "Size": {
+        "Multiplier": "0.5",
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_Float"
+    }
+  ],
+  "Passes": [
+    {
+      "Name": "ShadowMapPass",
+      "Camera": "ShadowMap",
+      "VertexShader": "VS_ShadowMap",
+      "CBVs": [
+        {
+          "Index": "1",
+          "Datas": [
+            "Camera"
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "GBuffer",
+      "Camera": "Main",
+      "VertexShader": "VS_Pass1",
+      "PixelShader": "PS_DeferredGBuffer",
+      "CBVs": [
+        {
+          "Index": "1",
+          "Datas": [
+            "Camera",
+            "DirectionalLight",
+            "Metallic",
+            "Roughness",
+            "Emission",
+            "Specular",
+            "Diffuse",
+            "CameraPosition",
+            "IndirectMultiplier"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Albedo"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_Albedo"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_ShadowMap0"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        },
+        {
+          "Index": "4",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxIrradiance"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        }
+      ]
+    },
+    {
+      "Name": "Final",
+      "Camera": "Main",
+      "VertexShader": "VS_SkyBox",
+      "PixelShader": "PS_DeferredFinal",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "Camera",
+            "CameraInvert",
+            "CameraPosition",
+            "IndirectMultiplier",
+            "DirectionalLight",
+            "PointLights4"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor0"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor1"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor2"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenDepth0"
+        },
+        {
+          "Index": "4",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxIrradiance"
+        },
+        {
+          "Index": "6",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        },
+        {
+          "Index": "7",
+          "ResourceType": "Texture2D",
+          "Resource": "_ShadowMap0"
+        }
+      ]
+    },
+    {
+      "Name": "Pass1",
+      "Camera": "Main",
+      "VertexShader": "VS_Pass1",
+      "PixelShader": "PS_Pass1",
+      "CBVs": [
+        {
+          "Index": "1",
+          "Datas": [
+            "Camera",
+            "DirectionalLight",
+            "PointLights4",
+            "Metallic",
+            "Roughness",
+            "Emission",
+            "Specular",
+            "Diffuse",
+            "CameraPosition",
+            "IndirectMultiplier"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Albedo"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_Albedo"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_ShadowMap0"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        },
+        {
+          "Index": "4",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxIrradiance"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        }
+      ]
+    },
+    {
+      "Name": "BloomBlur1",
+      "Camera": "Main",
+      "VertexShader": "VS_SkyBox",
+      "PixelShader": "PS_BloomBlur1",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "WidthHeight"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Output0"
+        }
+      ]
+    },
+    {
+      "Name": "BloomBlur2",
+      "Camera": "Main",
+      "VertexShader": "VS_SkyBox",
+      "PixelShader": "PS_BloomBlur2",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "WidthHeight"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Blur0"
+        }
+      ]
+    }
+  ],
+  "VertexShaders": [
+    {
+      "Name": "VS_Pass1",
+      "Path": "VS_Pass1.hlsl"
+    }
+  ],
+  "PixelShaders": [
+    {
+      "Name": "PS_DeferredFinal",
+      "Path": "PS_DeferredFinal.hlsl"
+    },
+    {
+      "Name": "PS_DeferredGBuffer",
+      "Path": "PS_DeferredGBuffer.hlsl"
+    },
+    {
+      "Name": "PS_BloomBlur1",
+      "Path": "PS_BloomBlur1.hlsl"
+    },
+    {
+      "Name": "PS_BloomBlur2",
+      "Path": "PS_BloomBlur2.hlsl"
+    },
+    {
+      "Name": "PS_Pass1",
+      "Path": "PS_Pass1.hlsl"
+    }
+  ]
+}

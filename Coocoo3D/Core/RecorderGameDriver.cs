@@ -16,12 +16,11 @@ namespace Coocoo3D.Core
     public class RecorderGameDriver : GameDriver
     {
         const int c_frameCount = 3;
-        public override bool Next(RenderPipelineContext rpContext)
+        public override bool Next(RenderPipelineContext rpContext,long now)
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
 
             context.NeedRender = 1;
-            DateTime now = DateTime.Now;
             context.LatestRenderTime = now;
 
             ref RecordSettings recordSettings = ref context.recordSettings;

@@ -380,28 +380,34 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetRootSignature(rootSignature);
 
                 Texture2D depthStencil = _GetTex2D1(combinedPass.DepthStencil);
-                Texture2D[] renderTargets = new Texture2D[combinedPass.RenderTargets.Count];
-                for (int i = 0; i < combinedPass.RenderTargets.Count; i++)
-                {
-                    renderTargets[i] = _GetTex2D1(combinedPass.RenderTargets[i]);
-                }
-
-                if (combinedPass.RenderTargets.Count == 0)
-                    graphicsContext.SetDSV(depthStencil, combinedPass.ClearDepth);
-                else if (combinedPass.RenderTargets.Count != 0 && depthStencil != null)
-                    graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
-                else if (combinedPass.RenderTargets.Count != 0 && depthStencil == null)
-                    graphicsContext.SetRTV(renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
 
                 PSODesc passPsoDesc;
+                if (combinedPass.RenderTargets == null || combinedPass.RenderTargets.Count == 0)
+                {
+                    graphicsContext.SetDSV(depthStencil, combinedPass.ClearDepth);
+                    passPsoDesc.rtvFormat = Format.Unknown;
+                }
+                else
+                {
+                    Texture2D[] renderTargets = new Texture2D[combinedPass.RenderTargets.Count];
+                    for (int i = 0; i < combinedPass.RenderTargets.Count; i++)
+                    {
+                        renderTargets[i] = _GetTex2D1(combinedPass.RenderTargets[i]);
+                    }
+                    if (depthStencil != null)
+                        graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, combinedPass.ClearRenderTarget, combinedPass.ClearDepth);
+                    else
+                        graphicsContext.SetRTV(renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
+                    passPsoDesc.rtvFormat = renderTargets[0].GetFormat();
+                }
+
                 passPsoDesc.blendState = combinedPass.BlendMode;
                 passPsoDesc.cullMode = combinedPass.CullMode;
                 passPsoDesc.depthBias = combinedPass.DepthBias;
                 passPsoDesc.slopeScaledDepthBias = combinedPass.SlopeScaledDepthBias;
                 passPsoDesc.dsvFormat = depthStencil == null ? Format.Unknown : depthStencil.GetFormat();
                 passPsoDesc.ptt = PrimitiveTopologyType.Triangle;
-                passPsoDesc.rtvFormat = combinedPass.RenderTargets.Count == 0 ? Format.Unknown : renderTargets[0].GetFormat();
-                passPsoDesc.renderTargetCount = combinedPass.RenderTargets.Count;
+                passPsoDesc.renderTargetCount = combinedPass.RenderTargets == null ? 0 : combinedPass.RenderTargets.Count;
                 passPsoDesc.streamOutput = false;
                 passPsoDesc.wireFrame = false;
                 _PassSetRes1(null, combinedPass);

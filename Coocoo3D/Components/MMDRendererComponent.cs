@@ -582,6 +582,60 @@ namespace Coocoo3D.FileFormat
 {
     public static partial class PMXFormatExtension
     {
+        public static RigidBodyDesc GetRigidBodyDesc(PMX_RigidBody rigidBody)
+        {
+            RigidBodyDesc desc = new RigidBodyDesc();
+            desc.AssociatedBoneIndex = rigidBody.AssociatedBoneIndex;
+            desc.CollisionGroup = rigidBody.CollisionGroup;
+            desc.CollisionMask = rigidBody.CollisionMask;
+            desc.Shape = (RigidBodyShape)rigidBody.Shape;
+            desc.Dimemsions = rigidBody.Dimemsions;
+            desc.Position = rigidBody.Position;
+            desc.Rotation = MMDRendererComponent.ToQuaternion(rigidBody.Rotation);
+            desc.Mass = rigidBody.Mass;
+            desc.LinearDamping = rigidBody.TranslateDamp;
+            desc.AngularDamping = rigidBody.RotateDamp;
+            desc.Restitution = rigidBody.Restitution;
+            desc.Friction = rigidBody.Friction;
+            desc.Type = (RigidBodyType)rigidBody.Type;
+            return desc;
+        }
+        public static JointDesc GetJointDesc(PMX_Joint joint)
+        {
+            JointDesc desc = new JointDesc();
+            desc.Type = joint.Type;
+            desc.AssociatedRigidBodyIndex1 = joint.AssociatedRigidBodyIndex1;
+            desc.AssociatedRigidBodyIndex2 = joint.AssociatedRigidBodyIndex2;
+            desc.Position = joint.Position;
+            desc.Rotation = joint.Rotation;
+            desc.PositionMinimum = joint.PositionMinimum;
+            desc.PositionMaximum = joint.PositionMaximum;
+            desc.RotationMinimum = joint.RotationMinimum;
+            desc.RotationMaximum = joint.RotationMaximum;
+            desc.PositionSpring = joint.PositionSpring;
+            desc.RotationSpring = joint.RotationSpring;
+            return desc;
+        }
+
+        public static void Reload2(this GameObject gameObject, ModelPack modelPack, List<string> textures, string ModelPath)
+        {
+            var modelResource = modelPack.pmx;
+            gameObject.Name = string.Format("{0} {1}", modelResource.Name, modelResource.NameEN);
+            gameObject.Description = string.Format("{0}\n{1}", modelResource.Description, modelResource.DescriptionEN);
+
+            ReloadModel(gameObject, modelPack, textures);
+        }
+
+        public static void ReloadModel(this GameObject gameObject, ModelPack modelPack, List<string> textures)
+        {
+            var modelResource = modelPack.pmx;
+            var rendererComponent = new MMDRendererComponent();
+            gameObject.AddComponent(rendererComponent);
+            rendererComponent.morphStateComponent.Reload(modelResource);
+
+            rendererComponent.ReloadModel(modelPack, textures);
+        }
+
         public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<string> textures)
         {
             rendererComponent.Initialize2(modelPack.pmx);
@@ -639,78 +693,12 @@ namespace Coocoo3D.FileFormat
                         morphVertexStructs[j].VertexIndex = sourceMorph[j].VertexIndex;
                     }
                 }
-                else
-                {
-                }
             }
             rendererComponent.ComputeVertexMorph();
-            //Dictionary<int, int> reportFrequency = new Dictionary<int, int>(10000);
-            //for (int i = 0; i < morphCount; i++)
-            //{
-            //    if (modelResource.Morphs[i].Type == PMX_MorphType.Vertex)
-            //    {
-            //        PMX_MorphVertexDesc[] sourceMorph = modelResource.Morphs[i].MorphVertexs;
-            //        for (int j = 0; j < sourceMorph.Length; j++)
-            //        {
-            //            if (!reportFrequency.TryAdd(sourceMorph[j].VertexIndex, 1))
-            //            {
-            //                reportFrequency[sourceMorph[j].VertexIndex]++;
-            //            }
-            //        }
-            //    }
-            //}
-            //int[] freqResult = new int[32];
-            //foreach (int value1 in reportFrequency.Values)
-            //{
-            //    if (value1 < 32)
-            //    {
-            //        freqResult[value1]++;
-            //    }
-            //    else
-            //    {
-
-            //    }
-            //}
-        }
-
-        public static RigidBodyDesc GetRigidBodyDesc(PMX_RigidBody rigidBody)
-        {
-            RigidBodyDesc desc = new RigidBodyDesc();
-            desc.AssociatedBoneIndex = rigidBody.AssociatedBoneIndex;
-            desc.CollisionGroup = rigidBody.CollisionGroup;
-            desc.CollisionMask = rigidBody.CollisionMask;
-            desc.Shape = (RigidBodyShape)rigidBody.Shape;
-            desc.Dimemsions = rigidBody.Dimemsions;
-            desc.Position = rigidBody.Position;
-            desc.Rotation = MMDRendererComponent.ToQuaternion(rigidBody.Rotation);
-            desc.Mass = rigidBody.Mass;
-            desc.LinearDamping = rigidBody.TranslateDamp;
-            desc.AngularDamping = rigidBody.RotateDamp;
-            desc.Restitution = rigidBody.Restitution;
-            desc.Friction = rigidBody.Friction;
-            desc.Type = (RigidBodyType)rigidBody.Type;
-            return desc;
-        }
-        public static JointDesc GetJointDesc(PMX_Joint joint)
-        {
-            JointDesc desc = new JointDesc();
-            desc.Type = joint.Type;
-            desc.AssociatedRigidBodyIndex1 = joint.AssociatedRigidBodyIndex1;
-            desc.AssociatedRigidBodyIndex2 = joint.AssociatedRigidBodyIndex2;
-            desc.Position = joint.Position;
-            desc.Rotation = joint.Rotation;
-            desc.PositionMinimum = joint.PositionMinimum;
-            desc.PositionMaximum = joint.PositionMaximum;
-            desc.RotationMinimum = joint.RotationMinimum;
-            desc.RotationMaximum = joint.RotationMaximum;
-            desc.PositionSpring = joint.PositionSpring;
-            desc.RotationSpring = joint.RotationSpring;
-            return desc;
         }
 
         public static void Initialize2(this MMDRendererComponent rendererComponent, PMXFormat modelResource)
-        {
-            rendererComponent.morphStateComponent.Reload(modelResource);
+        { 
             rendererComponent.bones.Clear();
             rendererComponent.cachedBoneKeyFrames.Clear();
             var _bones = modelResource.Bones;
@@ -822,7 +810,6 @@ namespace Coocoo3D.FileFormat
                 rendererComponent.rigidBodyDescs.Add(rigidBodyDesc);
                 if (rigidBodyData.Type != PMX_RigidBodyType.Kinematic && rigidBodyData.AssociatedBoneIndex != -1)
                     rendererComponent.bones[rigidBodyData.AssociatedBoneIndex].IsPhysicsFreeBone = true;
-
             }
             rendererComponent.jointDescs.Clear();
             var joints = modelResource.Joints;
@@ -830,26 +817,6 @@ namespace Coocoo3D.FileFormat
                 rendererComponent.jointDescs.Add(GetJointDesc(joints[i]));
 
             int morphCount = modelResource.Morphs.Count;
-        }
-
-        public static void Reload2(this GameObject gameObject, RenderPipeline.ProcessingList processingList, ModelPack modelPack, List<string> textures, string ModelPath)
-        {
-            var modelResource = modelPack.pmx;
-            gameObject.Name = string.Format("{0} {1}", modelResource.Name, modelResource.NameEN);
-            gameObject.Description = string.Format("{0}\n{1}", modelResource.Description, modelResource.DescriptionEN);
-
-            ReloadModel(gameObject, processingList, modelPack, textures);
-        }
-
-        public static void ReloadModel(this GameObject gameObject, RenderPipeline.ProcessingList processingList, ModelPack modelPack, List<string> textures)
-        {
-            var modelResource = modelPack.pmx;
-            var rendererComponent = new MMDRendererComponent();
-            var morphStateComponent = rendererComponent.morphStateComponent;
-            gameObject.AddComponent(rendererComponent);
-            morphStateComponent.Reload(modelResource);
-
-            rendererComponent.ReloadModel(modelPack, textures);
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Coocoo3D.Core
 {
     public abstract class GameDriver
     {
-        public abstract bool Next(RenderPipelineContext context);
+        public abstract bool Next(RenderPipelineContext context,long now);
 
         public virtual void AfterRender(RenderPipelineContext  context, GraphicsContext graphicsContext)
         {

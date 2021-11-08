@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
 using Coocoo3DGraphics;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
@@ -14,33 +13,23 @@ namespace Coocoo3D.RenderPipeline
     public class PassSetting
     {
         public string Name;
-        [XmlArrayItem("RenderTarget")]
         public List<RenderTarget> RenderTargets;
-        [XmlArrayItem("Pass")]
         public List<PassMatch1> RenderSequence;
-        [XmlArrayItem("Pass")]
         public List<Pass> Passes;
-        [XmlArrayItem("PipelineState")]
         public List<PSPS> PipelineStates;
-        [XmlArrayItem("VertexShader")]
         public List<_AssetDefine> VertexShaders;
-        [XmlArrayItem("GeometryShader")]
         public List<_AssetDefine> GeometryShaders;
-        [XmlArrayItem("PixelShader")]
         public List<_AssetDefine> PixelShaders;
-        [XmlArrayItem("ComputeShader")]
         public List<_AssetDefine> ComputeShaders;
-        [XmlArrayItem("Texture2D")]
         public List<_AssetDefine> Texture2Ds;
-        [XmlArrayItem("TextureCube")]
         public List<_AssetDefine2> TextureCubes;
 
-        [XmlIgnore]
+        [NonSerialized]
         public Dictionary<string, string> aliases = new Dictionary<string, string>();
 
-        [XmlIgnore]
+        [NonSerialized]
         public bool configured;
-        [XmlIgnore]
+        [NonSerialized]
         public HashSet<string> renderTargets;
 
         public bool Verify()
@@ -67,9 +56,6 @@ namespace Coocoo3D.RenderPipeline
                     if (passMatch.Pass == null)
                         return false;
                 }
-                //else if (passMatch.Foreach != null)
-                //{
-                //}
                 else
                     return false;
             }
@@ -83,10 +69,8 @@ namespace Coocoo3D.RenderPipeline
         public int DepthBias;
         public float SlopeScaledDepthBias;
         public string Type;
-        [XmlElement("RenderTarget")]
         public List<string> RenderTargets;
 
-        [XmlElement("Parameter")]
         public List<PassParameter> passParameters;
         public string DepthStencil;
         public BlendState BlendMode;
@@ -95,19 +79,15 @@ namespace Coocoo3D.RenderPipeline
         public CullMode CullMode;
         public string Filter;
 
-        [XmlIgnore]
-        public string[] RayGenShaders;
-        [XmlIgnore]
-        public string[] MissShaders;
-        [XmlIgnore]
+        [NonSerialized]
         public PSO PSODefault;
-        [XmlIgnore]
+        [NonSerialized]
         public bool DrawObjects;
-        [XmlIgnore]
+        [NonSerialized]
         public Dictionary<string, float> passParameters1;
-        [XmlIgnore]
+        [NonSerialized]
         public Pass Pass;
-        [XmlIgnore]
+        [NonSerialized]
         public string rootSignatureKey;
     }
     public class Pass
@@ -118,11 +98,8 @@ namespace Coocoo3D.RenderPipeline
         public string GeometryShader;
         public string PixelShader;
         public string ComputeShader;
-        [XmlElement(ElementName = "SRV")]
         public List<SRVUAVSlotRes> SRVs;
-        [XmlElement(ElementName = "CBV")]
         public List<CBVSlotRes> CBVs;
-        [XmlElement(ElementName = "UAV")]
         public List<SRVUAVSlotRes> UAVs;
     }
     public class PSPS
@@ -142,7 +119,6 @@ namespace Coocoo3D.RenderPipeline
     public struct CBVSlotRes
     {
         public int Index;
-        [XmlArrayItem(ElementName = "Data")]
         public List<string> Datas;
     }
     public struct RenderTarget
@@ -160,9 +136,7 @@ namespace Coocoo3D.RenderPipeline
     {
         public string Name;
         public string Filter;
-        [XmlElement(ElementName = "SRV")]
         public List<SRVUAVSlotRes> SRVs;
-        [XmlElement(ElementName = "CBV")]
         public List<CBVSlotRes> CBVs;
     }
     public class VarSize
@@ -187,7 +161,6 @@ namespace Coocoo3D.RenderPipeline
     public class _AssetDefine2
     {
         public string Name;
-        [XmlElement(ElementName = "Path")]
         public string[] Path;
     }
     public struct PassParameter

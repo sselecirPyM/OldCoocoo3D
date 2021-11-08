@@ -48,7 +48,7 @@ namespace Coocoo3D.UI
             if (modelPack.Status != GraphicsObjectStatus.loaded && modelPack.LoadTask != null) modelPack.LoadTask.Wait();
 
             GameObject gameObject = new GameObject();
-            gameObject.Reload2(appBody.ProcessingList, modelPack, GetTextureList(appBody, storageFolder.Path, modelPack.pmx), pmxPath);
+            gameObject.Reload2( modelPack, GetTextureList(appBody, storageFolder.Path, modelPack.pmx), pmxPath);
             scene.AddGameObject(gameObject);
 
             appBody.RequireRender();

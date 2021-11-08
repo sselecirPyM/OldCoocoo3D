@@ -13,8 +13,8 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Coocoo3D.Components;
 using System.IO;
-using System.Xml.Serialization;
 using Windows.ApplicationModel;
+using Newtonsoft.Json;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -27,15 +27,13 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, Texture2DPack> TextureOnDemand = new Dictionary<string, Texture2DPack>();
 
         public Dictionary<string, ModelPack> ModelPackCaches = new Dictionary<string, ModelPack>();
-        public ConcurrentDictionary<string, MMDMotion> Motions = new ConcurrentDictionary<string, MMDMotion>();
+        public Dictionary<string, MMDMotion> Motions = new Dictionary<string, MMDMotion>();
         public Dictionary<string, PassSetting> PassSettings = new Dictionary<string, PassSetting>();
 
         public MainCaches()
         {
             KnownFolders.Add("ms-appx:///", Package.Current.InstalledLocation);
         }
-
-        public XmlSerializer PassSettingSerializer = new XmlSerializer(typeof(PassSetting));
 
         public ProcessingList processingList;
         public Action _RequireRender;
@@ -85,7 +83,6 @@ namespace Coocoo3D.RenderPipeline
                     {
                         pair.Value.requireReload = true;
                     }
-
                 }
 
                 if (TextureOnDemand.Count == 0) return;
@@ -115,7 +112,6 @@ namespace Coocoo3D.RenderPipeline
                                 if (knownFile.IsModified(folder).Result)
                                 {
                                     Uploader uploader = new Uploader();
-                                    texturePack1.Mark(GraphicsObjectStatus.loading);
                                     if (texturePack1.ReloadTexture(knownFile.file, uploader).Result)
                                     {
                                         texturePack1.Mark(GraphicsObjectStatus.loaded);
@@ -169,6 +165,7 @@ namespace Coocoo3D.RenderPipeline
                 if (!InitFolder(folderPath))
                     return null;
                 var folder = KnownFolders[folderPath];
+#if !DEBUG
                 try
                 {
                     if (knownFile.IsModified(folder).Result)
@@ -182,12 +179,20 @@ namespace Coocoo3D.RenderPipeline
                     file = null;
                     caches[path] = file;
                 }
+#else
+                if (knownFile.IsModified(folder).Result)
+                {
+                    file = createFun(knownFile.file);
+                    caches[path] = file;
+                }
+#endif
             }
             return file;
         }
 
         public MMDMotion GetMotion(string path)
         {
+            if (string.IsNullOrEmpty(path)) return null;
             return GetT(Motions, path, file =>
             {
                 BinaryReader reader = new BinaryReader(OpenReadStream(file).Result);
@@ -201,8 +206,8 @@ namespace Coocoo3D.RenderPipeline
 
         public PassSetting GetPassSetting(string path)
         {
-            var passSetting= GetT(PassSettings, path, file => (PassSetting)PassSettingSerializer.Deserialize(OpenReadStream(file).Result));
-            foreach(var res in passSetting.Passes)
+            var passSetting = GetT(PassSettings, path, file => ReadJsonStream<PassSetting>(OpenReadStream(file).Result));
+            foreach (var res in passSetting.Passes)
             {
                 if (res.SRVs != null)
                     foreach (var srv in res.SRVs)
@@ -290,6 +295,16 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
+
+        public static T ReadJsonStream<T>(Stream stream)
+        {
+            JsonSerializer jsonSerializer = new JsonSerializer();
+            jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
+            using (StreamReader reader1 = new StreamReader(stream))
+            {
+                return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
+            }
+        }
 
         async Task<Stream> OpenReadStream(StorageFile file)
         {

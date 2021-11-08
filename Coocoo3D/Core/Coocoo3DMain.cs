@@ -16,6 +16,7 @@ using Coocoo3D.FileFormat;
 using Coocoo3D.Components;
 using Coocoo3D.RenderPipeline;
 using Vortice.Direct3D12;
+using Coocoo3D.UI;
 
 namespace Coocoo3D.Core
 {
@@ -124,6 +125,7 @@ namespace Coocoo3D.Core
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         MiscProcess miscProcess = new MiscProcess();
         RenderPipeline.RenderPipeline _currentRenderPipeline;
+        public ImguiInput imguiInput = new ImguiInput();
 
         public void RequireRender(bool updateEntities)
         {
@@ -142,17 +144,19 @@ namespace Coocoo3D.Core
         public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
         public GraphicsContext graphicsContext { get => RPContext.graphicsContext; }
         Task RenderTask1;
+        public float deltaTime1;
         private bool RenderFrame()
         {
-            if (!GameDriver.Next(RPContext))
+            long now = stopwatch1.ElapsedTicks;
+            var deltaTime = now - LatestRenderTime;
+            deltaTime1 = deltaTime / 1e7f;
+            if (!GameDriver.Next(RPContext, now))
             {
                 return false;
             }
             #region Scene Simulation
 
             RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
-            long now = stopwatch1.ElapsedTicks;
-            var deltaTime = now - LatestRenderTime;
             LatestRenderTime = now;
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
             RPContext.dynamicContextWrite.RealDeltaTime = deltaTime / 1e7f;
@@ -240,9 +244,10 @@ namespace Coocoo3D.Core
                 miscProcess.Process(RPContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
-                bool thisFrameReady = RPAssetsManager.Ready  && widgetRenderer.Ready;
+                bool thisFrameReady = RPAssetsManager.Ready && widgetRenderer.Ready;
                 if (thisFrameReady)
                 {
+                    imguiInput.Update();
                     UI.UIImGui.GUI(this);
                     graphicsContext.Begin();
                     if (RPContext.dynamicContextRead.EnableDisplay)
@@ -293,7 +298,6 @@ namespace Coocoo3D.Core
         }
         #endregion
         public bool Recording = false;
-
     }
 
     public struct PerformaceSettings

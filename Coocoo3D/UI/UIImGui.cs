@@ -24,64 +24,11 @@ namespace Coocoo3D.UI
                 initialized = true;
             }
             Vector2 mouseMoveDelta = new Vector2();
-            float mouseWheelDelta = 0.0f;
-            while (Input.inputDatas.TryDequeue(out InputData inputData))
+            while (ImguiInput.mouseMoveDelta.TryDequeue(out var moveDelta))
             {
-                if (inputData.inputType == InputType.MouseMove)
-                    io.MousePos = inputData.point;
-                else if (inputData.inputType == InputType.MouseLeftDown)
-                    io.MouseDown[0] = inputData.mouseDown;
-                else if (inputData.inputType == InputType.MouseRightDown)
-                {
-                    io.MouseDown[1] = inputData.mouseDown;
-                }
-                else if (inputData.inputType == InputType.MouseMiddleDown)
-                {
-                    io.MouseDown[2] = inputData.mouseDown;
-                }
-                else if (inputData.inputType == InputType.MouseWheelChanged)
-                {
-                    io.MouseWheel += inputData.mouseWheelDelta / 120.0f;
-                    mouseWheelDelta += inputData.mouseWheelDelta;
-                }
-                else if (inputData.inputType == InputType.MouseMoveDelta)
-                    mouseMoveDelta += inputData.point;
+                mouseMoveDelta += moveDelta;
             }
 
-            while (Input.keyInputDatas.TryDequeue(out KeyInputData inputData))
-            {
-                if (inputData.keyEventType == KeyEventType.KeyDown)
-                {
-                    io.KeysDown[inputData.key] = true;
-                    if (inputData.key >= 96 && inputData.key < 106)
-                    {
-                        io.AddInputCharacter((uint)inputData.key - 48);//numpad
-                    }
-                    else
-                    {
-                        int key = inputData.key;
-                        switch (inputData.key)
-                        {
-                            case 110:
-                            case 190:
-                                key = 46;
-                                break;
-                            case 107:
-                                key = 43;
-                                break;
-                            case 111:
-                                key = 47;
-                                break;
-                            case 109:
-                                key = 45;
-                                break;
-                        }
-                        io.AddInputCharacter((uint)key);
-                    }
-                }
-                if (inputData.keyEventType == KeyEventType.KeyUp)
-                    io.KeysDown[inputData.key] = false;
-            }
             var context = appBody.RPContext;
             io.DisplaySize = new Vector2(context.screenSize.X, context.screenSize.Y);
             io.DeltaTime = (float)context.dynamicContextRead.RealDeltaTime;
@@ -140,22 +87,24 @@ namespace Coocoo3D.UI
                 Resources(appBody);
             }
             ImGui.End();
-            ImGui.SetNextWindowSize(new Vector2(400, 300), ImGuiCond.Once);
-            ImGui.SetNextWindowPos(new Vector2(700, 0), ImGuiCond.Once);
+            ImGui.SetNextWindowSize(new Vector2(350, 300), ImGuiCond.Once);
+            ImGui.SetNextWindowPos(new Vector2(750, 0), ImGuiCond.Once);
             if (ImGui.Begin("场景层级"))
             {
                 SceneHierarchy(appBody);
             }
             ImGui.End();
+            int d = 0;
             foreach (var visualChannel in appBody.RPContext.visualChannels.Values)
             {
                 ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
-                ImGui.SetNextWindowPos(new Vector2(300, 0), ImGuiCond.FirstUseEver);
+                ImGui.SetNextWindowPos(new Vector2(300 + d, 0), ImGuiCond.FirstUseEver);
                 if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name)))
                 {
-                    SceneView(appBody, visualChannel, mouseWheelDelta, mouseMoveDelta);
+                    SceneView(appBody, visualChannel, io.MouseWheel, mouseMoveDelta);
                 }
                 ImGui.End();
+                d += 50;
             }
             ImGui.SetNextWindowSize(new Vector2(300, 300), ImGuiCond.Once);
             ImGui.SetNextWindowPos(new Vector2(0, 400), ImGuiCond.Once);
@@ -205,15 +154,6 @@ namespace Coocoo3D.UI
             }
             ImGui.End();
             ImGui.Render();
-            //if (!appBody.settings.ViewerUI || !io.WantCaptureMouse)
-            //{
-            //    if (io.MouseDown[1])
-            //        appBody.camera.RotateDelta(new Vector3(-mouseMoveDelta.Y, -mouseMoveDelta.X, 0) / 200);
-            //    if (io.MouseDown[2])
-            //        appBody.camera.MoveDelta(new Vector3(-mouseMoveDelta.X, mouseMoveDelta.Y, 0) / 50);
-
-            //    appBody.camera.Distance += mouseWheelDelta / 20.0f;
-            //}
             if (selectedObject != null)
             {
                 selectedObject.PositionNextFrame = position;
@@ -294,8 +234,12 @@ namespace Coocoo3D.UI
                 appBody.mainCaches.PassSettings.Select(u => u.Value.Name);
                 if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
                 {
-                    //appBody.SwitchToRenderPipeline(renderPipelineIndex);
                     appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
+                }
+                if(ImGui.Button("添加视口"))
+                {
+                    vcCount++;
+                    appBody.RPContext.DelayAddVisualChannel(vcCount.ToString());
                 }
                 ImGui.TreePop();
             }
@@ -305,6 +249,7 @@ namespace Coocoo3D.UI
                 {
                     ImGui.EndCombo();
                 }
+                ImGui.TreePop();
             }
             if (ImGui.TreeNode("帮助"))
             {
@@ -338,6 +283,7 @@ namespace Coocoo3D.UI
             {
                 PlayControl.FastForward(appBody);
             }
+            ImGui.Text("Fps:" + 1 / appBody.deltaTime1);
         }
 
         static void DockSpace(Coocoo3DMain appBody)
@@ -657,10 +603,10 @@ vmd格式动作");
         }
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
-        //static string[] renderPipelines = new[] { "前向", "延迟", "光线追踪", "自定义" };
         static int renderPipelineIndex = 0;
         static string[] renderPipelines = new string[0] { };
         static string[] renderPipelineKeys = new string[0] { };
+        static int vcCount = 0;
     }
     class _openRequest
     {

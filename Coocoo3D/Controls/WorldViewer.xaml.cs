@@ -105,13 +105,14 @@ namespace Coocoo3D.Controls
 
         private void WorldViewer_MouseMoved_Rotate(MouseDevice sender, MouseEventArgs args)
         {
-            Input.EnqueueMouseMoveDelta(new Vector2(args.MouseDelta.X, args.MouseDelta.Y));
+            AppBody.imguiInput.MouseMoveDelta(new Vector2(args.MouseDelta.X, args.MouseDelta.Y));
             AppBody.RequireRender();
         }
 
         private void Canvas_PointerMoved(object sender, PointerEventArgs args)
         {
             process1(args);
+            args.Handled = true;
         }
 
         private void Canvas_PointerReleased(object sender, PointerEventArgs args)
@@ -125,7 +126,8 @@ namespace Coocoo3D.Controls
         {
             var pointer = args.CurrentPoint;
             Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
-            Input.EnqueueMouseMove(position);
+            AppBody.imguiInput.MousePosition(position);
+            //Input.EnqueueMouseMove(position);
             AppBody.RequireRender();
         }
 
@@ -133,10 +135,10 @@ namespace Coocoo3D.Controls
         {
             var pointer = args.CurrentPoint;
             Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
-            Input.EnqueueMouseMove(position);
-            Input.EnqueueMouseClick(position, pointer.Properties.IsLeftButtonPressed, InputType.MouseLeftDown);
-            Input.EnqueueMouseClick(position, pointer.Properties.IsRightButtonPressed, InputType.MouseRightDown);
-            Input.EnqueueMouseClick(position, pointer.Properties.IsMiddleButtonPressed, InputType.MouseMiddleDown);
+            AppBody.imguiInput.mouseDown[0] = pointer.Properties.IsLeftButtonPressed;
+            AppBody.imguiInput.mouseDown[1] = pointer.Properties.IsRightButtonPressed;
+            AppBody.imguiInput.mouseDown[2] = pointer.Properties.IsMiddleButtonPressed;
+            AppBody.imguiInput.MousePosition(position);
             AppBody.RequireRender();
         }
 
@@ -144,10 +146,10 @@ namespace Coocoo3D.Controls
         {
             var pointer = args.GetCurrentPoint(this);
             Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
-            Input.EnqueueMouseMove(position);
-            Input.EnqueueMouseClick(position, pointer.Properties.IsLeftButtonPressed, InputType.MouseLeftDown);
-            Input.EnqueueMouseClick(position, pointer.Properties.IsRightButtonPressed, InputType.MouseRightDown);
-            Input.EnqueueMouseClick(position, pointer.Properties.IsMiddleButtonPressed, InputType.MouseMiddleDown);
+            AppBody.imguiInput.mouseDown[0] = pointer.Properties.IsLeftButtonPressed;
+            AppBody.imguiInput.mouseDown[1] = pointer.Properties.IsRightButtonPressed;
+            AppBody.imguiInput.mouseDown[2] = pointer.Properties.IsMiddleButtonPressed;
+            AppBody.imguiInput.MousePosition(position);
             AppBody.RequireRender();
         }
 
@@ -155,22 +157,21 @@ namespace Coocoo3D.Controls
         {
             var pointer = e.GetCurrentPoint(this);
             Vector2 position = pointer.Position.ToVector2() * AppBody.RPContext.logicScale;
-            Input.EnqueueMouseMove(position);
-            Input.EnqueueMouseWheel(position, pointer.Properties.MouseWheelDelta);
-
+            AppBody.imguiInput.MousePosition(position);
+            AppBody.imguiInput.mouseWheelV += pointer.Properties.MouseWheelDelta;
             e.Handled = true;
             AppBody.RequireRender();
         }
 
         private void swapChainPanel_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            Input.KeyDown((int)e.Key);
+            AppBody.imguiInput.KeyDown((int)e.Key);
             AppBody.RequireRender();
         }
 
         private void swapChainPanel_KeyUp(object sender, KeyRoutedEventArgs e)
         {
-            Input.KeyUp((int)e.Key);
+            AppBody.imguiInput.KeyUp((int)e.Key);
             AppBody.RequireRender();
         }
     }
