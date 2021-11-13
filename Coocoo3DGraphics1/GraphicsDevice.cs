@@ -27,7 +27,6 @@ namespace Coocoo3DGraphics
 
         public DescriptorHeapX cbvsrvuavHeap;
         public DescriptorHeapX rtvHeap;
-        //public DescriptorHeapX dsvHeap;
 
         string m_deviceDescription;
         UInt64 m_deviceVideoMem;
@@ -38,6 +37,7 @@ namespace Coocoo3DGraphics
         List<ID3D12GraphicsCommandList4> m_commandLists = new List<ID3D12GraphicsCommandList4>();
         List<ID3D12GraphicsCommandList4> m_commandLists1 = new List<ID3D12GraphicsCommandList4>();
 
+        IntPtr hwnd;
         IDXGIFactory4 m_dxgiFactory;
         IDXGISwapChain3 m_swapChain;
         ID3D12Resource[] m_renderTargets = new ID3D12Resource[c_frameCount];
@@ -65,7 +65,7 @@ namespace Coocoo3DGraphics
 
         public float m_effectiveDpi;
 
-        public object panel;
+        //public object panel;
 
         public static uint BitsPerPixel(Format format)
         {
@@ -325,6 +325,92 @@ namespace Coocoo3DGraphics
                 m_recycleList.Add(new d3d12RecycleResource { m_recycleResource = res, m_removeFrame = m_currentFenceValue });
         }
 
+        //public void CreateWindowSizeDependentResources()
+        //{
+        //    // 等到以前的所有 GPU 工作完成。
+        //    WaitForGpu();
+
+        //    // 清除特定于先前窗口大小的内容。
+        //    for (int n = 0; n < c_frameCount; n++)
+        //    {
+        //        m_renderTargets[n]?.Dispose();
+        //        m_renderTargets[n] = null;
+        //    }
+
+        //    UpdateRenderTargetSize();
+
+        //    int backBufferWidth = (int)Math.Round(m_d3dRenderTargetSize.X);
+        //    int backBufferHeight = (int)Math.Round(m_d3dRenderTargetSize.Y);
+        //    bool setSwapChain = false;
+        //    if (m_swapChain != null)
+        //    {
+        //        // 如果交换链已存在，请调整其大小。
+        //        Result hr = m_swapChain.ResizeBuffers(c_frameCount, backBufferWidth, backBufferHeight, m_backBufferFormat, SwapChainFlags.AllowTearing);
+
+
+        //        ThrowIfFailed(hr);
+        //    }
+        //    else
+        //    {
+        //        // 否则，使用与现有 Direct3D 设备相同的适配器新建一个。
+        //        SwapChainDescription1 swapChainDesc = new SwapChainDescription1();
+
+        //        swapChainDesc.Width = backBufferWidth;                      // 匹配窗口的大小。
+        //        swapChainDesc.Height = backBufferHeight;
+        //        swapChainDesc.Format = m_backBufferFormat;
+        //        swapChainDesc.Stereo = false;
+        //        swapChainDesc.SampleDescription.Count = 1;                         // 请不要使用多采样。
+        //        swapChainDesc.SampleDescription.Quality = 0;
+        //        swapChainDesc.Usage = Usage.RenderTargetOutput;
+        //        swapChainDesc.BufferCount = c_frameCount;                   // 使用三重缓冲最大程度地减小延迟。
+        //        swapChainDesc.SwapEffect = SwapEffect.FlipSequential;
+        //        swapChainDesc.Flags = SwapChainFlags.AllowTearing;
+        //        swapChainDesc.Scaling = Scaling.Stretch;
+        //        swapChainDesc.AlphaMode = AlphaMode.Ignore;
+
+        //        IDXGISwapChain1 swapChain =
+        //            m_dxgiFactory.CreateSwapChainForComposition(
+        //                commandQueue,                          // 交换链需要对 DirectX 12 中的命令队列的引用。
+        //                swapChainDesc
+        //            );
+        //        m_swapChain?.Dispose();
+        //        m_swapChain = swapChain.QueryInterface<IDXGISwapChain3>();
+        //        swapChain.Dispose();
+        //        setSwapChain = true;
+        //    }
+
+
+        //    // 创建交换链后台缓冲区的呈现目标视图。
+        //    {
+        //        rtvHeap.GetTempCpuHandle();
+        //        CpuDescriptorHandle rtvDescriptor = rtvHeap.heap.GetCPUDescriptorHandleForHeapStart();
+        //        for (int n = 0; n < c_frameCount; n++)
+        //        {
+        //            ThrowIfFailed(m_swapChain.GetBuffer(n, out m_renderTargets[n]));
+        //            device.CreateRenderTargetView(m_renderTargets[n], null, rtvDescriptor);
+        //            rtvDescriptor.Ptr += rtvHeap.IncrementSize;
+        //            m_renderTargets[n].Name = "backbuffer";
+        //        }
+        //    }
+
+        //    if (setSwapChain)
+        //    {
+        //        ComObject comObject1 = new ComObject(panel);
+        //        ISwapChainPanelNative panelNative = comObject1.QueryInterface<ISwapChainPanelNative>();
+        //        comObject1.Dispose();
+
+        //        ThrowIfFailed(panelNative.SetSwapChain(m_swapChain));
+
+        //        // 在交换链上设置反向缩放
+        //        Matrix3x2 inverseScale = new Matrix3x2();
+        //        inverseScale.M11 = 1.0f / m_compositionScaleX;
+        //        inverseScale.M22 = 1.0f / m_compositionScaleY;
+
+        //        m_swapChain.MatrixTransform = inverseScale;
+        //        panelNative.Dispose();
+        //    }
+        //}
+
         public void CreateWindowSizeDependentResources()
         {
             // 等到以前的所有 GPU 工作完成。
@@ -341,43 +427,41 @@ namespace Coocoo3DGraphics
 
             int backBufferWidth = (int)Math.Round(m_d3dRenderTargetSize.X);
             int backBufferHeight = (int)Math.Round(m_d3dRenderTargetSize.Y);
-            bool setSwapChain = false;
             if (m_swapChain != null)
             {
                 // 如果交换链已存在，请调整其大小。
                 Result hr = m_swapChain.ResizeBuffers(c_frameCount, backBufferWidth, backBufferHeight, m_backBufferFormat, SwapChainFlags.AllowTearing);
-
 
                 ThrowIfFailed(hr);
             }
             else
             {
                 // 否则，使用与现有 Direct3D 设备相同的适配器新建一个。
-                Scaling scaling = Scaling.Stretch;
-                SwapChainDescription1 swapChainDesc = new SwapChainDescription1();
+                SwapChainDescription1 swapChainDescription1 = new SwapChainDescription1();
 
-                swapChainDesc.Width = backBufferWidth;                      // 匹配窗口的大小。
-                swapChainDesc.Height = backBufferHeight;
-                swapChainDesc.Format = m_backBufferFormat;
-                swapChainDesc.Stereo = false;
-                swapChainDesc.SampleDescription.Count = 1;                         // 请不要使用多采样。
-                swapChainDesc.SampleDescription.Quality = 0;
-                swapChainDesc.Usage = Usage.RenderTargetOutput;
-                swapChainDesc.BufferCount = c_frameCount;                   // 使用三重缓冲最大程度地减小延迟。
-                swapChainDesc.SwapEffect = SwapEffect.FlipSequential;
-                swapChainDesc.Flags = SwapChainFlags.AllowTearing;
-                swapChainDesc.Scaling = Scaling.Stretch;
-                swapChainDesc.AlphaMode = AlphaMode.Ignore;
+                swapChainDescription1.Width = backBufferWidth;                      // 匹配窗口的大小。
+                swapChainDescription1.Height = backBufferHeight;
+                swapChainDescription1.Format = m_backBufferFormat;
+                swapChainDescription1.Stereo = false;
+                swapChainDescription1.SampleDescription.Count = 1;                         // 请不要使用多采样。
+                swapChainDescription1.SampleDescription.Quality = 0;
+                swapChainDescription1.Usage = Usage.RenderTargetOutput;
+                swapChainDescription1.BufferCount = c_frameCount;                   // 使用三重缓冲最大程度地减小延迟。
+                swapChainDescription1.SwapEffect = SwapEffect.FlipSequential;
+                swapChainDescription1.Flags = SwapChainFlags.AllowTearing;
+                swapChainDescription1.Scaling = Scaling.Stretch;
+                swapChainDescription1.AlphaMode = AlphaMode.Ignore;
 
-                IDXGISwapChain1 swapChain =
-                    m_dxgiFactory.CreateSwapChainForComposition(
-                        commandQueue,                          // 交换链需要对 DirectX 12 中的命令队列的引用。
-                        swapChainDesc
-                    );
+                //IDXGISwapChain1 swapChain =
+                //    m_dxgiFactory.CreateSwapChainForComposition(
+                //        commandQueue,                          // 交换链需要对 DirectX 12 中的命令队列的引用。
+                //        swapChainDesc
+                //    );
+
+                var swapChain = m_dxgiFactory.CreateSwapChainForHwnd(commandQueue, hwnd, swapChainDescription1);
                 m_swapChain?.Dispose();
                 m_swapChain = swapChain.QueryInterface<IDXGISwapChain3>();
                 swapChain.Dispose();
-                setSwapChain = true;
             }
 
 
@@ -394,22 +478,16 @@ namespace Coocoo3DGraphics
                 }
             }
 
-            if (setSwapChain)
-            {
-                ComObject comObject1 = new ComObject(panel);
-                ISwapChainPanelNative panelNative = comObject1.QueryInterface<ISwapChainPanelNative>();
-                comObject1.Dispose();
+            //if (setSwapChain)
+            //{
+            //    ComObject comObject1 = new ComObject(panel);
+            //    ISwapChainPanelNative panelNative = comObject1.QueryInterface<ISwapChainPanelNative>();
+            //    comObject1.Dispose();
 
-                ThrowIfFailed(panelNative.SetSwapChain(m_swapChain));
+            //    ThrowIfFailed(panelNative.SetSwapChain(m_swapChain));
 
-                // 在交换链上设置反向缩放
-                Matrix3x2 inverseScale = new Matrix3x2();
-                inverseScale.M11 = 1.0f / m_compositionScaleX;
-                inverseScale.M22 = 1.0f / m_compositionScaleY;
-
-                m_swapChain.MatrixTransform = inverseScale;
-                panelNative.Dispose();
-            }
+            //    panelNative.Dispose();
+            //}
         }
 
         public void SetLogicalSize(Vector2 logicalSize)
@@ -520,9 +598,21 @@ namespace Coocoo3DGraphics
             return m_deviceVideoMem;
         }
 
-        public void SetSwapChainPanel(object panel, float width, float height, float scaleX, float scaleY, float dpi)
+        //public void SetSwapChainPanel(object panel, float width, float height, float scaleX, float scaleY, float dpi)
+        //{
+        //    this.panel = panel;
+
+        //    m_logicalSize = new Vector2(width, height);
+        //    m_compositionScaleX = scaleX;
+        //    m_compositionScaleY = scaleY;
+        //    m_dpi = dpi;
+
+        //    CreateWindowSizeDependentResources();
+        //}
+
+        public void SetSwapChainPanel(IntPtr hwnd, float width, float height, float scaleX, float scaleY, float dpi)
         {
-            this.panel = panel;
+            this.hwnd = hwnd;
 
             m_logicalSize = new Vector2(width, height);
             m_compositionScaleX = scaleX;

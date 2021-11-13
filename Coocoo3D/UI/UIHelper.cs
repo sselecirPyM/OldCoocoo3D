@@ -2,55 +2,38 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Core;
 using Coocoo3D.FileFormat;
-using Windows.Storage;
-using Windows.UI.Popups;
-using Windows.Storage.Pickers;
 using Coocoo3D.Utility;
 
 namespace Coocoo3D.UI
 {
     public static class UIHelper
     {
-        public static async Task OnFrame(Coocoo3DMain appBody)
+        public static DirectoryInfo folder;
+
+        public static void OnFrame(Coocoo3DMain appBody)
         {
             if (UIImGui.requireOpenFolder.SetFalse())
             {
-                var folder = await OpenResourceFolder(appBody);
-                if (folder != null)
+                string path = OpenResourceFolder();
+                if (!string.IsNullOrEmpty(path))
                 {
-                    UIImGui.currentFolder = folder;
-                    var items = await folder.GetItemsAsync();
-                    SetViewFolder(items);
+                    folder = new DirectoryInfo(path);
+                    UIImGui.viewRequest = folder;
                     appBody.mainCaches.AddFolder(folder);
                 }
                 appBody.RequireRender();
-            }
-            if (UIImGui.requireExport.SetFalse())
-            {
-                var picker = new FileSavePicker()
-                {
-                    SuggestedStartLocation = PickerLocationId.ComputerFolder,
-
-                };
-                picker.FileTypeChoices.Add("gltf", new[] { ".gltf" });
-
-                var file = await picker.PickSaveFileAsync();
-                if (file != null)
-                {
-
-                }
             }
             if (UIImGui.viewRequest != null)
             {
                 var view = UIImGui.viewRequest;
                 UIImGui.viewRequest = null;
                 UIImGui.currentFolder = view;
-                var items = await view.GetItemsAsync();
-                SetViewFolder(items);
+                SetViewFolder(view.GetFileSystemInfos());
                 appBody.RequireRender();
             }
             if (UIImGui.openRequest != null)
@@ -60,8 +43,7 @@ namespace Coocoo3D.UI
                 var file = requireOpen.file;
                 var folder = requireOpen.folder;
 
-                var resourceLoader = Windows.ApplicationModel.Resources.ResourceLoader.GetForCurrentView();
-                string ext = file.FileType.ToLower();
+                string ext = file.Extension.ToLower();
                 switch (ext)
                 {
                     case ".pmx":
@@ -71,14 +53,13 @@ namespace Coocoo3D.UI
                         }
                         catch (Exception exception)
                         {
-                            MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_PMXError"), exception));
-                            await dialog.ShowAsync();
+                            throw;
                         }
                         break;
                     case ".vmd":
                         try
                         {
-                            BinaryReader reader = new BinaryReader((await file.OpenReadAsync()).AsStreamForRead());
+                            BinaryReader reader = new BinaryReader(file.OpenRead());
                             VMDFormat motionSet = VMDFormat.Load(reader);
                             if (motionSet.CameraKeyFrames.Count != 0)
                             {
@@ -90,7 +71,7 @@ namespace Coocoo3D.UI
                                 foreach (var gameObject in appBody.SelectedGameObjects)
                                 {
                                     var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
-                                    if (renderer != null) { renderer.motionPath = file.Path; }
+                                    if (renderer != null) { renderer.motionPath = file.FullName; }
                                 }
 
                                 appBody.GameDriverContext.RequireResetPhysics = true;
@@ -98,8 +79,7 @@ namespace Coocoo3D.UI
                         }
                         catch (Exception exception)
                         {
-                            MessageDialog dialog = new MessageDialog(string.Format(resourceLoader.GetString("Error_Message_VMDError"), exception));
-                            await dialog.ShowAsync();
+                            throw;
                         }
                         break;
                     case ".jpg":
@@ -114,23 +94,32 @@ namespace Coocoo3D.UI
 
                         }
                         break;
-                    //case ".coocoox":
-                    //    try
-                    //    {
-                    //        await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
-                    //    }
-                    //    catch (Exception exception)
-                    //    {
-                    //        MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
-                    //        await dialog.ShowAsync();
-                    //    }
-                    //    break;
+                        //case ".coocoox":
+                        //    try
+                        //    {
+                        //        await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
+                        //    }
+                        //    catch (Exception exception)
+                        //    {
+                        //        MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
+                        //        await dialog.ShowAsync();
+                        //    }
+                        //    break;
                 }
                 appBody.RequireRender(true);
             }
             if (UIImGui.requireRecord.SetFalse())
             {
-                await UISharedCode.Record(appBody);
+                string path = OpenResourceFolder();
+                if (!string.IsNullOrEmpty(path))
+                {
+                    DirectoryInfo folder = new DirectoryInfo(path);
+                    if (folder == null) return;
+                    appBody._RecorderGameDriver.saveFolder = folder;
+                    appBody._RecorderGameDriver.SwitchEffect();
+                    appBody.GameDriver = appBody._RecorderGameDriver;
+                    appBody.Recording = true;
+                }
             }
         }
 
@@ -139,24 +128,41 @@ namespace Coocoo3D.UI
 
         }
 
-        static async Task<StorageFolder> OpenResourceFolder(Coocoo3DMain appBody)
+
+
+        public static string OpenResourceFile(string filter)
         {
-            FolderPicker folderPicker = new FolderPicker()
-            {
-                FileTypeFilter =
-                {
-                    "*"
-                },
-                SuggestedStartLocation = PickerLocationId.ComputerFolder,
-                ViewMode = PickerViewMode.Thumbnail,
-                SettingsIdentifier = "ResourceFolder",
-            };
-            StorageFolder folder = await folderPicker.PickSingleFolderAsync();
-            if (folder == null) return null;
-            return folder;
+            FileOpenDialog dialog = new FileOpenDialog();
+            dialog.structSize = Marshal.SizeOf(typeof(FileOpenDialog));
+            dialog.filter = filter;
+            dialog.file = new string(new char[2000]);
+            dialog.maxFile = dialog.file.Length;
+
+            dialog.initialDir = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer);
+            dialog.flags = 0x00000008;
+            GetOpenFileName(dialog);
+            var chars = dialog.file.ToCharArray();
+
+            return new string(chars, 0, Array.IndexOf(chars, '\0'));
         }
 
-        static void SetViewFolder(IReadOnlyList<IStorageItem> items)
+        public static string OpenResourceFolder()
+        {
+            OpenDialogDir openDialogDir = new OpenDialogDir();
+            openDialogDir.pszDisplayName = new string(new char[2000]);
+            openDialogDir.lpszTitle = "Open Project";
+            IntPtr pidlPtr = SHBrowseForFolder(openDialogDir);
+            char[] charArray = new char[2000];
+            Array.Fill(charArray, '\0');
+
+            SHGetPathFromIDList(pidlPtr, charArray);
+            int length = Array.IndexOf(charArray, '\0');
+            string fullDirPath = new String(charArray, 0, length);
+
+            return fullDirPath;
+        }
+
+        static void SetViewFolder(IReadOnlyList<FileSystemInfo> items)
         {
             lock (UIImGui.storageItems)
             {
@@ -166,6 +172,58 @@ namespace Coocoo3D.UI
                     UIImGui.storageItems.Add(item);
                 }
             }
+        }
+
+        [DllImport("Comdlg32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
+        public static extern bool GetOpenFileName([In, Out] FileOpenDialog ofn);
+
+        [DllImport("Comdlg32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
+        public static extern bool GetSaveFileName([In, Out] FileOpenDialog ofn);
+
+        [DllImport("shell32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
+        public static extern IntPtr SHBrowseForFolder([In, Out] OpenDialogDir ofn);
+
+        [DllImport("shell32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
+        public static extern bool SHGetPathFromIDList([In] IntPtr pidl, [In, Out] char[] fileName);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public class FileOpenDialog
+        {
+            public int structSize = 0;
+            public IntPtr dlgOwner = IntPtr.Zero;
+            public IntPtr instance = IntPtr.Zero;
+            public String filter = null;
+            public String customFilter = null;
+            public int maxCustFilter = 0;
+            public int filterIndex = 0;
+            public String file = null;
+            public int maxFile = 0;
+            public String fileTitle = null;
+            public int maxFileTitle = 0;
+            public String initialDir = null;
+            public String title = null;
+            public int flags = 0;
+            public short fileOffset = 0;
+            public short fileExtension = 0;
+            public String defExt = null;
+            public IntPtr custData = IntPtr.Zero;
+            public IntPtr hook = IntPtr.Zero;
+            public String templateName = null;
+            public IntPtr reservedPtr = IntPtr.Zero;
+            public int reservedInt = 0;
+            public int flagsEx = 0;
+        }
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public class OpenDialogDir
+        {
+            public IntPtr hwndOwner = IntPtr.Zero;
+            public IntPtr pidlRoot = IntPtr.Zero;
+            public String pszDisplayName = null;
+            public String lpszTitle = null;
+            public UInt32 ulFlags = 0;
+            public IntPtr lpfn = IntPtr.Zero;
+            public IntPtr lParam = IntPtr.Zero;
+            public int iImage = 0;
         }
     }
 }

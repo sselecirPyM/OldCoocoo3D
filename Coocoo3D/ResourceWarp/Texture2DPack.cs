@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Storage;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using System.IO;
@@ -33,17 +32,15 @@ namespace Coocoo3D.ResourceWarp
             texture2D.Status = status;
         }
 
-        public async Task<bool> ReloadTexture(IStorageItem storageItem, Uploader uploader)
+        public bool ReloadTexture(FileInfo storageItem, Uploader uploader)
         {
-            if (!(storageItem is StorageFile texFile))
+            if (!(storageItem is FileInfo texFile))
             {
                 return false;
             }
             try
             {
-                //uploader.Texture2D(await FileIO.ReadBufferAsync(texFile), true, true);
-                //byte[] data = GetImageData(await texFile.OpenStreamForReadAsync(), out int width, out int height, out _);
-                byte[] data = GetImageData(await texFile.OpenStreamForReadAsync(), out int width, out int height, out _, out int mipMap);
+                byte[] data = GetImageData(texFile.OpenRead(), out int width, out int height, out _, out int mipMap);
                 uploader.Texture2DRawLessCopy(data, srgb ? Format.R8G8B8A8_UNorm_SRgb : Format.R8G8B8A8_UNorm, width, height, mipMap);
 
                 Status = GraphicsObjectStatus.loaded;

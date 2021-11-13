@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.Storage.Streams;
 using System.IO;
 using GSD = Coocoo3DGraphics.GraphicSignatureDesc;
 using System.Collections.Concurrent;
@@ -27,9 +25,9 @@ namespace Coocoo3D.RenderPipeline
         public DefaultResource defaultResource;
         public bool Ready;
 
-        public async Task LoadAssets()
+        public void LoadAssets()
         {
-            defaultResource = ReadJsonStream<DefaultResource>(OpenReadStream("DefaultResources/DefaultResourceList.json").Result);
+            defaultResource = ReadJsonStream<DefaultResource>(OpenReadStream("DefaultResources/DefaultResourceList.json"));
             ConcurrentDictionary<string, VertexShader> vss = new ConcurrentDictionary<string, VertexShader>();
             ConcurrentDictionary<string, PixelShader> pss = new ConcurrentDictionary<string, PixelShader>();
             ConcurrentDictionary<string, ComputeShader> css = new ConcurrentDictionary<string, ComputeShader>();
@@ -68,27 +66,27 @@ namespace Coocoo3D.RenderPipeline
         {
             VertexShader vertexShader = new VertexShader();
             if (Path.GetExtension(path) == ".hlsl")
-                vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, ReadAllText(path), "main"));
+                vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "main"));
             else
-                vertexShader.Initialize(ReadFile1(path).Result);
+                vertexShader.Initialize(ReadFile1(path));
             assets.TryAdd(name, vertexShader);
         }
         protected void RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
         {
             PixelShader pixelShader = new PixelShader();
             if (Path.GetExtension(path) == ".hlsl")
-                pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, ReadAllText(path), "main"));
+                pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "main"));
             else
-                pixelShader.Initialize(ReadFile1(path).Result);
+                pixelShader.Initialize(ReadFile1(path));
             assets.TryAdd(name, pixelShader);
         }
         protected void RegCSAssets1(string name, string path, ConcurrentDictionary<string, ComputeShader> assets)
         {
             ComputeShader computeShader = new ComputeShader();
             if (Path.GetExtension(path) == ".hlsl")
-                computeShader.Initialize(LoadShader(DxcShaderStage.Compute, ReadAllText(path), "main"));
+                computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "main"));
             else
-                computeShader.Initialize(ReadFile1(path).Result);
+                computeShader.Initialize(ReadFile1(path));
             assets.TryAdd(name, computeShader);
         }
 
@@ -110,32 +108,18 @@ namespace Coocoo3D.RenderPipeline
             return result.GetResult().ToArray();
         }
 
-        string ReadAllText(string uri)
+        protected byte[] ReadFile1(string uri)
         {
-            var streamReader = new StreamReader(OpenReadStream(uri).Result);
-            string result = streamReader.ReadToEnd();
-            streamReader.Close();
-            return result;
-        }
-
-        protected async Task<IBuffer> ReadFile(string uri)
-        {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///" + uri));
-            return await FileIO.ReadBufferAsync(file);
-        }
-
-        protected async Task<byte[]> ReadFile1(string uri)
-        {
-            var binaryReader = new BinaryReader(OpenReadStream(uri).Result);
+            var binaryReader = new BinaryReader(OpenReadStream(uri));
             byte[] result = binaryReader.ReadBytes((int)binaryReader.BaseStream.Length);
             binaryReader.Close();
             return result;
         }
 
-        protected async Task<Stream> OpenReadStream(string uri)
+        protected Stream OpenReadStream(string uri)
         {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///" + uri));
-            return (await file.OpenAsync(FileAccessMode.Read)).AsStreamForRead();
+            FileInfo file = new FileInfo(uri);
+            return file.OpenRead();
         }
         public RootSignature GetRootSignature(GraphicsDevice graphicsDevice, string s)
         {

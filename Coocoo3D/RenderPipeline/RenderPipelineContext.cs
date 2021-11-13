@@ -13,8 +13,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.Storage.Streams;
 using Coocoo3D.Utility;
 using Vortice.DXGI;
 using Vortice.Direct3D12;
@@ -39,8 +37,6 @@ namespace Coocoo3D.RenderPipeline
         public float FrameInterval;
         public float PlaySpeed;
         public volatile bool RequireResetPhysics;
-        public bool RequireResize;
-        public Vector2 NewSize;
         public RecordSettings recordSettings;
 
         public long LatestRenderTime;
@@ -71,6 +67,8 @@ namespace Coocoo3D.RenderPipeline
         public Texture2D TextureLoading = new Texture2D();
         public Texture2D TextureError = new Texture2D();
 
+        public bool RequireResize;
+        public Vector2 NewSize;
         public bool SkyBoxChanged = false;
         public TextureCube SkyBox = new TextureCube();
         public TextureCube IrradianceMap = new TextureCube();
@@ -97,7 +95,7 @@ namespace Coocoo3D.RenderPipeline
         public Format outputFormat = Format.R16G16B16A16_Float;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
 
-        public string currentPassSetting1 = "ms-appx:///Samples\\samplePasses.coocoox";
+        public string currentPassSetting1 = "Samples\\samplePasses.coocoox";
 
         public Int2 screenSize;
         public float dpi = 96.0f;
@@ -122,6 +120,22 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext1.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
 
+            processingList.AddObject(TextureLoading, 1, 1, new Vector4(0, 1, 1, 1));
+            processingList.AddObject(TextureError, 1, 1, new Vector4(1, 0, 1, 1));
+
+            Uploader upTexEnvCube = new Uploader();
+            upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
+            processingList.AddObject(SkyBox, upTexEnvCube);
+
+            IrradianceMap.ReloadAsRTVUAV(32, 32, 1, Format.R32G32B32A32_Float);
+            ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, Format.R16G16B16A16_Float);
+
+            SkyBoxChanged = true;
+            graphicsContext.UpdateRenderTexture(IrradianceMap);
+            graphicsContext.UpdateRenderTexture(ReflectMap);
+
+            ndcQuadMesh.ReloadNDCQuad();
+            processingList.AddObject(ndcQuadMesh);
         }
 
         public void DelayAddVisualChannel(string name)
@@ -141,8 +155,8 @@ namespace Coocoo3D.RenderPipeline
 
         public void BeginDynamicContext(bool enableDisplay, Settings settings)
         {
-            mainCaches.GetPassSetting("ms-appx:///Samples\\samplePasses.coocoox");
-            mainCaches.GetPassSetting("ms-appx:///Samples\\sampleDeferredPasses.coocoox");
+            mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
+            mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
             dynamicContextWrite.FrameBegin();
             dynamicContextWrite.EnableDisplay = enableDisplay;
             dynamicContextWrite.settings = settings;
@@ -360,25 +374,8 @@ namespace Coocoo3D.RenderPipeline
 
         public bool Initialized = false;
         public Task LoadTask;
-        public async Task ReloadDefalutResources()
+        public void ReloadDefalutResources()
         {
-            processingList.AddObject(TextureLoading, 1, 1, new Vector4(0, 1, 1, 1));
-            processingList.AddObject(TextureError, 1, 1, new Vector4(1, 0, 1, 1));
-
-            Uploader upTexEnvCube = new Uploader();
-            upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
-            processingList.AddObject(SkyBox, upTexEnvCube);
-
-            IrradianceMap.ReloadAsRTVUAV(32, 32, 1, Format.R32G32B32A32_Float);
-            ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, Format.R16G16B16A16_Float);
-
-            SkyBoxChanged = true;
-            graphicsContext.UpdateRenderTexture(IrradianceMap);
-            graphicsContext.UpdateRenderTexture(ReflectMap);
-
-            ndcQuadMesh.ReloadNDCQuad();
-            processingList.AddObject(ndcQuadMesh);
-
             foreach (var tex2dDef in RPAssetsManager.defaultResource.texture2Ds)
             {
                 mainCaches.Texture("ms-appx:///" + tex2dDef.Path, false);

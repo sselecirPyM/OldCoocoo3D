@@ -10,10 +10,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Storage;
 using Coocoo3D.Components;
 using System.IO;
-using Windows.ApplicationModel;
 using Newtonsoft.Json;
 
 namespace Coocoo3D.RenderPipeline
@@ -21,7 +19,7 @@ namespace Coocoo3D.RenderPipeline
     public class MainCaches
     {
         public Dictionary<string, KnownFile> KnownFiles = new Dictionary<string, KnownFile>();
-        public Dictionary<string, StorageFolder> KnownFolders = new Dictionary<string, StorageFolder>();
+        public Dictionary<string, DirectoryInfo> KnownFolders = new Dictionary<string, DirectoryInfo>();
 
         public Dictionary<string, Texture2DPack> TextureCaches = new Dictionary<string, Texture2DPack>();
         public Dictionary<string, Texture2DPack> TextureOnDemand = new Dictionary<string, Texture2DPack>();
@@ -32,7 +30,8 @@ namespace Coocoo3D.RenderPipeline
 
         public MainCaches()
         {
-            KnownFolders.Add("ms-appx:///", Package.Current.InstalledLocation);
+            //KnownFolders.Add("ms-appx:///", new DirectoryInfo(Environment.CurrentDirectory));
+            KnownFolders.Add(Environment.CurrentDirectory, new DirectoryInfo(Environment.CurrentDirectory));
         }
 
         public ProcessingList processingList;
@@ -40,11 +39,11 @@ namespace Coocoo3D.RenderPipeline
 
         public bool ReloadTextures1 = false;
 
-        public void AddFolder(StorageFolder folder)
+        public void AddFolder(DirectoryInfo folder)
         {
             lock (TextureOnDemand)
             {
-                KnownFolders[folder.Path] = folder;
+                KnownFolders[folder.FullName] = folder;
             }
         }
 
@@ -112,7 +111,7 @@ namespace Coocoo3D.RenderPipeline
                                 if (knownFile.IsModified(folder).Result)
                                 {
                                     Uploader uploader = new Uploader();
-                                    if (texturePack1.ReloadTexture(knownFile.file, uploader).Result)
+                                    if (texturePack1.ReloadTexture(knownFile.file, uploader))
                                     {
                                         texturePack1.Mark(GraphicsObjectStatus.loaded);
                                         uploaders[texturePack1] = uploader;
@@ -152,7 +151,7 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        T GetT<T>(IDictionary<string, T> caches, string path, Func<StorageFile, T> createFun) where T : class
+        T GetT<T>(IDictionary<string, T> caches, string path, Func<FileInfo, T> createFun) where T : class
         {
             var knownFile = KnownFiles.GetOrCreate(path, () => new KnownFile()
             {
@@ -195,7 +194,7 @@ namespace Coocoo3D.RenderPipeline
             if (string.IsNullOrEmpty(path)) return null;
             return GetT(Motions, path, file =>
             {
-                BinaryReader reader = new BinaryReader(OpenReadStream(file).Result);
+                BinaryReader reader = new BinaryReader(OpenReadStream(file));
                 VMDFormat motionSet = VMDFormat.Load(reader);
 
                 var motion = new Components.MMDMotion();
@@ -206,12 +205,13 @@ namespace Coocoo3D.RenderPipeline
 
         public PassSetting GetPassSetting(string path)
         {
-            var passSetting = GetT(PassSettings, path, file => ReadJsonStream<PassSetting>(OpenReadStream(file).Result));
+            if (!Path.IsPathRooted(path)) path = Path.Combine(Environment.CurrentDirectory, path);
+            var passSetting = GetT(PassSettings, path, file => ReadJsonStream<PassSetting>(OpenReadStream(file)));
             foreach (var res in passSetting.Passes)
             {
                 if (res.SRVs != null)
                     foreach (var srv in res.SRVs)
-                        srv.Resource?.Replace("_BRDFLUT", "ms-appx:///Assets/Textures/brdflut.png");
+                        srv.Resource?.Replace("_BRDFLUT", "Assets/Textures/brdflut.png");
             }
             return passSetting;
         }
@@ -271,7 +271,7 @@ namespace Coocoo3D.RenderPipeline
             var path1 = path.Substring(0, path.LastIndexOf('\\'));
             if (InitFolder(path1))
             {
-                if (AddChildFolder(KnownFolders[path1], path).Result != null)
+                if (AddChildFolder(KnownFolders[path1], path) != null)
                     return true;
                 return false;
             }
@@ -279,12 +279,12 @@ namespace Coocoo3D.RenderPipeline
                 return false;
         }
 
-        public async Task<StorageFolder> AddChildFolder(StorageFolder folder, string path)
+        public DirectoryInfo AddChildFolder(DirectoryInfo folder, string path)
         {
             try
             {
                 var path1 = path.Substring(0, path.LastIndexOf('\\'));
-                var folder1 = await folder.GetFolderAsync(Path.GetRelativePath(path1, path));
+                var folder1 = new DirectoryInfo(path);
                 if (folder1 != null)
                     KnownFolders[path] = folder1;
                 return folder1;
@@ -306,9 +306,9 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        async Task<Stream> OpenReadStream(StorageFile file)
+        Stream OpenReadStream(FileInfo file)
         {
-            return (await file.OpenAsync(FileAccessMode.Read)).AsStreamForRead();
+            return file.OpenRead();
         }
 
         public void ReloadTextures()

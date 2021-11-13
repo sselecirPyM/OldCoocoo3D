@@ -7,8 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Utility;
 using Coocoo3DGraphics;
-using Windows.Storage;
-using Windows.Storage.Streams;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -112,12 +110,6 @@ namespace Coocoo3D.RenderPipeline
             public int Batch;
             public int x2;
             public int y2;
-        }
-
-        protected async Task<IBuffer> ReadFile(string uri)
-        {
-            StorageFile file = await StorageFile.GetFileFromApplicationUriAsync(new Uri(uri));
-            return await FileIO.ReadBufferAsync(file);
         }
     }
 }

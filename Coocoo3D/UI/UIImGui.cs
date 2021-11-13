@@ -8,8 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.IO;
 using Coocoo3D.Components;
-using Windows.Storage;
 
 namespace Coocoo3D.UI
 {
@@ -112,7 +112,7 @@ namespace Coocoo3D.UI
             {
                 if (selectedObject != null)
                 {
-                    ImGui.Text(selectedObject.Name);
+                    ImGui.InputText("名称", ref selectedObject.Name, 256);
                     if (ImGui.TreeNode("描述"))
                     {
                         ImGui.Text(selectedObject.Description);
@@ -236,7 +236,7 @@ namespace Coocoo3D.UI
                 {
                     appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
                 }
-                if(ImGui.Button("添加视口"))
+                if (ImGui.Button("添加视口"))
                 {
                     vcCount++;
                     appBody.RPContext.DelayAddVisualChannel(vcCount.ToString());
@@ -321,13 +321,13 @@ namespace Coocoo3D.UI
                 {
                     if (ImGui.Selectable(item.Name, false, ImGuiSelectableFlags.AllowDoubleClick) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
-                        if (item is StorageFolder folder)
+                        if (item is DirectoryInfo folder)
                         {
+                            viewStack.Push(currentFolder);
                             viewRequest = folder;
                             _requireClear = true;
-                            viewStack.Push(currentFolder);
                         }
-                        else if (item is StorageFile file)
+                        else if (item is FileInfo file)
                         {
                             var requireOpen1 = new _openRequest();
                             requireOpen1.file = file;
@@ -545,11 +545,11 @@ vmd格式动作");
         public static bool requireSaveFolder;
         public static bool requireRecord;
 
-        public static StorageFolder rootFolder;
-        public static Stack<StorageFolder> viewStack = new Stack<StorageFolder>();
-        public static List<IStorageItem> storageItems = new List<IStorageItem>();
-        public static StorageFolder currentFolder;
-        public static StorageFolder viewRequest;
+        public static DirectoryInfo rootFolder;
+        public static Stack<DirectoryInfo> viewStack = new Stack<DirectoryInfo>();
+        public static List<FileSystemInfo> storageItems = new List<FileSystemInfo>();
+        public static DirectoryInfo currentFolder;
+        public static DirectoryInfo viewRequest;
         public static _openRequest openRequest;
         //public static List<bool> gameObjectSelected = new List<bool>();
 
@@ -575,23 +575,22 @@ vmd格式动作");
         {
             var io = ImGui.GetIO();
 
-            io.KeyMap[(int)ImGuiKey.Tab] = (int)Windows.System.VirtualKey.Tab;
-            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Windows.System.VirtualKey.Left;
-            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Windows.System.VirtualKey.Right;
-            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Windows.System.VirtualKey.Up;
-            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Windows.System.VirtualKey.Down;
-            io.KeyMap[(int)ImGuiKey.PageUp] = (int)Windows.System.VirtualKey.PageUp;
-            io.KeyMap[(int)ImGuiKey.PageDown] = (int)Windows.System.VirtualKey.PageDown;
-            io.KeyMap[(int)ImGuiKey.Home] = (int)Windows.System.VirtualKey.Home;
-            io.KeyMap[(int)ImGuiKey.End] = (int)Windows.System.VirtualKey.End;
-            io.KeyMap[(int)ImGuiKey.Insert] = (int)Windows.System.VirtualKey.Insert;
-            io.KeyMap[(int)ImGuiKey.Delete] = (int)Windows.System.VirtualKey.Delete;
-            io.KeyMap[(int)ImGuiKey.Backspace] = (int)Windows.System.VirtualKey.Back;
-            io.KeyMap[(int)ImGuiKey.Space] = (int)Windows.System.VirtualKey.Space;
-            io.KeyMap[(int)ImGuiKey.Enter] = (int)Windows.System.VirtualKey.Enter;
-            io.KeyMap[(int)ImGuiKey.Escape] = (int)Windows.System.VirtualKey.Escape;
-            //io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)Windows.System.VirtualKey.RETURN;
-
+            io.KeyMap[(int)ImGuiKey.Tab] = (int)ImGuiKey.Tab;
+            io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)ImGuiKey.LeftArrow;
+            io.KeyMap[(int)ImGuiKey.RightArrow] = (int)ImGuiKey.RightArrow;
+            io.KeyMap[(int)ImGuiKey.UpArrow] = (int)ImGuiKey.UpArrow;
+            io.KeyMap[(int)ImGuiKey.DownArrow] = (int)ImGuiKey.DownArrow;
+            io.KeyMap[(int)ImGuiKey.PageUp] = (int)ImGuiKey.PageUp;
+            io.KeyMap[(int)ImGuiKey.PageDown] = (int)ImGuiKey.PageDown;
+            io.KeyMap[(int)ImGuiKey.Home] = (int)ImGuiKey.Home;
+            io.KeyMap[(int)ImGuiKey.End] = (int)ImGuiKey.End;
+            io.KeyMap[(int)ImGuiKey.Insert] = (int)ImGuiKey.Insert;
+            io.KeyMap[(int)ImGuiKey.Delete] = (int)ImGuiKey.Delete;
+            io.KeyMap[(int)ImGuiKey.Backspace] = (int)ImGuiKey.Backspace;
+            io.KeyMap[(int)ImGuiKey.Space] = (int)ImGuiKey.Space;
+            io.KeyMap[(int)ImGuiKey.Enter] = (int)ImGuiKey.Enter;
+            io.KeyMap[(int)ImGuiKey.Escape] = (int)ImGuiKey.Escape;
+            io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)ImGuiKey.KeyPadEnter;
             io.KeyMap[(int)ImGuiKey.A] = 'A';
             io.KeyMap[(int)ImGuiKey.C] = 'C';
             io.KeyMap[(int)ImGuiKey.V] = 'V';
@@ -610,7 +609,7 @@ vmd格式动作");
     }
     class _openRequest
     {
-        public StorageFile file;
-        public StorageFolder folder;
+        public FileInfo file;
+        public DirectoryInfo folder;
     }
 }

@@ -7,11 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Coocoo3DGraphics;
 using Coocoo3D.Present;
-using Coocoo3D.Controls;
 using Coocoo3D.Utility;
-using Windows.System.Threading;
-using Windows.UI.Core;
-using Windows.Foundation;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Components;
 using Coocoo3D.RenderPipeline;
@@ -34,22 +30,10 @@ namespace Coocoo3D.Core
         public GeneralGameDriver _GeneralGameDriver = new GeneralGameDriver();
         public RecorderGameDriver _RecorderGameDriver = new RecorderGameDriver();
         #region Time
-        ThreadPoolTimer threadPoolTimer;
-
-        public long LatestRenderTime = 0;
-        public CoreDispatcher Dispatcher;
-        public event EventHandler FrameUpdated;
 
         public volatile int CompletedRenderCount = 0;
         public volatile int VirtualRenderCount = 0;
-        private async void Tick(ThreadPoolTimer timer)
-        {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Low, async () =>
-            {
-                FrameUpdated?.Invoke(this, null);
-                await Coocoo3D.UI.UIHelper.OnFrame(this);
-            });
-        }
+        public long LatestRenderTime = 0;
         #endregion
         public Settings settings = new Settings()
         {
@@ -81,10 +65,10 @@ namespace Coocoo3D.Core
             _currentRenderPipeline = forwardRenderPipeline2;
             mainCaches.processingList = ProcessingList;
             mainCaches._RequireRender = RequireRender;
-            RPContext.LoadTask = Task.Run(async () =>
+            RPContext.LoadTask = Task.Run(() =>
             {
-                await RPAssetsManager.LoadAssets();
-                await RPContext.ReloadDefalutResources();
+                RPAssetsManager.LoadAssets();
+                RPContext.ReloadDefalutResources();
                 widgetRenderer.Reload(RPContext);
                 if (graphicsDevice.IsRayTracingSupport())
                 {
@@ -97,8 +81,6 @@ namespace Coocoo3D.Core
             CurrentScene = new Scene();
             CurrentScene.physics3DScene.Initialize();
             CurrentScene.physics3DScene.SetGravitation(new Vector3(0, -98.01f, 0));
-            Dispatcher = CoreWindow.GetForCurrentThread().Dispatcher;
-            threadPoolTimer = ThreadPoolTimer.CreatePeriodicTimer(Tick, TimeSpan.FromSeconds(1 / 30.0));
 
             canRenderThread = new CancellationTokenSource();
             renderWorkThread = new Thread(() =>
@@ -207,9 +189,9 @@ namespace Coocoo3D.Core
             RPContext.dynamicContextWrite = RPContext.dynamicContextRead;
             RPContext.dynamicContextRead = temp1;
 
-            if (RPContext.gameDriverContext.RequireResize.SetFalse())
+            if (RPContext.RequireResize.SetFalse())
             {
-                graphicsDevice.SetLogicalSize(RPContext.gameDriverContext.NewSize);
+                graphicsDevice.SetLogicalSize(RPContext.NewSize);
                 graphicsDevice.WaitForGpu();
             }
             RPContext.ReloadScreenSizeResources();

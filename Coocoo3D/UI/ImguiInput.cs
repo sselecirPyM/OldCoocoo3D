@@ -40,6 +40,10 @@ namespace Coocoo3D.UI
         public void Update()
         {
             var io = ImGui.GetIO();
+            unsafe
+            {
+                if ((IntPtr)io.NativePtr == new IntPtr(8)) return;
+            }
             for (int i = 0; i < 256; i++)
             {
                 io.KeysDown[i] = keydown[i];

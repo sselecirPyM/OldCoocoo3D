@@ -3,37 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Storage;
+using System.IO;
 
 namespace Coocoo3D.ResourceWarp
 {
     public class KnownFile
     {
         public DateTimeOffset lastModifiedTime;
-        public StorageFile file;
+        public FileInfo file;
         public string fullPath;
         public string relativePath;
         public bool requireReload;
 
-        public async Task<bool> IsModified(StorageFolder folder)
+        public async Task<bool> IsModified(DirectoryInfo folder)
         {
             try
             {
-                var file = await folder.GetFileAsync(relativePath);
-                var attr = await file.GetBasicPropertiesAsync();
+                var file = folder.EnumerateFiles().Where(u=>u.Name.Equals(relativePath,StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+                var attr = file.LastWriteTime;
                 bool modified = false;
-                if (lastModifiedTime != attr.DateModified)
+                if (lastModifiedTime != attr)
                 {
                     modified = true;
                     this.file = file;
-                    lastModifiedTime = attr.DateModified;
+                    lastModifiedTime = attr;
                 }
                 return modified;
             }
             catch(Exception e)
             {
                 lastModifiedTime = new DateTimeOffset();
-                throw e;
+                throw;
             }
         }
     }

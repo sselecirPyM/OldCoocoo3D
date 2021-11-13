@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Windows.Storage;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Runtime.InteropServices;
@@ -16,7 +15,7 @@ namespace Coocoo3D.Core
     public class RecorderGameDriver : GameDriver
     {
         const int c_frameCount = 3;
-        public override bool Next(RenderPipelineContext rpContext,long now)
+        public override bool Next(RenderPipelineContext rpContext, long now)
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
 
@@ -48,7 +47,7 @@ namespace Coocoo3D.Core
             context.PlayTime = FrameIntervalF * RenderCount;
             RenderCount++;
 
-            if (context.PlayTime >= StartTime || context.RequireResize)
+            if (context.PlayTime >= StartTime || rpContext.RequireResize)
                 context.EnableDisplay = true;
             else
                 context.EnableDisplay = false;
@@ -59,19 +58,18 @@ namespace Coocoo3D.Core
         {
             public Task runningTask;
             public int renderIndex;
-            public StorageFolder saveFolder;
+            public DirectoryInfo saveFolder;
             public byte[] imageData;
             public int width;
             public int height;
-            public async Task task1()
+            public void task1()
             {
                 Image<Rgba32> image = Image.WrapMemory<Rgba32>(imageData, width, height);
 
-                StorageFile file = await saveFolder.CreateFileAsync(string.Format("{0}.png", renderIndex), CreationCollisionOption.ReplaceExisting);
-                var stream = await file.OpenStreamForWriteAsync();
+                FileInfo file = new FileInfo(Path.Combine(saveFolder.FullName, string.Format("{0}.png", renderIndex)));
+                var stream = file.Open(FileMode.Create);
                 image.SaveAsPng(stream);
 
-                //await stream.FlushAsync();
                 stream.Close();
             }
         }
@@ -140,7 +138,7 @@ namespace Coocoo3D.Core
         public int RecordCount = 0;
         public int RenderCount = 0;
         bool switchEffect;
-        public StorageFolder saveFolder;
+        public DirectoryInfo saveFolder;
         public void SwitchEffect()
         {
             switchEffect = true;
