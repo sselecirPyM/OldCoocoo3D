@@ -410,7 +410,6 @@ namespace Coocoo3D.RenderPipeline
                 passPsoDesc.renderTargetCount = combinedPass.RenderTargets == null ? 0 : combinedPass.RenderTargets.Count;
                 passPsoDesc.streamOutput = false;
                 passPsoDesc.wireFrame = false;
-                _PassSetRes1(null, combinedPass);
                 if (combinedPass.DrawObjects)
                 {
                     passPsoDesc.inputLayout = InputLayout.mmd;
@@ -420,6 +419,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Type == "DrawScreen")
                 {
+                _PassSetRes1(null, combinedPass);
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
                         XBufferGroup.SetCBVRSlot(graphicsContext, matC, cbv.Index);

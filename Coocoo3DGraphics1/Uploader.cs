@@ -16,17 +16,17 @@ namespace Coocoo3DGraphics
         public Format m_format;
 
         public byte[] m_data;
-        public void Texture2DRaw(byte[] rawData, Format format, int width, int height)
+        public void Texture2DRaw(Span<byte> rawData, Format format, int width, int height)
         {
             m_data = new byte[rawData.Length];
-            Array.Copy(rawData, m_data, rawData.Length);
+            rawData.CopyTo(m_data);
             Texture2DRawLessCopy(m_data, format, width, height, 1);
         }
 
-        public void Texture2DRaw(byte[] rawData, Format format, int width, int height, int mipLevel)
+        public void Texture2DRaw(Span<byte> rawData, Format format, int width, int height, int mipLevel)
         {
             m_data = new byte[rawData.Length];
-            Array.Copy(rawData, m_data, rawData.Length);
+            rawData.CopyTo(m_data);
             Texture2DRawLessCopy(m_data, format, width, height, mipLevel);
         }
         public void Texture2DRawLessCopy(byte[] rawData, Format format, int width, int height, int mipLevel)

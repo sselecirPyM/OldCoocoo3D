@@ -1,4 +1,5 @@
-﻿using Coocoo3D.FileFormat;
+﻿using Coocoo3D.Components;
+using Coocoo3D.FileFormat;
 using Coocoo3D.Utility;
 using Coocoo3DGraphics;
 using System;
@@ -9,20 +10,15 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Vortice.Direct3D;
 
 namespace Coocoo3D.ResourceWarp
 {
     public class ModelPack
     {
-        const int c_vertexStride2 = 12;
-
         public PMXFormat pmx = new PMXFormat();
 
         public string fullPath;
-        public volatile Task LoadTask;
 
-        public byte[] verticesDataPosPart;
         public Vector3[] position;
         public Vector3[] normal;
         public Vector2[] uv;
@@ -32,13 +28,12 @@ namespace Coocoo3D.ResourceWarp
         MMDMesh meshInstance;
         public int vertexCount;
 
-        public GraphicsObjectStatus Status;
+        public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
 
-        public void Reload(BinaryReader reader)
+        public void Reload(BinaryReader reader,string storageFolder)
         {
             pmx.Reload(reader);
             vertexCount = pmx.Vertices.Length;
-            verticesDataPosPart = new byte[pmx.Vertices.Length * c_vertexStride2];
             position = new Vector3[pmx.Vertices.Length];
             normal = new Vector3[pmx.Vertices.Length];
             uv = new Vector2[pmx.Vertices.Length];
@@ -66,10 +61,39 @@ namespace Coocoo3D.ResourceWarp
                 boneWeights[i * 4 + 3] /= weightTotal;
             }
 
-            Span<Vector3> vector3s = MemoryMarshal.Cast<byte, Vector3>(verticesDataPosPart);
-            for (int i = 0; i < pmx.Vertices.Length; i++)
+
+            for (int i = 0; i < pmx.Materials.Count; i++)
             {
-                vector3s[i] = pmx.Vertices[i].Coordinate;
+                var mmdMat = pmx.Materials[i];
+
+                RuntimeMaterial mat = new RuntimeMaterial
+                {
+                    Name = mmdMat.Name,
+                    NameEN = mmdMat.NameEN,
+                    texIndex = mmdMat.TextureIndex,
+                    indexCount = mmdMat.TriangeIndexNum,
+                    innerStruct =
+                    {
+                        DiffuseColor = mmdMat.DiffuseColor,
+                        SpecularColor = mmdMat.SpecularColor,
+                        EdgeSize = mmdMat.EdgeScale,
+                        EdgeColor = mmdMat.EdgeColor,
+                        AmbientColor = new Vector3(MathF.Pow(mmdMat.AmbientColor.X, 2.2f), MathF.Pow(mmdMat.AmbientColor.Y, 2.2f), MathF.Pow(mmdMat.AmbientColor.Z, 2.2f)),
+                        Roughness = 0.8f,
+                        Specular = 0.5f,
+                    },
+                    DrawFlags = (DrawFlag)mmdMat.DrawFlags,
+                    toonIndex = mmdMat.ToonIndex,
+                };
+                if (pmx.Textures.Count > mat.texIndex && mat.texIndex >= 0)
+                {
+                    string relativePath = pmx.Textures[mat.texIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
+                    string texPath = Path.Combine(storageFolder, relativePath);
+
+                    mat.textures["_Albedo"] = texPath;
+                }
+
+                Materials.Add(mat);
             }
         }
 

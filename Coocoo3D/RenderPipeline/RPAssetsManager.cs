@@ -6,43 +6,34 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using GSD = Coocoo3DGraphics.GraphicSignatureDesc;
 using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using Vortice.Dxc;
 
 namespace Coocoo3D.RenderPipeline
 {
-    public class RPAssetsManager
+    public class RPAssetsManager : IDisposable
     {
         public Dictionary<string, VertexShader> VSAssets = new Dictionary<string, VertexShader>();
-        public Dictionary<string, GeometryShader> GSAssets = new Dictionary<string, GeometryShader>();
         public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
-        public Dictionary<string, ComputeShader> CSAssets = new Dictionary<string, ComputeShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
         public Dictionary<string, RootSignature> signaturePass = new Dictionary<string, RootSignature>();
 
         public DefaultResource defaultResource;
-        public bool Ready;
 
         public void LoadAssets()
         {
             defaultResource = ReadJsonStream<DefaultResource>(OpenReadStream("DefaultResources/DefaultResourceList.json"));
             ConcurrentDictionary<string, VertexShader> vss = new ConcurrentDictionary<string, VertexShader>();
             ConcurrentDictionary<string, PixelShader> pss = new ConcurrentDictionary<string, PixelShader>();
-            ConcurrentDictionary<string, ComputeShader> css = new ConcurrentDictionary<string, ComputeShader>();
-
 
             Parallel.Invoke(() => Parallel.ForEach(defaultResource.vertexShaders, vertexShader => RegVSAssets1(vertexShader.Name, vertexShader.Path, vss)),
-             () => Parallel.ForEach(defaultResource.pixelShaders, pixelShader => RegPSAssets1(pixelShader.Name, pixelShader.Path, pss)),
-             () => Parallel.ForEach(defaultResource.computeShaders, computeShader => RegCSAssets1(computeShader.Name, computeShader.Path, css)));
+             () => Parallel.ForEach(defaultResource.pixelShaders, pixelShader => RegPSAssets1(pixelShader.Name, pixelShader.Path, pss)));
 
             foreach (var vs in vss)
                 VSAssets.Add(vs.Key, vs.Value);
             foreach (var ps in pss)
                 PSAssets.Add(ps.Key, ps.Value);
-            foreach (var cs in css)
-                CSAssets.Add(cs.Key, cs.Value);
 
 
             foreach (var pipelineState in defaultResource.pipelineStates)
@@ -53,14 +44,13 @@ namespace Coocoo3D.RenderPipeline
                 PixelShader ps = null;
                 if (pipelineState.vertexShader != null)
                     vs = VSAssets[pipelineState.vertexShader];
-                if (pipelineState.geometryShader != null)
-                    gs = GSAssets[pipelineState.geometryShader];
+                //if (pipelineState.geometryShader != null)
+                //    gs = GSAssets[pipelineState.geometryShader];
                 if (pipelineState.pixelShader != null)
                     ps = PSAssets[pipelineState.pixelShader];
                 pso.Initialize(vs, gs, ps);
                 PSOs.Add(pipelineState.name, pso);
             }
-            Ready = true;
         }
         protected void RegVSAssets1(string name, string path, ConcurrentDictionary<string, VertexShader> assets)
         {
@@ -68,7 +58,7 @@ namespace Coocoo3D.RenderPipeline
             if (Path.GetExtension(path) == ".hlsl")
                 vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "main"));
             else
-                vertexShader.Initialize(ReadFile1(path));
+                vertexShader.Initialize(File.ReadAllBytes(path));
             assets.TryAdd(name, vertexShader);
         }
         protected void RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
@@ -77,17 +67,8 @@ namespace Coocoo3D.RenderPipeline
             if (Path.GetExtension(path) == ".hlsl")
                 pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "main"));
             else
-                pixelShader.Initialize(ReadFile1(path));
+                pixelShader.Initialize(File.ReadAllBytes(path));
             assets.TryAdd(name, pixelShader);
-        }
-        protected void RegCSAssets1(string name, string path, ConcurrentDictionary<string, ComputeShader> assets)
-        {
-            ComputeShader computeShader = new ComputeShader();
-            if (Path.GetExtension(path) == ".hlsl")
-                computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "main"));
-            else
-                computeShader.Initialize(ReadFile1(path));
-            assets.TryAdd(name, computeShader);
         }
 
         public static T ReadJsonStream<T>(Stream stream)
@@ -106,14 +87,6 @@ namespace Coocoo3D.RenderPipeline
             if (result.GetStatus() != SharpGen.Runtime.Result.Ok)
                 throw new Exception(result.GetErrors());
             return result.GetResult().ToArray();
-        }
-
-        protected byte[] ReadFile1(string uri)
-        {
-            var binaryReader = new BinaryReader(OpenReadStream(uri));
-            byte[] result = binaryReader.ReadBytes((int)binaryReader.BaseStream.Length);
-            binaryReader.Close();
-            return result;
         }
 
         protected Stream OpenReadStream(string uri)
@@ -162,6 +135,18 @@ namespace Coocoo3D.RenderPipeline
                 }
             }
             return desc;
+        }
+
+        public void Dispose()
+        {
+            foreach(var pso in PSOs)
+            {
+                pso.Value.Dispose();
+            }
+            foreach(var rs in signaturePass)
+            {
+                rs.Value.Dispose();
+            }
         }
     }
     public class DefaultResource

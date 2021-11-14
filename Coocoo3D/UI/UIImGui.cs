@@ -6,8 +6,6 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.IO;
 using Coocoo3D.Components;
 
@@ -243,14 +241,14 @@ namespace Coocoo3D.UI
                 }
                 ImGui.TreePop();
             }
-            if (ImGui.TreeNode("天空盒"))
-            {
-                if (ImGui.BeginCombo("selece file", "?"))
-                {
-                    ImGui.EndCombo();
-                }
-                ImGui.TreePop();
-            }
+            //if (ImGui.TreeNode("天空盒"))
+            //{
+            //    if (ImGui.BeginCombo("selece file", "?"))
+            //    {
+            //        ImGui.EndCombo();
+            //    }
+            //    ImGui.TreePop();
+            //}
             if (ImGui.TreeNode("帮助"))
             {
                 Help();
@@ -349,7 +347,7 @@ namespace Coocoo3D.UI
                 ImGui.Text(@"旋转视角 - 按住鼠标右键拖动
 平移镜头 - 按住鼠标中键拖动
 拉近、拉远镜头 - 鼠标滚轮
-修改物体位置、旋转 - 在ui上按住左键然后拖动");
+修改物体位置、旋转 - 双击修改，或者在数字上按住左键然后拖动");
                 ImGui.TreePop();
             }
             if (ImGui.TreeNode("支持格式"))
@@ -360,8 +358,7 @@ vmd格式动作");
             }
             if (ImGui.TreeNode("编写着色器"))
             {
-                ImGui.TextWrapped(@"请点击帮助菜单下的""示例着色器""来导出示例着色器文件夹。可以加载coocoox格式的渲染配置文件。
-示例着色器已经包含前向渲染以及延迟渲染的示例，有问题或想法请在github上提交。");
+                ImGui.TextWrapped(@"以后会逐渐加入。");
                 ImGui.TreePop();
             }
             if (ImGui.Button("显示ImGuiDemoWindow"))
@@ -429,7 +426,6 @@ vmd格式动作");
                 {
                     if (ImGui.BeginChild("materials", new Vector2(140, 300)))
                     {
-                        RuntimeMaterial runtimeMaterial = null;
                         ImGui.PushItemWidth(120);
                         for (int i = 0; i < rendererComponent.Materials.Count; i++)
                         {
@@ -521,7 +517,7 @@ vmd格式动作");
             }
             if (ImGui.IsItemHovered())
             {
-                channel.camera.Distance += mouseWheelDelta / 20.0f;
+                channel.camera.Distance += mouseWheelDelta *6.0f;
                 //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
                 //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
 
@@ -541,11 +537,8 @@ vmd格式动作");
         public static int materialSelectIndex = 0;
         public static int gameObjectSelectIndex = 0;
         public static bool requireOpenFolder;
-        public static bool requireExport;
-        public static bool requireSaveFolder;
         public static bool requireRecord;
 
-        public static DirectoryInfo rootFolder;
         public static Stack<DirectoryInfo> viewStack = new Stack<DirectoryInfo>();
         public static List<FileSystemInfo> storageItems = new List<FileSystemInfo>();
         public static DirectoryInfo currentFolder;

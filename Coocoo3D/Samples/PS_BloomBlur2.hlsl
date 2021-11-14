@@ -1,4 +1,4 @@
-﻿cbuffer cb0 : register(b0)
+cbuffer cb0 : register(b0)
 {
 	int2 textureSize;
 }

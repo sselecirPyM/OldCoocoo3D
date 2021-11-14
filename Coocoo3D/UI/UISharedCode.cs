@@ -22,25 +22,7 @@ namespace Coocoo3D.UI
         public static void LoadEntityIntoScene(Coocoo3DMain appBody, Scene scene, FileInfo pmxFile, DirectoryInfo storageFolder)
         {
             string pmxPath = pmxFile.FullName;
-            ModelPack modelPack = null;
-            lock (appBody.mainCaches.ModelPackCaches)
-            {
-                modelPack = appBody.mainCaches.ModelPackCaches.GetOrCreate(pmxPath);
-                modelPack.fullPath = pmxPath;
-                if (modelPack.LoadTask == null && modelPack.Status != GraphicsObjectStatus.loaded)
-                {
-                    modelPack.LoadTask = Task.Run(() =>
-                    {
-                        BinaryReader reader = OpenReader(pmxFile);
-                        modelPack.Reload(reader);
-                        reader.Dispose();
-                        appBody.ProcessingList.AddObject(modelPack.GetMesh());
-                        modelPack.Status = GraphicsObjectStatus.loaded;
-                        modelPack.LoadTask = null;
-                    });
-                }
-            }
-            if (modelPack.Status != GraphicsObjectStatus.loaded && modelPack.LoadTask != null) modelPack.LoadTask.Wait();
+            ModelPack modelPack = appBody.mainCaches.GetModel(pmxPath);
 
             GameObject gameObject = new GameObject();
             gameObject.Reload2(modelPack, GetTextureList(appBody, storageFolder.FullName, modelPack.pmx), pmxPath);
@@ -82,17 +64,9 @@ namespace Coocoo3D.UI
                 string relativePath = vTex.TexturePath.Replace("//", "\\").Replace('/', '\\');
                 string texPath = Path.Combine(storageFolder, relativePath);
                 paths.Add(texPath);
-            }
-            for (int i = 0; i < pmx.Textures.Count; i++)
-            {
-                appBody.mainCaches.Texture(paths[i]);
+                appBody.mainCaches.Texture(texPath);
             }
             return paths;
-        }
-
-        public static void LoadTexture(Coocoo3DMain appBody, FileInfo storageFile, DirectoryInfo storageFolder)
-        {
-            appBody.mainCaches.Texture(storageFolder.FullName);
         }
 
         public static BinaryReader OpenReader(FileInfo file) => new BinaryReader(file.OpenRead());

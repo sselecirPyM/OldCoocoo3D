@@ -255,25 +255,25 @@ namespace Coocoo3D.Components
                     Matrix4x4 matXi = Matrix4x4.Transpose(itEntity.GeneratedTransform);
                     Vector3 ikRotateAxis = SafeNormalize(Vector3.TransformNormal(Vector3.Cross(targetDirection, ikDirection), matXi));
 
-                    //if (axis_lim)
-                    //    switch (IKLINK.FixTypes)
-                    //    {
-                    //        case AxisFixType.FixX:
-                    //            ikRotateAxis.X = ikRotateAxis.X >= 0 ? 1 : -1;
-                    //            ikRotateAxis.Y = 0;
-                    //            ikRotateAxis.Z = 0;
-                    //            break;
-                    //        case AxisFixType.FixY:
-                    //            ikRotateAxis.X = 0;
-                    //            ikRotateAxis.Y = ikRotateAxis.Y >= 0 ? 1 : -1;
-                    //            ikRotateAxis.Z = 0;
-                    //            break;
-                    //        case AxisFixType.FixZ:
-                    //            ikRotateAxis.X = 0;
-                    //            ikRotateAxis.Y = 0;
-                    //            ikRotateAxis.Z = ikRotateAxis.Z >= 0 ? 1 : -1;
-                    //            break;
-                    //    }
+                    if (axis_lim)
+                        switch (IKLINK.FixTypes)
+                        {
+                            case AxisFixType.FixX:
+                                ikRotateAxis.X = ikRotateAxis.X >= 0 ? 1 : -1;
+                                ikRotateAxis.Y = 0;
+                                ikRotateAxis.Z = 0;
+                                break;
+                            case AxisFixType.FixY:
+                                ikRotateAxis.X = 0;
+                                ikRotateAxis.Y = ikRotateAxis.Y >= 0 ? 1 : -1;
+                                ikRotateAxis.Z = 0;
+                                break;
+                            case AxisFixType.FixZ:
+                                ikRotateAxis.X = 0;
+                                ikRotateAxis.Y = 0;
+                                ikRotateAxis.Z = ikRotateAxis.Z >= 0 ? 1 : -1;
+                                break;
+                        }
                     //重命名函数以缩短函数名
                     Quaternion QAxisAngle(Vector3 axis, float angle) => Quaternion.CreateFromAxisAngle(axis, angle);
 
@@ -466,8 +466,6 @@ namespace Coocoo3D.Components
     }
     public class RuntimeMaterial
     {
-        public const int c_materialDataSize = 256;
-
         public string Name;
         public string NameEN;
         public int indexCount;
@@ -502,6 +500,14 @@ namespace Coocoo3D.Components
             public float ClearcoatGloss;
         }
         public Dictionary<string, string> textures = new Dictionary<string, string>();
+
+        public RuntimeMaterial GetClone()
+        {
+            var mat = (RuntimeMaterial)MemberwiseClone();
+            mat.textures = new Dictionary<string, string>(textures);
+            return mat;
+        }
+
         public override string ToString()
         {
             return string.Format("{0}_{1}", Name, NameEN);
@@ -570,7 +576,7 @@ namespace Coocoo3D.Components
             public Vector3 LimitMin;
             public Vector3 LimitMax;
             public IKTransformOrder TransformOrder;
-            //public AxisFixType FixTypes;
+            public AxisFixType FixTypes;
         }
         public override string ToString()
         {
@@ -650,32 +656,10 @@ namespace Coocoo3D.FileFormat
             rendererComponent.meshPosData1 = new Vector3[mesh.GetVertexCount()];
 
             var modelResource = modelPack.pmx;
-            for (int i = 0; i < modelResource.Materials.Count; i++)
+
+            for (int i = 0; i < modelPack.Materials.Count; i++)
             {
-                var mmdMat = modelResource.Materials[i];
-
-                RuntimeMaterial mat = new RuntimeMaterial
-                {
-                    Name = mmdMat.Name,
-                    NameEN = mmdMat.NameEN,
-                    texIndex = mmdMat.TextureIndex,
-                    indexCount = mmdMat.TriangeIndexNum,
-                    innerStruct =
-                    {
-                        DiffuseColor = mmdMat.DiffuseColor,
-                        SpecularColor = mmdMat.SpecularColor,
-                        EdgeSize = mmdMat.EdgeScale,
-                        EdgeColor = mmdMat.EdgeColor,
-                        AmbientColor = new Vector3(MathF.Pow(mmdMat.AmbientColor.X, 2.2f), MathF.Pow(mmdMat.AmbientColor.Y, 2.2f), MathF.Pow(mmdMat.AmbientColor.Z, 2.2f)),
-                        Roughness = 0.8f,
-                        Specular = 0.5f,
-                    },
-                    DrawFlags = (DrawFlag)mmdMat.DrawFlags,
-                    toonIndex = mmdMat.ToonIndex,
-                };
-                if (textures.Count > mat.texIndex && mat.texIndex >= 0)
-                    mat.textures["_Albedo"] = textures[mat.texIndex];
-
+                var mat = modelPack.Materials[i].GetClone();
                 rendererComponent.Materials.Add(mat);
                 rendererComponent.materialsBaseData.Add(mat.innerStruct);
                 rendererComponent.computedMaterialsData.Add(mat.innerStruct);
@@ -698,7 +682,7 @@ namespace Coocoo3D.FileFormat
         }
 
         public static void Initialize2(this MMDRendererComponent rendererComponent, PMXFormat modelResource)
-        { 
+        {
             rendererComponent.bones.Clear();
             rendererComponent.cachedBoneKeyFrames.Clear();
             var _bones = modelResource.Bones;
@@ -742,40 +726,40 @@ namespace Coocoo3D.FileFormat
                             ikLink.TransformOrder = IKTransformOrder.Xyz;
                         else
                             ikLink.TransformOrder = IKTransformOrder.Yzx;
-                        //const float epsilon = 1e-6f;
-                        //if (ikLink.HasLimit)
-                        //{
-                        //    if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                        //        Math.Abs(ikLink.LimitMax.X) < epsilon &&
-                        //        Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                        //        Math.Abs(ikLink.LimitMax.Y) < epsilon &&
-                        //        Math.Abs(ikLink.LimitMin.Z) < epsilon &&
-                        //        Math.Abs(ikLink.LimitMax.Z) < epsilon)
-                        //    {
-                        //        ikLink.FixTypes = AxisFixType.FixAll;
-                        //    }
-                        //    else if (Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMax.Y) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMin.Z) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMax.Z) < epsilon)
-                        //    {
-                        //        ikLink.FixTypes = AxisFixType.FixX;
-                        //    }
-                        //    else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMax.X) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMin.Z) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMax.Z) < epsilon)
-                        //    {
-                        //        ikLink.FixTypes = AxisFixType.FixY;
-                        //    }
-                        //    else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMax.X) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                        //             Math.Abs(ikLink.LimitMax.Y) < epsilon)
-                        //    {
-                        //        ikLink.FixTypes = AxisFixType.FixZ;
-                        //    }
-                        //}
+                        const float epsilon = 1e-6f;
+                        if (ikLink.HasLimit)
+                        {
+                            if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                                Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                                Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                                Math.Abs(ikLink.LimitMax.Y) < epsilon &&
+                                Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                                Math.Abs(ikLink.LimitMax.Z) < epsilon)
+                            {
+                                ikLink.FixTypes = AxisFixType.FixAll;
+                            }
+                            else if (Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.Y) < epsilon &&
+                                     Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.Z) < epsilon)
+                            {
+                                ikLink.FixTypes = AxisFixType.FixX;
+                            }
+                            else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                                     Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.Z) < epsilon)
+                            {
+                                ikLink.FixTypes = AxisFixType.FixY;
+                            }
+                            else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                                     Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                                     Math.Abs(ikLink.LimitMax.Y) < epsilon)
+                            {
+                                ikLink.FixTypes = AxisFixType.FixZ;
+                            }
+                        }
 
                         boneEntity.boneIKLinks[j] = ikLink;
                     }
@@ -816,7 +800,6 @@ namespace Coocoo3D.FileFormat
             for (int i = 0; i < joints.Count; i++)
                 rendererComponent.jointDescs.Add(GetJointDesc(joints[i]));
 
-            int morphCount = modelResource.Morphs.Count;
         }
     }
 }

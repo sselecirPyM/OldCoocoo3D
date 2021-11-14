@@ -1,4 +1,4 @@
-﻿static const float COO_PI = 3.141592653589793238f;
+static const float COO_PI = 3.141592653589793238f;
 static const float COO_EPSILON = 1e-5f;
 
 float4 pow5(float4 x)

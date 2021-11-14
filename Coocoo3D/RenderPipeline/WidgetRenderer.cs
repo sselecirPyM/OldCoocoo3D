@@ -18,14 +18,12 @@ namespace Coocoo3D.RenderPipeline
 {
     public class WidgetRenderer
     {
-        CBufferGroup CBufferGroup = new CBufferGroup();
         public MMDMesh imguiMesh = new MMDMesh();
+        GPUWriter GPUWriter = new GPUWriter();
 
         public void Reload(RenderPipelineContext context)
         {
-            var graphicsDevice = context.graphicsDevice;
             var caches = context.mainCaches;
-            CBufferGroup.Reload(graphicsDevice, 256, 65536);
             ImGui.SetCurrentContext(ImGui.CreateContext());
             Uploader uploader = new Uploader();
             var io = ImGui.GetIO();
@@ -36,10 +34,8 @@ namespace Coocoo3D.RenderPipeline
                 io.Fonts.GetTexDataAsRGBA32(out data, out int width, out int height, out int bytesPerPixel);
                 int size = width * height * bytesPerPixel;
                 Span<byte> spanByte1 = new Span<byte>(data, size);
-                byte[] pixelData = new byte[size];
-                spanByte1.CopyTo(pixelData);
 
-                uploader.Texture2DRaw(pixelData, Format.R8G8B8A8_UNorm, width, height);
+                uploader.Texture2DRaw(spanByte1, Format.R8G8B8A8_UNorm, width, height);
             }
             var texture2D = new Texture2D();
             io.Fonts.TexID = caches.GetPtr("imgui_font");
@@ -48,61 +44,7 @@ namespace Coocoo3D.RenderPipeline
             Ready = true;
         }
 
-
-        public void PrepareRenderData(RenderPipelineContext context, GraphicsContext graphicsContext)
-        {
-            //var cam = context.dynamicContextRead.cameras[0];
-
-            //var selectedLightings = context.dynamicContextRead.selectedLightings;
-
-            //var tvp = Matrix4x4.Transpose(cam.vpMatrix);
-            //MemoryMarshal.Write(new Span<byte>(context.bigBuffer, 0, 64), ref tvp);
-
-            CBufferGroup.SetSlienceCount(/*selectedLightings.Count + context.dynamicContextRead.volumes.Count +*/ 1);
-            var bigBuffer = MemUtil.MegaBuffer;
-
-            var data = ImGui.GetDrawData();
-            float L = data.DisplayPos.X;
-            float R = data.DisplayPos.X + data.DisplaySize.X;
-            float T = data.DisplayPos.Y;
-            float B = data.DisplayPos.Y + data.DisplaySize.Y;
-            float[] mvp =
-            {
-                    2.0f/(R-L),   0.0f,           0.0f,       0.0f,
-                    0.0f,         2.0f/(T-B),     0.0f,       0.0f,
-                    0.0f,         0.0f,           0.5f,       0.0f,
-                    (R+L)/(L-R),  (T+B)/(B-T),    0.5f,       1.0f,
-            };
-
-
-            int matC = 0;
-            //foreach (var lighting in selectedLightings)
-            //{
-            //    int ofs = 0;
-            //    ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(Matrix4x4.CreateScale(lighting.Range) * Matrix4x4.CreateTranslation(lighting.Position) * cam.vpMatrix));
-            //    CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
-            //    matC++;
-            //}
-            //foreach (var volume in context.dynamicContextRead.volumes)
-            //{
-            //    int ofs = 0;
-            //    ofs += CooUtility.Write(context.bigBuffer, ofs, Matrix4x4.Transpose(Matrix4x4.CreateScale(volume.Size) * Matrix4x4.CreateTranslation(volume.Position) * cam.vpMatrix));
-            //    CBufferGroup.UpdateSlience(graphicsContext, context.bigBuffer, 0, 256, matC);
-            //    matC++;
-            //}
-            {
-                int ofs = 0;
-                for (int i = 0; i < mvp.Length; i++)
-                {
-                    ofs += CooUtility.Write(bigBuffer, ofs, mvp[i]);
-                }
-                CBufferGroup.UpdateSlience(graphicsContext, bigBuffer, 0, 256, matC);
-                matC++;
-            }
-            CBufferGroup.UpdateSlienceComplete(graphicsContext);
-        }
-
-        public void RenderCamera(RenderPipelineContext context, GraphicsContext graphicsContext)
+        public void Render(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
 
             Texture2D texLoading = context.TextureLoading;
@@ -142,20 +84,28 @@ namespace Coocoo3D.RenderPipeline
 
             //int renderCount = context.dynamicContextRead.selectedLightings.Count + context.dynamicContextRead.volumes.Count;
             int ofs = 0;
-            //if (renderCount > 0)
-            //{
-            //    desc.ptt = ED3D12PrimitiveTopologyType.LINE;
-            //    graphicsContext.SetMesh(context.cubeWireMesh);
-            //    SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPP, ref desc, rpAssets.PSOs["PSOWidgetUILight"]);
-            //    for (int i = 0; i < renderCount; i++)
-            //    {
-            //        CBufferGroup.SetCBVR(graphicsContext, ofs, 0);
-            //        graphicsContext.DrawIndexed(context.cubeWireMesh.GetIndexCount(), 0, 0);
-            //        ofs++;
-            //    }
-            //}
 
             var data = ImGui.GetDrawData();
+            float L = data.DisplayPos.X;
+            float R = data.DisplayPos.X + data.DisplaySize.X;
+            float T = data.DisplayPos.Y;
+            float B = data.DisplayPos.Y + data.DisplaySize.Y;
+            float[] mvp =
+            {
+                    2.0f/(R-L),   0.0f,           0.0f,       0.0f,
+                    0.0f,         2.0f/(T-B),     0.0f,       0.0f,
+                    0.0f,         0.0f,           0.5f,       0.0f,
+                    (R+L)/(L-R),  (T+B)/(B-T),    0.5f,       1.0f,
+            };
+
+
+            {
+                GPUWriter.BufferBegin();
+                for (int i = 0; i < mvp.Length; i++)
+                {
+                    GPUWriter.Write(mvp[i]);
+                }
+            }
 
             Vector2 clip_off = data.DisplayPos;
 
@@ -171,7 +121,8 @@ namespace Coocoo3D.RenderPipeline
             desc.wireFrame = false;
             desc.inputLayout = InputLayout.imgui;
             SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPP, ref desc, rpAssets.PSOs["ImGui"]);
-            CBufferGroup.SetCBVRSlot(graphicsContext, ofs, 0);
+            var cbuffer = GPUWriter.GetBuffer(context.graphicsDevice, graphicsContext, false);
+            graphicsContext.SetCBVRSlot(cbuffer, 0, 0, 0);
             ofs++;
             if (data.CmdListsCount > 0)
             {
@@ -233,24 +184,6 @@ namespace Coocoo3D.RenderPipeline
                 return loading;
             else if (texture.Status == GraphicsObjectStatus.unload)
                 return unload;
-            else
-                return error;
-        }
-
-        protected PSO PSOSelect(GraphicsDevice graphicsDevice, RootSignature graphicsSignature, ref PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
-        {
-            if (pso == null) return unload;
-            if (pso.Status == GraphicsObjectStatus.unload)
-                return unload;
-            else if (pso.Status == GraphicsObjectStatus.loaded)
-            {
-                if (pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc) != -1)
-                    return pso;
-                else
-                    return error;
-            }
-            else if (pso.Status == GraphicsObjectStatus.loading)
-                return loading;
             else
                 return error;
         }

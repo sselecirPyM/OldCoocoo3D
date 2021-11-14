@@ -13,6 +13,7 @@ namespace Coocoo3DGraphics
     {
         public ID3D12Resource vertex;
         public VertexBufferView vertexBufferView;
+        public int actualLength;
         public byte[] data;
         public int slot;
     }
@@ -27,6 +28,7 @@ namespace Coocoo3DGraphics
         public int m_vertexCount;
 
         public IndexBufferView indexBufferView;
+        public int indexActualLength;
 
         public bool updated;
 

@@ -13,12 +13,11 @@ namespace Coocoo3D.RenderPipeline
     {
         public Settings settings;
         public List<GameObject> gameObjects = new List<GameObject>();
-        public List<Components.MMDRendererComponent> renderers = new List<Components.MMDRendererComponent>();
-        public List<Components.VolumeComponent> volumes = new List<VolumeComponent>();
+        public List<MMDRendererComponent> renderers = new List<MMDRendererComponent>();
+        public List<VolumeComponent> volumes = new List<VolumeComponent>();
         public List<LightingData> lightings = new List<LightingData>();
-        public List<LightingData> selectedLightings = new List<LightingData>();
-        //public List<CameraData> cameras = new List<CameraData>();
         public PassSetting currentPassSetting;
+        public string passSettingPath;
         public int VertexCount;
         public int frameRenderIndex;
         public double Time;
@@ -71,8 +70,6 @@ namespace Coocoo3D.RenderPipeline
             lightings.Clear();
             volumes.Clear();
             renderers.Clear();
-            selectedLightings.Clear();
-            //cameras.Clear();
         }
     }
 }

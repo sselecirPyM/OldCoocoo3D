@@ -2,7 +2,6 @@
 using Coocoo3D.Core;
 using Coocoo3D.Numerics;
 using Coocoo3D.Present;
-using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3D.ResourceWarp;
 using Coocoo3DGraphics;
 using System;
@@ -15,7 +14,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Utility;
 using Vortice.DXGI;
-using Vortice.Direct3D12;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -52,7 +50,7 @@ namespace Coocoo3D.RenderPipeline
         }
     }
 
-    public class RenderPipelineContext
+    public class RenderPipelineContext : IDisposable
     {
         const int c_entityDataBufferSize = 65536;
 
@@ -80,7 +78,6 @@ namespace Coocoo3D.RenderPipeline
         public RPAssetsManager RPAssetsManager = new RPAssetsManager();
         public GraphicsDevice graphicsDevice = new GraphicsDevice();
         public GraphicsContext graphicsContext = new GraphicsContext();
-        public GraphicsContext graphicsContext1 = new GraphicsContext();
 
         public ReadBackTexture2D ReadBackTexture2D = new ReadBackTexture2D();
 
@@ -117,7 +114,6 @@ namespace Coocoo3D.RenderPipeline
         public void Reload()
         {
             graphicsContext.Reload(graphicsDevice);
-            graphicsContext1.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
 
             processingList.AddObject(TextureLoading, 1, 1, new Vector4(0, 1, 1, 1));
@@ -136,6 +132,9 @@ namespace Coocoo3D.RenderPipeline
 
             ndcQuadMesh.ReloadNDCQuad();
             processingList.AddObject(ndcQuadMesh);
+            mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
+            mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
+            currentPassSetting1 = Path.Combine(Environment.CurrentDirectory, currentPassSetting1);
         }
 
         public void DelayAddVisualChannel(string name)
@@ -155,13 +154,12 @@ namespace Coocoo3D.RenderPipeline
 
         public void BeginDynamicContext(bool enableDisplay, Settings settings)
         {
-            mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
-            mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
             dynamicContextWrite.FrameBegin();
             dynamicContextWrite.EnableDisplay = enableDisplay;
             dynamicContextWrite.settings = settings;
 
             dynamicContextWrite.currentPassSetting = mainCaches.GetPassSetting(currentPassSetting1);
+            dynamicContextWrite.passSettingPath = currentPassSetting1;
 
             dynamicContextWrite.frameRenderIndex = frameRenderCount;
             frameRenderCount++;
@@ -293,12 +291,12 @@ namespace Coocoo3D.RenderPipeline
         public void PreConfig()
         {
             if (!Initialized) return;
-            if(delayAddVc.TryDequeue(out var vcName))
+            if (delayAddVc.TryDequeue(out var vcName))
             {
                 AddVisualChannel(vcName);
             }
             ConfigVisualChannels();
-            ConfigPassSettings(dynamicContextRead.currentPassSetting);
+            ConfigPassSettings(dynamicContextRead.currentPassSetting, dynamicContextRead.passSettingPath);
             foreach (var visualChannel in visualChannels.Values)
             {
                 PrepareRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
@@ -376,35 +374,29 @@ namespace Coocoo3D.RenderPipeline
         public Task LoadTask;
         public void ReloadDefalutResources()
         {
+            RPAssetsManager.LoadAssets();
             foreach (var tex2dDef in RPAssetsManager.defaultResource.texture2Ds)
             {
-                mainCaches.Texture("ms-appx:///" + tex2dDef.Path, false);
+                mainCaches.Texture(tex2dDef.Path, false);
             }
 
             Initialized = true;
         }
 
-        public bool ConfigPassSettings(PassSetting passSetting)
+        public bool ConfigPassSettings(PassSetting passSetting, string passPath)
         {
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
-            foreach (var pipelineState in passSetting.PipelineStates)
-            {
-                PSO pso = new PSO();
-                VertexShader vs = null;
-                GeometryShader gs = null;
-                PixelShader ps = null;
-                if (pipelineState.VertexShader != null)
-                    vs = RPAssetsManager.VSAssets[pipelineState.VertexShader];
-                if (pipelineState.GeometryShader != null)
-                    gs = RPAssetsManager.GSAssets[pipelineState.GeometryShader];
-                if (pipelineState.PixelShader != null)
-                    ps = RPAssetsManager.PSAssets[pipelineState.PixelShader];
-                if (RPAssetsManager.PSOs.TryGetValue(pipelineState.Name, out var psoDestroy))
-                    psoDestroy.DelayDestroy(graphicsDevice);
-                pso.Initialize(vs, gs, ps);
-                RPAssetsManager.PSOs[pipelineState.Name] = pso;
-            }
+
+            if (passSetting.VertexShaders != null)
+                foreach (var shader in passSetting.VertexShaders)
+                    passSetting.aliases[shader.Name] = shader.Path;
+            if (passSetting.GeometryShaders != null)
+                foreach (var shader in passSetting.GeometryShaders)
+                    passSetting.aliases[shader.Name] = shader.Path;
+            if (passSetting.PixelShaders != null)
+                foreach (var shader in passSetting.PixelShaders)
+                    passSetting.aliases[shader.Name] = shader.Path;
             foreach (var pass in passSetting.RenderSequence)
             {
                 if (pass.Type == "Swap") continue;
@@ -435,7 +427,7 @@ namespace Coocoo3D.RenderPipeline
                     foreach (var cbv in pass.Pass.CBVs)
                     {
                         for (int i = count; i < cbv.Index + 1; i++)
-                            stringBuilder.Append("C");
+                            stringBuilder.Append('C');
                         count = cbv.Index + 1;
                     }
                 }
@@ -445,7 +437,7 @@ namespace Coocoo3D.RenderPipeline
                     foreach (var srv in pass.Pass.SRVs)
                     {
                         for (int i = count; i < srv.Index + 1; i++)
-                            stringBuilder.Append("s");
+                            stringBuilder.Append('s');
                         count = srv.Index + 1;
                     }
                 }
@@ -455,21 +447,22 @@ namespace Coocoo3D.RenderPipeline
                     foreach (var uav in pass.Pass.UAVs)
                     {
                         for (int i = count; i < uav.Index + 1; i++)
-                            stringBuilder.Append("u");
+                            stringBuilder.Append('u');
                         count = uav.Index + 1;
                     }
                 }
                 pass.rootSignatureKey = stringBuilder.ToString();
 
+                string path1 = Path.GetDirectoryName(passPath);
                 VertexShader vs = null;
                 GeometryShader gs = null;
                 PixelShader ps = null;
                 if (pass.Pass.VertexShader != null)
-                    RPAssetsManager.VSAssets.TryGetValue(pass.Pass.VertexShader, out vs);
+                    vs = mainCaches.GetVertexShader(Path.Combine(path1, passSetting.aliases[pass.Pass.VertexShader]));
                 if (pass.Pass.GeometryShader != null)
-                    RPAssetsManager.GSAssets.TryGetValue(pass.Pass.GeometryShader, out gs);
+                    gs = mainCaches.GetGeometryShader(Path.Combine(path1, passSetting.aliases[pass.Pass.GeometryShader]));
                 if (pass.Pass.PixelShader != null)
-                    RPAssetsManager.PSAssets.TryGetValue(pass.Pass.PixelShader, out ps);
+                    ps = mainCaches.GetPixelShader(Path.Combine(path1, passSetting.aliases[pass.Pass.PixelShader]));
                 PSO pso = new PSO();
                 pso.Initialize(vs, gs, ps);
                 pass.PSODefault = pso;
@@ -481,8 +474,8 @@ namespace Coocoo3D.RenderPipeline
 
         }
 
-        public MMDMesh GetMesh(string path) => mainCaches.ModelPackCaches[path].GetMesh();
-        public ModelPack GetModelPack(string path) => mainCaches.ModelPackCaches[path];
+        public MMDMesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
+        public ModelPack GetModelPack(string path) => mainCaches.GetModel(path);
 
         public Texture2D _GetTex2DByName(string name)
         {
@@ -506,6 +499,15 @@ namespace Coocoo3D.RenderPipeline
             else if (name == "_SkyBox")
                 return SkyBox;
             return null;
+        }
+
+        public void Dispose()
+        {
+            foreach(var rt in RTs)
+            {
+                rt.Value.Dispose();
+            }
+            RPAssetsManager.Dispose();
         }
     }
 }

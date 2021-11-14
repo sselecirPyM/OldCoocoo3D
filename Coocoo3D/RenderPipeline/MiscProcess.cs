@@ -15,7 +15,6 @@ namespace Coocoo3D.RenderPipeline
         const int c_bufferSize = 65536;
         const int c_splitSize = 256;
         bool Ready = false;
-        public const int c_maxIteration = 32;
 
         public CBuffer constantBuffer = new CBuffer();
         public void Process(RenderPipelineContext rp)
@@ -27,9 +26,9 @@ namespace Coocoo3D.RenderPipeline
             }
             if (rp.SkyBoxChanged)
             {
-                var csAssets = rp.RPAssetsManager.CSAssets;
+                var mainCaches = rp.mainCaches;
                 byte[] bigBuffer = MemUtil.MegaBuffer;
-                GraphicsContext graphicsContext = rp.graphicsContext1;
+                GraphicsContext graphicsContext = rp.graphicsContext;
                 graphicsContext.Begin();
                 var texture0 = rp.SkyBox;
                 var texture1 = rp.IrradianceMap;
@@ -52,7 +51,7 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext.SetRootSignatureCompute(rootSignature);
                 graphicsContext.SetComputeCBVR(constantBuffer, 0);
                 graphicsContext.SetComputeSRVT(texture0, 2);
-                graphicsContext.SetPSO(csAssets["G_ClearIrradianceMap"]);
+                graphicsContext.SetPSO(mainCaches.GetComputeShader("Shaders/G_ClearIrradianceMap.hlsl"));
 
                 int pow2a = 1;
                 for (int j = 0; j < texture1.mipLevels; j++)
@@ -68,7 +67,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.Dispatch((int)(texture2.width + 7) / 8 / pow2a, (int)(texture2.height + 7) / 8 / pow2a, 6);
                     pow2a *= 2;
                 }
-                graphicsContext.SetPSO(csAssets["G_IrradianceMap0"]);
+                graphicsContext.SetPSO(mainCaches.GetComputeShader("Shaders/G_IrradianceMap0.hlsl"));
 
                 pow2a = 1;
                 for (int j = 0; j < texture1.mipLevels; j++)
@@ -83,7 +82,7 @@ namespace Coocoo3D.RenderPipeline
                 }
 
                 graphicsContext.SetComputeSRVT(texture0, 2);
-                graphicsContext.SetPSO(csAssets["G_PreFilterEnv"]);
+                graphicsContext.SetPSO(mainCaches.GetComputeShader("Shaders/G_PreFilterEnv.hlsl"));
                 pow2a = 1;
                 for (int j = 0; j < texture2.mipLevels; j++)
                 {

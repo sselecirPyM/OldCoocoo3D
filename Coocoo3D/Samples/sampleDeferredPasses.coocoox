@@ -328,6 +328,14 @@
     {
       "Name": "VS_Pass1",
       "Path": "VS_Pass1.hlsl"
+    },
+    {
+      "Name": "VS_ShadowMap",
+      "Path": "VS_Pass1.hlsl"
+    },
+    {
+      "Name": "VS_SkyBox",
+      "Path": "VS_SkyBox.hlsl"
     }
   ],
   "PixelShaders": [

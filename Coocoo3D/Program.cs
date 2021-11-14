@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Coocoo3D.UI;
 using ImGuiNET;
 using static SDL2.SDL;
@@ -76,7 +77,8 @@ namespace Coocoo3D
             var imguiInput = coocoo3DMain.imguiInput;
             while (!quitRequested)
             {
-                while (SDL_PollEvent(out var sdlEvent) == 1)
+                SDL_WaitEvent(out var sdlEvent);
+                do
                 {
                     switch (sdlEvent.type)
                     {
@@ -144,14 +146,13 @@ namespace Coocoo3D
                             break;
                     }
                     coocoo3DMain.RequireRender();
-                }
+                } while (SDL_PollEvent(out sdlEvent) == 1);
 
                 var modState = SDL_GetModState();
                 imguiInput.KeyAlt = (int)(modState & SDL_Keymod.KMOD_ALT) != 0;
                 imguiInput.KeyShift = (int)(modState & SDL_Keymod.KMOD_SHIFT) != 0;
                 imguiInput.KeyControl = (int)(modState & SDL_Keymod.KMOD_CTRL) != 0;
                 SDL_SetCursor(cursors[imguiInput.requestCursor]);
-                //imguiInput.Update();
 
                 if (imguiInput.WantTextInput)
                     SDL_StartTextInput();

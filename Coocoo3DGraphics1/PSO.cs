@@ -200,11 +200,11 @@ namespace Coocoo3DGraphics
 
         public void Dispose()
         {
-            //foreach (var combine in pipelineStates)
-            //{
-            //    combine.pipelineState.Dispose();
-            //}
-            //pipelineStates.Clear();
+            foreach (var combine in m_pipelineStates)
+            {
+                combine.Dispose();
+            }
+            m_pipelineStates.Clear();
         }
 
 

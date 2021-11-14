@@ -82,29 +82,6 @@ namespace Coocoo3D.UI
                             throw;
                         }
                         break;
-                    case ".jpg":
-                    case ".png":
-                    case ".tga":
-                        try
-                        {
-                            UISharedCode.LoadTexture(appBody, file, folder);
-                        }
-                        catch
-                        {
-
-                        }
-                        break;
-                        //case ".coocoox":
-                        //    try
-                        //    {
-                        //        await UI.UISharedCode.LoadPassSetting(appBody, file, folder);
-                        //    }
-                        //    catch (Exception exception)
-                        //    {
-                        //        MessageDialog dialog = new MessageDialog(string.Format("error{0}", exception));
-                        //        await dialog.ShowAsync();
-                        //    }
-                        //    break;
                 }
                 appBody.RequireRender(true);
             }

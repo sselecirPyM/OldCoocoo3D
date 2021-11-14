@@ -85,42 +85,29 @@ namespace Coocoo3DGraphics
 
         unsafe public void UploadMesh(MMDMesh mesh)
         {
-            ID3D12Resource bufferUpload = null;
-            int totalBufferLength = mesh.m_indexCount * 4;
             foreach (var vtBuf in mesh.vtBuffers)
             {
-                totalBufferLength += vtBuf.data.Length;
-            }
-            int offset = 0;
-            CreateBuffer(totalBufferLength, ref bufferUpload, ResourceStates.GenericRead, HeapType.Upload);
-            bufferUpload.Name = "uploadbuffer mesh";
-            graphicsDevice.ResourceDelayRecycle(bufferUpload);
-
-            IntPtr ptr1 = bufferUpload.Map(0);
-            void* mapped = ptr1.ToPointer();
-
-            foreach (var vtBuf in mesh.vtBuffers)
-            {
-                int index1 = mesh.vtBuffersDisposed.FindIndex(u => u.vertexBufferView.SizeInBytes == vtBuf.data.Length);
+                int index1 = mesh.vtBuffersDisposed.FindIndex(u => u.actualLength >= vtBuf.data.Length && u.actualLength <= vtBuf.data.Length * 2 + 256);
                 if (index1 != -1)
                 {
                     vtBuf.vertex = mesh.vtBuffersDisposed[index1].vertex;
+                    vtBuf.actualLength = mesh.vtBuffersDisposed[index1].actualLength;
                     m_commandList.ResourceBarrierTransition(vtBuf.vertex, ResourceStates.GenericRead, ResourceStates.CopyDestination);
 
                     mesh.vtBuffersDisposed.RemoveAt(index1);
                 }
                 else
                 {
-                    CreateBuffer(vtBuf.data.Length, ref vtBuf.vertex);
+                    CreateBuffer(vtBuf.data.Length + 256, ref vtBuf.vertex);
+                    vtBuf.actualLength = vtBuf.data.Length + 256;
                 }
 
                 vtBuf.vertex.Name = "vertex buffer" + vtBuf.slot;
 
-                memcpy((byte*)mapped + offset, vtBuf.data, vtBuf.data.Length);
-                m_commandList.CopyBufferRegion(vtBuf.vertex, 0, bufferUpload, (ulong)offset, (ulong)vtBuf.data.Length);
+                IntPtr ptr1 = graphicsDevice.superRingBuffer.Upload(m_commandList, vtBuf.data.Length, vtBuf.vertex);
+                memcpy((byte*)ptr1.ToPointer(), vtBuf.data, vtBuf.data.Length);
 
                 m_commandList.ResourceBarrierTransition(vtBuf.vertex, ResourceStates.CopyDestination, ResourceStates.GenericRead);
-                offset += vtBuf.data.Length;
                 vtBuf.vertexBufferView.BufferLocation = vtBuf.vertex.GPUVirtualAddress;
                 vtBuf.vertexBufferView.StrideInBytes = vtBuf.data.Length / mesh.m_vertexCount;
                 vtBuf.vertexBufferView.SizeInBytes = vtBuf.data.Length;
@@ -132,23 +119,25 @@ namespace Coocoo3DGraphics
 
             if (mesh.m_indexCount > 0)
             {
-                if (mesh.indexBufferView.SizeInBytes != mesh.m_indexCount * 4)
+                if (mesh.indexActualLength < mesh.m_indexCount * 4)
                 {
                     CreateBuffer(mesh.m_indexCount * 4, ref mesh.indexBuffer);
+                    mesh.indexActualLength = mesh.m_indexCount * 4;
                     mesh.indexBuffer.Name = "index buffer";
                 }
+                else
+                {
+                    m_commandList.ResourceBarrierTransition(mesh.indexBuffer, ResourceStates.GenericRead, ResourceStates.CopyDestination);
+                }
+                IntPtr ptr1 = graphicsDevice.superRingBuffer.Upload(m_commandList, mesh.m_indexData.Length, mesh.indexBuffer);
+                memcpy((byte*)ptr1.ToPointer(), mesh.m_indexData, mesh.m_indexData.Length);
 
-                memcpy((byte*)mapped + offset, mesh.m_indexData, mesh.m_indexData.Length);
-                m_commandList.CopyBufferRegion(mesh.indexBuffer, 0, bufferUpload, (ulong)offset, (ulong)mesh.m_indexData.Length);
-                offset += mesh.m_indexData.Length;
 
-                m_commandList.ResourceBarrierTransition(mesh.indexBuffer, ResourceStates.CopyDestination, ResourceStates.IndexBuffer);
+                m_commandList.ResourceBarrierTransition(mesh.indexBuffer, ResourceStates.CopyDestination, ResourceStates.GenericRead);
                 mesh.indexBufferView.BufferLocation = mesh.indexBuffer.GPUVirtualAddress;
                 mesh.indexBufferView.SizeInBytes = mesh.m_indexCount * 4;
                 mesh.indexBufferView.Format = Format.R32_UInt;
             }
-            bufferUpload.Unmap(0, null);
-
             mesh.updated = true;
         }
 
@@ -159,17 +148,9 @@ namespace Coocoo3DGraphics
 
         unsafe public void UpdateMesh<T>(MMDMesh mesh, Span<T> data, int slot) where T : unmanaged
         {
-            ID3D12Resource bufferUpload = null;
             int size1 = Marshal.SizeOf(typeof(T));
-            int totalBufferLength = data.Length * size1;
-            int offset = 0;
             int sizeInBytes = data.Length * size1;
-            CreateBuffer(totalBufferLength, ref bufferUpload, ResourceStates.GenericRead, HeapType.Upload);
-            bufferUpload.Name = "uploadbuffer mesh";
-            graphicsDevice.ResourceDelayRecycle(bufferUpload);
 
-            IntPtr ptr1 = bufferUpload.Map(0);
-            void* mapped = ptr1.ToPointer();
             var vtBufIndex = mesh.vtBuffers.FindIndex(u => u.slot == slot);
             if (vtBufIndex == -1)
             {
@@ -177,10 +158,11 @@ namespace Coocoo3DGraphics
                 vtBufIndex = mesh.vtBuffers.Count - 1;
             }
             var vtBuf = mesh.vtBuffers[vtBufIndex];
-            int index1 = mesh.vtBuffersDisposed.FindIndex(u => u.vertexBufferView.SizeInBytes == sizeInBytes);
+            int index1 = mesh.vtBuffersDisposed.FindIndex(u => u.actualLength == sizeInBytes);
             if (index1 != -1)
             {
                 vtBuf.vertex = mesh.vtBuffersDisposed[index1].vertex;
+                vtBuf.actualLength = mesh.vtBuffersDisposed[index1].actualLength;
                 m_commandList.ResourceBarrierTransition(vtBuf.vertex, ResourceStates.GenericRead, ResourceStates.CopyDestination);
 
                 mesh.vtBuffersDisposed.RemoveAt(index1);
@@ -188,20 +170,19 @@ namespace Coocoo3DGraphics
             else
             {
                 CreateBuffer(sizeInBytes, ref vtBuf.vertex);
+                vtBuf.actualLength = sizeInBytes;
             }
 
             vtBuf.vertex.Name = "vertex buffer" + vtBuf.slot;
-
-            memcpy((byte*)mapped + offset, data, sizeInBytes);
-            m_commandList.CopyBufferRegion(vtBuf.vertex, 0, bufferUpload, (ulong)offset, (ulong)sizeInBytes);
+;
+            IntPtr ptr1 = graphicsDevice.superRingBuffer.Upload(m_commandList, sizeInBytes, vtBuf.vertex);
+            memcpy((byte*)ptr1.ToPointer(), data, sizeInBytes);
 
             m_commandList.ResourceBarrierTransition(vtBuf.vertex, ResourceStates.CopyDestination, ResourceStates.GenericRead);
-            offset += sizeInBytes;
             vtBuf.vertexBufferView.BufferLocation = vtBuf.vertex.GPUVirtualAddress;
             vtBuf.vertexBufferView.StrideInBytes = sizeInBytes / mesh.m_vertexCount;
             vtBuf.vertexBufferView.SizeInBytes = sizeInBytes;
 
-            bufferUpload.Unmap(0, null);
 
             mesh.updated = true;
         }
@@ -695,6 +676,7 @@ namespace Coocoo3DGraphics
         {
             m_commandList.SetGraphicsRootConstantBufferView(index, buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
         }
+        int l = 0;
 
         void CreateBuffer(int bufferLength, ref ID3D12Resource resource, ResourceStates resourceStates = ResourceStates.CopyDestination, HeapType heapType = HeapType.Default)
         {

@@ -15,11 +15,11 @@ namespace Coocoo3D.ResourceWarp
         public string relativePath;
         public bool requireReload;
 
-        public async Task<bool> IsModified(DirectoryInfo folder)
+        public bool IsModified(FileInfo[] fileInfos)
         {
             try
             {
-                var file = folder.EnumerateFiles().Where(u=>u.Name.Equals(relativePath,StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+                var file = fileInfos.Where(u=>u.Name.Equals(relativePath,StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
                 var attr = file.LastWriteTime;
                 bool modified = false;
                 if (lastModifiedTime != attr)

@@ -17,7 +17,7 @@ using Coocoo3D.UI;
 namespace Coocoo3D.Core
 {
     ///<summary>是整个应用程序的上下文</summary>
-    public class Coocoo3DMain
+    public class Coocoo3DMain : IDisposable
     {
         public GraphicsDevice graphicsDevice { get => RPContext.graphicsDevice; }
         public MainCaches mainCaches { get => RPContext.mainCaches; }
@@ -67,7 +67,6 @@ namespace Coocoo3D.Core
             mainCaches._RequireRender = RequireRender;
             RPContext.LoadTask = Task.Run(() =>
             {
-                RPAssetsManager.LoadAssets();
                 RPContext.ReloadDefalutResources();
                 widgetRenderer.Reload(RPContext);
                 if (graphicsDevice.IsRayTracingSupport())
@@ -100,7 +99,6 @@ namespace Coocoo3D.Core
 
         }
         #region Rendering
-        public RPAssetsManager RPAssetsManager { get => RPContext.RPAssetsManager; }
         ForwardRenderPipeline2 forwardRenderPipeline2 = new ForwardRenderPipeline2();
         //RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
         public PostProcess postProcess = new PostProcess();
@@ -120,7 +118,7 @@ namespace Coocoo3D.Core
 
         public ProcessingList ProcessingList { get => RPContext.processingList; }
         ProcessingList _processingList = new ProcessingList();
-        public RenderPipeline.RenderPipelineContext RPContext = new RenderPipeline.RenderPipelineContext();
+        public RenderPipelineContext RPContext = new RenderPipelineContext();
 
         public bool swapChainReady;
         public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
@@ -157,8 +155,6 @@ namespace Coocoo3D.Core
             for (int i = 0; i < SelectedGameObjects.Count; i++)
             {
                 LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
-                if (lightingComponent != null)
-                    RPContext.dynamicContextWrite.selectedLightings.Add(lightingComponent.GetLightingData());
             }
 
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
@@ -226,7 +222,7 @@ namespace Coocoo3D.Core
                 miscProcess.Process(RPContext);
                 var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
 
-                bool thisFrameReady = RPAssetsManager.Ready && widgetRenderer.Ready;
+                bool thisFrameReady = widgetRenderer.Ready;
                 if (thisFrameReady)
                 {
                     imguiInput.Update();
@@ -241,11 +237,10 @@ namespace Coocoo3D.Core
                             postProcess.PrepareRenderData(RPContext, visualChannel);
                         }
                     }
-                    widgetRenderer.PrepareRenderData(RPContext, graphicsContext);
                     RPContext.UpdateGPUResource();
 
                     if (performaceSettings.MultiThreadRendering)
-                        RenderTask1 = Task.Run(_RenderFunction);
+                        RenderTask1 = Task.Factory.StartNew(_RenderFunction, TaskCreationOptions.LongRunning);
                     else
                         _RenderFunction();
                 }
@@ -268,7 +263,7 @@ namespace Coocoo3D.Core
                     }
                     GameDriver.AfterRender(RPContext, graphicsContext);
                     graphicsContext.ResourceBarrierScreen(ResourceStates.Present, ResourceStates.RenderTarget);
-                    widgetRenderer.RenderCamera(RPContext, graphicsContext);
+                    widgetRenderer.Render(RPContext, graphicsContext);
                     graphicsContext.ResourceBarrierScreen(ResourceStates.RenderTarget, ResourceStates.Present);
                     graphicsContext.EndCommand();
                     graphicsContext.Execute();
@@ -277,6 +272,13 @@ namespace Coocoo3D.Core
                 }
             }
             return true;
+        }
+
+        public void Dispose()
+        {
+            canRenderThread.Cancel();
+            graphicsDevice.WaitForGpu();
+            RPContext.Dispose();
         }
         #endregion
         public bool Recording = false;
