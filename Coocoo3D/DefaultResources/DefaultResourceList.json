@@ -69,6 +69,14 @@
     {
       "name": "_BRDFLUT",
       "path": "Assets/Textures/brdflut.png"
+    },
+    {
+      "name": "_ERROR",
+      "path": "Assets/Textures/error.png"
+    },
+    {
+      "name": "_LOADING",
+      "path": "Assets/Textures/loading.png"
     }
   ]
 }

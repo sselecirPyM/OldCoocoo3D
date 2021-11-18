@@ -182,7 +182,7 @@ namespace Coocoo3D.UI
                 if (ImGui.DragFloat3("角度", ref a))
                     camera.Angle = a * MathF.PI / 180;
                 float fov = camera.Fov / MathF.PI * 180;
-                if (ImGui.DragFloat("FOV", ref fov))
+                if (ImGui.DragFloat("FOV", ref fov, 0.5f, 0.1f, 179.9f))
                     camera.Fov = fov * MathF.PI / 180;
                 ImGui.Checkbox("使用镜头运动文件", ref camera.CameraMotionOn);
                 ImGui.TreePop();
@@ -281,7 +281,7 @@ namespace Coocoo3D.UI
             {
                 PlayControl.FastForward(appBody);
             }
-            ImGui.Text("Fps:" + 1 / appBody.deltaTime1);
+            ImGui.Text("Fps:" + appBody.framePerSecond);
         }
 
         static void DockSpace(Coocoo3DMain appBody)
@@ -517,7 +517,7 @@ vmd格式动作");
             }
             if (ImGui.IsItemHovered())
             {
-                channel.camera.Distance += mouseWheelDelta *6.0f;
+                channel.camera.Distance += mouseWheelDelta * 6.0f;
                 //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
                 //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
 

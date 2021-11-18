@@ -38,21 +38,6 @@ namespace Coocoo3DGraphics
             m_data = rawData;
         }
 
-        public void Texture2DPure(int width, int height, Vector4 color)
-        {
-            m_width = width;
-            m_height = height;
-            m_format = Format.R32G32B32A32_Float;
-            m_mipLevels = 1;
-            int count = width * height;
-            m_data = new byte[count * 16];
-            var d1 = MemoryMarshal.Cast<byte, Vector4>(m_data);
-            for (int i = 0; i < d1.Length; i++)
-            {
-                d1[i] = color;
-            }
-        }
-
         public void TextureCubeRaw(byte[] rawData, Format format, int width, int height, int mipLevel)
         {
 

@@ -9,15 +9,13 @@ namespace Coocoo3DGraphics
     {
         public int size;
         public bool Mutable;
-        public int lastUpdateIndex;
         public ID3D12Resource resource;
-        public ID3D12Resource resourceUpload;
-        public IntPtr mappedResource;
+        public ulong gpuRefAddress;
 
         public ulong GetCurrentVirtualAddress()
         {
             if (Mutable)
-                return resource.GPUVirtualAddress + (ulong)(size * lastUpdateIndex);
+                return gpuRefAddress;
             else
                 return resource.GPUVirtualAddress;
         }

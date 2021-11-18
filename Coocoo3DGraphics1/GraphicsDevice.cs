@@ -62,13 +62,6 @@ namespace Coocoo3DGraphics
         public Vector2 m_logicalSize;
         public Vector2 m_nativeOrientation;
         public Vector2 m_currentOrientation;
-        public float m_dpi;
-
-        public float m_compositionScaleX;
-        public float m_compositionScaleY;
-
-        public float m_effectiveDpi;
-
 
         public static uint BitsPerPixel(Format format)
         {
@@ -217,8 +210,6 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public float GetDpi() => m_dpi;
-
         public Vector2 GetOutputSize() => m_outputSize;
 
         public GraphicsDevice()
@@ -233,7 +224,6 @@ namespace Coocoo3DGraphics
             if (D3D12.D3D12GetDebugInterface<ID3D12Debug>(out var pDx12Debug).Success)
                 pDx12Debug.EnableDebugLayer();
 #endif
-
             ThrowIfFailed(DXGI.CreateDXGIFactory1(out m_dxgiFactory));
 
             int index1 = 0;
@@ -251,6 +241,7 @@ namespace Coocoo3DGraphics
             m_deviceVideoMem = (ulong)(long)adapter.Description.DedicatedVideoMemory;
             device?.Dispose();
             ThrowIfFailed(D3D12.D3D12CreateDevice(this.adapter, out device));
+            m_isRayTracingSupport = CheckRayTracingSupport(device);
             CommandQueueDescription commandQueuDdescription;
             commandQueuDdescription.Flags = CommandQueueFlags.None;
             commandQueuDdescription.Type = CommandListType.Direct;
@@ -265,11 +256,6 @@ namespace Coocoo3DGraphics
             descriptorHeapDescription.NodeMask = 0;
             cbvsrvuavHeap = new DescriptorHeapX();
             cbvsrvuavHeap.Initialize(this, descriptorHeapDescription);
-
-            //descriptorHeapDescription.DescriptorCount = 16;
-            //descriptorHeapDescription.Type = DescriptorHeapType.DepthStencilView;
-            //descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
-            //dsvHeap.Initialize(this, descriptorHeapDescription);
 
             descriptorHeapDescription.DescriptorCount = 16;
             descriptorHeapDescription.Type = DescriptorHeapType.RenderTargetView;
@@ -289,7 +275,7 @@ namespace Coocoo3DGraphics
             executeCount++;
         }
 
-        public ID3D12GraphicsCommandList4 GetCommandList()
+        internal ID3D12GraphicsCommandList4 GetCommandList()
         {
             if (m_commandLists.Count > 0)
             {
@@ -306,7 +292,7 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public void ReturnCommandList(ID3D12GraphicsCommandList4 commandList)
+        internal void ReturnCommandList(ID3D12GraphicsCommandList4 commandList)
         {
             m_commandLists1.Add(commandList);
         }
@@ -370,12 +356,6 @@ namespace Coocoo3DGraphics
                 swapChainDescription1.Scaling = Scaling.Stretch;
                 swapChainDescription1.AlphaMode = AlphaMode.Ignore;
 
-                //IDXGISwapChain1 swapChain =
-                //    m_dxgiFactory.CreateSwapChainForComposition(
-                //        commandQueue,                          // 交换链需要对 DirectX 12 中的命令队列的引用。
-                //        swapChainDesc
-                //    );
-
                 var swapChain = m_dxgiFactory.CreateSwapChainForHwnd(commandQueue, hwnd, swapChainDescription1);
                 m_swapChain?.Dispose();
                 m_swapChain = swapChain.QueryInterface<IDXGISwapChain3>();
@@ -395,17 +375,6 @@ namespace Coocoo3DGraphics
                     m_renderTargets[n].Name = "backbuffer";
                 }
             }
-
-            //if (setSwapChain)
-            //{
-            //    ComObject comObject1 = new ComObject(panel);
-            //    ISwapChainPanelNative panelNative = comObject1.QueryInterface<ISwapChainPanelNative>();
-            //    comObject1.Dispose();
-
-            //    ThrowIfFailed(panelNative.SetSwapChain(m_swapChain));
-
-            //    panelNative.Dispose();
-            //}
         }
 
         public void SetLogicalSize(Vector2 logicalSize)
@@ -447,7 +416,7 @@ namespace Coocoo3DGraphics
             // 检查下一帧是否准备好启动。
             if (fence.CompletedValue < m_currentFenceValue - c_frameCount + 1)
             {
-                fence.SetEventOnCompletion(m_currentFenceValue, fenceEvent);
+                fence.SetEventOnCompletion(m_currentFenceValue - c_frameCount + 1, fenceEvent);
                 fenceEvent.WaitOne();
             }
             Recycle();
@@ -490,8 +459,8 @@ namespace Coocoo3DGraphics
         void UpdateRenderTargetSize()
         {
             // 计算必要的呈现目标大小(以像素为单位)。
-            m_outputSize.X = ConvertDipsToPixels(m_logicalSize.X, m_dpi);
-            m_outputSize.Y = ConvertDipsToPixels(m_logicalSize.Y, m_dpi);
+            m_outputSize.X = m_logicalSize.X;
+            m_outputSize.Y = m_logicalSize.Y;
 
             // 防止创建大小为零的 DirectX 内容。
             m_outputSize.X = Math.Max(m_outputSize.X, 1);
@@ -516,26 +485,11 @@ namespace Coocoo3DGraphics
             return m_deviceVideoMem;
         }
 
-        //public void SetSwapChainPanel(object panel, float width, float height, float scaleX, float scaleY, float dpi)
-        //{
-        //    this.panel = panel;
-
-        //    m_logicalSize = new Vector2(width, height);
-        //    m_compositionScaleX = scaleX;
-        //    m_compositionScaleY = scaleY;
-        //    m_dpi = dpi;
-
-        //    CreateWindowSizeDependentResources();
-        //}
-
-        public void SetSwapChainPanel(IntPtr hwnd, float width, float height, float scaleX, float scaleY, float dpi)
+        public void SetSwapChainPanel(IntPtr hwnd, float width, float height)
         {
             this.hwnd = hwnd;
 
             m_logicalSize = new Vector2(width, height);
-            m_compositionScaleX = scaleX;
-            m_compositionScaleY = scaleY;
-            m_dpi = dpi;
 
             CreateWindowSizeDependentResources();
         }
@@ -548,22 +502,9 @@ namespace Coocoo3DGraphics
 
         public ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
 
-
         public void InitializeCBuffer(CBuffer cBuffer, int size)
         {
             cBuffer.size = (size + 255) & ~255;
-
-            var d3dDevice = device;
-            ResourceDelayRecycle(cBuffer.resource);
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)(c_frameCount * cBuffer.size)),
-                ResourceStates.GenericRead,
-                null,
-                out cBuffer.resource));
-            cBuffer.resource.Name = "cbuffer";
-            cBuffer.mappedResource = cBuffer.resource.Map(0);
             cBuffer.Mutable = true;
         }
 
@@ -581,33 +522,7 @@ namespace Coocoo3DGraphics
                 null,
                 out sBuffer.resource));
             sBuffer.resource.Name = "sbuffer";
-            ResourceDelayRecycle(sBuffer.resourceUpload);
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Upload),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)(c_frameCount * sBuffer.size)),
-                ResourceStates.GenericRead,
-                null,
-                out sBuffer.resourceUpload));
-            sBuffer.resourceUpload.Name = "sbuffer upload";
             sBuffer.Mutable = false;
-        }
-
-        public void InitializeMeshBuffer(MeshBuffer meshBuffer, int vertexCount)
-        {
-            meshBuffer.m_size = vertexCount;
-            var d3dDevice = device;
-            ResourceDescription vertexBufferDesc = ResourceDescription.Buffer((ulong)(meshBuffer.m_size * MeshBuffer.c_vbvStride + MeshBuffer.c_vbvOffset), ResourceFlags.AllowUnorderedAccess);
-            ResourceDelayRecycle(meshBuffer.resource);
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
-                HeapFlags.None,
-                vertexBufferDesc,
-                ResourceStates.GenericRead,
-                null,
-                out meshBuffer.resource));
-            meshBuffer.resource.Name = "mesh buffer";
-            meshBuffer.resourceStates = ResourceStates.GenericRead;
         }
     }
 }

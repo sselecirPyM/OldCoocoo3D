@@ -11,7 +11,7 @@ namespace Coocoo3D.RenderPipeline
 {
     public class ProcessingList
     {
-        public List<Object> loadList = new List<object>();
+        public List<object> loadList = new List<object>();
 
         public void AddObject(MMDMesh mesh)
         {
@@ -31,14 +31,7 @@ namespace Coocoo3D.RenderPipeline
         {
             lock (loadList)
             {
-                loadList.Add(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
-            }
-        }
-        public void AddObject(Texture2D texture2D, int width, int height, Vector4 color)
-        {
-            lock (loadList)
-            {
-                loadList.Add(Texture2DUploadPack.Pure(texture2D, width, height, color));
+                loadList.Add(new Texture2DUploadPack(texture2D, uploader));
             }
         }
 

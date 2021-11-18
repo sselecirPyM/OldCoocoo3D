@@ -62,7 +62,7 @@ namespace Coocoo3D.UI
             foreach (var vTex in pmx.Textures)
             {
                 string relativePath = vTex.TexturePath.Replace("//", "\\").Replace('/', '\\');
-                string texPath = Path.Combine(storageFolder, relativePath);
+                string texPath = Path.GetFullPath(relativePath,storageFolder);
                 paths.Add(texPath);
                 appBody.mainCaches.Texture(texPath);
             }

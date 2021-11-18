@@ -209,7 +209,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 		float3 vec1 = TangentToWorld(N, RNG::HammersleySampleCos(E));
 
 		float NdotL = dot(vec1, N);
-		col1 += Image.SampleLevel(s0, vec1, 2) * NdotL / c_sampleCount / 3.14159265359f;
+		col1 += Image.SampleLevel(s0, vec1, 0) * NdotL / c_sampleCount / 3.14159265359f;
 	}
 	IrradianceMap[dtid] = float4(col1 / quality + IrradianceMap[dtid].rgb, 1);
 }

@@ -1,14 +1,13 @@
 ﻿using Coocoo3D.Components;
-using Coocoo3D.Core;
 using Coocoo3D.Numerics;
 using Coocoo3D.Present;
 using Coocoo3D.Utility;
 using Coocoo3DGraphics;
+using Coocoo3D.RenderPipeline.Wrap;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Vortice.Direct3D12;
@@ -32,17 +31,16 @@ namespace Coocoo3D.RenderPipeline
             if (random == null)
                 random = new Random();
 
-            var deviceResources = context.graphicsDevice;
-            var graphicsDevice = visualChannel.graphicsContext;
+            var graphicsContext = visualChannel.graphicsContext;
             var settings = context.dynamicContextRead.settings;
             var rendererComponents = context.dynamicContextRead.renderers;
             var lightings = context.dynamicContextRead.lightings;
             var camera = visualChannel.cameraData;
-            var bigBuffer = MemUtil.MegaBuffer;
             List<LightingData> pointLights = new List<LightingData>();
 
             #region Lighting
 
+            MiscProcess.Process(context, visualChannel.GPUWriter);
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
             Matrix4x4 invLightCameraMatrix0 = Matrix4x4.Identity;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
@@ -54,8 +52,6 @@ namespace Coocoo3D.RenderPipeline
 
 
                 Matrix4x4.Invert(lightCameraMatrix0, out invLightCameraMatrix0);
-                lightCameraMatrix0 = Matrix4x4.Transpose(lightCameraMatrix0);
-                invLightCameraMatrix0 = Matrix4x4.Transpose(invLightCameraMatrix0);
 
                 visualChannel.customDataInt["mainLight"] = 1;
             }
@@ -68,18 +64,6 @@ namespace Coocoo3D.RenderPipeline
                     pointLights.Add(lighting);
             }
             #endregion
-
-            //int numMaterials = 0;
-            //foreach (MMDRendererComponent v in rendererComponents)
-            //    numMaterials += v.Materials.Count;
-
-            var XBufferGroup = visualChannel.XBufferGroup;
-
-            //int numofBuffer = 0;
-            //foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
-            //    if (combinedPass.Pass?.CBVs != null)
-            //        numofBuffer += (combinedPass.DrawObjects ? numMaterials : 1) * combinedPass.Pass.CBVs.Count;
-            //context.XBufferGroup.SetSlienceCount(numofBuffer);
 
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
@@ -103,8 +87,7 @@ namespace Coocoo3D.RenderPipeline
                             }
                             foreach (var cbv in combinedPass.Pass.CBVs)
                             {
-                                int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, material, rendererComponent);
-                                XBufferGroup.UpdateSlience(graphicsDevice, bigBuffer, 0, ofs, matC);
+                                visualChannel.customDataInt1[matC] = _WriteCBV(cbv, combinedPass, visualChannel.GPUWriter, material, rendererComponent);
                                 matC++;
                             }
                         }
@@ -113,13 +96,11 @@ namespace Coocoo3D.RenderPipeline
                 {
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        int ofs = _WriteCBV(cbv, combinedPass, bigBuffer, null, null);
-                        XBufferGroup.UpdateSlience(graphicsDevice, bigBuffer, 0, ofs, matC);
+                        visualChannel.customDataInt1[matC] = _WriteCBV(cbv, combinedPass, visualChannel.GPUWriter, null, null);
                         matC++;
                     }
                 }
             }
-            XBufferGroup.UpdateSlienceComplete(graphicsDevice);
 
             Texture2D _GetTex2D(RuntimeMaterial material, string name)
             {
@@ -140,55 +121,49 @@ namespace Coocoo3D.RenderPipeline
             }
 
             //着色器可读取数据
-            int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, byte[] _buffer, RuntimeMaterial material, MMDRendererComponent _rc)
+            int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, GPUWriter writer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
-                Array.Clear(_buffer, 0, 65536);
-                int ofs = 0;
+                int result = writer.BufferBegin();
+
                 foreach (var s in cbv.Datas)
                 {
                     switch (s)
                     {
                         case "Metallic":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.Metallic);
+                            writer.Write(material.innerStruct.Metallic);
                             break;
                         case "Roughness":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.Roughness);
+                            writer.Write(material.innerStruct.Roughness);
                             break;
                         case "Emission":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.Emission);
+                            writer.Write(material.innerStruct.Emission);
                             break;
                         case "Diffuse":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.DiffuseColor);
+                            writer.Write(material.innerStruct.DiffuseColor);
                             break;
                         case "SpecularColor":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.SpecularColor);
+                            writer.Write(material.innerStruct.SpecularColor);
                             break;
                         case "Specular":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.Specular);
+                            writer.Write(material.innerStruct.Specular);
                             break;
                         case "AmbientColor":
-                            ofs += CooUtility.Write(_buffer, ofs, material.innerStruct.AmbientColor);
-                            break;
-                        case "ToonIndex":
-                            ofs += CooUtility.Write(_buffer, ofs, material.toonIndex);
-                            break;
-                        case "TextureIndex":
-                            ofs += CooUtility.Write(_buffer, ofs, material.texIndex);
+                            writer.Write(material.innerStruct.AmbientColor);
                             break;
                         case "Transparent":
-                            ofs += CooUtility.Write(_buffer, ofs, material.Transparent ? 1 : 0);
+                            writer.Write(material.Transparent ? 1 : 0);
                             break;
                         case "CameraPosition":
-                            ofs += CooUtility.Write(_buffer, ofs, camera.Pos);
+                            writer.Write(camera.Pos);
                             break;
                         case "DrawFlags":
-                            ofs += CooUtility.Write(_buffer, ofs, (int)material.DrawFlags);
+                            writer.Write((int)material.DrawFlags);
                             break;
                         case "DeltaTime":
-                            ofs += CooUtility.Write(_buffer, ofs, (float)context.dynamicContextRead.DeltaTime);
+                            writer.Write((float)context.dynamicContextRead.DeltaTime);
                             break;
                         case "Time":
-                            ofs += CooUtility.Write(_buffer, ofs, (float)context.dynamicContextRead.Time);
+                            writer.Write((float)context.dynamicContextRead.Time);
                             break;
                         case "WidthHeight":
                             {
@@ -196,137 +171,126 @@ namespace Coocoo3D.RenderPipeline
                                 if (_pass.RenderTargets != null && _pass.RenderTargets.Count > 0)
                                 {
                                     Texture2D renderTarget = _GetTex2D(material, _pass.RenderTargets[0]);
-                                    ofs += CooUtility.Write(_buffer, ofs, renderTarget.GetWidth());
-                                    ofs += CooUtility.Write(_buffer, ofs, renderTarget.GetHeight());
+                                    writer.Write(renderTarget.GetWidth());
+                                    writer.Write(renderTarget.GetHeight());
                                 }
                                 else if (!string.IsNullOrEmpty(_pass.DepthStencil))
                                 {
-                                    ofs += CooUtility.Write(_buffer, ofs, depthStencil.GetWidth());
-                                    ofs += CooUtility.Write(_buffer, ofs, depthStencil.GetHeight());
+                                    writer.Write(depthStencil.GetWidth());
+                                    writer.Write(depthStencil.GetHeight());
                                 }
                                 else
-                                    ofs += sizeof(int) * 2;
+                                {
+                                    writer.Write(0);
+                                    writer.Write(0);
+                                }
                             }
                             break;
                         case "Camera":
                             if (_pass.Pass.Camera == "Main")
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.vpMatrix));
+                                writer.Write(camera.vpMatrix);
                             }
                             else if (_pass.Pass.Camera == "ShadowMap")
                             {
                                 if (lightings.Count > 0)
-                                {
-                                    ofs += CooUtility.Write(_buffer, ofs, lightCameraMatrix0);
-                                }
+                                    writer.Write(lightCameraMatrix0);
                                 else
-                                    ofs += 64;
+                                    writer.Write(Matrix4x4.Identity);
                             }
                             break;
                         case "CameraInvert":
                             if (_pass.Pass.Camera == "Main")
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, Matrix4x4.Transpose(camera.pvMatrix));
+                                writer.Write(camera.pvMatrix);
                             }
                             else if (_pass.Pass.Camera == "ShadowMap")
                             {
                                 if (lightings.Count > 0)
-                                {
-                                    ofs += CooUtility.Write(_buffer, ofs, invLightCameraMatrix0);
-                                }
+                                    writer.Write(invLightCameraMatrix0);
                                 else
-                                    ofs += 64;
+                                    writer.Write(Matrix4x4.Identity);
                             }
                             break;
                         case "DirectionalLight":
                             if (lightings.Count > 0)
                             {
                                 var lstruct = lightings[0].GetLStruct();
-                                ofs += CooUtility.Write(_buffer, ofs, lightCameraMatrix0);
-                                ofs += CooUtility.Write(_buffer, ofs, lstruct.PosOrDir);
-                                ofs += CooUtility.Write(_buffer, ofs, lstruct.Type);
-                                ofs += CooUtility.Write(_buffer, ofs, lstruct.Color);
+
+                                writer.Write(lightCameraMatrix0);
+                                writer.Write(lstruct.PosOrDir);
+                                writer.Write((int)lstruct.Type);
+                                writer.Write(lstruct.Color);
                             }
                             else
-                                ofs += 96;
+                            {
+                                writer.Write(Matrix4x4.Identity);
+                                writer.Write(new Vector4());
+                                writer.Write(new Vector4());
+                            }
                             break;
                         case "PointLights4":
                             {
-                                int ofsa = ofs + 128;
                                 int count = Math.Min(pointLights.Count, 4);
                                 for (int pli = 0; pli < count; pli++)
                                 {
                                     var lstruct = pointLights[pli].GetLStruct();
-                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.PosOrDir);
-                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Type);
-                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Color);
+                                    writer.Write(lstruct.PosOrDir);
+                                    writer.Write((int)lstruct.Type);
+                                    writer.Write(lstruct.Color);
                                 }
-                                ofs = ofsa;
+                                for (int i = 0; i < 4 - count; i++)
+                                {
+                                    writer.Write(new Vector4());
+                                    writer.Write(new Vector4());
+                                }
                             }
                             break;
                         case "PointLights8":
                             {
-                                int ofsa = ofs + 256;
                                 int count = Math.Min(pointLights.Count, 8);
                                 for (int pli = 0; pli < count; pli++)
                                 {
                                     var lstruct = pointLights[pli].GetLStruct();
-                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.PosOrDir);
-                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Type);
-                                    ofs += CooUtility.Write(_buffer, ofs, lstruct.Color);
+                                    writer.Write(lstruct.PosOrDir);
+                                    writer.Write((int)lstruct.Type);
+                                    writer.Write(lstruct.Color);
                                 }
-                                ofs = ofsa;
+                                for (int i = 0; i < 8 - count; i++)
+                                {
+                                    writer.Write(new Vector4());
+                                    writer.Write(new Vector4());
+                                }
                             }
                             break;
                         case "IndirectMultiplier":
-                            ofs += CooUtility.Write(_buffer, ofs, settings.SkyBoxLightMultiplier);
+                            writer.Write(settings.SkyBoxLightMultiplier);
                             break;
-                        //case "ShadowVolume":
-                        //    if (volume != null)
-                        //    {
-                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Position);
-                        //        ofs += 4;
-                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Size);
-                        //        ofs += 4;
-                        //    }
-                        //    else
-                        //        ofs += 32;
-                        //    break;
-                        //case "ReflectVolume":
-                        //    if (volume != null)
-                        //    {
-                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Position);
-                        //        ofs += 4;
-                        //        ofs += CooUtility.Write(_buffer, ofs, volume.Size);
-                        //        ofs += 4;
-                        //    }
-                        //    else
-                        //        ofs += 32;
-                        //    break;
                         case "RandomValue":
-                            ofs += CooUtility.Write(_buffer, ofs, (float)random.NextDouble());
+                            writer.Write((float)random.NextDouble());
                             break;
                         default:
                             var st = _rc?.morphStateComponent;
                             if (st != null && st.stringMorphIndexMap.TryGetValue(s, out int _i))
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, st.Weights.Computed[_i]);
+                                writer.Write(st.Weights.Computed[_i]);
                             }
                             else if (_pass.passParameters1 != null && _pass.passParameters1.TryGetValue(s, out float _f1))
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, _f1);
+                                writer.Write(_f1);
                             }
                             else if (material != null && material.textures.ContainsKey(s))
                             {
-                                ofs += CooUtility.Write(_buffer, ofs, 1.0f);
+                                writer.Write(1.0f);
                             }
                             else
-                                ofs += CooUtility.Write(_buffer, ofs, 0.0f);
+                                writer.Write(0.0f);
                             break;
                     }
                 }
-                return ofs;
+                return result;
             }
+
         }
         //you can fold local function in your editor
         public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
@@ -334,9 +298,9 @@ namespace Coocoo3D.RenderPipeline
             var graphicsContext = visualChannel.graphicsContext;
             var rendererComponents = context.dynamicContextRead.renderers;
             var settings = context.dynamicContextRead.settings;
-            var XBufferGroup = visualChannel.XBufferGroup;
-            Texture2D texLoading = context.TextureLoading;
-            Texture2D texError = context.TextureError;
+            var buffer = visualChannel.GPUWriter.GetBuffer(context.graphicsDevice, graphicsContext, true);
+            Texture2D texLoading = context.mainCaches.GetTexture("Assets/Textures/loading.png");
+            Texture2D texError = context.mainCaches.GetTexture("Assets/Textures/error.png");
             Texture2D _Tex(Texture2D _tex)
             {
                 if (_tex == null)
@@ -355,19 +319,6 @@ namespace Coocoo3D.RenderPipeline
             int matC = 0;
             foreach (var combinedPass in context.dynamicContextRead.currentPassSetting.RenderSequence)
             {
-                //if (combinedPass.Type == "Swap")
-                //{
-                //    //swap all render target
-                //    var a = context.RTs[combinedPass.RenderTargets[0]];
-                //    for (int i = 0; i < combinedPass.RenderTargets.Count - 1; i++)
-                //    {
-                //        context.RTs[combinedPass.RenderTargets[i]] = context.RTs[combinedPass.RenderTargets[i + 1]];
-                //    }
-                //    context.RTs[combinedPass.RenderTargets[combinedPass.RenderTargets.Count - 1]] = a;
-                //    context.RefreshPassesRenderTarget(context.dynamicContextRead.currentPassSetting, visualChannel);
-
-                //    continue;
-                //}
                 if (combinedPass.Pass.Camera == "Main")
                 {
                 }
@@ -419,10 +370,10 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Type == "DrawScreen")
                 {
-                _PassSetRes1(null, combinedPass);
+                    _PassSetRes1(null, combinedPass);
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        XBufferGroup.SetCBVRSlot(graphicsContext, matC, cbv.Index);
+                        graphicsContext.SetCBVRSlot(buffer, visualChannel.customDataInt1[matC] / 256, 0, cbv.Index);
                         matC++;
                     }
                     passPsoDesc.inputLayout = InputLayout.postProcess;
@@ -454,7 +405,7 @@ namespace Coocoo3D.RenderPipeline
                             }
                             foreach (var cbv in _combinedPass.Pass.CBVs)
                             {
-                                XBufferGroup.SetCBVRSlot(graphicsContext, matC, cbv.Index);
+                                graphicsContext.SetCBVRSlot(buffer, visualChannel.customDataInt1[matC] / 256, 0, cbv.Index);
                                 matC++;
                             }
                             _PassSetRes1(material, _combinedPass);

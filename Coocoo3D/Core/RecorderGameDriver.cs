@@ -66,7 +66,7 @@ namespace Coocoo3D.Core
             {
                 Image<Rgba32> image = Image.WrapMemory<Rgba32>(imageData, width, height);
 
-                FileInfo file = new FileInfo(Path.Combine(saveFolder.FullName, string.Format("{0}.png", renderIndex)));
+                FileInfo file = new FileInfo(Path.GetFullPath(string.Format("{0}.png", renderIndex), saveFolder.FullName));
                 var stream = file.Open(FileMode.Create);
                 image.SaveAsPng(stream);
 

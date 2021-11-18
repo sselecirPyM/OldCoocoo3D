@@ -82,6 +82,12 @@ namespace Coocoo3D.UI
                             throw;
                         }
                         break;
+                    case ".png":
+                    case ".jpg":
+                        appBody.RPContext.skyBoxOriTex = file.FullName;
+                        appBody.RPContext.SkyBoxChanged = true;
+
+                        break;
                 }
                 appBody.RequireRender(true);
             }

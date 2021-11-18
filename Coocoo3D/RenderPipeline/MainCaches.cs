@@ -1,18 +1,15 @@
-﻿using Coocoo3D.FileFormat;
+﻿using Coocoo3D.Components;
+using Coocoo3D.FileFormat;
 using Coocoo3D.ResourceWarp;
 using Coocoo3D.Utility;
 using Coocoo3DGraphics;
-using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Coocoo3D.Components;
-using System.IO;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Vortice.Dxc;
 
 namespace Coocoo3D.RenderPipeline
@@ -20,7 +17,7 @@ namespace Coocoo3D.RenderPipeline
     public class MainCaches : IDisposable
     {
         public Dictionary<string, KnownFile> KnownFiles = new Dictionary<string, KnownFile>();
-        public Dictionary<string, DirectoryInfo> KnownFolders = new Dictionary<string, DirectoryInfo>();
+        public ConcurrentDictionary<string, DirectoryInfo> KnownFolders = new ConcurrentDictionary<string, DirectoryInfo>();
 
         public Dictionary<string, Texture2DPack> TextureCaches = new Dictionary<string, Texture2DPack>();
         public Dictionary<string, Texture2DPack> TextureOnDemand = new Dictionary<string, Texture2DPack>();
@@ -33,10 +30,12 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, GeometryShader> GeometryShaders = new Dictionary<string, GeometryShader>();
         public Dictionary<string, ComputeShader> ComputeShaders = new Dictionary<string, ComputeShader>();
 
+        public Dictionary<string, TextureCube> TextureCubes = new Dictionary<string, TextureCube>();
+
         public MainCaches()
         {
-            KnownFolders.Add(Environment.CurrentDirectory, new DirectoryInfo(Environment.CurrentDirectory));
-            KnownFolders.Add("Assets", new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "Assets")));
+            KnownFolders.TryAdd(Environment.CurrentDirectory, new DirectoryInfo(Environment.CurrentDirectory));
+            KnownFolders.TryAdd("Assets", new DirectoryInfo(Path.GetFullPath("Assets")));
         }
 
         public ProcessingList processingList;
@@ -46,120 +45,103 @@ namespace Coocoo3D.RenderPipeline
 
         public void AddFolder(DirectoryInfo folder)
         {
-            lock (TextureOnDemand)
-            {
-                KnownFolders[folder.FullName] = folder;
-            }
+            KnownFolders[folder.FullName] = folder;
         }
 
         public void Texture(string fullPath)
         {
-            lock (TextureOnDemand)
-            {
-                if (!TextureOnDemand.ContainsKey(fullPath))
-                {
-                    TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath };
-
-                }
-            }
+            Texture(fullPath, true);
         }
 
         public void Texture(string fullPath, bool srgb)
         {
-            lock (TextureOnDemand)
+            if (!TextureOnDemand.ContainsKey(fullPath))
             {
-                if (!TextureOnDemand.ContainsKey(fullPath))
-                {
-                    TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath, srgb = srgb };
-
-                }
+                TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath, srgb = srgb };
             }
         }
 
         ConcurrentDictionary<Texture2DPack, Uploader> uploaders = new ConcurrentDictionary<Texture2DPack, Uploader>();
         public void OnFrame()
         {
-            lock (TextureOnDemand)
+            if (ReloadTextures1.SetFalse() && TextureCaches.Count > 0)
             {
-                if (ReloadTextures1.SetFalse() && TextureCaches.Count > 0)
+                var packs = TextureCaches.ToList();
+                foreach (var pair in packs)
                 {
-                    var packs = TextureCaches.ToList();
-                    foreach (var pair in packs)
-                    {
-                        if (!TextureOnDemand.ContainsKey(pair.Key) && pair.Value.canReload)
-                            TextureOnDemand.Add(pair.Key, new Texture2DPack() { fullPath = pair.Value.fullPath, srgb = pair.Value.srgb });
-                    }
-                    foreach (var pair in KnownFiles)
-                    {
-                        pair.Value.requireReload = true;
-                    }
+                    if (!TextureOnDemand.ContainsKey(pair.Key) && pair.Value.canReload)
+                        TextureOnDemand.Add(pair.Key, new Texture2DPack() { fullPath = pair.Value.fullPath, srgb = pair.Value.srgb });
                 }
-
-                if (TextureOnDemand.Count == 0) return;
-
-                foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null; }))
+                foreach (var pair in KnownFiles)
                 {
-                    var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
-                    tex1.Mark(GraphicsObjectStatus.loading);
-                    Dictionary<string, object> taskParam = new Dictionary<string, object>();
-                    InitFolder(Path.GetDirectoryName(notLoad.Value.fullPath));
-                    taskParam["pack"] = notLoad.Value;
-                    taskParam["knownFile"] = KnownFiles.GetOrCreate(notLoad.Value.fullPath, (string path) => new KnownFile()
+                    pair.Value.requireReload = true;
+                }
+            }
+
+            if (TextureOnDemand.Count == 0) return;
+
+            foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null; }))
+            {
+                var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
+                tex1.Mark(GraphicsObjectStatus.loading);
+                Dictionary<string, object> taskParam = new Dictionary<string, object>();
+                InitFolder(Path.GetDirectoryName(notLoad.Value.fullPath));
+                taskParam["pack"] = notLoad.Value;
+                taskParam["knownFile"] = KnownFiles.GetOrCreate(notLoad.Value.fullPath, (string path) => new KnownFile()
+                {
+                    fullPath = path,
+                    relativePath = Path.GetFileName(path)
+                });
+
+                notLoad.Value.loadTask = Task.Factory.StartNew((object a) =>
+                {
+                    var taskParam1 = (Dictionary<string, object>)a;
+                    Texture2DPack texturePack1 = (Texture2DPack)taskParam1["pack"];
+                    var knownFile = (KnownFile)taskParam1["knownFile"];
+
+                    try
                     {
-                        fullPath = path,
-                        relativePath = Path.GetFileName(path)
-                    });
+                        var folder = KnownFolders[Path.GetDirectoryName(knownFile.fullPath)];
 
-                    notLoad.Value.loadTask = Task.Factory.StartNew((object a) =>
+                        if (knownFile.IsModified(folder.GetFiles()))
                         {
-                            var taskParam1 = (Dictionary<string, object>)a;
-                            Texture2DPack texturePack1 = (Texture2DPack)taskParam1["pack"];
-                            var knownFile = (KnownFile)taskParam1["knownFile"];
-
-                            try
+                            Uploader uploader = new Uploader();
+                            if (texturePack1.ReloadTexture(knownFile.file, uploader))
                             {
-                                var folder = KnownFolders[Path.GetDirectoryName(knownFile.fullPath)];
-
-                                if (knownFile.IsModified(folder.GetFiles()))
-                                {
-                                    Uploader uploader = new Uploader();
-                                    if (texturePack1.ReloadTexture(knownFile.file, uploader))
-                                    {
-                                        texturePack1.Mark(GraphicsObjectStatus.loaded);
-                                        uploaders[texturePack1] = uploader;
-                                    }
-                                    else
-                                        texturePack1.Mark(GraphicsObjectStatus.error);
-                                }
-                                else
-                                    texturePack1.Mark(GraphicsObjectStatus.loaded);
+                                texturePack1.Mark(GraphicsObjectStatus.loaded);
+                                uploaders[texturePack1] = uploader;
                             }
-                            catch
-                            {
+                            else
                                 texturePack1.Mark(GraphicsObjectStatus.error);
-                            }
-                            finally
-                            {
-                                _RequireRender();
-                            }
-                        }, taskParam);
-                }
-                foreach (var loadCompleted in TextureOnDemand.Where(u => { return u.Value.loadTask != null && u.Value.loadTask.IsCompleted; }).ToArray())
-                {
-                    var tex1 = TextureCaches.GetOrCreate(loadCompleted.Key);
-                    tex1.srgb = loadCompleted.Value.srgb;
-                    if (loadCompleted.Value.loadTask.Status == TaskStatus.RanToCompletion &&
-                        (loadCompleted.Value.Status == GraphicsObjectStatus.loaded ||
-                        loadCompleted.Value.Status == GraphicsObjectStatus.error))
-                    {
-                        tex1.fullPath = loadCompleted.Value.fullPath;
-                        tex1.Mark(loadCompleted.Value.Status);
-                        if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
-                        {
-                            processingList.AddObject(tex1.texture2D, uploader);
                         }
-                        TextureOnDemand.Remove(loadCompleted.Key);
+                        else
+                            texturePack1.Mark(GraphicsObjectStatus.loaded);
                     }
+                    catch
+                    {
+                        texturePack1.Mark(GraphicsObjectStatus.error);
+                    }
+                    finally
+                    {
+                        _RequireRender();
+                    }
+                }, taskParam);
+            }
+            foreach (var loadCompleted in TextureOnDemand.Where(u => { return u.Value.loadTask != null && u.Value.loadTask.IsCompleted; }).ToArray())
+            {
+                var tex1 = TextureCaches.GetOrCreate(loadCompleted.Key);
+                tex1.srgb = loadCompleted.Value.srgb;
+                if (loadCompleted.Value.loadTask.Status == TaskStatus.RanToCompletion &&
+                    (loadCompleted.Value.Status == GraphicsObjectStatus.loaded ||
+                    loadCompleted.Value.Status == GraphicsObjectStatus.error))
+                {
+                    tex1.fullPath = loadCompleted.Value.fullPath;
+                    tex1.Mark(loadCompleted.Value.Status);
+                    if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
+                    {
+                        processingList.AddObject(tex1.texture2D, uploader);
+                    }
+                    TextureOnDemand.Remove(loadCompleted.Key);
                 }
             }
         }
@@ -202,6 +184,20 @@ namespace Coocoo3D.RenderPipeline
             return file;
         }
 
+        public Texture2D GetTexture1(string path, GraphicsContext graphicsContext)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            return GetT(TextureCaches, path, file =>
+            {
+                var texturePack1 = new Texture2DPack();
+                texturePack1.fullPath = path;
+                Uploader uploader = new Uploader();
+                texturePack1.ReloadTexture(file, uploader);
+                graphicsContext.UploadTexture(texturePack1.texture2D, uploader);
+                texturePack1.Mark(GraphicsObjectStatus.loaded);
+                return texturePack1;
+            }).texture2D;
+        }
         public ModelPack GetModel(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
@@ -224,7 +220,7 @@ namespace Coocoo3D.RenderPipeline
             if (string.IsNullOrEmpty(path)) return null;
             return GetT(Motions, path, file =>
             {
-                BinaryReader reader = new BinaryReader(OpenReadStream(file));
+                BinaryReader reader = new BinaryReader(file.OpenRead());
                 VMDFormat motionSet = VMDFormat.Load(reader);
 
                 var motion = new MMDMotion();
@@ -235,10 +231,10 @@ namespace Coocoo3D.RenderPipeline
 
         public PassSetting GetPassSetting(string path)
         {
-            if (!Path.IsPathRooted(path)) path = Path.Combine(Environment.CurrentDirectory, path);
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             var passSetting = GetT(PassSettings, path, file =>
             {
-                var passes = ReadJsonStream<PassSetting>(OpenReadStream(file));
+                var passes = ReadJsonStream<PassSetting>(file.OpenRead());
                 foreach (var res in passes.Passes)
                 {
                     if (res.SRVs != null)
@@ -257,7 +253,7 @@ namespace Coocoo3D.RenderPipeline
         public VertexShader GetVertexShader(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.Combine(Environment.CurrentDirectory, path);
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             return GetT(VertexShaders, path, file =>
             {
                 VertexShader vertexShader = new VertexShader();
@@ -272,7 +268,7 @@ namespace Coocoo3D.RenderPipeline
         public PixelShader GetPixelShader(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.Combine(Environment.CurrentDirectory, path);
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             return GetT(PixelShaders, path, file =>
             {
                 PixelShader pixelShader = new PixelShader();
@@ -287,7 +283,7 @@ namespace Coocoo3D.RenderPipeline
         public GeometryShader GetGeometryShader(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.Combine(Environment.CurrentDirectory, path);
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             return GetT(GeometryShaders, path, file =>
             {
                 GeometryShader geometryShader = new GeometryShader();
@@ -302,15 +298,15 @@ namespace Coocoo3D.RenderPipeline
         public ComputeShader GetComputeShader(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.Combine(Environment.CurrentDirectory, path);
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
             return GetT(ComputeShaders, path, file =>
             {
-                ComputeShader geometryShader = new ComputeShader();
+                ComputeShader computeShader = new ComputeShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    geometryShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "main"));
+                    computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "main"));
                 else
-                    geometryShader.Initialize(File.ReadAllBytes(path));
-                return geometryShader;
+                    computeShader.Initialize(File.ReadAllBytes(path));
+                return computeShader;
             });
         }
 
@@ -353,6 +349,46 @@ namespace Coocoo3D.RenderPipeline
             }
             return null;
         }
+
+        public TextureCube GetTextureCube(string s)
+        {
+            if (TextureCubes.TryGetValue(s, out var tex))
+            {
+                return tex;
+            }
+            return null;
+        }
+
+        public void GetSkyBox(string s, GraphicsContext context, out TextureCube skyBox, out TextureCube irradiance, out TextureCube reflect)
+        {
+            skyBox = GetTextureCube(s);
+            irradiance = GetTextureCube(s + "Irradiance");
+            reflect = GetTextureCube(s + "Reflect");
+            if (skyBox == null)
+            {
+                skyBox = new TextureCube();
+                irradiance = new TextureCube();
+                reflect = new TextureCube();
+                skyBox.ReloadAsRTVUAV(2048, 2048, 1, Vortice.DXGI.Format.R16G16B16A16_Float);
+                irradiance.ReloadAsRTVUAV(32, 32, 1, Vortice.DXGI.Format.R32G32B32A32_Float);
+                reflect.ReloadAsRTVUAV(1024, 1024, 7, Vortice.DXGI.Format.R16G16B16A16_Float);
+
+                context.UpdateRenderTexture(skyBox);
+                context.UpdateRenderTexture(irradiance);
+                context.UpdateRenderTexture(reflect);
+                TextureCubes[s] = skyBox;
+                TextureCubes[s + "Irradiance"] = irradiance;
+                TextureCubes[s + "Reflect"] = reflect;
+            }
+        }
+
+        public bool TryGetTexture(string s, out Texture2D tex)
+        {
+            bool result = TextureCaches.TryGetValue(s, out var tex1);
+            tex = tex1.texture2D;
+            return result;
+        }
+
         public void SetTexture(Texture2D tex, IntPtr ptr)
         {
             string name = ptr2string[ptr];
@@ -404,11 +440,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
             }
-        }
-
-        Stream OpenReadStream(FileInfo file)
-        {
-            return file.OpenRead();
         }
 
         public void ReloadTextures()

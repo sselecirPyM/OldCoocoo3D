@@ -5,7 +5,7 @@ using Vortice.Direct3D12;
 
 namespace Coocoo3DGraphics
 {
-    public class RingBuffer
+    public class RingBuffer : IDisposable
     {
         public void Init(GraphicsDevice device, int size)
         {
@@ -26,6 +26,25 @@ namespace Coocoo3DGraphics
             currentPosition = ((currentPosition + size + 255) & ~255) % this.size;
 
             return result;
+        }
+
+        public IntPtr Upload(int size, out ulong gpuAddress)
+        {
+            if (currentPosition + size > this.size)
+            {
+                currentPosition = 0;
+            }
+            IntPtr result = mapped + currentPosition;
+            gpuAddress = resource.GPUVirtualAddress + (ulong)currentPosition;
+            currentPosition = ((currentPosition + size + 255) & ~255) % this.size;
+
+            return result;
+        }
+
+        public void Dispose()
+        {
+            resource?.Dispose();
+            resource = null;
         }
 
         IntPtr mapped;

@@ -62,15 +62,11 @@ namespace Coocoo3D.RenderPipeline
 
         public Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
 
-        public Texture2D TextureLoading = new Texture2D();
-        public Texture2D TextureError = new Texture2D();
-
         public bool RequireResize;
         public Vector2 NewSize;
         public bool SkyBoxChanged = false;
-        public TextureCube SkyBox = new TextureCube();
-        public TextureCube IrradianceMap = new TextureCube();
-        public TextureCube ReflectMap = new TextureCube();
+        public string skyBoxName = "_SkyBox";
+        public string skyBoxOriTex = "Assets/Textures/adams_place_bridge_2k.jpg";
 
         public MMDMesh ndcQuadMesh = new MMDMesh();
         public int frameRenderCount;
@@ -95,8 +91,6 @@ namespace Coocoo3D.RenderPipeline
         public string currentPassSetting1 = "Samples\\samplePasses.coocoox";
 
         public Int2 screenSize;
-        public float dpi = 96.0f;
-        public float logicScale = 1;
         public GameDriverContext gameDriverContext = new GameDriverContext()
         {
             FrameInterval = 1 / 240.0f,
@@ -110,31 +104,19 @@ namespace Coocoo3D.RenderPipeline
             },
         };
 
-
         public void Reload()
         {
             graphicsContext.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
 
-            processingList.AddObject(TextureLoading, 1, 1, new Vector4(0, 1, 1, 1));
-            processingList.AddObject(TextureError, 1, 1, new Vector4(1, 0, 1, 1));
-
-            Uploader upTexEnvCube = new Uploader();
-            upTexEnvCube.TextureCubePure(32, 32, new Vector4[] { new Vector4(0.4f, 0.32f, 0.32f, 1), new Vector4(0.32f, 0.4f, 0.32f, 1), new Vector4(0.4f, 0.4f, 0.4f, 1), new Vector4(0.32f, 0.4f, 0.4f, 1), new Vector4(0.4f, 0.4f, 0.32f, 1), new Vector4(0.32f, 0.32f, 0.4f, 1) });
-            processingList.AddObject(SkyBox, upTexEnvCube);
-
-            IrradianceMap.ReloadAsRTVUAV(32, 32, 1, Format.R32G32B32A32_Float);
-            ReflectMap.ReloadAsRTVUAV(1024, 1024, 7, Format.R16G16B16A16_Float);
-
             SkyBoxChanged = true;
-            graphicsContext.UpdateRenderTexture(IrradianceMap);
-            graphicsContext.UpdateRenderTexture(ReflectMap);
 
             ndcQuadMesh.ReloadNDCQuad();
             processingList.AddObject(ndcQuadMesh);
             mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
             mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
-            currentPassSetting1 = Path.Combine(Environment.CurrentDirectory, currentPassSetting1);
+            currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
+
         }
 
         public void DelayAddVisualChannel(string name)
@@ -187,7 +169,7 @@ namespace Coocoo3D.RenderPipeline
             while (CBs_Bone.Count < count)
             {
                 CBuffer constantBuffer = new CBuffer();
-                graphicsDevice.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
+                graphicsDevice.InitializeSBuffer(constantBuffer, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }
             _Data1 data1 = new _Data1();
@@ -290,6 +272,9 @@ namespace Coocoo3D.RenderPipeline
 
         public void PreConfig()
         {
+            screenSize.X = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
+            screenSize.Y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
+
             if (!Initialized) return;
             if (delayAddVc.TryDequeue(out var vcName))
             {
@@ -341,15 +326,6 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.UpdateRenderTexture(tex2d);
                 }
             }
-        }
-
-        public void ReloadScreenSizeResources()
-        {
-            screenSize.X = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
-            screenSize.Y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
-
-            dpi = graphicsDevice.GetDpi();
-            logicScale = dpi / 96.0f;
         }
 
         public void ConfigVisualChannels()
@@ -458,11 +434,11 @@ namespace Coocoo3D.RenderPipeline
                 GeometryShader gs = null;
                 PixelShader ps = null;
                 if (pass.Pass.VertexShader != null)
-                    vs = mainCaches.GetVertexShader(Path.Combine(path1, passSetting.aliases[pass.Pass.VertexShader]));
+                    vs = mainCaches.GetVertexShader(Path.GetFullPath(passSetting.aliases[pass.Pass.VertexShader], path1));
                 if (pass.Pass.GeometryShader != null)
-                    gs = mainCaches.GetGeometryShader(Path.Combine(path1, passSetting.aliases[pass.Pass.GeometryShader]));
+                    gs = mainCaches.GetGeometryShader(Path.GetFullPath(passSetting.aliases[pass.Pass.GeometryShader], path1));
                 if (pass.Pass.PixelShader != null)
-                    ps = mainCaches.GetPixelShader(Path.Combine(path1, passSetting.aliases[pass.Pass.PixelShader]));
+                    ps = mainCaches.GetPixelShader(Path.GetFullPath(passSetting.aliases[pass.Pass.PixelShader], path1));
                 PSO pso = new PSO();
                 pso.Initialize(vs, gs, ps);
                 pass.PSODefault = pso;
@@ -492,18 +468,17 @@ namespace Coocoo3D.RenderPipeline
         }
         public TextureCube _GetTexCubeByName(string name)
         {
-            if (name == "_SkyBoxReflect")
-                return ReflectMap;
-            else if (name == "_SkyBoxIrradiance")
-                return IrradianceMap;
-            else if (name == "_SkyBox")
-                return SkyBox;
-            return null;
+            //if (name == "_SkyBoxReflect")
+            //    return SkyBoxReflect;
+            //else if (name == "_SkyBoxIrradiance")
+            //    return SkyBoxIrradiance;
+            
+            return mainCaches.GetTextureCube(name);
         }
 
         public void Dispose()
         {
-            foreach(var rt in RTs)
+            foreach (var rt in RTs)
             {
                 rt.Value.Dispose();
             }

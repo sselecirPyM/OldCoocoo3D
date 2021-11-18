@@ -47,8 +47,8 @@ namespace Coocoo3D.RenderPipeline
         public void Render(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
 
-            Texture2D texLoading = context.TextureLoading;
-            Texture2D texError = context.TextureError;
+            Texture2D texLoading = context.mainCaches.GetTexture("Assets/Textures/loading.png");
+            Texture2D texError = context.mainCaches.GetTexture("Assets/Textures/error.png");
             Texture2D _Tex(Texture2D _tex)
             {
                 if (_tex == null)
@@ -66,7 +66,6 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
 
             graphicsContext.SetRootSignature(rsPP);
-            //graphicsContext.SetSRVTSlot(rpAssets.texture2ds["_UI1Texture"], 0);
 
             PSODesc desc;
             desc.blendState = BlendState.alpha;
@@ -82,7 +81,6 @@ namespace Coocoo3D.RenderPipeline
             desc.wireFrame = false;
             graphicsContext.SetMesh(context.ndcQuadMesh);
 
-            //int renderCount = context.dynamicContextRead.selectedLightings.Count + context.dynamicContextRead.volumes.Count;
             int ofs = 0;
 
             var data = ImGui.GetDrawData();
@@ -90,22 +88,14 @@ namespace Coocoo3D.RenderPipeline
             float R = data.DisplayPos.X + data.DisplaySize.X;
             float T = data.DisplayPos.Y;
             float B = data.DisplayPos.Y + data.DisplaySize.Y;
-            float[] mvp =
-            {
-                    2.0f/(R-L),   0.0f,           0.0f,       0.0f,
-                    0.0f,         2.0f/(T-B),     0.0f,       0.0f,
-                    0.0f,         0.0f,           0.5f,       0.0f,
-                    (R+L)/(L-R),  (T+B)/(B-T),    0.5f,       1.0f,
-            };
+            Matrix4x4 matrix = new Matrix4x4(
+                2.0f / (R - L), 0.0f, 0.0f, (R + L) / (L - R),
+                0.0f, 2.0f / (T - B), 0.0f, (T + B) / (B - T),
+                0.0f, 0.0f, 0.5f, 0.5f,
+                0.0f, 0.0f, 0.0f, 1.0f);
 
-
-            {
-                GPUWriter.BufferBegin();
-                for (int i = 0; i < mvp.Length; i++)
-                {
-                    GPUWriter.Write(mvp[i]);
-                }
-            }
+            GPUWriter.BufferBegin();
+            GPUWriter.Write(matrix);
 
             Vector2 clip_off = data.DisplayPos;
 

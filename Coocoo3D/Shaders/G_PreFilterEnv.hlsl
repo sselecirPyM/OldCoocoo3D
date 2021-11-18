@@ -206,7 +206,7 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 		float NoL = saturate(dot(R, L));
 		if (NoL > 0)
 		{
-			FilteredColor += AmbientCubemap.SampleLevel(s0, L, clamp(round(Roughness * 4), 0, 4)).rgb * NoL;
+			FilteredColor += AmbientCubemap.SampleLevel(s0, L, 0).rgb * NoL;
 			//FilteredColor += float4(1,1,1,1).rgb * NoL;
 			Weight += NoL;
 		}

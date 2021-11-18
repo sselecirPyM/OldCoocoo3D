@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -30,7 +29,7 @@ namespace Coocoo3D.ResourceWarp
 
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
 
-        public void Reload(BinaryReader reader,string storageFolder)
+        public void Reload(BinaryReader reader, string storageFolder)
         {
             pmx.Reload(reader);
             vertexCount = pmx.Vertices.Length;
@@ -88,7 +87,7 @@ namespace Coocoo3D.ResourceWarp
                 if (pmx.Textures.Count > mat.texIndex && mat.texIndex >= 0)
                 {
                     string relativePath = pmx.Textures[mat.texIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
-                    string texPath = Path.Combine(storageFolder, relativePath);
+                    string texPath = Path.GetFullPath(relativePath, storageFolder);
 
                     mat.textures["_Albedo"] = texPath;
                 }

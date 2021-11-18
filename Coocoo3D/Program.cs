@@ -20,7 +20,7 @@ namespace Coocoo3D
             SDL_SysWMinfo info = new SDL_SysWMinfo();
             SDL_GetWindowWMInfo(window, ref info);
             IntPtr hwnd = info.info.win.window;
-            coocoo3DMain.graphicsDevice.SetSwapChainPanel(hwnd, Width, Height, 1, 1, 96.0f);
+            coocoo3DMain.graphicsDevice.SetSwapChainPanel(hwnd, Width, Height);
             coocoo3DMain.swapChainReady = true;
             #region key map
             Dictionary<uint, int> sdlMouse2ImguiMouse = new Dictionary<uint, int>();

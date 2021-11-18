@@ -18,21 +18,17 @@ namespace Coocoo3D.RenderPipeline
         public Int2 outputSize = new Int2(100, 100);
         public Int2 sceneViewSize = new Int2(100, 100);
         public Dictionary<string, int> customDataInt = new Dictionary<string, int>();
+        public Dictionary<int, int> customDataInt1 = new Dictionary<int, int>();
         public GraphicsContext graphicsContext;
         public Texture2D FinalOutput = new Texture2D();
         public Texture2D OutputRTV = new Texture2D();
         public RenderPipeline renderPipeline;
-        public CBufferGroup XBufferGroup = new CBufferGroup();
-        public SBufferGroup XSBufferGroup = new SBufferGroup();
+        public GPUWriter GPUWriter = new GPUWriter();
 
         public void Onframe(RenderPipelineContext RPContext)
         {
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
             cameraData = camera.GetCameraData();
-            if (XBufferGroup.bufferSize == 0)
-                XBufferGroup.Reload(RPContext.graphicsDevice, 1024, 1024 * 256);
-            if (XSBufferGroup.bufferSize == 0)
-                XSBufferGroup.Reload(RPContext.graphicsDevice, 512, 65536);
         }
 
         public void Dispose()
