@@ -1,17 +1,13 @@
-﻿using Coocoo3D.Utility;
-using Coocoo3DGraphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Coocoo3DGraphics;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using System.IO;
 using SixLabors.ImageSharp.PixelFormats;
-using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.Processing;
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Vortice.DXGI;
+using ImageMagick;
 
 namespace Coocoo3D.ResourceWarp
 {
@@ -40,13 +36,33 @@ namespace Coocoo3D.ResourceWarp
             }
             try
             {
-                byte[] data = GetImageData(texFile.OpenRead(), out int width, out int height, out _, out int mipMap);
-                uploader.Texture2DRawLessCopy(data, srgb ? Format.R8G8B8A8_UNorm_SRgb : Format.R8G8B8A8_UNorm, width, height, mipMap);
+                switch (storageItem.Extension.ToLower())
+                {
+                    case ".hdr":
+                    case ".exr":
+                    case ".tif":
+                    case ".tiff":
+                    case ".dds":
+                        {
+                            var img = new MagickImage(storageItem);
+                            byte[] data = img.ToByteArray(MagickFormat.Rgba);
+                            int d = data.Length / img.Width / img.Height;
+                            uploader.Texture2DRawLessCopy(data, d == 8 ? Format.R16G16B16A16_UNorm : Format.R8G8B8A8_UNorm_SRgb, img.Width, img.Height, 1);
+
+                        }
+                        break;
+                    default:
+                        {
+                            byte[] data = GetImageData(texFile.OpenRead(), out int width, out int height, out _, out int mipMap);
+                            uploader.Texture2DRawLessCopy(data, srgb ? Format.R8G8B8A8_UNorm_SRgb : Format.R8G8B8A8_UNorm, width, height, mipMap);
+                        }
+                        break;
+                }
 
                 Status = GraphicsObjectStatus.loaded;
                 return true;
             }
-            catch
+            catch (Exception e)
             {
                 return false;
             }

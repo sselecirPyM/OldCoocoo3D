@@ -29,8 +29,6 @@ namespace Coocoo3D.Components
         public Vector3[] meshPosData;
 
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
-        public List<RuntimeMaterial.InnerStruct> materialsBaseData = new List<RuntimeMaterial.InnerStruct>();
-        public List<RuntimeMaterial.InnerStruct> computedMaterialsData = new List<RuntimeMaterial.InnerStruct>();
 
         public Vector3[] meshPosData1;
         public bool meshNeedUpdate;
@@ -38,7 +36,6 @@ namespace Coocoo3D.Components
         public void VertexMaterialMorph()
         {
             ComputeVertexMorph();
-            ComputeMaterialMorph();
         }
 
         public void ComputeVertexMorph()
@@ -70,52 +67,6 @@ namespace Coocoo3D.Components
             }
         }
 
-        public void ComputeMaterialMorph()
-        {
-            for (int i = 0; i < computedMaterialsData.Count; i++)
-            {
-                computedMaterialsData[i] = materialsBaseData[i];
-            }
-            for (int i = 0; i < morphStateComponent.morphs.Count; i++)
-            {
-                if (morphStateComponent.morphs[i].Type == MorphType.Material && morphStateComponent.Weights.Computed[i] != morphStateComponent.Weights.ComputedPrev[i])
-                {
-                    MorphMaterialDesc[] morphMaterialStructs = morphStateComponent.morphs[i].MorphMaterials;
-                    float computedWeight = morphStateComponent.Weights.Computed[i];
-                    for (int j = 0; j < morphMaterialStructs.Length; j++)
-                    {
-                        MorphMaterialDesc morphMaterialStruct = morphMaterialStructs[j];
-                        int k = morphMaterialStruct.MaterialIndex;
-                        RuntimeMaterial.InnerStruct struct1 = computedMaterialsData[k];
-                        if (morphMaterialStruct.MorphMethon == MorphMaterialMethon.Add)
-                        {
-                            struct1.AmbientColor += morphMaterialStruct.Ambient * computedWeight;
-                            struct1.DiffuseColor += morphMaterialStruct.Diffuse * computedWeight;
-                            struct1.EdgeColor += morphMaterialStruct.EdgeColor * computedWeight;
-                            struct1.EdgeSize += morphMaterialStruct.EdgeSize * computedWeight;
-                            struct1.SpecularColor += morphMaterialStruct.Specular * computedWeight;
-                            struct1.SubTexture += morphMaterialStruct.SubTexture * computedWeight;
-                            struct1.Texture += morphMaterialStruct.Texture * computedWeight;
-                            struct1.ToonTexture += morphMaterialStruct.ToonTexture * computedWeight;
-                        }
-                        else if (morphMaterialStruct.MorphMethon == MorphMaterialMethon.Mul)
-                        {
-                            struct1.AmbientColor = Vector3.Lerp(struct1.AmbientColor, struct1.AmbientColor * morphMaterialStruct.Ambient, computedWeight);
-                            struct1.DiffuseColor = Vector4.Lerp(struct1.DiffuseColor, struct1.DiffuseColor * morphMaterialStruct.Diffuse, computedWeight);
-                            struct1.EdgeColor = Vector4.Lerp(struct1.EdgeColor, struct1.EdgeColor * morphMaterialStruct.EdgeColor, computedWeight);
-                            struct1.EdgeSize = struct1.EdgeSize * morphMaterialStruct.EdgeSize * computedWeight + struct1.EdgeSize * (1 - computedWeight);
-                            struct1.SpecularColor = Vector4.Lerp(struct1.SpecularColor, struct1.SpecularColor * morphMaterialStruct.Specular, computedWeight);
-                            struct1.SubTexture = Vector4.Lerp(struct1.SubTexture, struct1.SubTexture * morphMaterialStruct.SubTexture, computedWeight);
-                            struct1.Texture = Vector4.Lerp(struct1.Texture, struct1.Texture * morphMaterialStruct.Texture, computedWeight);
-                            struct1.ToonTexture = Vector4.Lerp(struct1.ToonTexture, struct1.ToonTexture * morphMaterialStruct.ToonTexture, computedWeight);
-                        }
-
-                        computedMaterialsData[k] = struct1;
-                        Materials[k].innerStruct = struct1;
-                    }
-                }
-            }
-        }
 
         #region bone
 
@@ -275,6 +226,7 @@ namespace Coocoo3D.Components
                                 break;
                         }
                     //重命名函数以缩短函数名
+                    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
                     Quaternion QAxisAngle(Vector3 axis, float angle) => Quaternion.CreateFromAxisAngle(axis, angle);
 
                     itEntity.rotation = Quaternion.Normalize(itEntity.rotation * QAxisAngle(ikRotateAxis, -Math.Min((float)Math.Acos(dotV), entity.CCDAngleLimit * (i + 1))));
@@ -467,12 +419,14 @@ namespace Coocoo3D.Components
     public class RuntimeMaterial
     {
         public string Name;
-        public string NameEN;
+
+        public string unionShader;
+
+        public int indexOffset;
         public int indexCount;
-        public int texIndex;
-        public int toonIndex;
         public DrawFlag DrawFlags;
         public bool Transparent;
+        public bool skinning;
 
         public InnerStruct innerStruct;
         public struct InnerStruct
@@ -483,10 +437,6 @@ namespace Coocoo3D.Components
             public float EdgeSize;
             public Vector4 EdgeColor;
 
-            public Vector4 Texture;
-            public Vector4 SubTexture;
-            public Vector4 ToonTexture;
-            public uint IsTransparent;
             public float Metallic;
             public float Roughness;
             public float Emission;
@@ -510,7 +460,7 @@ namespace Coocoo3D.Components
 
         public override string ToString()
         {
-            return string.Format("{0}_{1}", Name, NameEN);
+            return Name;
         }
     }
 
@@ -623,31 +573,29 @@ namespace Coocoo3D.FileFormat
             return desc;
         }
 
-        public static void Reload2(this GameObject gameObject, ModelPack modelPack, List<string> textures, string ModelPath)
+        public static void Reload2(this GameObject gameObject, ModelPack modelPack)
         {
             var modelResource = modelPack.pmx;
             gameObject.Name = string.Format("{0} {1}", modelResource.Name, modelResource.NameEN);
             gameObject.Description = string.Format("{0}\n{1}", modelResource.Description, modelResource.DescriptionEN);
 
-            ReloadModel(gameObject, modelPack, textures);
-        }
-
-        public static void ReloadModel(this GameObject gameObject, ModelPack modelPack, List<string> textures)
-        {
-            var modelResource = modelPack.pmx;
             var rendererComponent = new MMDRendererComponent();
             gameObject.AddComponent(rendererComponent);
             rendererComponent.morphStateComponent.Reload(modelResource);
 
-            rendererComponent.ReloadModel(modelPack, textures);
+            rendererComponent.Initialize2(modelPack);
+            rendererComponent.ReloadModel(modelPack);
         }
 
-        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack, List<string> textures)
+        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack)
         {
-            rendererComponent.Initialize2(modelPack.pmx);
             rendererComponent.Materials.Clear();
-            rendererComponent.materialsBaseData.Clear();
-            rendererComponent.computedMaterialsData.Clear();
+            for (int i = 0; i < modelPack.Materials.Count; i++)
+            {
+                var mat = modelPack.Materials[i].GetClone();
+                rendererComponent.Materials.Add(mat);
+            }
+
             var mesh = modelPack.GetMesh();
             rendererComponent.meshPath = modelPack.fullPath;
             rendererComponent.meshPosData = modelPack.position;
@@ -656,14 +604,6 @@ namespace Coocoo3D.FileFormat
             rendererComponent.meshPosData1 = new Vector3[mesh.GetVertexCount()];
 
             var modelResource = modelPack.pmx;
-
-            for (int i = 0; i < modelPack.Materials.Count; i++)
-            {
-                var mat = modelPack.Materials[i].GetClone();
-                rendererComponent.Materials.Add(mat);
-                rendererComponent.materialsBaseData.Add(mat.innerStruct);
-                rendererComponent.computedMaterialsData.Add(mat.innerStruct);
-            }
 
             int morphCount = modelResource.Morphs.Count;
             for (int i = 0; i < morphCount; i++)
@@ -681,8 +621,9 @@ namespace Coocoo3D.FileFormat
             rendererComponent.ComputeVertexMorph();
         }
 
-        public static void Initialize2(this MMDRendererComponent rendererComponent, PMXFormat modelResource)
+        public static void Initialize2(this MMDRendererComponent rendererComponent, ModelPack modelPack)
         {
+            PMXFormat modelResource = modelPack.pmx;
             rendererComponent.bones.Clear();
             rendererComponent.cachedBoneKeyFrames.Clear();
             var _bones = modelResource.Bones;
@@ -783,23 +724,17 @@ namespace Coocoo3D.FileFormat
             }
 
             rendererComponent.BakeSequenceProcessMatrixsIndex();
-
             rendererComponent.rigidBodyDescs.Clear();
-            var rigidBodys = modelResource.RigidBodies;
-            for (int i = 0; i < rigidBodys.Count; i++)
+            rendererComponent.rigidBodyDescs.AddRange(modelPack.rigidBodyDescs);
+            for (int i = 0; i < modelPack.rigidBodyDescs.Count; i++)
             {
-                var rigidBodyData = rigidBodys[i];
-                var rigidBodyDesc = GetRigidBodyDesc(rigidBodyData);
+                var rigidBodyDesc = rendererComponent.rigidBodyDescs[i];
 
-                rendererComponent.rigidBodyDescs.Add(rigidBodyDesc);
-                if (rigidBodyData.Type != PMX_RigidBodyType.Kinematic && rigidBodyData.AssociatedBoneIndex != -1)
-                    rendererComponent.bones[rigidBodyData.AssociatedBoneIndex].IsPhysicsFreeBone = true;
+                if (rigidBodyDesc.Type != RigidBodyType.Kinematic && rigidBodyDesc.AssociatedBoneIndex != -1)
+                    rendererComponent.bones[rigidBodyDesc.AssociatedBoneIndex].IsPhysicsFreeBone = true;
             }
             rendererComponent.jointDescs.Clear();
-            var joints = modelResource.Joints;
-            for (int i = 0; i < joints.Count; i++)
-                rendererComponent.jointDescs.Add(GetJointDesc(joints[i]));
-
+            rendererComponent.jointDescs.AddRange(modelPack.jointDescs);
         }
     }
 }

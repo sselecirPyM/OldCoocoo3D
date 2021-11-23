@@ -364,15 +364,24 @@ namespace Coocoo3D.RenderPipeline
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
 
+            string path1 = Path.GetDirectoryName(passPath);
             if (passSetting.VertexShaders != null)
                 foreach (var shader in passSetting.VertexShaders)
-                    passSetting.aliases[shader.Name] = shader.Path;
+                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
             if (passSetting.GeometryShaders != null)
                 foreach (var shader in passSetting.GeometryShaders)
-                    passSetting.aliases[shader.Name] = shader.Path;
+                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
             if (passSetting.PixelShaders != null)
                 foreach (var shader in passSetting.PixelShaders)
-                    passSetting.aliases[shader.Name] = shader.Path;
+                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
+            if (passSetting.UnionShaders != null)
+            {
+                foreach (var shader in passSetting.UnionShaders)
+                {
+                    mainCaches.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
+                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
+                }
+            }
             foreach (var pass in passSetting.RenderSequence)
             {
                 if (pass.Type == "Swap") continue;
@@ -428,17 +437,15 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
                 pass.rootSignatureKey = stringBuilder.ToString();
-
-                string path1 = Path.GetDirectoryName(passPath);
                 VertexShader vs = null;
                 GeometryShader gs = null;
                 PixelShader ps = null;
                 if (pass.Pass.VertexShader != null)
-                    vs = mainCaches.GetVertexShader(Path.GetFullPath(passSetting.aliases[pass.Pass.VertexShader], path1));
+                    vs = mainCaches.GetVertexShader(passSetting.aliases[pass.Pass.VertexShader]);
                 if (pass.Pass.GeometryShader != null)
-                    gs = mainCaches.GetGeometryShader(Path.GetFullPath(passSetting.aliases[pass.Pass.GeometryShader], path1));
+                    gs = mainCaches.GetGeometryShader(passSetting.aliases[pass.Pass.GeometryShader]);
                 if (pass.Pass.PixelShader != null)
-                    ps = mainCaches.GetPixelShader(Path.GetFullPath(passSetting.aliases[pass.Pass.PixelShader], path1));
+                    ps = mainCaches.GetPixelShader(passSetting.aliases[pass.Pass.PixelShader]);
                 PSO pso = new PSO();
                 pso.Initialize(vs, gs, ps);
                 pass.PSODefault = pso;
@@ -472,7 +479,7 @@ namespace Coocoo3D.RenderPipeline
             //    return SkyBoxReflect;
             //else if (name == "_SkyBoxIrradiance")
             //    return SkyBoxIrradiance;
-            
+
             return mainCaches.GetTextureCube(name);
         }
 

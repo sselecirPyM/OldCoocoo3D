@@ -14,11 +14,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class PostProcess : RenderPipeline
     {
-        public override void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel)
-        {
-
-        }
-
         public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var rsPostProcess = context.RPAssetsManager.GetRootSignature(context.graphicsDevice,"CCs");

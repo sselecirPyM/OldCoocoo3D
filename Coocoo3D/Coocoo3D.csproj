@@ -14,8 +14,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Samples\UnionShaderSkyBox.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Samples\UnionShaderSkyBox.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="BulletSharp.x64" Version="0.12.0" />
     <PackageReference Include="ImGui.NET" Version="1.78.0" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="8.4.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />

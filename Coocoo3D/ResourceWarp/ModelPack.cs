@@ -29,6 +29,44 @@ namespace Coocoo3D.ResourceWarp
 
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
 
+        public List<RigidBodyDesc> rigidBodyDescs = new List<RigidBodyDesc>();
+        public List<JointDesc> jointDescs = new List<JointDesc>();
+
+        public static RigidBodyDesc GetRigidBodyDesc(PMX_RigidBody rigidBody)
+        {
+            RigidBodyDesc desc = new RigidBodyDesc();
+            desc.AssociatedBoneIndex = rigidBody.AssociatedBoneIndex;
+            desc.CollisionGroup = rigidBody.CollisionGroup;
+            desc.CollisionMask = rigidBody.CollisionMask;
+            desc.Shape = (RigidBodyShape)rigidBody.Shape;
+            desc.Dimemsions = rigidBody.Dimemsions;
+            desc.Position = rigidBody.Position;
+            desc.Rotation = MMDRendererComponent.ToQuaternion(rigidBody.Rotation);
+            desc.Mass = rigidBody.Mass;
+            desc.LinearDamping = rigidBody.TranslateDamp;
+            desc.AngularDamping = rigidBody.RotateDamp;
+            desc.Restitution = rigidBody.Restitution;
+            desc.Friction = rigidBody.Friction;
+            desc.Type = (RigidBodyType)rigidBody.Type;
+            return desc;
+        }
+        public static JointDesc GetJointDesc(PMX_Joint joint)
+        {
+            JointDesc desc = new JointDesc();
+            desc.Type = joint.Type;
+            desc.AssociatedRigidBodyIndex1 = joint.AssociatedRigidBodyIndex1;
+            desc.AssociatedRigidBodyIndex2 = joint.AssociatedRigidBodyIndex2;
+            desc.Position = joint.Position;
+            desc.Rotation = joint.Rotation;
+            desc.PositionMinimum = joint.PositionMinimum;
+            desc.PositionMaximum = joint.PositionMaximum;
+            desc.RotationMinimum = joint.RotationMinimum;
+            desc.RotationMaximum = joint.RotationMaximum;
+            desc.PositionSpring = joint.PositionSpring;
+            desc.RotationSpring = joint.RotationSpring;
+            return desc;
+        }
+
         public void Reload(BinaryReader reader, string storageFolder)
         {
             pmx.Reload(reader);
@@ -60,7 +98,7 @@ namespace Coocoo3D.ResourceWarp
                 boneWeights[i * 4 + 3] /= weightTotal;
             }
 
-
+            int indexOffset = 0;
             for (int i = 0; i < pmx.Materials.Count; i++)
             {
                 var mmdMat = pmx.Materials[i];
@@ -68,9 +106,8 @@ namespace Coocoo3D.ResourceWarp
                 RuntimeMaterial mat = new RuntimeMaterial
                 {
                     Name = mmdMat.Name,
-                    NameEN = mmdMat.NameEN,
-                    texIndex = mmdMat.TextureIndex,
                     indexCount = mmdMat.TriangeIndexNum,
+                    indexOffset = indexOffset,
                     innerStruct =
                     {
                         DiffuseColor = mmdMat.DiffuseColor,
@@ -82,18 +119,39 @@ namespace Coocoo3D.ResourceWarp
                         Specular = 0.5f,
                     },
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
-                    toonIndex = mmdMat.ToonIndex,
+                    skinning = true,
                 };
-                if (pmx.Textures.Count > mat.texIndex && mat.texIndex >= 0)
+                indexOffset += mmdMat.TriangeIndexNum;
+                if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)
                 {
-                    string relativePath = pmx.Textures[mat.texIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
+                    string relativePath = pmx.Textures[mmdMat.TextureIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
                     string texPath = Path.GetFullPath(relativePath, storageFolder);
 
                     mat.textures["_Albedo"] = texPath;
                 }
+                else
+                {
+                    if (i > 0)
+                    {
+                        var prevMat = Materials[i - 1];
+                        mat.textures["_Albedo"] = prevMat.textures["_Albedo"];
+                    }
+                }
 
                 Materials.Add(mat);
             }
+
+            var rigidBodys = pmx.RigidBodies;
+            for (int i = 0; i < rigidBodys.Count; i++)
+            {
+                var rigidBodyData = rigidBodys[i];
+                var rigidBodyDesc = GetRigidBodyDesc(rigidBodyData);
+
+                rigidBodyDescs.Add(rigidBodyDesc);
+            }
+            var joints = pmx.Joints;
+            for (int i = 0; i < joints.Count; i++)
+                jointDescs.Add(GetJointDesc(joints[i]));
         }
 
         public MMDMesh GetMesh()

@@ -159,8 +159,14 @@ namespace Coocoo3D
                 else
                     SDL_StopTextInput();
                 SDL_CaptureMouse(imguiInput.WantCaptureMouse ? SDL_bool.SDL_TRUE : SDL_bool.SDL_FALSE);
-
-                UIHelper.OnFrame(coocoo3DMain);
+                try
+                {
+                    UIHelper.OnFrame(coocoo3DMain);
+                }
+                catch (Exception e)
+                {
+                    SDL_ShowSimpleMessageBox(SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "error", e.Message, window);
+                }
             }
         }
     }

@@ -22,7 +22,7 @@ float4 main(PSIn input) : SV_TARGET
 	float4 color = 0;
 	for (int i = 0; i < 9; i++)
 	{
-		color += max(texture0.SampleLevel(s0, coords, 0) - 1.0f,0) * 0.25f * weights[i]; coords += offset;
+		color += max(texture0.SampleLevel(s0, coords, 0) - 1.1f,0) * 0.125f * weights[i]; coords += offset;
 	}
 
 	return color;

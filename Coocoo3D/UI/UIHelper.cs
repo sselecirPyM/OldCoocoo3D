@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Coocoo3D.Core;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Utility;
+using Newtonsoft.Json;
 
 namespace Coocoo3D.UI
 {
@@ -84,9 +85,22 @@ namespace Coocoo3D.UI
                         break;
                     case ".png":
                     case ".jpg":
+                    case ".hdr":
+                    case ".exr":
+                    case ".tif":
+                    case ".tiff":
+                    case ".tga":
+                    case ".dds":
                         appBody.RPContext.skyBoxOriTex = file.FullName;
                         appBody.RPContext.SkyBoxChanged = true;
 
+                        break;
+                    case ".coocoo3dscene":
+                        var scene = ReadJsonStream<Coocoo3DScene>(file.OpenRead());
+                        scene.ToScene(appBody);
+                        break;
+                    case ".cs":
+                        appBody.RPContext.mainCaches.GetUnionShader(file.FullName);
                         break;
                 }
                 appBody.RequireRender(true);
@@ -104,14 +118,48 @@ namespace Coocoo3D.UI
                     appBody.Recording = true;
                 }
             }
+            if (UIImGui.requireSave.SetFalse())
+            {
+                FileOpenDialog fileDialog = new FileOpenDialog()
+                {
+                    file = new string(new char[512]),
+                    fileTitle = new string(new char[512]),
+                    initialDir = Environment.GetFolderPath(Environment.SpecialFolder.MyComputer),
+                    filter = ".coocoo3DScene\0*.coocoo3DScene\0\0",
+                    defExt = "coocoo3DScene",
+                    flags = 0x00080000 | 0x00001000 | 0x00000800 | 0x00000200 | 0x00000008,
+                    structSize = Marshal.SizeOf(typeof(FileOpenDialog))
+                };
+                fileDialog.maxFile = fileDialog.file.Length;
+                fileDialog.maxFileTitle = fileDialog.fileTitle.Length;
+                if (GetSaveFileName(fileDialog))
+                {
+                    var scene = Coocoo3DScene.FromScene(appBody);
+
+                    SaveJsonStream(new FileInfo(fileDialog.file).OpenWrite(), scene);
+                }
+            }
         }
 
-        static void Export()
+        public static T ReadJsonStream<T>(Stream stream)
         {
-
+            JsonSerializer jsonSerializer = new JsonSerializer();
+            jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
+            using (StreamReader reader1 = new StreamReader(stream))
+            {
+                return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
+            }
         }
 
-
+        public static void SaveJsonStream<T>(Stream stream, T val)
+        {
+            JsonSerializer jsonSerializer = new JsonSerializer();
+            jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
+            using (StreamWriter writer = new StreamWriter(stream))
+            {
+                jsonSerializer.Serialize(writer, val);
+            }
+        }
 
         public static string OpenResourceFile(string filter)
         {

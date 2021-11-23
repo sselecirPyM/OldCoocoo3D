@@ -30,7 +30,6 @@
     {
       "Name": "Pass1",
       "Filter": "Transparent",
-      "BlendMode": "Alpha",
       "DepthStencil": "_ScreenDepth0",
       "RenderTargets": [
         "_Output0"
@@ -46,7 +45,6 @@
     {
       "Name": "BloomBlur2",
       "Type": "DrawScreen",
-      "BlendMode": "Add",
       "RenderTargets": [
         "_Output0"
       ]
@@ -170,6 +168,7 @@
       "Camera": "Main",
       "VertexShader": "VS_SkyBox",
       "PixelShader": "PS_DeferredFinal",
+      "UnionShader": "UnionShaderSkyBox.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -231,6 +230,7 @@
       "Camera": "Main",
       "VertexShader": "VS_Pass1",
       "PixelShader": "PS_Pass1",
+      "BlendMode": "Alpha",
       "CBVs": [
         {
           "Index": "1",
@@ -286,6 +286,7 @@
       "Camera": "Main",
       "VertexShader": "VS_SkyBox",
       "PixelShader": "PS_BloomBlur1",
+      "UnionShader": "UnionShaderSkyBox.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -307,6 +308,8 @@
       "Camera": "Main",
       "VertexShader": "VS_SkyBox",
       "PixelShader": "PS_BloomBlur2",
+      "UnionShader": "UnionShaderSkyBox.cs",
+      "BlendMode": "Add",
       "CBVs": [
         {
           "Index": "0",
@@ -358,6 +361,12 @@
     {
       "Name": "PS_Pass1",
       "Path": "PS_Pass1.hlsl"
+    }
+  ],
+  "UnionShaders": [
+    {
+      "Name": "UnionShaderSkyBox.cs",
+      "Path": "UnionShaderSkyBox.cs"
     }
   ]
 }

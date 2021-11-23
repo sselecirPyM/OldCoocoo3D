@@ -27,29 +27,11 @@
       "path": "Shaders/PSPostProcess.hlsl"
     },
     {
-      "name": "PS_Loading",
-      "path": "Shaders/PSLoading.hlsl"
-    },
-    {
-      "name": "PS_Error",
-      "path": "Shaders/PSError.hlsl"
-    },
-    {
       "name": "ImGui_PS",
       "path": "Shaders/ImGui_PS.hlsl"
     }
   ],
   "pipelineStates": [
-    {
-      "name": "Loading",
-      "vertexShader": "VS_Pass1",
-      "pixelShader": "PS_Loading"
-    },
-    {
-      "name": "Error",
-      "vertexShader": "VS_Pass1",
-      "pixelShader": "PS_Error"
-    },
     {
       "name": "PostProcess",
       "vertexShader": "VSPostProcess",

@@ -71,22 +71,22 @@ namespace Coocoo3D.UI
             ImGui.End();
             ImGui.PopStyleVar(3);
 
-            ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.Once);
-            ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.Once);
+            ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("常用"))
             {
                 Common(appBody);
             }
             ImGui.End();
-            ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.Once);
-            ImGui.SetNextWindowPos(new Vector2(300, 400), ImGuiCond.Once);
+            ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowPos(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("资源"))
             {
                 Resources(appBody);
             }
             ImGui.End();
-            ImGui.SetNextWindowSize(new Vector2(350, 300), ImGuiCond.Once);
-            ImGui.SetNextWindowPos(new Vector2(750, 0), ImGuiCond.Once);
+            ImGui.SetNextWindowSize(new Vector2(350, 300), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowPos(new Vector2(750, 0), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("场景层级"))
             {
                 SceneHierarchy(appBody);
@@ -104,8 +104,8 @@ namespace Coocoo3D.UI
                 ImGui.End();
                 d += 50;
             }
-            ImGui.SetNextWindowSize(new Vector2(300, 300), ImGuiCond.Once);
-            ImGui.SetNextWindowPos(new Vector2(0, 400), ImGuiCond.Once);
+            ImGui.SetNextWindowSize(new Vector2(300, 300), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowPos(new Vector2(0, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("物体"))
             {
                 if (selectedObject != null)
@@ -184,6 +184,9 @@ namespace Coocoo3D.UI
                 float fov = camera.Fov / MathF.PI * 180;
                 if (ImGui.DragFloat("FOV", ref fov, 0.5f, 0.1f, 179.9f))
                     camera.Fov = fov * MathF.PI / 180;
+                ImGui.DragFloat("近裁剪", ref camera.nearClip, 0.5f, 0.1f);
+                ImGui.DragFloat("远裁剪", ref camera.farClip, 10.0f, 0.1f);
+
                 ImGui.Checkbox("使用镜头运动文件", ref camera.CameraMotionOn);
                 ImGui.TreePop();
             }
@@ -239,16 +242,12 @@ namespace Coocoo3D.UI
                     vcCount++;
                     appBody.RPContext.DelayAddVisualChannel(vcCount.ToString());
                 }
+                if (ImGui.Button("保存场景"))
+                {
+                    requireSave = true;
+                }
                 ImGui.TreePop();
             }
-            //if (ImGui.TreeNode("天空盒"))
-            //{
-            //    if (ImGui.BeginCombo("selece file", "?"))
-            //    {
-            //        ImGui.EndCombo();
-            //    }
-            //    ImGui.TreePop();
-            //}
             if (ImGui.TreeNode("帮助"))
             {
                 Help();
@@ -424,7 +423,7 @@ vmd格式动作");
             {
                 if (ImGui.TreeNode("材质"))
                 {
-                    if (ImGui.BeginChild("materials", new Vector2(140, 300)))
+                    if (ImGui.BeginChild("materials", new Vector2(120, 300)))
                     {
                         ImGui.PushItemWidth(120);
                         for (int i = 0; i < rendererComponent.Materials.Count; i++)
@@ -447,6 +446,12 @@ vmd格式动作");
                             ImGui.SliderFloat("金属性  ", ref material.innerStruct.Metallic, 0, 1);
                             ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
                             ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
+                            string s = material.unionShader ?? "";
+                            if (ImGui.InputText("UnionShader", ref s, 256))
+                            {
+                                material.unionShader = s;
+                            }
+
                             ImGui.Checkbox("透明材质", ref material.Transparent);
                             foreach (var tex in material.textures)
                             {
@@ -458,16 +463,8 @@ vmd格式动作");
                                 Vector2 pos = ImGui.GetCursorScreenPos();
                                 Vector2 imageSize = new Vector2(120, 120);
                                 IntPtr imageId = appBody.mainCaches.GetPtr(key);
-                                ImGui.Image(imageId, imageSize);
-                                if (ImGui.IsItemHovered())
-                                {
-                                    Vector2 uv0 = (io.MousePos - pos) / imageSize;
-                                    Vector2 uv1 = uv0 + new Vector2(20) / imageSize;
-
-                                    ImGui.BeginTooltip();
-                                    ImGui.Image(imageId, new Vector2(100, 100), uv0, uv1);
-                                    ImGui.EndTooltip();
-                                }
+                                ImGui.Text(tex.Key);
+                                ImGui.ImageButton(imageId, imageSize);
                             }
                         }
                     }
@@ -476,7 +473,7 @@ vmd格式动作");
                 }
                 if (ImGui.TreeNode("变形"))
                 {
-                    if (ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion)) ;
+                    ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion);
                     if (rendererComponent.LockMotion)
                         for (int i = 0; i < rendererComponent.morphStateComponent.morphs.Count; i++)
                         {
@@ -538,6 +535,7 @@ vmd格式动作");
         public static int gameObjectSelectIndex = 0;
         public static bool requireOpenFolder;
         public static bool requireRecord;
+        public static bool requireSave;
 
         public static Stack<DirectoryInfo> viewStack = new Stack<DirectoryInfo>();
         public static List<FileSystemInfo> storageItems = new List<FileSystemInfo>();

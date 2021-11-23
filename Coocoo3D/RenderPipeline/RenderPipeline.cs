@@ -9,8 +9,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public abstract class RenderPipeline
     {
-        public abstract void PrepareRenderData(RenderPipelineContext context, VisualChannel visualChannel);
-
         public abstract void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel);
 
         public virtual void EndFrame() { }
@@ -26,24 +24,6 @@ namespace Coocoo3D.RenderPipeline
                 return loading;
             else if (texture.Status == GraphicsObjectStatus.unload)
                 return unload;
-            else
-                return error;
-        }
-
-        protected PSO PSOSelect(GraphicsDevice graphicsDevice, RootSignature graphicsSignature, in PSODesc desc, PSO pso, PSO loading, PSO unload, PSO error)
-        {
-            if (pso == null) return unload;
-            if (pso.Status == GraphicsObjectStatus.unload)
-                return unload;
-            else if (pso.Status == GraphicsObjectStatus.loaded)
-            {
-                if (pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc) != -1)
-                    return pso;
-                else
-                    return error;
-            }
-            else if (pso.Status == GraphicsObjectStatus.loading)
-                return loading;
             else
                 return error;
         }

@@ -3,12 +3,15 @@ using Coocoo3D.FileFormat;
 using Coocoo3D.ResourceWarp;
 using Coocoo3D.Utility;
 using Coocoo3DGraphics;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Vortice.Dxc;
 
@@ -31,6 +34,10 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, ComputeShader> ComputeShaders = new Dictionary<string, ComputeShader>();
 
         public Dictionary<string, TextureCube> TextureCubes = new Dictionary<string, TextureCube>();
+
+        public Dictionary<string, UnionShader> UnionShaders = new Dictionary<string, UnionShader>();
+
+        public Dictionary<string, string> aliases = new Dictionary<string, string>();
 
         public MainCaches()
         {
@@ -156,9 +163,9 @@ namespace Coocoo3D.RenderPipeline
             if (!caches.TryGetValue(path, out var file) || knownFile.requireReload.SetFalse())
             {
                 string folderPath = Path.GetDirectoryName(path);
-                if (!InitFolder(folderPath))
+                if (!InitFolder(folderPath) && !Path.IsPathRooted(folderPath))
                     return null;
-                var folder = KnownFolders[folderPath];
+                var folder = (Path.IsPathRooted(folderPath)) ? new DirectoryInfo(folderPath) : KnownFolders[folderPath];
 #if !DEBUG
                 try
                 {
@@ -293,6 +300,58 @@ namespace Coocoo3D.RenderPipeline
                     geometryShader.Initialize(File.ReadAllBytes(path));
                 return geometryShader;
             });
+        }
+
+        public UnionShader GetUnionShader(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
+            return GetT(UnionShaders, path, file =>
+            {
+                byte[] datas = CompileScripts(path);
+                if (datas != null && datas.Length > 0)
+                {
+                    var assembly = Assembly.Load(datas);
+                    Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
+                    var info = type.GetMethod("UnionShader");
+                    return (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
+                }
+                else
+                    return null;
+            });
+        }
+
+        public static byte[] CompileScripts(string path)
+        {
+            try
+            {
+                var syntaxTree = CSharpSyntaxTree.ParseText(File.ReadAllText(path));
+
+                MemoryStream memoryStream = new MemoryStream();
+                List<MetadataReference> refs = new List<MetadataReference>() {
+                    MetadataReference.CreateFromFile (typeof (object).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (Object).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (List<int>).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (System.Text.ASCIIEncoding).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (JsonConvert).Assembly.Location),
+                    MetadataReference.CreateFromFile (Assembly.GetExecutingAssembly().Location),
+                    MetadataReference.CreateFromFile (typeof (SixLabors.ImageSharp.Image).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (GraphicsContext).Assembly.Location),
+                };
+                refs.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(u => u.GetName().Name.Contains("netstandard") || u.GetName().Name.Contains("System")).Select(u => MetadataReference.CreateFromFile(u.Location)));
+                var compilation = CSharpCompilation.Create(Path.GetFileName(path), new[] { syntaxTree }, refs, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+                var result = compilation.Emit(memoryStream);
+                if (!result.Success)
+                {
+                    foreach (var diag in result.Diagnostics)
+                        Console.WriteLine(diag.ToString());
+                }
+                return memoryStream.ToArray();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public ComputeShader GetComputeShader(string path)

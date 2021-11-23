@@ -23,9 +23,9 @@ namespace Coocoo3D.UI
         {
             string pmxPath = pmxFile.FullName;
             ModelPack modelPack = appBody.mainCaches.GetModel(pmxPath);
-
+            PreloadTextures(appBody, storageFolder.FullName, modelPack.pmx);
             GameObject gameObject = new GameObject();
-            gameObject.Reload2(modelPack, GetTextureList(appBody, storageFolder.FullName, modelPack.pmx), pmxPath);
+            gameObject.Reload2(modelPack);
             scene.AddGameObject(gameObject);
 
             appBody.RequireRender();
@@ -56,17 +56,14 @@ namespace Coocoo3D.UI
             appBody.RequireRender();
         }
 
-        public static List<string> GetTextureList(Coocoo3DMain appBody, string storageFolder, PMXFormat pmx)
+        public static void PreloadTextures(Coocoo3DMain appBody, string storageFolder, PMXFormat pmx)
         {
-            List<string> paths = new List<string>();
             foreach (var vTex in pmx.Textures)
             {
                 string relativePath = vTex.TexturePath.Replace("//", "\\").Replace('/', '\\');
-                string texPath = Path.GetFullPath(relativePath,storageFolder);
-                paths.Add(texPath);
+                string texPath = Path.GetFullPath(relativePath, storageFolder);
                 appBody.mainCaches.Texture(texPath);
             }
-            return paths;
         }
 
         public static BinaryReader OpenReader(FileInfo file) => new BinaryReader(file.OpenRead());

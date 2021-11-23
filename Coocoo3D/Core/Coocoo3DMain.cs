@@ -40,7 +40,7 @@ namespace Coocoo3D.Core
             viewSelectedEntityBone = true,
             backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             Wireframe = false,
-            SkyBoxLightMultiplier = 1.0f,
+            SkyBoxLightMultiplier = 3.0f,
             ShadowMapResolution = 2048,
             EnableAO = true,
             EnableShadow = true,
@@ -239,11 +239,6 @@ namespace Coocoo3D.Core
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
                         currentRenderPipeline.BeginFrame();
-                        foreach (var visualChannel in RPContext.visualChannels.Values)
-                        {
-                            currentRenderPipeline.PrepareRenderData(RPContext, visualChannel);
-                            postProcess.PrepareRenderData(RPContext, visualChannel);
-                        }
                     }
                     RPContext.UpdateGPUResource();
 
