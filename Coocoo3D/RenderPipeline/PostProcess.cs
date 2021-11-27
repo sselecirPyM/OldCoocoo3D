@@ -16,7 +16,7 @@ namespace Coocoo3D.RenderPipeline
     {
         public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
-            var rsPostProcess = context.RPAssetsManager.GetRootSignature(context.graphicsDevice,"CCs");
+            var rsPostProcess = context.mainCaches.GetRootSignature(context.graphicsDevice,"CCs");
             var graphicsContext = visualChannel.graphicsContext;
             graphicsContext.SetRootSignature(rsPostProcess);
             graphicsContext.SetRTV(visualChannel.FinalOutput, System.Numerics.Vector4.Zero, true);
@@ -33,11 +33,9 @@ namespace Coocoo3D.RenderPipeline
                 ptt = PrimitiveTopologyType.Triangle,
                 rtvFormat = context.swapChainFormat,
                 renderTargetCount = 1,
-                streamOutput = false,
                 wireFrame = false,
             };
-
-            SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPostProcess, desc, context.RPAssetsManager.PSOs["PostProcess"]);
+            graphicsContext.SetPSO(context.RPAssetsManager.PSOs["PostProcess"], desc);
             graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
         }
     }

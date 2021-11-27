@@ -124,11 +124,10 @@ Texture2D texture0 :register(t0);
 Texture2D texture1 :register(t1);
 Texture2D texture2 :register(t2);
 Texture2D gbufferDepth : register (t3);
-
 TextureCube EnvCube : register (t4);
-TextureCube IrradianceCube : register (t5);
-Texture2D BRDFLut : register(t6);
-Texture2D ShadowMap0 : register(t7);
+Texture2D BRDFLut : register(t5);
+Texture2D ShadowMap0 : register(t6);
+TextureCube SkyBox : register (t7);
 SamplerState s0 : register(s0);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 SamplerState s3 : register(s3);
@@ -175,8 +174,9 @@ float4 main(PSIn input) : SV_TARGET
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
 		float3 outputColor = float3(0, 0, 0);
-		outputColor += IrradianceCube.Sample(s0, N) * g_skyBoxMultiple * c_diffuse;
-		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 6) * g_skyBoxMultiple * GF;
+		//outputColor += IrradianceCube.Sample(s0, N) * g_skyBoxMultiple * c_diffuse;
+		outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
 
 		for (int i = 0; i < 1; i++)
 		{
@@ -195,23 +195,6 @@ float4 main(PSIn input) : SV_TARGET
 					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, float3(shadowTexCoords, 0), sPos.z).r;
 
 				float3 L = normalize(Lightings[i].LightDir);
-				float3 H = normalize(L + V);
-
-				float3 NdotL = saturate(dot(N, L));
-				float3 LdotH = saturate(dot(L, H));
-				float3 NdotH = saturate(dot(N, H));
-
-				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
-				float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
-
-				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
-			}
-			else if (Lightings[i].LightType == 1)
-			{
-				float inShadow = 1.0f;
-				float3 lightStrength = Lightings[i].LightColor.rgb * Lightings[i].LightColor.a / pow(distance(Lightings[i].LightDir, wPos), 2);
-
-				float3 L = normalize(Lightings[i].LightDir - wPos);
 				float3 H = normalize(L + V);
 
 				float3 NdotL = saturate(dot(N, L));
@@ -249,7 +232,7 @@ float4 main(PSIn input) : SV_TARGET
 	}
 	else
 	{
-		float3 EnvColor = EnvCube.Sample(s0, -V).rgb * g_skyBoxMultiple;
+		float3 EnvColor = SkyBox.Sample(s0, -V).rgb * g_skyBoxMultiple;
 		return float4(EnvColor, 1);
 	}
 }

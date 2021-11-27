@@ -1,15 +1,8 @@
-
 cbuffer cb0 : register(b0)
 {
 	uint2 imageSize;
 	int quality;
 	uint batch;
-}
-cbuffer cb1 : register(b1)
-{
-	uint3 notUse1;
-	uint batch1;
-	uint2 imageSize1;
 }
 const static float4x4 _xproj =
 { 0,0,-1,0,

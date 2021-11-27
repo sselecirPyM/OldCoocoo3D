@@ -17,8 +17,6 @@ namespace Coocoo3D.RenderPipeline
         public CameraData cameraData;
         public Int2 outputSize = new Int2(100, 100);
         public Int2 sceneViewSize = new Int2(100, 100);
-        public Dictionary<string, int> customDataInt = new Dictionary<string, int>();
-        public Dictionary<int, int> customDataInt1 = new Dictionary<int, int>();
         public GraphicsContext graphicsContext;
         public Texture2D FinalOutput = new Texture2D();
         public Texture2D OutputRTV = new Texture2D();

@@ -40,9 +40,15 @@ namespace Coocoo3DGraphics
             m_commandList.SetPipelineState(pipelineState);
         }
 
-        public void SetPSO(PSO pObject, int variantIndex)
+        public void SetPSO(PSO pso, int variantIndex)
         {
-            m_commandList.SetPipelineState(pObject.m_pipelineStates[variantIndex]);
+            m_commandList.SetPipelineState(pso.m_pipelineStates[variantIndex]);
+        }
+
+        public void SetPSO(PSO pso, in PSODesc desc)
+        {
+            int variantIndex = pso.GetVariantIndex(graphicsDevice, currentRootSignature, desc);
+            m_commandList.SetPipelineState(pso.m_pipelineStates[variantIndex]);
         }
 
         public void SetSRVTSlot(Texture2D texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
@@ -50,6 +56,16 @@ namespace Coocoo3DGraphics
         public void SetSRVTSlot(TextureCube texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
 
         public void SetCBVRSlot(CBuffer buffer, int offset256, int size256, int slot) => SetCBVR(buffer, offset256, size256, currentRootSignature.cbv[slot]);
+
+        public unsafe void SetCBVRSlot<T>(Span<T> data, int slot)
+        {
+            int size1 = Marshal.SizeOf(typeof(T));
+            int size = size1 * data.Length;
+            var ptr = graphicsDevice.superRingBuffer.Upload(size, out ulong addr);
+            var range = new Span<T>(ptr.ToPointer(), data.Length);
+            data.CopyTo(range);
+            m_commandList.SetGraphicsRootConstantBufferView(currentRootSignature.cbv[slot], addr);
+        }
 
         public unsafe void UpdateCBStaticResource<T>(CBuffer buffer, ID3D12GraphicsCommandList commandList, Span<T> data) where T : unmanaged
         {
@@ -180,7 +196,8 @@ namespace Coocoo3DGraphics
 
         public void UpdateResource<T>(CBuffer buffer, T[] data, int sizeInByte, int dataOffset) where T : unmanaged
         {
-            UpdateResource(buffer, new Span<T>(data, dataOffset, sizeInByte));
+            int size1 = Marshal.SizeOf(typeof(T));
+            UpdateResource(buffer, new Span<T>(data, dataOffset, sizeInByte / size1));
         }
         public void UpdateResource<T>(CBuffer buffer, Span<T> data) where T : unmanaged
         {
@@ -403,21 +420,21 @@ namespace Coocoo3DGraphics
             m_commandList.IASetIndexBuffer(mesh.indexBufferView);
         }
 
-        public void SetComputeSRVT(Texture2D texture, int index) => m_commandList.SetComputeRootDescriptorTable(index, GetSRVHandle(texture));
+        public void SetComputeSRVTSlot(Texture2D texture, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
 
-        public void SetComputeSRVT(TextureCube texture, int index) => m_commandList.SetComputeRootDescriptorTable(index, GetSRVHandle(texture));
+        public void SetComputeSRVTSlot(TextureCube texture, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
 
-        public void SetComputeCBVR(CBuffer buffer, int index) => m_commandList.SetComputeRootConstantBufferView(index, buffer.GetCurrentVirtualAddress());
+        public void SetComputeSRVTLim(TextureCube texture, int mips, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandleWithMip(texture, mips));
 
-        public void SetComputeCBVR(CBuffer buffer, int offset256, int size256, int index) => m_commandList.SetComputeRootConstantBufferView(index, buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
+        public void SetComputeCBVRSlot(CBuffer buffer, int offset256, int size256, int slot) => m_commandList.SetComputeRootConstantBufferView(currentRootSignature.cbv[slot], buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
 
-        public void SetComputeCBVRSlot(CBuffer buffer, int offset256, int size256, int slot) => SetComputeCBVR(buffer, offset256, size256, currentRootSignature.cbv[slot]);
-
-        public void SetComputeCBVRSlot<T>(Span<T> data, int slot)
+        public unsafe void SetComputeCBVRSlot<T>(Span<T> data, int slot)
         {
             int size1 = Marshal.SizeOf(typeof(T));
             int size = size1 * data.Length;
-            graphicsDevice.superRingBuffer.Upload(size, out ulong addr);
+            var ptr = graphicsDevice.superRingBuffer.Upload(size, out ulong addr);
+            var range = new Span<T>(ptr.ToPointer(), data.Length);
+            data.CopyTo(range);
             m_commandList.SetComputeRootConstantBufferView(currentRootSignature.cbv[slot], addr);
         }
 
@@ -447,7 +464,11 @@ namespace Coocoo3DGraphics
         }
         public void SetComputeUAVTSlot(Texture2D texture2D, int slot)
         {
-            SetComputeUAVT(texture2D, currentRootSignature.srv[slot]);
+            SetComputeUAVT(texture2D, currentRootSignature.uav[slot]);
+        }
+        public void SetComputeUAVTSlot(TextureCube textureCube, int mipIndex, int slot)
+        {
+            SetComputeUAVT(textureCube, mipIndex, currentRootSignature.uav[slot]);
         }
 
         static readonly StreamOutputBufferView[] zeroStreamOutputBufferView = new StreamOutputBufferView[1];
@@ -483,12 +504,6 @@ namespace Coocoo3DGraphics
             m_commandList.Reset(graphicsDevice.GetCommandAllocator());
             m_commandList.SetDescriptorHeaps(1, new ID3D12DescriptorHeap[] { graphicsDevice.cbvsrvuavHeap.heap });
         }
-
-        //public void SetPipelineState(PipelineStateObject pipelineStateObject, PSODesc psoDesc)
-        //{
-        //    this.pipelineStateObject = pipelineStateObject;
-        //    this.psoDesc = psoDesc;
-        //}
 
         public void ClearScreen(Vector4 color)
         {
@@ -673,14 +688,16 @@ namespace Coocoo3DGraphics
             return gpuDescriptorHandle;
         }
 
-        GpuDescriptorHandle GetSRVHandle(TextureCube texture)
+        GpuDescriptorHandle GetSRVHandle(TextureCube texture) => GetSRVHandleWithMip(texture, texture.mipLevels);
+
+        GpuDescriptorHandle GetSRVHandleWithMip(TextureCube texture, int mips)
         {
             texture.StateChange(m_commandList, ResourceStates.GenericRead);
             ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
             srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             srvDesc.Format = texture.format;
             srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.TextureCube;
-            srvDesc.TextureCube.MipLevels = texture.mipLevels;
+            srvDesc.TextureCube.MipLevels = mips;
 
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
             graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
@@ -689,6 +706,5 @@ namespace Coocoo3DGraphics
 
         public PSODesc psoDesc;
         public UnnamedInputLayout unnamedInputLayout;
-        //public PipelineStateObject pipelineStateObject;
     }
 }

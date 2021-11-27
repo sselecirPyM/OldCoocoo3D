@@ -1,5 +1,4 @@
-﻿using Coocoo3D.Present;
-using Coocoo3DGraphics;
+﻿using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +16,6 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, VertexShader> VSAssets = new Dictionary<string, VertexShader>();
         public Dictionary<string, PixelShader> PSAssets = new Dictionary<string, PixelShader>();
         public Dictionary<string, PSO> PSOs = new Dictionary<string, PSO>();
-        public Dictionary<string, RootSignature> signaturePass = new Dictionary<string, RootSignature>();
 
         public DefaultResource defaultResource;
 
@@ -27,8 +25,8 @@ namespace Coocoo3D.RenderPipeline
             ConcurrentDictionary<string, VertexShader> vss = new ConcurrentDictionary<string, VertexShader>();
             ConcurrentDictionary<string, PixelShader> pss = new ConcurrentDictionary<string, PixelShader>();
 
-            Parallel.Invoke(() => Parallel.ForEach(defaultResource.vertexShaders, vertexShader => RegVSAssets1(vertexShader.Name, vertexShader.Path, vss)),
-             () => Parallel.ForEach(defaultResource.pixelShaders, pixelShader => RegPSAssets1(pixelShader.Name, pixelShader.Path, pss)));
+            Parallel.Invoke(() => Parallel.ForEach(defaultResource.vertexShaders, vertexShader => RegVSAssets1(vertexShader, vss)),
+             () => Parallel.ForEach(defaultResource.pixelShaders, pixelShader => RegPSAssets1(pixelShader, pss)));
 
             foreach (var vs in vss)
                 VSAssets.Add(vs.Key, vs.Value);
@@ -40,35 +38,34 @@ namespace Coocoo3D.RenderPipeline
             {
                 PSO pso = new PSO();
                 VertexShader vs = null;
-                GeometryShader gs = null;
                 PixelShader ps = null;
                 if (pipelineState.vertexShader != null)
                     vs = VSAssets[pipelineState.vertexShader];
-                //if (pipelineState.geometryShader != null)
-                //    gs = GSAssets[pipelineState.geometryShader];
                 if (pipelineState.pixelShader != null)
                     ps = PSAssets[pipelineState.pixelShader];
-                pso.Initialize(vs, gs, ps);
+                pso.Initialize(vs, null, ps);
                 PSOs.Add(pipelineState.name, pso);
             }
         }
-        protected void RegVSAssets1(string name, string path, ConcurrentDictionary<string, VertexShader> assets)
+        protected void RegVSAssets1(_AssetDefine define, ConcurrentDictionary<string, VertexShader> assets)
         {
+            var path = define.Path;
             VertexShader vertexShader = new VertexShader();
             if (Path.GetExtension(path) == ".hlsl")
-                vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "main"));
+                vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), define.EntryPoint ?? "main"));
             else
                 vertexShader.Initialize(File.ReadAllBytes(path));
-            assets.TryAdd(name, vertexShader);
+            assets.TryAdd(define.Name, vertexShader);
         }
-        protected void RegPSAssets1(string name, string path, ConcurrentDictionary<string, PixelShader> assets)
+        protected void RegPSAssets1(_AssetDefine define, ConcurrentDictionary<string, PixelShader> assets)
         {
+            var path = define.Path;
             PixelShader pixelShader = new PixelShader();
             if (Path.GetExtension(path) == ".hlsl")
-                pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "main"));
+                pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), define.EntryPoint ?? "main"));
             else
                 pixelShader.Initialize(File.ReadAllBytes(path));
-            assets.TryAdd(name, pixelShader);
+            assets.TryAdd(define.Name, pixelShader);
         }
 
         public static T ReadJsonStream<T>(Stream stream)
@@ -94,67 +91,19 @@ namespace Coocoo3D.RenderPipeline
             FileInfo file = new FileInfo(uri);
             return file.OpenRead();
         }
-        public RootSignature GetRootSignature(GraphicsDevice graphicsDevice, string s)
-        {
-            if (signaturePass.TryGetValue(s, out RootSignature rs))
-                return rs;
-            rs = new RootSignature();
-            rs.Reload(graphicsDevice, fromString(s));
-            signaturePass[s] = rs;
-            return rs;
-        }
-        public GraphicSignatureDesc[] fromString(string s)
-        {
-            GraphicSignatureDesc[] desc = new GraphicSignatureDesc[s.Length];
-            for (int i = 0; i < s.Length; i++)
-            {
-                char c = s[i];
-                switch (c)
-                {
-                    case 'C':
-                        desc[i] = GraphicSignatureDesc.CBV;
-                        break;
-                    case 'c':
-                        desc[i] = GraphicSignatureDesc.CBVTable;
-                        break;
-                    case 'S':
-                        desc[i] = GraphicSignatureDesc.SRV;
-                        break;
-                    case 's':
-                        desc[i] = GraphicSignatureDesc.SRVTable;
-                        break;
-                    case 'U':
-                        desc[i] = GraphicSignatureDesc.UAV;
-                        break;
-                    case 'u':
-                        desc[i] = GraphicSignatureDesc.UAVTable;
-                        break;
-                    default:
-                        throw new NotImplementedException("error root signature desc.");
-                        break;
-                }
-            }
-            return desc;
-        }
 
         public void Dispose()
         {
-            foreach(var pso in PSOs)
+            foreach (var pso in PSOs)
             {
                 pso.Value.Dispose();
-            }
-            foreach(var rs in signaturePass)
-            {
-                rs.Value.Dispose();
             }
         }
     }
     public class DefaultResource
     {
         public List<_AssetDefine> vertexShaders;
-        public List<_AssetDefine> geometryShaders;
         public List<_AssetDefine> pixelShaders;
-        public List<_AssetDefine> computeShaders;
         public List<_AssetDefine> texture2Ds;
         public List<_ResourceStr3> pipelineStates;
     }

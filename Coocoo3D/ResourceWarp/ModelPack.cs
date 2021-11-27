@@ -120,6 +120,8 @@ namespace Coocoo3D.ResourceWarp
                     },
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
                     skinning = true,
+                    CastShadow = true,
+                    ReceiveShadow = true,
                 };
                 indexOffset += mmdMat.TriangeIndexNum;
                 if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)

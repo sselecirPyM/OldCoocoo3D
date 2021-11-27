@@ -32,19 +32,17 @@ namespace Coocoo3D.Core
         #region Time
 
         public volatile int CompletedRenderCount = 0;
-        public volatile int VirtualRenderCount = 0;
         public long LatestRenderTime = 0;
         #endregion
         public Settings settings = new Settings()
         {
-            viewSelectedEntityBone = true,
-            backgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
+            BackgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             Wireframe = false,
             SkyBoxLightMultiplier = 3.0f,
+            SkyBoxMaxQuality = 256,
             ShadowMapResolution = 2048,
             EnableAO = true,
             EnableShadow = true,
-            Quality = 0,
         };
         public PerformaceSettings performaceSettings = new PerformaceSettings()
         {
@@ -149,12 +147,8 @@ namespace Coocoo3D.Core
             RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
             LatestRenderTime = now;
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
+            RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.Playing ? RPContext.gameDriverContext.DeltaTime : 0;
             RPContext.dynamicContextWrite.RealDeltaTime = deltaTime1;
-            if (RPContext.gameDriverContext.Playing)
-                RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.DeltaTime;
-            else
-                RPContext.dynamicContextWrite.DeltaTime = 0;
-
 
             CurrentScene.DealProcessList();
             lock (CurrentScene)
@@ -167,9 +161,9 @@ namespace Coocoo3D.Core
                 LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
             }
 
+            RPContext.dynamicContextWrite.Preprocess();
             var gameObjects = RPContext.dynamicContextWrite.gameObjects;
             var rendererComponents = RPContext.dynamicContextWrite.renderers;
-            RPContext.dynamicContextWrite.Preprocess();
 
             for (int i = 0; i < gameObjects.Count; i++)
             {
@@ -215,10 +209,6 @@ namespace Coocoo3D.Core
                 graphicsDevice.RenderComplete();
             }
             #endregion
-            if (!RPContext.dynamicContextRead.EnableDisplay)
-            {
-                VirtualRenderCount++;
-            }
 
             foreach (var visualChannel in RPContext.visualChannels.Values)
             {
@@ -256,7 +246,6 @@ namespace Coocoo3D.Core
                 {
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
-                        SkinningCompute.Process(RPContext);
                         foreach (var visualChannel in RPContext.visualChannels.Values)
                         {
                             currentRenderPipeline.RenderCamera(RPContext, visualChannel);
@@ -298,14 +287,12 @@ namespace Coocoo3D.Core
 
     public struct Settings
     {
-        public bool viewSelectedEntityBone;
-        public Vector4 backgroundColor;
+        public Vector4 BackgroundColor;
         public bool Wireframe;
 
         public float SkyBoxLightMultiplier;
+        public int SkyBoxMaxQuality;
         public int ShadowMapResolution;
-
-        public uint Quality;
 
         public bool EnableAO;
         public bool EnableShadow;

@@ -31,7 +31,7 @@ namespace Coocoo3D.RenderPipeline
             List<LightingData> pointLights = new List<LightingData>();
 
             #region Lighting
-
+            bool hasMainLight = false;
             MiscProcess.Process(context, visualChannel.GPUWriter);
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
             Matrix4x4 invLightCameraMatrix0 = Matrix4x4.Identity;
@@ -44,11 +44,11 @@ namespace Coocoo3D.RenderPipeline
 
                 Matrix4x4.Invert(lightCameraMatrix0, out invLightCameraMatrix0);
 
-                visualChannel.customDataInt["mainLight"] = 1;
+                hasMainLight = true;
             }
             else
-                visualChannel.customDataInt["mainLight"] = 0;
-            for (int i = 1; i < lightings.Count; i++)
+                hasMainLight = false; ;
+            for (int i = 0; i < lightings.Count; i++)
             {
                 LightingData lighting = lightings[i];
                 if (lighting.LightingType == LightingType.Point)
@@ -56,48 +56,8 @@ namespace Coocoo3D.RenderPipeline
             }
             #endregion
 
-            int matC = 0;
-            foreach (var combinedPass in passSetting.RenderSequence)
+            void _WriteCBV1(CBVSlotRes cbv, PassMatch1 _pass, GPUWriter writer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
-                if (combinedPass.Pass.Camera == "Main")
-                {
-                }
-                else if (combinedPass.Pass.Camera == "ShadowMap")
-                {
-                    if (!(visualChannel.customDataInt["mainLight"] == 1 && settings.EnableShadow)) continue;
-                }
-                if (combinedPass.Pass.CBVs.Count == 0) continue;
-                if (combinedPass.DrawObjects)
-                {
-                    foreach (var rendererComponent in rendererComponents)
-                        foreach (var material in rendererComponent.Materials)
-                        {
-                            if (!FilterObj(context, combinedPass.Filter, rendererComponent, material))
-                            {
-                                continue;
-                            }
-                            foreach (var cbv in combinedPass.Pass.CBVs)
-                            {
-                                visualChannel.customDataInt1[matC] = _WriteCBV(cbv, combinedPass, visualChannel.GPUWriter, material, rendererComponent);
-                                matC++;
-                            }
-                        }
-                }
-                else if (combinedPass.Pass != null)
-                {
-                    foreach (var cbv in combinedPass.Pass.CBVs)
-                    {
-                        visualChannel.customDataInt1[matC] = _WriteCBV(cbv, combinedPass, visualChannel.GPUWriter, null, null);
-                        matC++;
-                    }
-                }
-            }
-
-            //着色器可读取数据
-            int _WriteCBV(CBVSlotRes cbv, PassMatch1 _pass, GPUWriter writer, RuntimeMaterial material, MMDRendererComponent _rc)
-            {
-                int result = writer.BufferBegin();
-
                 foreach (var s in cbv.Datas)
                 {
                     switch (s)
@@ -114,11 +74,11 @@ namespace Coocoo3D.RenderPipeline
                         case "Diffuse":
                             writer.Write(material.innerStruct.DiffuseColor);
                             break;
-                        case "SpecularColor":
-                            writer.Write(material.innerStruct.SpecularColor);
-                            break;
                         case "Specular":
                             writer.Write(material.innerStruct.Specular);
+                            break;
+                        case "SpecularColor":
+                            writer.Write(material.innerStruct.SpecularColor);
                             break;
                         case "AmbientColor":
                             writer.Write(material.innerStruct.AmbientColor);
@@ -127,7 +87,7 @@ namespace Coocoo3D.RenderPipeline
                             writer.Write(material.Transparent ? 1 : 0);
                             break;
                         case "CameraPosition":
-                            writer.Write(camera.Pos);
+                            writer.Write(camera.Position);
                             break;
                         case "DrawFlags":
                             writer.Write((int)material.DrawFlags);
@@ -137,6 +97,9 @@ namespace Coocoo3D.RenderPipeline
                             break;
                         case "Time":
                             writer.Write((float)context.dynamicContextRead.Time);
+                            break;
+                        case "World":
+                            writer.Write(_rc.LocalToWorld);
                             break;
                         case "WidthHeight":
                             {
@@ -228,10 +191,6 @@ namespace Coocoo3D.RenderPipeline
                             {
                                 writer.Write(st.Weights.Computed[_i]);
                             }
-                            else if (_pass.passParameters1 != null && _pass.passParameters1.TryGetValue(s, out float _f1))
-                            {
-                                writer.Write(_f1);
-                            }
                             else if (material != null && material.textures.ContainsKey(s))
                             {
                                 writer.Write(1.0f);
@@ -241,18 +200,15 @@ namespace Coocoo3D.RenderPipeline
                             break;
                     }
                 }
-                return result;
+                writer.SetBufferImmediately(graphicsContext, true, cbv.Index);
             }
 
-            var buffer = visualChannel.GPUWriter.GetBuffer(context.graphicsDevice, graphicsContext, true);
             Texture2D _Tex(Texture2D _tex)
             {
                 if (_tex == null)
                     return texError;
-                else if (_tex is Texture2D _tex1)
-                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
                 else
-                    return _tex;
+                    return TextureStatusSelect(_tex, texLoading, texError, texError);
             };
             var rpAssets = context.RPAssetsManager;
             var graphicsDevice = context.graphicsDevice;
@@ -263,9 +219,12 @@ namespace Coocoo3D.RenderPipeline
                 passSetting = passSetting,
                 graphicsContext = graphicsContext,
                 visualChannel = visualChannel,
+                GPUWriter = new GPUWriter(),
+                camera = camera,
+                settings = settings,
+                relativePath = System.IO.Path.GetDirectoryName(passSetting.path)
             };
-            //int matC = 0;
-            matC = 0;
+
             foreach (var combinedPass in passSetting.RenderSequence)
             {
                 if (combinedPass.Pass.Camera == "Main")
@@ -273,9 +232,9 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else if (combinedPass.Pass.Camera == "ShadowMap")
                 {
-                    if (!(visualChannel.customDataInt["mainLight"] == 1 && settings.EnableShadow)) continue;
+                    if (!(hasMainLight && settings.EnableShadow)) continue;
                 }
-                RootSignature rootSignature = rpAssets.GetRootSignature(graphicsDevice, combinedPass.rootSignatureKey);
+                RootSignature rootSignature = mainCaches.GetRootSignature(graphicsDevice, combinedPass.rootSignatureKey);
                 unionShaderParam.rootSignature = rootSignature;
                 unionShaderParam.passName = combinedPass.Pass.Name;
                 graphicsContext.SetRootSignature(rootSignature);
@@ -287,6 +246,8 @@ namespace Coocoo3D.RenderPipeline
                 {
                     graphicsContext.SetDSV(depthStencil, combinedPass.ClearDepth);
                     passPsoDesc.rtvFormat = Format.Unknown;
+                    unionShaderParam.renderTargets = null;
+                    unionShaderParam.depthStencil = depthStencil;
                 }
                 else
                 {
@@ -300,6 +261,8 @@ namespace Coocoo3D.RenderPipeline
                     else
                         graphicsContext.SetRTV(renderTargets, Vector4.Zero, combinedPass.ClearRenderTarget);
                     passPsoDesc.rtvFormat = renderTargets[0].GetFormat();
+                    unionShaderParam.renderTargets = renderTargets;
+                    unionShaderParam.depthStencil = depthStencil;
                 }
 
                 passPsoDesc.blendState = combinedPass.Pass.BlendMode;
@@ -309,22 +272,56 @@ namespace Coocoo3D.RenderPipeline
                 passPsoDesc.dsvFormat = depthStencil == null ? Format.Unknown : depthStencil.GetFormat();
                 passPsoDesc.ptt = PrimitiveTopologyType.Triangle;
                 passPsoDesc.renderTargetCount = combinedPass.RenderTargets == null ? 0 : combinedPass.RenderTargets.Count;
-                passPsoDesc.streamOutput = false;
                 passPsoDesc.wireFrame = false;
                 if (combinedPass.DrawObjects)
                 {
                     passPsoDesc.inputLayout = InputLayout.mmd;
                     passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
 
-                    _PassRender(rendererComponents, combinedPass);
+                    for (int i = 0; i < rendererComponents.Count; i++)
+                    {
+                        MMDRendererComponent rendererComponent = rendererComponents[i];
+                        graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
+                        graphicsContext.SetMeshVertex(context.meshOverride[rendererComponent]);
+                        var PSODraw = combinedPass.PSODefault;
+                        unionShaderParam.PSODesc = passPsoDesc;
+                        unionShaderParam.PSO = combinedPass.PSODefault;
+                        unionShaderParam.renderer = rendererComponent;
+                        var Materials = rendererComponent.Materials;
+                        foreach (var material in Materials)
+                        {
+                            if (!FilterObj(context, combinedPass.Filter, rendererComponent, material))
+                            {
+                                continue;
+                            }
+                            foreach (var cbv in combinedPass.Pass.CBVs)
+                            {
+                                _WriteCBV1(cbv, combinedPass, visualChannel.GPUWriter, material, rendererComponent);
+                            }
+                            _PassSetRes1(material, combinedPass);
+                            if (combinedPass.CullMode == 0)
+                                passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
+
+                            unionShaderParam.material = material;
+                            bool? a = mainCaches.GetUnionShader(passSetting.GetAliases(material.unionShader))?.Invoke(unionShaderParam);
+                            if (a != true)
+                            {
+                                a = mainCaches.GetUnionShader(passSetting.GetAliases(combinedPass.Pass.UnionShader))?.Invoke(unionShaderParam);
+                            }
+                            if (a != true)
+                            {
+                                graphicsContext.SetPSO(PSODraw, passPsoDesc);
+                                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+                            }
+                        }
+                    }
                 }
                 else if (combinedPass.Type == "DrawScreen")
                 {
                     _PassSetRes1(null, combinedPass);
                     foreach (var cbv in combinedPass.Pass.CBVs)
                     {
-                        graphicsContext.SetCBVRSlot(buffer, visualChannel.customDataInt1[matC] / 256, 0, cbv.Index);
-                        matC++;
+                        _WriteCBV1(cbv, combinedPass, visualChannel.GPUWriter, null, null);
                     }
 
                     passPsoDesc.inputLayout = InputLayout.postProcess;
@@ -340,56 +337,12 @@ namespace Coocoo3D.RenderPipeline
                     bool? a = unionShader?.Invoke(unionShaderParam);
                     if (a != true)
                     {
-                        SetPipelineStateVariant(graphicsDevice, graphicsContext, rootSignature, passPsoDesc, combinedPass.PSODefault);
+                        graphicsContext.SetPSO(combinedPass.PSODefault, passPsoDesc);
                         graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                     }
                     else
                     {
 
-                    }
-                }
-                void _PassRender(List<MMDRendererComponent> _rendererComponents, PassMatch1 _combinedPass)
-                {
-                    for (int i = 0; i < _rendererComponents.Count; i++)
-                    {
-                        MMDRendererComponent rendererComponent = _rendererComponents[i];
-                        graphicsContext.SetCBVRSlot(context.CBs_Bone[i], 0, 0, 0);
-                        graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
-                        graphicsContext.SetMeshVertex(context.meshOverride[rendererComponent]);
-                        var PSODraw = _combinedPass.PSODefault;
-                        unionShaderParam.PSODesc = passPsoDesc;
-                        unionShaderParam.PSO = _combinedPass.PSODefault;
-                        var Materials = rendererComponent.Materials;
-                        foreach (var material in Materials)
-                        {
-                            if (!FilterObj(context, _combinedPass.Filter, rendererComponent, material))
-                            {
-                                continue;
-                            }
-                            foreach (var cbv in _combinedPass.Pass.CBVs)
-                            {
-                                graphicsContext.SetCBVRSlot(buffer, visualChannel.customDataInt1[matC] / 256, 0, cbv.Index);
-                                matC++;
-                            }
-                            _PassSetRes1(material, _combinedPass);
-                            if (_combinedPass.CullMode == 0)
-                                passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
-
-                            unionShaderParam.renderer = rendererComponent;
-                            unionShaderParam.material = material;
-                            UnionShader unionShader = mainCaches.GetUnionShader(passSetting.GetAliases(material.unionShader));
-
-                            bool? a = unionShader?.Invoke(unionShaderParam);
-                            if (a != true)
-                            {
-                                SetPipelineStateVariant(graphicsDevice, graphicsContext, rootSignature, passPsoDesc, PSODraw);
-                                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-                            }
-                            else
-                            {
-
-                            }
-                        }
                     }
                 }
             }
@@ -427,7 +380,7 @@ namespace Coocoo3D.RenderPipeline
 
                 if (tex2D == null)
                 {
-                    if (passSetting.renderTargets.Contains(name))
+                    if (passSetting.RenderTargets.ContainsKey(name))
                         tex2D = context._GetTex2DByName(string.Format("SceneView/{0}/{1}", visualChannel.Name, name));
                     else
                         tex2D = context._GetTex2DByName(name);
@@ -439,7 +392,7 @@ namespace Coocoo3D.RenderPipeline
                 return _GetTex2D(null, name);
             }
         }
-        bool FilterObj(RenderPipelineContext context, string filter, MMDRendererComponent renderer, RuntimeMaterial material)
+        static bool FilterObj(RenderPipelineContext context, string filter, MMDRendererComponent renderer, RuntimeMaterial material)
         {
             if (string.IsNullOrEmpty(filter)) return true;
             if (filter == "Transparent")
@@ -449,6 +402,126 @@ namespace Coocoo3D.RenderPipeline
             if (material.textures.ContainsKey(filter))
                 return true;
             return false;
+        }
+
+        static void _WriteCBV(CBVSlotRes cbv, UnionShaderParam unionShaderParam, int slot)
+        {
+            var material = unionShaderParam.material;
+            var context = unionShaderParam.rp;
+            var writer = unionShaderParam.GPUWriter;
+            var camera = unionShaderParam.camera;
+            var settings = unionShaderParam.settings;
+            foreach (var s in cbv.Datas)
+            {
+                switch (s)
+                {
+                    case "Metallic":
+                        writer.Write(material.innerStruct.Metallic);
+                        break;
+                    case "Roughness":
+                        writer.Write(material.innerStruct.Roughness);
+                        break;
+                    case "Emission":
+                        writer.Write(material.innerStruct.Emission);
+                        break;
+                    case "Diffuse":
+                        writer.Write(material.innerStruct.DiffuseColor);
+                        break;
+                    case "Specular":
+                        writer.Write(material.innerStruct.Specular);
+                        break;
+                    case "SpecularColor":
+                        writer.Write(material.innerStruct.SpecularColor);
+                        break;
+                    case "AmbientColor":
+                        writer.Write(material.innerStruct.AmbientColor);
+                        break;
+                    case "Transparent":
+                        writer.Write(material.Transparent ? 1 : 0);
+                        break;
+                    case "DrawFlags":
+                        writer.Write((int)material.DrawFlags);
+                        break;
+                    case "DeltaTime":
+                        writer.Write((float)context.dynamicContextRead.DeltaTime);
+                        break;
+                    case "Time":
+                        writer.Write((float)context.dynamicContextRead.Time);
+                        break;
+                    case "World":
+                        writer.Write(unionShaderParam.renderer.LocalToWorld);
+                        break;
+                    case "CameraPosition":
+                        writer.Write(camera.Position);
+                        break;
+                    case "Camera":
+                        writer.Write(camera.vpMatrix);
+                        break;
+                    case "CameraInvert":
+                        writer.Write(camera.pvMatrix);
+                        break;
+                    case "WidthHeight":
+                        {
+                            var depthStencil = unionShaderParam.depthStencil;
+                            var renderTargets = unionShaderParam.renderTargets;
+                            if (renderTargets != null && renderTargets.Length > 0)
+                            {
+                                Texture2D renderTarget = renderTargets[0];
+                                writer.Write(renderTarget.GetWidth());
+                                writer.Write(renderTarget.GetHeight());
+                            }
+                            else if (depthStencil != null)
+                            {
+                                writer.Write(depthStencil.GetWidth());
+                                writer.Write(depthStencil.GetHeight());
+                            }
+                            else
+                            {
+                                writer.Write(0);
+                                writer.Write(0);
+                            }
+                        }
+                        break;
+                    //case "DirectionalLight":
+                    //    if (lightings.Count > 0)
+                    //    {
+                    //        var lstruct = lightings[0].GetLStruct();
+
+                    //        writer.Write(lightCameraMatrix0);
+                    //        writer.Write(lstruct.PosOrDir);
+                    //        writer.Write((int)lstruct.Type);
+                    //        writer.Write(lstruct.Color);
+                    //    }
+                    //    else
+                    //    {
+                    //        writer.Write(Matrix4x4.Identity);
+                    //        writer.Write(new Vector4());
+                    //        writer.Write(new Vector4());
+                    //    }
+                    //    break;
+                    //case "PointLights4":
+                    //    {
+                    //        int count = Math.Min(pointLights.Count, 4);
+                    //        for (int pli = 0; pli < count; pli++)
+                    //        {
+                    //            var lstruct = pointLights[pli].GetLStruct();
+                    //            writer.Write(lstruct.PosOrDir);
+                    //            writer.Write((int)lstruct.Type);
+                    //            writer.Write(lstruct.Color);
+                    //        }
+                    //        for (int i = 0; i < 4 - count; i++)
+                    //        {
+                    //            writer.Write(new Vector4());
+                    //            writer.Write(new Vector4());
+                    //        }
+                    //    }
+                    //    break;
+                    case "IndirectMultiplier":
+                        writer.Write(settings.SkyBoxLightMultiplier);
+                        break;
+                }
+            }
+            writer.SetBufferImmediately(unionShaderParam.graphicsContext, false, slot);
         }
     }
 }

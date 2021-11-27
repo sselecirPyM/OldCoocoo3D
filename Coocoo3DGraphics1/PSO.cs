@@ -67,7 +67,6 @@ namespace Coocoo3DGraphics
         public int depthBias;
         public float slopeScaledDepthBias;
         public bool wireFrame;
-        public bool streamOutput;
 
         public override bool Equals(object obj)
         {
@@ -85,8 +84,7 @@ namespace Coocoo3DGraphics
                    renderTargetCount == other.renderTargetCount &&
                    depthBias == other.depthBias &&
                    slopeScaledDepthBias == other.slopeScaledDepthBias &&
-                   wireFrame == other.wireFrame &&
-                   streamOutput == other.streamOutput;
+                   wireFrame == other.wireFrame;
         }
 
         public override int GetHashCode()
@@ -102,7 +100,6 @@ namespace Coocoo3DGraphics
             hash.Add(depthBias);
             hash.Add(slopeScaledDepthBias);
             hash.Add(wireFrame);
-            hash.Add(streamOutput);
             return hash.ToHashCode();
         }
 
@@ -262,17 +259,8 @@ namespace Coocoo3DGraphics
                 }
                 state.SampleMask = uint.MaxValue;
                 state.PrimitiveTopologyType = psoDesc.ptt;
-                if (psoDesc.streamOutput)
-                {
-                    int[] bufferStrides = { 64 };
-                    state.StreamOutput = new StreamOutputDescription(declarations);
-                    state.StreamOutput.Strides = bufferStrides;
-                }
-                else
-                {
                     state.BlendState = BlendDescSelect(psoDesc.blendState);
                     state.SampleDescription = new SampleDescription(1, 0);
-                }
 
                 state.RenderTargetFormats = new Format[psoDesc.renderTargetCount];
                 for (int i = 0; i < psoDesc.renderTargetCount; i++)
@@ -284,7 +272,7 @@ namespace Coocoo3DGraphics
                 RasterizerDescription rasterizerDescription = new RasterizerDescription(cullMode, psoDesc.wireFrame ? FillMode.Wireframe : FillMode.Solid);
                 rasterizerDescription.DepthBias = psoDesc.depthBias;
                 rasterizerDescription.SlopeScaledDepthBias = psoDesc.slopeScaledDepthBias;
-                rasterizerDescription.DepthClipEnable = psoDesc.streamOutput ? false : true;
+                rasterizerDescription.DepthClipEnable = true;
 
                 state.RasterizerState = rasterizerDescription;
                 ID3D12PipelineState pipelineState;

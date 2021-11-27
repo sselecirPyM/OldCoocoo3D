@@ -13,16 +13,18 @@ namespace Coocoo3D.RenderPipeline
     public class PassSetting
     {
         public string Name;
-        public List<RenderTarget> RenderTargets;
         public List<PassMatch1> RenderSequence;
-        public List<Pass> Passes;
-        public List<PSPS> PipelineStates;
+        public Dictionary<string, RenderTarget> RenderTargets;
+        public Dictionary<string, Pass> Passes;
         public List<_AssetDefine> VertexShaders;
         public List<_AssetDefine> GeometryShaders;
         public List<_AssetDefine> PixelShaders;
         public List<_AssetDefine> ComputeShaders;
         public List<_AssetDefine> Texture2Ds;
-        public List<_AssetDefine> UnionShaders;
+        public Dictionary<string,string> UnionShaders;
+
+        [NonSerialized]
+        public string path;
 
         [NonSerialized]
         public Dictionary<string, string> aliases = new Dictionary<string, string>();
@@ -38,8 +40,6 @@ namespace Coocoo3D.RenderPipeline
 
         [NonSerialized]
         public bool configured;
-        [NonSerialized]
-        public HashSet<string> renderTargets;
 
         public bool Verify()
         {
@@ -49,8 +49,14 @@ namespace Coocoo3D.RenderPipeline
                 return false;
             if (Passes == null || Passes.Count == 0)
                 return false;
-            if (PipelineStates == null)
-                PipelineStates = new List<PSPS>();
+            foreach (var pass in Passes)
+            {
+                pass.Value.Name = pass.Key;
+            }
+            foreach (var renderTarget in RenderTargets)
+            {
+                renderTarget.Value.Name = renderTarget.Key;
+            }
             foreach (var passMatch in RenderSequence)
             {
                 if (passMatch.Name != null)
@@ -59,8 +65,8 @@ namespace Coocoo3D.RenderPipeline
                         passMatch.DrawObjects = true;
                     foreach (var pass in Passes)
                     {
-                        if (passMatch.Name == pass.Name)
-                            passMatch.Pass = pass;
+                        if (passMatch.Name == pass.Key)
+                            passMatch.Pass = pass.Value;
                     }
                     if (passMatch.Pass == null)
                         return false;
@@ -80,7 +86,6 @@ namespace Coocoo3D.RenderPipeline
         public string Type;
         public List<string> RenderTargets;
 
-        public List<PassParameter> passParameters;
         public string DepthStencil;
         public bool ClearDepth;
         public bool ClearRenderTarget;
@@ -91,8 +96,6 @@ namespace Coocoo3D.RenderPipeline
         public PSO PSODefault;
         [NonSerialized]
         public bool DrawObjects;
-        [NonSerialized]
-        public Dictionary<string, float> passParameters1;
         [NonSerialized]
         public Pass Pass;
         [NonSerialized]
@@ -112,13 +115,6 @@ namespace Coocoo3D.RenderPipeline
         public List<CBVSlotRes> CBVs;
         public List<SRVUAVSlotRes> UAVs;
     }
-    public class PSPS
-    {
-        public string Name;
-        public string VertexShader;
-        public string GeometryShader;
-        public string PixelShader;
-    }
 
     public struct SRVUAVSlotRes
     {
@@ -131,7 +127,7 @@ namespace Coocoo3D.RenderPipeline
         public int Index;
         public List<string> Datas;
     }
-    public struct RenderTarget
+    public class RenderTarget
     {
         public string Name;
         public VarSize Size;

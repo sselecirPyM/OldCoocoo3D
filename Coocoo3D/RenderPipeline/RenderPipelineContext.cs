@@ -65,6 +65,7 @@ namespace Coocoo3D.RenderPipeline
         public bool RequireResize;
         public Vector2 NewSize;
         public bool SkyBoxChanged = false;
+        public int skyBoxQuality = 0;
         public string skyBoxName = "_SkyBox";
         public string skyBoxOriTex = "Assets/Textures/adams_place_bridge_2k.jpg";
 
@@ -116,7 +117,6 @@ namespace Coocoo3D.RenderPipeline
             mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
             mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
             currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
-
         }
 
         public void DelayAddVisualChannel(string name)
@@ -147,14 +147,10 @@ namespace Coocoo3D.RenderPipeline
             frameRenderCount++;
         }
 
-        struct _Data1
+        public CBuffer GetBoneBuffer(MMDRendererComponent rendererComponent)
         {
-            public int vertexStart;
-            public int indexStart;
-            public int vertexCount;
-            public int indexCount;
+            return CBs_Bone[dynamicContextRead.findRenderer[rendererComponent]];
         }
-
 
         LinearPool<MMDMesh> meshPool = new LinearPool<MMDMesh>();
         public Dictionary<MMDRendererComponent, MMDMesh> meshOverride = new Dictionary<MMDRendererComponent, MMDMesh>();
@@ -163,17 +159,14 @@ namespace Coocoo3D.RenderPipeline
         {
             meshPool.Reset();
             meshOverride.Clear();
-            var bigBuffer = MemUtil.MegaBuffer;
             #region Update bone data
             int count = dynamicContextRead.renderers.Count;
             while (CBs_Bone.Count < count)
             {
                 CBuffer constantBuffer = new CBuffer();
-                graphicsDevice.InitializeSBuffer(constantBuffer, c_entityDataBufferSize);
+                graphicsDevice.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }
-            _Data1 data1 = new _Data1();
-            Span<Vector3> d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
             for (int i = 0; i < count; i++)
             {
                 var rendererComponent = dynamicContextRead.renderers[i];
@@ -186,21 +179,9 @@ namespace Coocoo3D.RenderPipeline
                 mesh.ReloadIndex<int>(originModel.vertexCount, null);
                 meshOverride[rendererComponent] = mesh;
 
-                data1.vertexCount = rendererComponent.meshVertexCount;
-                data1.indexCount = rendererComponent.meshIndexCount;
                 Matrix4x4 world = Matrix4x4.CreateFromQuaternion(rendererComponent.rotation) * Matrix4x4.CreateTranslation(rendererComponent.position);
 
-                CooUtility.Write(bigBuffer, 0, Matrix4x4.Transpose(world));
-
-                CooUtility.Write(bigBuffer, 68, rendererComponent.meshVertexCount);
-                CooUtility.Write(bigBuffer, 72, rendererComponent.meshIndexCount);
-
-                MemoryMarshal.Write(new Span<byte>(bigBuffer, 80, 16), ref data1);
-                MemoryMarshal.Cast<Matrix4x4, byte>(rendererComponent.boneMatricesData).CopyTo(new Span<byte>(bigBuffer, 256, 65280));
-                graphicsContext.UpdateResource(CBs_Bone[i], bigBuffer, 65536, 0);
-                data1.vertexStart += rendererComponent.meshVertexCount;
-                data1.indexStart += rendererComponent.meshIndexCount;
-
+                graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], rendererComponent.boneMatricesData);
 
                 //const int parallelSize = 1024;
                 //Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
@@ -292,7 +273,7 @@ namespace Coocoo3D.RenderPipeline
             if (passSetting == null) return;
 
             var outputSize = visualChannel.outputSize;
-            foreach (var rt in passSetting.RenderTargets)
+            foreach (var rt in passSetting.RenderTargets.Values)
             {
                 string rtName = string.Format("SceneView/{0}/{1}", visualChannel.Name, rt.Name);
                 if (!RTs.TryGetValue(rtName, out var tex2d))
@@ -363,7 +344,7 @@ namespace Coocoo3D.RenderPipeline
         {
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
-
+            passSetting.path = passPath;
             string path1 = Path.GetDirectoryName(passPath);
             if (passSetting.VertexShaders != null)
                 foreach (var shader in passSetting.VertexShaders)
@@ -378,20 +359,12 @@ namespace Coocoo3D.RenderPipeline
             {
                 foreach (var shader in passSetting.UnionShaders)
                 {
-                    mainCaches.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
-                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
+                    passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
                 }
             }
             foreach (var pass in passSetting.RenderSequence)
             {
                 if (pass.Type == "Swap") continue;
-
-                if (pass.passParameters != null)
-                {
-                    pass.passParameters1 = new Dictionary<string, float>();
-                    foreach (var v in pass.passParameters)
-                        pass.passParameters1[v.Name] = v.Value;
-                }
 
                 int SlotComparison(SRVUAVSlotRes x1, SRVUAVSlotRes y1)
                 {
@@ -452,7 +425,6 @@ namespace Coocoo3D.RenderPipeline
                 RPAssetsManager.PSOs[pass.Pass.Name] = pso;
             }
             passSetting.configured = true;
-            passSetting.renderTargets = passSetting.RenderTargets.Select(u => u.Name).ToHashSet();
             return true;
 
         }
@@ -475,11 +447,6 @@ namespace Coocoo3D.RenderPipeline
         }
         public TextureCube _GetTexCubeByName(string name)
         {
-            //if (name == "_SkyBoxReflect")
-            //    return SkyBoxReflect;
-            //else if (name == "_SkyBoxIrradiance")
-            //    return SkyBoxIrradiance;
-
             return mainCaches.GetTextureCube(name);
         }
 

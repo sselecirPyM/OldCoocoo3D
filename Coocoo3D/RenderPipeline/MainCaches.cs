@@ -32,12 +32,13 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, PixelShader> PixelShaders = new Dictionary<string, PixelShader>();
         public Dictionary<string, GeometryShader> GeometryShaders = new Dictionary<string, GeometryShader>();
         public Dictionary<string, ComputeShader> ComputeShaders = new Dictionary<string, ComputeShader>();
+        public DictionaryWithModifiyIndex<string, PSO> PipelineStateObjects = new DictionaryWithModifiyIndex<string, PSO>();
 
-        public Dictionary<string, TextureCube> TextureCubes = new Dictionary<string, TextureCube>();
+        public DictionaryWithModifiyIndex<string, TextureCube> TextureCubes = new DictionaryWithModifiyIndex<string, TextureCube>();
 
-        public Dictionary<string, UnionShader> UnionShaders = new Dictionary<string, UnionShader>();
-
-        public Dictionary<string, string> aliases = new Dictionary<string, string>();
+        public DictionaryWithModifiyIndex<string, UnionShader> UnionShaders = new DictionaryWithModifiyIndex<string, UnionShader>();
+        public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new DictionaryWithModifiyIndex<string, Assembly>();
+        public Dictionary<string, RootSignature> RootSignatures = new Dictionary<string, RootSignature>();
 
         public MainCaches()
         {
@@ -153,23 +154,37 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        T GetT<T>(IDictionary<string, T> caches, string path, Func<FileInfo, T> createFun) where T : class
+        public T GetT<T>(IDictionary<string, T> caches, string path, Func<FileInfo, T> createFun) where T : class
         {
-            var knownFile = KnownFiles.GetOrCreate(path, () => new KnownFile()
+            return GetT(caches, path, path, createFun);
+        }
+        public T GetT<T>(IDictionary<string, T> caches, string path, string realPath, Func<FileInfo, T> createFun) where T : class
+        {
+            var knownFile = KnownFiles.GetOrCreate(realPath, () => new KnownFile()
             {
-                fullPath = path,
-                relativePath = Path.GetFileName(path)
+                fullPath = realPath,
+                relativePath = Path.GetFileName(realPath)
             });
             if (!caches.TryGetValue(path, out var file) || knownFile.requireReload.SetFalse())
             {
-                string folderPath = Path.GetDirectoryName(path);
+                string folderPath = Path.GetDirectoryName(realPath);
                 if (!InitFolder(folderPath) && !Path.IsPathRooted(folderPath))
                     return null;
                 var folder = (Path.IsPathRooted(folderPath)) ? new DirectoryInfo(folderPath) : KnownFolders[folderPath];
 #if !DEBUG
                 try
                 {
-                    if (knownFile.IsModified(folder.GetFiles()))
+                    if (caches is DictionaryWithModifiyIndex<string, T> a)
+                    {
+                        int modifyIndex = knownFile.GetModifyIndex(folder.GetFiles());
+                        if (modifyIndex > a.GetModifyIndex(path))
+                        {
+                            file = createFun(knownFile.file);
+                            caches[path] = file;
+                            a.SetModifyIndex(path, modifyIndex);
+                        }
+                    }
+                    else if (knownFile.IsModified(folder.GetFiles()))
                     {
                         file = createFun(knownFile.file);
                         caches[path] = file;
@@ -181,7 +196,17 @@ namespace Coocoo3D.RenderPipeline
                     caches[path] = file;
                 }
 #else
-                if (knownFile.IsModified(folder.GetFiles()))
+                if (caches is DictionaryWithModifiyIndex<string, T> a)
+                {
+                    int modifyIndex = knownFile.GetModifyIndex(folder.GetFiles());
+                    if (modifyIndex > a.GetModifyIndex(path))
+                    {
+                        file = createFun(knownFile.file);
+                        caches[path] = file;
+                        a.SetModifyIndex(path, modifyIndex);
+                    }
+                }
+                else if (knownFile.IsModified(folder.GetFiles()))
                 {
                     file = createFun(knownFile.file);
                     caches[path] = file;
@@ -244,12 +269,12 @@ namespace Coocoo3D.RenderPipeline
                 var passes = ReadJsonStream<PassSetting>(file.OpenRead());
                 foreach (var res in passes.Passes)
                 {
-                    if (res.SRVs != null)
-                        for (int i = 0; i < res.SRVs.Count; i++)
+                    if (res.Value.SRVs != null)
+                        for (int i = 0; i < res.Value.SRVs.Count; i++)
                         {
-                            SRVUAVSlotRes srv = res.SRVs[i];
+                            SRVUAVSlotRes srv = res.Value.SRVs[i];
                             srv.Resource = srv.Resource.Replace("_BRDFLUT", "Assets/Textures/brdflut.png");
-                            res.SRVs[i] = srv;
+                            res.Value.SRVs[i] = srv;
                         }
                 }
                 return passes;
@@ -306,15 +331,29 @@ namespace Coocoo3D.RenderPipeline
         {
             if (string.IsNullOrEmpty(path)) return null;
             if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
-            return GetT(UnionShaders, path, file =>
+
+            var assembly = GetAssembly(path);
+            if (assembly == null) return null;
+            if (!UnionShaders.TryGetValue(path, out UnionShader unionShader))
+            {
+                Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
+                var info = type.GetMethod("UnionShader");
+                unionShader = (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
+                UnionShaders[path] = unionShader;
+            }
+            return unionShader;
+        }
+
+        public Assembly GetAssembly(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+
+            return GetT(Assemblies, path, file =>
             {
                 byte[] datas = CompileScripts(path);
                 if (datas != null && datas.Length > 0)
                 {
-                    var assembly = Assembly.Load(datas);
-                    Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
-                    var info = type.GetMethod("UnionShader");
-                    return (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
+                    return Assembly.Load(datas);
                 }
                 else
                     return null;
@@ -330,13 +369,15 @@ namespace Coocoo3D.RenderPipeline
                 MemoryStream memoryStream = new MemoryStream();
                 List<MetadataReference> refs = new List<MetadataReference>() {
                     MetadataReference.CreateFromFile (typeof (object).Assembly.Location),
-                    MetadataReference.CreateFromFile (typeof (Object).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (List<int>).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (System.Text.ASCIIEncoding).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (JsonConvert).Assembly.Location),
                     MetadataReference.CreateFromFile (Assembly.GetExecutingAssembly().Location),
                     MetadataReference.CreateFromFile (typeof (SixLabors.ImageSharp.Image).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (GraphicsContext).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (Vortice.Dxc.Dxc).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (SharpGen.Runtime.CppObject).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (SharpGen.Runtime.ComObject).Assembly.Location),
                 };
                 refs.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(u => u.GetName().Name.Contains("netstandard") || u.GetName().Name.Contains("System")).Select(u => MetadataReference.CreateFromFile(u.Location)));
                 var compilation = CSharpCompilation.Create(Path.GetFileName(path), new[] { syntaxTree }, refs, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -369,9 +410,40 @@ namespace Coocoo3D.RenderPipeline
             });
         }
 
-        byte[] LoadShader(DxcShaderStage shaderStage, string shaderCode, string entryPoint)
+        public PSO GetPSOWithKeywords(List<string> keywords, string path, bool enableVS = true, bool enablePS = true)
         {
-            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { });
+            string xPath;
+            if (keywords != null)
+            {
+                keywords.Sort();
+                xPath = path + string.Concat(keywords);
+            }
+            else
+            {
+                xPath = path;
+            }
+            return GetT(PipelineStateObjects, xPath, path, file =>
+            {
+                string source = File.ReadAllText(file.FullName);
+                DxcDefine[] dxcDefines = null;
+                if (keywords != null)
+                {
+                    dxcDefines = new DxcDefine[keywords.Count];
+                    for (int i = 0; i < keywords.Count; i++)
+                    {
+                        dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                    }
+                }
+                byte[] vs = enableVS ? LoadShader(DxcShaderStage.Vertex, source, "vsmain", null, dxcDefines) : null;
+                byte[] ps = enablePS ? LoadShader(DxcShaderStage.Pixel, source, "psmain", null, dxcDefines) : null;
+                PSO pso = new PSO(vs, null, ps);
+                return pso;
+            });
+        }
+
+        static byte[] LoadShader(DxcShaderStage shaderStage, string shaderCode, string entryPoint, string fileName = null, DxcDefine[] dxcDefines = null)
+        {
+            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { }, fileName, dxcDefines);
             if (result.GetStatus() != SharpGen.Runtime.Result.Ok)
                 throw new Exception(result.GetErrors());
             return result.GetResult().ToArray();
@@ -418,27 +490,66 @@ namespace Coocoo3D.RenderPipeline
             return null;
         }
 
-        public void GetSkyBox(string s, GraphicsContext context, out TextureCube skyBox, out TextureCube irradiance, out TextureCube reflect)
+        public void GetSkyBox(string s, GraphicsContext context, out TextureCube skyBox, out TextureCube reflect)
         {
             skyBox = GetTextureCube(s);
-            irradiance = GetTextureCube(s + "Irradiance");
             reflect = GetTextureCube(s + "Reflect");
             if (skyBox == null)
             {
                 skyBox = new TextureCube();
-                irradiance = new TextureCube();
                 reflect = new TextureCube();
-                skyBox.ReloadAsRTVUAV(2048, 2048, 1, Vortice.DXGI.Format.R16G16B16A16_Float);
-                irradiance.ReloadAsRTVUAV(32, 32, 1, Vortice.DXGI.Format.R32G32B32A32_Float);
-                reflect.ReloadAsRTVUAV(1024, 1024, 7, Vortice.DXGI.Format.R16G16B16A16_Float);
+                skyBox.ReloadAsRTVUAV(2048, 2048, 6, Vortice.DXGI.Format.R16G16B16A16_Float);
+                reflect.ReloadAsRTVUAV(512, 512, 6, Vortice.DXGI.Format.R16G16B16A16_Float);
 
                 context.UpdateRenderTexture(skyBox);
-                context.UpdateRenderTexture(irradiance);
                 context.UpdateRenderTexture(reflect);
                 TextureCubes[s] = skyBox;
-                TextureCubes[s + "Irradiance"] = irradiance;
                 TextureCubes[s + "Reflect"] = reflect;
             }
+        }
+
+
+        public RootSignature GetRootSignature(GraphicsDevice graphicsDevice, string s)
+        {
+            if (RootSignatures.TryGetValue(s, out RootSignature rs))
+                return rs;
+            rs = new RootSignature();
+            rs.Reload(graphicsDevice, fromString(s));
+            RootSignatures[s] = rs;
+            return rs;
+        }
+        GraphicSignatureDesc[] fromString(string s)
+        {
+            GraphicSignatureDesc[] desc = new GraphicSignatureDesc[s.Length];
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                switch (c)
+                {
+                    case 'C':
+                        desc[i] = GraphicSignatureDesc.CBV;
+                        break;
+                    case 'c':
+                        desc[i] = GraphicSignatureDesc.CBVTable;
+                        break;
+                    case 'S':
+                        desc[i] = GraphicSignatureDesc.SRV;
+                        break;
+                    case 's':
+                        desc[i] = GraphicSignatureDesc.SRVTable;
+                        break;
+                    case 'U':
+                        desc[i] = GraphicSignatureDesc.UAV;
+                        break;
+                    case 'u':
+                        desc[i] = GraphicSignatureDesc.UAVTable;
+                        break;
+                    default:
+                        throw new NotImplementedException("error root signature desc.");
+                        break;
+                }
+            }
+            return desc;
         }
 
         public bool TryGetTexture(string s, out Texture2D tex)

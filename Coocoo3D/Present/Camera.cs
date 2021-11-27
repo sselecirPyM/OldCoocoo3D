@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,7 +18,7 @@ namespace Coocoo3D.Present
         public Vector3 Angle;
         public float Fov;
         public float AspectRatio;
-        public Vector3 Pos;
+        public Vector3 Position;
     }
     public class Camera
     {
@@ -58,7 +57,7 @@ namespace Coocoo3D.Present
             var pos = Vector3.Transform(Vector3.UnitZ * Distance, rotateMatrix * Matrix4x4.CreateTranslation(LookAtPoint));
             var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
             Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos, LookAtPoint, up);
-            Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Fov, AspectRatio, nearClip, farClip);
+            Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Fov, AspectRatio, MathF.Max(nearClip, 0.001f), MathF.Max(MathF.Max(farClip, nearClip + 1e-2f), 0.002f));
             Matrix4x4 vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
             Matrix4x4.Invert(vpMatrix, out Matrix4x4 pvMatrix);
             return new CameraData()
@@ -68,7 +67,7 @@ namespace Coocoo3D.Present
                 Distance = Distance,
                 Fov = Fov,
                 LookAtPoint = LookAtPoint,
-                Pos = pos,
+                Position = pos,
                 vMatrix = vMatrix,
                 pMatrix = pMatrix,
                 vpMatrix = vpMatrix,

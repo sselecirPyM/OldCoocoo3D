@@ -93,6 +93,8 @@ namespace Coocoo3D.Components
         }
         public void SetPoseWithMotion(float time, MMDMotion motion)
         {
+            LocalToWorld = Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position);
+            Matrix4x4.Invert(LocalToWorld, out WorldToLocal);
             lock (motion)
             {
                 morphStateComponent.SetPose(motion, time);
@@ -108,6 +110,8 @@ namespace Coocoo3D.Components
         }
         public void SetPoseDefault()
         {
+            LocalToWorld = Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position);
+            Matrix4x4.Invert(LocalToWorld, out WorldToLocal);
             morphStateComponent.SetPoseDefault();
             morphStateComponent.ComputeWeight();
             foreach (var bone in bones)
@@ -426,6 +430,8 @@ namespace Coocoo3D.Components
         public int indexCount;
         public DrawFlag DrawFlags;
         public bool Transparent;
+        public bool CastShadow;
+        public bool ReceiveShadow;
         public bool skinning;
 
         public InnerStruct innerStruct;

@@ -28,8 +28,18 @@ namespace Coocoo3D.RenderPipeline.Wrap
             return allign;
         }
 
-        public void Write(int a) => binaryWriter.Write(a);
-        public void Write(float a) => binaryWriter.Write(a);
+        public CBuffer GetBuffer(GraphicsDevice device, GraphicsContext context, bool isCBuffer)
+        {
+            if (cBuffer == null)
+                cBuffer = new CBuffer();
+            if (cBuffer.size < memoryStream.Position)
+            {
+                device.InitializeCBuffer(cBuffer, (int)memoryStream.Position);
+            }
+            context.UpdateResource(cBuffer, new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Position));
+            binaryWriter.Seek(0, SeekOrigin.Begin);
+            return cBuffer;
+        }
 
         void GetSpacing(int sizeX)
         {
@@ -42,6 +52,9 @@ namespace Coocoo3D.RenderPipeline.Wrap
                     binaryWriter.Write((byte)0);
             }
         }
+
+        public void Write(int a) => binaryWriter.Write(a);
+        public void Write(float a) => binaryWriter.Write(a);
 
         public void Write(Vector2 a)
         {
@@ -67,17 +80,16 @@ namespace Coocoo3D.RenderPipeline.Wrap
             binaryWriter.Write(Matrix4x4.Transpose(a));
         }
 
-        public CBuffer GetBuffer(GraphicsDevice device, GraphicsContext context, bool isCBuffer)
+        public void SetBufferImmediately(GraphicsContext context, bool isCBuffer,int slot)
         {
-            if (cBuffer == null)
-                cBuffer = new CBuffer();
-            if (cBuffer.size < memoryStream.Length)
-            {
-                device.InitializeCBuffer(cBuffer, (int)memoryStream.Length);
-            }
-            context.UpdateResource(cBuffer, new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Length));
+            context.SetCBVRSlot(new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Position), slot);
             binaryWriter.Seek(0, SeekOrigin.Begin);
-            return cBuffer;
+        }
+
+        public void SetBufferComputeImmediately(GraphicsContext context, bool isCBuffer,int slot)
+        {
+            context.SetComputeCBVRSlot(new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Position), slot);
+            binaryWriter.Seek(0, SeekOrigin.Begin);
         }
     }
 }

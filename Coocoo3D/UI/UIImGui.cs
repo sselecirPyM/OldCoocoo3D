@@ -184,8 +184,8 @@ namespace Coocoo3D.UI
                 float fov = camera.Fov / MathF.PI * 180;
                 if (ImGui.DragFloat("FOV", ref fov, 0.5f, 0.1f, 179.9f))
                     camera.Fov = fov * MathF.PI / 180;
-                ImGui.DragFloat("近裁剪", ref camera.nearClip, 0.5f, 0.1f);
-                ImGui.DragFloat("远裁剪", ref camera.farClip, 10.0f, 0.1f);
+                ImGui.DragFloat("近裁剪", ref camera.nearClip, 0.5f, 0.1f, float.MaxValue);
+                ImGui.DragFloat("远裁剪", ref camera.farClip, 10.0f, 0.1f, float.MaxValue);
 
                 ImGui.Checkbox("使用镜头运动文件", ref camera.CameraMotionOn);
                 ImGui.TreePop();
@@ -220,6 +220,7 @@ namespace Coocoo3D.UI
                     if (a == a)
                         appBody.GameDriverContext.FrameInterval = 1 / a;
                 }
+                ImGui.SliderInt("天空盒最高质量", ref appBody.settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
                 if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
                 {
                     renderPipelines = new string[appBody.mainCaches.PassSettings.Count];
@@ -245,6 +246,10 @@ namespace Coocoo3D.UI
                 if (ImGui.Button("保存场景"))
                 {
                     requireSave = true;
+                }
+                if (ImGui.Button("重新加载纹理"))
+                {
+                    appBody.mainCaches.ReloadTextures();
                 }
                 ImGui.TreePop();
             }
@@ -419,72 +424,70 @@ vmd格式动作");
         static void RendererComponent(Coocoo3DMain appBody, MMDRendererComponent rendererComponent)
         {
             var io = ImGui.GetIO();
-            if (ImGui.TreeNode("渲染"))
+            if (ImGui.TreeNode("材质"))
             {
-                if (ImGui.TreeNode("材质"))
+                if (ImGui.BeginChild("materials", new Vector2(120, 400)))
                 {
-                    if (ImGui.BeginChild("materials", new Vector2(120, 300)))
+                    ImGui.PushItemWidth(120);
+                    for (int i = 0; i < rendererComponent.Materials.Count; i++)
                     {
-                        ImGui.PushItemWidth(120);
-                        for (int i = 0; i < rendererComponent.Materials.Count; i++)
-                        {
-                            RuntimeMaterial material = rendererComponent.Materials[i];
-                            bool selected = i == materialSelectIndex;
-                            ImGui.Selectable(material.Name, ref selected);
-                            if (selected) materialSelectIndex = i;
-                        }
-                        ImGui.PopItemWidth();
+                        RuntimeMaterial material = rendererComponent.Materials[i];
+                        bool selected = i == materialSelectIndex;
+                        ImGui.Selectable(material.Name, ref selected);
+                        if (selected) materialSelectIndex = i;
                     }
-                    ImGui.EndChild();
-                    ImGui.SameLine();
-                    if (ImGui.BeginChild("materialProperty", new Vector2(140, 300)))
+                    ImGui.PopItemWidth();
+                }
+                ImGui.EndChild();
+                ImGui.SameLine();
+                if (ImGui.BeginChild("materialProperty", new Vector2(180, 400)))
+                {
+                    if (materialSelectIndex >= 0 && materialSelectIndex < rendererComponent.Materials.Count)
                     {
-                        if (materialSelectIndex >= 0 && materialSelectIndex < rendererComponent.Materials.Count)
+                        var material = rendererComponent.Materials[materialSelectIndex];
+                        ImGui.Text(material.Name);
+                        ImGui.SliderFloat("金属性  ", ref material.innerStruct.Metallic, 0, 1);
+                        ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
+                        ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
+                        string s = material.unionShader ?? "";
+                        if (ImGui.InputText("UnionShader", ref s, 256))
                         {
-                            var material = rendererComponent.Materials[materialSelectIndex];
-                            ImGui.Text(material.Name);
-                            ImGui.SliderFloat("金属性  ", ref material.innerStruct.Metallic, 0, 1);
-                            ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
-                            ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
-                            string s = material.unionShader ?? "";
-                            if (ImGui.InputText("UnionShader", ref s, 256))
-                            {
-                                material.unionShader = s;
-                            }
+                            material.unionShader = s;
+                        }
 
-                            ImGui.Checkbox("透明材质", ref material.Transparent);
-                            foreach (var tex in material.textures)
+                        ImGui.Checkbox("透明材质", ref material.Transparent);
+                        ImGui.Checkbox("投射阴影", ref material.CastShadow);
+                        ImGui.Checkbox("接收阴影", ref material.ReceiveShadow);
+                        foreach (var tex in material.textures)
+                        {
+                            string key = "imgui/" + tex.Key;
+                            if (appBody.mainCaches.TextureCaches.TryGetValue(tex.Value, out var texPack))
                             {
-                                string key = "imgui/" + tex.Key;
-                                if (appBody.mainCaches.TextureCaches.TryGetValue(tex.Value, out var texPack))
-                                {
-                                    appBody.mainCaches.SetTexture(key, texPack.texture2D);
-                                }
-                                Vector2 pos = ImGui.GetCursorScreenPos();
-                                Vector2 imageSize = new Vector2(120, 120);
-                                IntPtr imageId = appBody.mainCaches.GetPtr(key);
-                                ImGui.Text(tex.Key);
-                                ImGui.ImageButton(imageId, imageSize);
+                                appBody.mainCaches.SetTexture(key, texPack.texture2D);
                             }
+                            Vector2 pos = ImGui.GetCursorScreenPos();
+                            Vector2 imageSize = new Vector2(120, 120);
+                            IntPtr imageId = appBody.mainCaches.GetPtr(key);
+                            ImGui.Text(tex.Key);
+                            ImGui.ImageButton(imageId, imageSize);
                         }
                     }
-                    ImGui.EndChild();
-                    ImGui.TreePop();
                 }
-                if (ImGui.TreeNode("变形"))
-                {
-                    ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion);
-                    if (rendererComponent.LockMotion)
-                        for (int i = 0; i < rendererComponent.morphStateComponent.morphs.Count; i++)
+                ImGui.EndChild();
+                ImGui.TreePop();
+            }
+            if (ImGui.TreeNode("变形"))
+            {
+                ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion);
+                if (rendererComponent.LockMotion)
+                    for (int i = 0; i < rendererComponent.morphStateComponent.morphs.Count; i++)
+                    {
+                        MorphDesc morpth = rendererComponent.morphStateComponent.morphs[i];
+                        if (ImGui.SliderFloat(morpth.Name, ref rendererComponent.morphStateComponent.Weights.Origin[i], 0, 1))
                         {
-                            MorphDesc morpth = rendererComponent.morphStateComponent.morphs[i];
-                            if (ImGui.SliderFloat(morpth.Name, ref rendererComponent.morphStateComponent.Weights.Origin[i], 0, 1))
-                            {
-                                appBody.GameDriverContext.RequireResetPhysics = true;
-                            }
+                            appBody.GameDriverContext.RequireResetPhysics = true;
                         }
-                    ImGui.TreePop();
-                }
+                    }
                 ImGui.TreePop();
             }
         }

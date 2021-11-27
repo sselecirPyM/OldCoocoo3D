@@ -163,8 +163,8 @@ namespace Coocoo3D.Core
 
         public void TransformToNew(MMDRendererComponent r, Vector3 position, Quaternion rotation, List<Physics3DRigidBody1> rigidbodies)
         {
-            r.LocalToWorld = Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position);
-            Matrix4x4.Invert(r.LocalToWorld, out r.WorldToLocal);
+            //r.LocalToWorld = Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position);
+            //Matrix4x4.Invert(r.LocalToWorld, out r.WorldToLocal);
             for (int i = 0; i < r.rigidBodyDescs.Count; i++)
             {
                 var desc = r.rigidBodyDescs[i];

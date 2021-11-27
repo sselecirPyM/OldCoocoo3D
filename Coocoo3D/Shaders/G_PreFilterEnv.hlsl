@@ -74,16 +74,10 @@ namespace RNG
 }
 cbuffer cb0 : register(b0)
 {
-	uint2 notuse0;
+	uint2 imageSize;
 	int quality;
 	uint batch;
-	uint2 imageSize;
-}
-cbuffer cb1 : register(b1)
-{
-	uint3 notUse1;
-	uint batch1;
-	uint2 imageSize1;
+	float roughness1;
 }
 const static float4x4 _xproj =
 { 0,0,-1,0,
@@ -192,11 +186,13 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 	float3 FilteredColor = 0;
 	float Weight = 0;
 
-	uint NumSamples = 128;
+	uint NumSamples = 256;
 	if (Roughness < 0.5)
 		NumSamples = 32;
 	if (Roughness < 0.25)
 		NumSamples = 16;
+	if (Roughness < 0.125)
+		NumSamples = 8;
 	for (uint i = 0; i < NumSamples; i++)
 	{
 		float2 E = RNG::Hammersley(i, NumSamples, Random);
@@ -206,8 +202,7 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 		float NoL = saturate(dot(R, L));
 		if (NoL > 0)
 		{
-			FilteredColor += AmbientCubemap.SampleLevel(s0, L, 0).rgb * NoL;
-			//FilteredColor += float4(1,1,1,1).rgb * NoL;
+			FilteredColor += AmbientCubemap.SampleLevel(s0, L, Roughness * 5).rgb * NoL;
 			Weight += NoL;
 		}
 	}
@@ -221,8 +216,7 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 void main(uint3 dtid : SV_DispatchThreadID)
 {
 	float3 N = float4(0, 0, 0, 0);
-	uint ba1 = (int)pow(2, batch1 + 1) / 2;
-	uint2 size1 = imageSize / ba1;
+	uint2 size1 = imageSize;
 	uint randomState = RNG::RandomSeed(dtid.x + dtid.y * 2048 + dtid.z * 4194304 + batch * 67108864);
 	float2 screenPos = ((float2)dtid.xy + 0.5f) / (float2)size1 * 2 - 1;
 	if (dtid.x > size1.x || dtid.y > size1.y)
@@ -254,8 +248,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 		N = mul(float4(screenPos, 0, 1), _nzproj);
 	}
 	N = normalize(N);
-	if (batch1 == 0)
-		EnvMap[dtid] = float4(PrefilterEnvMap(uint2(RNG::Random(randomState), RNG::Random(randomState)), 0, N) / quality + EnvMap[dtid].rgb, 1);
-	else
-		EnvMap[dtid] = float4(PrefilterEnvMap(uint2(RNG::Random(randomState), RNG::Random(randomState)), Pow2(batch1 / 6.0f), N) / quality + EnvMap[dtid].rgb, 1);
+	float xd0 = 1 / (float)(quality + 1);
+	float xd1 = quality / (float)(quality + 1);
+	EnvMap[dtid] = float4(PrefilterEnvMap(uint2(RNG::Random(randomState), RNG::Random(randomState)), roughness1, N) * xd0 + EnvMap[dtid].rgb * xd1, 1);
 }

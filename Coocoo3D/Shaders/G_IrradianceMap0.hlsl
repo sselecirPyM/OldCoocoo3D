@@ -202,14 +202,16 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	}
 	N = normalize(dir1.xyz / dir1.w);
 	float3 col1 = float3(0, 0, 0);
-	const int c_sampleCount = 512;
+	const int c_sampleCount = 256;
 	for (int i = 0; i < c_sampleCount; i++)
 	{
 		float2 E = RNG::Hammersley(i, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
 		float3 vec1 = TangentToWorld(N, RNG::HammersleySampleCos(E));
 
 		float NdotL = dot(vec1, N);
-		col1 += Image.SampleLevel(s0, vec1, 0) * NdotL / c_sampleCount / 3.14159265359f;
+		col1 += Image.SampleLevel(s0, vec1, 10) * NdotL;
 	}
-	IrradianceMap[dtid] = float4(col1 / quality + IrradianceMap[dtid].rgb, 1);
+	float xd0 = 1 / (float)(quality + 1);
+	float xd1 = quality / (float)(quality + 1);
+	IrradianceMap[dtid] = float4(col1 / c_sampleCount / 3.14159265359f * xd0 + IrradianceMap[dtid].rgb * xd1, 1);
 }

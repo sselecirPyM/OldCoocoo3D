@@ -1,26 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 
 namespace Coocoo3DGraphics
 {
     public class PixelShader
     {
-        public static PixelShader CompileAndCreate(byte[] source)
+        public PixelShader()
         {
-            return CompileAndCreate(source, "main");
-        }
-        public static PixelShader CompileAndCreate(byte[] source, string entryPoint)
-        {
-            PixelShader pixelShader = new PixelShader();
-            var hr = Compiler.Compile(source, entryPoint, null, "ps_5_0", out Blob compiled, out Blob errorBlob);
 
-            pixelShader.compiledCode = compiled.GetBytes();
-            compiled.Dispose();
-            errorBlob.Dispose();
-            return pixelShader;
+        }
+        public PixelShader(byte[] data)
+        {
+            Initialize(data);
         }
         public void Initialize(byte[] data)
         {

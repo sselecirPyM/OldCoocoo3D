@@ -1,26 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 
 namespace Coocoo3DGraphics
 {
     public class VertexShader
     {
-        public static VertexShader CompileAndCreate(byte[] source)
+        public VertexShader()
         {
-            return CompileAndCreate(source, "main");
-        }
-        public static VertexShader CompileAndCreate(byte[] source, string entryPoint)
-        {
-            VertexShader vertexShader = new VertexShader();
-            var hr = Compiler.Compile(source, entryPoint, null, "vs_5_0", out Blob compiled, out Blob errorBlob);
 
-            vertexShader.compiledCode = compiled.GetBytes();
-            compiled.Dispose();
-            errorBlob.Dispose();
-            return vertexShader;
+        }
+        public VertexShader(byte[] data)
+        {
+            Initialize(data);
         }
         public void Initialize(byte[] data)
         {

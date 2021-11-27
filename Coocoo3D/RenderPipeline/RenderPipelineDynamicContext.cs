@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace Coocoo3D.RenderPipeline
 {
+    //readonly when rendering
     public class RenderPipelineDynamicContext
     {
         public Settings settings;
@@ -16,28 +17,18 @@ namespace Coocoo3D.RenderPipeline
         public List<MMDRendererComponent> renderers = new List<MMDRendererComponent>();
         public List<VolumeComponent> volumes = new List<VolumeComponent>();
         public List<LightingData> lightings = new List<LightingData>();
+        public Dictionary<MMDRendererComponent, int> findRenderer = new Dictionary<MMDRendererComponent, int>();
         public PassSetting currentPassSetting;
         public string passSettingPath;
-        public int VertexCount;
         public int frameRenderIndex;
         public double Time;
         public double DeltaTime;
         public double RealDeltaTime;
         public bool EnableDisplay;
 
-        public int GetSceneObjectVertexCount()
-        {
-            int count = 0;
-            for (int i = 0; i < renderers.Count; i++)
-            {
-                count += renderers[i].meshVertexCount;
-            }
-            VertexCount = count;
-            return count;
-        }
-
         public void Preprocess()
         {
+            int rendererCount = 0;
             foreach (GameObject gameObject in gameObjects)
             {
                 LightingComponent lightingComponent = gameObject.GetComponent<LightingComponent>();
@@ -59,6 +50,8 @@ namespace Coocoo3D.RenderPipeline
                     rendererComponent.position = gameObject.Position;
                     rendererComponent.rotation = gameObject.Rotation;
                     renderers.Add(rendererComponent);
+                    findRenderer[rendererComponent] = rendererCount;
+                    rendererCount++;
                 }
             }
             lightings.Sort();
@@ -70,6 +63,7 @@ namespace Coocoo3D.RenderPipeline
             lightings.Clear();
             volumes.Clear();
             renderers.Clear();
+            findRenderer.Clear();
         }
     }
 }

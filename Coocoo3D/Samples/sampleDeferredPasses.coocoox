@@ -3,7 +3,6 @@
   "RenderSequence": [
     {
       "Name": "ShadowMapPass",
-      "Filter": "Opaque",
       "ClearDepth": "true",
       "DepthBias": "3000",
       "SlopeScaledDepthBias": "1.0",
@@ -28,7 +27,7 @@
       ]
     },
     {
-      "Name": "Pass1",
+      "Name": "DrawObjectPass",
       "Filter": "Transparent",
       "DepthStencil": "_ScreenDepth0",
       "RenderTargets": [
@@ -50,76 +49,68 @@
       ]
     }
   ],
-  "RenderTargets": [
-    {
-      "Name": "_ShadowMap0",
+  "RenderTargets": {
+    "_ShadowMap0": {
       "Size": {
         "Source": "ShadowMapSize"
       },
       "Format": "D32_Float"
     },
-    {
-      "Name": "_ScreenDepth0",
+    "_ScreenDepth0": {
       "Size": {
         "Source": "OutputSize"
       },
       "Format": "D32_Float"
     },
-    {
-      "Name": "_ScreenColor0",
+    "_ScreenColor0": {
       "Size": {
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_UNorm"
     },
-    {
-      "Name": "_ScreenColor1",
+    "_ScreenColor1": {
       "Size": {
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_UNorm"
     },
-    {
-      "Name": "_ScreenColor2",
+    "_ScreenColor2": {
       "Size": {
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_UNorm"
     },
-    {
-      "Name": "_Blur0",
+    "_Blur0" :{
       "Size": {
         "Multiplier": "0.5",
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_Float"
     }
-  ],
-  "Passes": [
-    {
-      "Name": "ShadowMapPass",
+  },
+  "Passes": {
+    "ShadowMapPass": {
       "Camera": "ShadowMap",
-      "VertexShader": "VS_ShadowMap",
+      "UnionShader": "UnionShaderShadowMap.cs",
       "CBVs": [
         {
           "Index": "1",
           "Datas": [
+            "World",
             "Camera"
           ]
         }
       ]
     },
-    {
-      "Name": "GBuffer",
+    "GBuffer": {
       "Camera": "Main",
-      "VertexShader": "VS_Pass1",
-      "PixelShader": "PS_DeferredGBuffer",
+      "UnionShader": "UnionShaderGBuffer.cs",
       "CBVs": [
         {
           "Index": "1",
           "Datas": [
+            "World",
             "Camera",
-            "DirectionalLight",
             "Metallic",
             "Roughness",
             "Emission",
@@ -145,30 +136,13 @@
           "Index": "2",
           "ResourceType": "Texture2D",
           "Resource": "_ShadowMap0"
-        },
-        {
-          "Index": "3",
-          "ResourceType": "TextureCube",
-          "Resource": "_SkyBoxReflect"
-        },
-        {
-          "Index": "4",
-          "ResourceType": "TextureCube",
-          "Resource": "_SkyBoxIrradiance"
-        },
-        {
-          "Index": "5",
-          "ResourceType": "Texture2D",
-          "Resource": "_BRDFLUT"
         }
       ]
     },
-    {
-      "Name": "Final",
+    "Final": {
       "Camera": "Main",
       "VertexShader": "VS_SkyBox",
       "PixelShader": "PS_DeferredFinal",
-      "UnionShader": "UnionShaderSkyBox.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -210,31 +184,30 @@
         },
         {
           "Index": "5",
-          "ResourceType": "TextureCube",
-          "Resource": "_SkyBoxIrradiance"
-        },
-        {
-          "Index": "6",
           "ResourceType": "Texture2D",
           "Resource": "_BRDFLUT"
         },
         {
-          "Index": "7",
+          "Index": "6",
           "ResourceType": "Texture2D",
           "Resource": "_ShadowMap0"
+        },
+        {
+          "Index": "7",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBox"
         }
       ]
     },
-    {
-      "Name": "Pass1",
+    "DrawObjectPass": {
       "Camera": "Main",
-      "VertexShader": "VS_Pass1",
-      "PixelShader": "PS_Pass1",
+      "UnionShader": "UnionShaderPBRForward.cs",
       "BlendMode": "Alpha",
       "CBVs": [
         {
           "Index": "1",
           "Datas": [
+            "World",
             "Camera",
             "DirectionalLight",
             "PointLights4",
@@ -271,22 +244,15 @@
         },
         {
           "Index": "4",
-          "ResourceType": "TextureCube",
-          "Resource": "_SkyBoxIrradiance"
-        },
-        {
-          "Index": "5",
           "ResourceType": "Texture2D",
           "Resource": "_BRDFLUT"
         }
       ]
     },
-    {
-      "Name": "BloomBlur1",
+    "BloomBlur1": {
       "Camera": "Main",
       "VertexShader": "VS_SkyBox",
       "PixelShader": "PS_BloomBlur1",
-      "UnionShader": "UnionShaderSkyBox.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -303,12 +269,10 @@
         }
       ]
     },
-    {
-      "Name": "BloomBlur2",
+    "BloomBlur2" :{
       "Camera": "Main",
       "VertexShader": "VS_SkyBox",
       "PixelShader": "PS_BloomBlur2",
-      "UnionShader": "UnionShaderSkyBox.cs",
       "BlendMode": "Add",
       "CBVs": [
         {
@@ -326,16 +290,8 @@
         }
       ]
     }
-  ],
+  },
   "VertexShaders": [
-    {
-      "Name": "VS_Pass1",
-      "Path": "VS_Pass1.hlsl"
-    },
-    {
-      "Name": "VS_ShadowMap",
-      "Path": "VS_Pass1.hlsl"
-    },
     {
       "Name": "VS_SkyBox",
       "Path": "VS_SkyBox.hlsl"
@@ -347,26 +303,17 @@
       "Path": "PS_DeferredFinal.hlsl"
     },
     {
-      "Name": "PS_DeferredGBuffer",
-      "Path": "PS_DeferredGBuffer.hlsl"
-    },
-    {
       "Name": "PS_BloomBlur1",
       "Path": "PS_BloomBlur1.hlsl"
     },
     {
       "Name": "PS_BloomBlur2",
       "Path": "PS_BloomBlur2.hlsl"
-    },
-    {
-      "Name": "PS_Pass1",
-      "Path": "PS_Pass1.hlsl"
     }
   ],
-  "UnionShaders": [
-    {
-      "Name": "UnionShaderSkyBox.cs",
-      "Path": "UnionShaderSkyBox.cs"
-    }
-  ]
+  "UnionShaders": {
+    "UnionShaderGBuffer.cs": "UnionShaderGBuffer.cs",
+    "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
+    "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs"
+  }
 }

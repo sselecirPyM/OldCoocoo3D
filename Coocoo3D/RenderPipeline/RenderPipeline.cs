@@ -27,11 +27,5 @@ namespace Coocoo3D.RenderPipeline
             else
                 return error;
         }
-
-        protected void SetPipelineStateVariant(GraphicsDevice graphicsDevice, GraphicsContext graphicsContext, RootSignature graphicsSignature, in PSODesc desc, PSO pso)
-        {
-            int variant = pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc);
-            graphicsContext.SetPSO(pso, variant);
-        }
     }
 }

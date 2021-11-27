@@ -7,10 +7,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
-using Coocoo3D.Core;
 using ImGuiNET;
 using Coocoo3D.Utility;
-using Vortice.Direct3D;
 using Vortice.DXGI;
 using Vortice.Direct3D12;
 
@@ -61,9 +59,9 @@ namespace Coocoo3D.RenderPipeline
 
             var rpAssets = context.RPAssetsManager;
             var caches = context.mainCaches;
-            var rsPP = context.RPAssetsManager.GetRootSignature(context.graphicsDevice, "CCs");
+            var rsPP = context.mainCaches.GetRootSignature(context.graphicsDevice, "CCs");
 
-            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.backgroundColor, true);
+            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.BackgroundColor, true);
 
             graphicsContext.SetRootSignature(rsPP);
 
@@ -77,25 +75,14 @@ namespace Coocoo3D.RenderPipeline
             desc.ptt = PrimitiveTopologyType.Triangle;
             desc.rtvFormat = context.swapChainFormat;
             desc.renderTargetCount = 1;
-            desc.streamOutput = false;
             desc.wireFrame = false;
             graphicsContext.SetMesh(context.ndcQuadMesh);
-
-            int ofs = 0;
 
             var data = ImGui.GetDrawData();
             float L = data.DisplayPos.X;
             float R = data.DisplayPos.X + data.DisplaySize.X;
             float T = data.DisplayPos.Y;
             float B = data.DisplayPos.Y + data.DisplaySize.Y;
-            Matrix4x4 matrix = new Matrix4x4(
-                2.0f / (R - L), 0.0f, 0.0f, (R + L) / (L - R),
-                0.0f, 2.0f / (T - B), 0.0f, (T + B) / (B - T),
-                0.0f, 0.0f, 0.5f, 0.5f,
-                0.0f, 0.0f, 0.0f, 1.0f);
-
-            GPUWriter.BufferBegin();
-            GPUWriter.Write(matrix);
 
             Vector2 clip_off = data.DisplayPos;
 
@@ -107,13 +94,17 @@ namespace Coocoo3D.RenderPipeline
             desc.ptt = PrimitiveTopologyType.Triangle;
             desc.rtvFormat = context.swapChainFormat;
             desc.renderTargetCount = 1;
-            desc.streamOutput = false;
             desc.wireFrame = false;
             desc.inputLayout = InputLayout.imgui;
-            SetPipelineStateVariant(context.graphicsDevice, graphicsContext, rsPP, ref desc, rpAssets.PSOs["ImGui"]);
-            var cbuffer = GPUWriter.GetBuffer(context.graphicsDevice, graphicsContext, false);
-            graphicsContext.SetCBVRSlot(cbuffer, 0, 0, 0);
-            ofs++;
+            graphicsContext.SetPSO(rpAssets.PSOs["ImGui"], desc);
+            Matrix4x4 matrix = new Matrix4x4(
+                2.0f / (R - L), 0.0f, 0.0f, (R + L) / (L - R),
+                0.0f, 2.0f / (T - B), 0.0f, (T + B) / (B - T),
+                0.0f, 0.0f, 0.5f, 0.5f,
+                0.0f, 0.0f, 0.0f, 1.0f);
+
+            GPUWriter.Write(matrix);
+            GPUWriter.SetBufferImmediately( graphicsContext, false,0);
             if (data.CmdListsCount > 0)
             {
                 unsafe
@@ -176,12 +167,6 @@ namespace Coocoo3D.RenderPipeline
                 return unload;
             else
                 return error;
-        }
-
-        protected void SetPipelineStateVariant(GraphicsDevice graphicsDevice, GraphicsContext graphicsContext, RootSignature graphicsSignature, ref PSODesc desc, PSO pso)
-        {
-            int variant = pso.GetVariantIndex(graphicsDevice, graphicsSignature, desc);
-            graphicsContext.SetPSO(pso, variant);
         }
     }
 }

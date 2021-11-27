@@ -1,34 +1,26 @@
 ﻿{
   "vertexShaders": [
     {
-      "name": "VSMMDSkinning",
-      "path": "Shaders/VSMMDSkinning.hlsl"
-    },
-    {
       "name": "VSPostProcess",
-      "path": "Shaders/VSPostProcess.hlsl"
-    },
-    {
-      "name": "VS_Pass1",
-      "path": "Shaders/VS_Pass1.hlsl"
-    },
-    {
-      "name": "VSMMDTransform",
-      "path": "Shaders/VSMMDTransform.hlsl"
+      "path": "Shaders/PostProcess.hlsl",
+      "entryPoint": "vsmain"
     },
     {
       "name": "ImGui_VS",
-      "path": "Shaders/ImGui_VS.hlsl"
+      "path": "Shaders/ImGui.hlsl",
+      "entryPoint": "vsmain"
     }
   ],
   "pixelShaders": [
     {
       "name": "PSPostProcess",
-      "path": "Shaders/PSPostProcess.hlsl"
+      "path": "Shaders/PostProcess.hlsl",
+      "entryPoint": "psmain"
     },
     {
       "name": "ImGui_PS",
-      "path": "Shaders/ImGui_PS.hlsl"
+      "path": "Shaders/ImGui.hlsl",
+      "entryPoint": "psmain"
     }
   ],
   "pipelineStates": [
@@ -36,10 +28,6 @@
       "name": "PostProcess",
       "vertexShader": "VSPostProcess",
       "pixelShader": "PSPostProcess"
-    },
-    {
-      "name": "PSOMMDSkinning",
-      "vertexShader": "VSMMDSkinning"
     },
     {
       "name": "ImGui",

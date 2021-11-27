@@ -1,17 +1,12 @@
-#define MAX_BONE_MATRICES 1020
+#define MAX_BONE_MATRICES 1024
 cbuffer cbAnimMatrices : register(b0)
 {
-	float4x4 g_mWorld;
-	float g_posAmount1;
-	float3 g_bonePreserved1;
-	float4 g_bonePreserved3[3];
-	float4x4 g_bonePreserved2[2];
 	float4x4 g_mConstBoneWorld[MAX_BONE_MATRICES];
 };
 
 struct VSSkinnedIn
 {
-	float3 Pos	: POSITION0;			//Position
+	float3 Pos	: POSITION0;		//Position
 	float4 Weights : WEIGHTS;		//Bone weights
 	uint4  Bones : BONES;			//Bone indices
 	float3 Norm : NORMAL;			//Normal
@@ -86,20 +81,11 @@ SkinnedInfo SkinVert(VSSkinnedIn Input)
 	return Output;
 }
 
-#define CAMERA_DATA_DEFINE \
-	float4x4 g_mWorldToProj;\
-	float4x4 g_mProjToWorld;\
-	float3   g_vCamPos;\
-	float g_skyBoxMultiple;\
-	uint g_enableAO;\
-	uint g_enableShadow;\
-	uint g_quality;\
-	float g_aspectRatio;\
-	uint2 g_camera_randomValue;\
-	float4 g_camera_preserved2[5]
 cbuffer cb2 : register(b1)
 {
-	CAMERA_DATA_DEFINE;//is a macro
+	float4x4 g_mWorld;
+	float4x4 g_mWorldToProj;
+	float4x4 g_mProjToWorld;
 };
 
 struct PSSkinnedIn
@@ -111,7 +97,7 @@ struct PSSkinnedIn
 	float3 Tangent : TANGENT;		//Normalized Tangent vector
 };
 
-PSSkinnedIn main(VSSkinnedIn input)
+PSSkinnedIn vsmain(VSSkinnedIn input)
 {
 	PSSkinnedIn output;
 

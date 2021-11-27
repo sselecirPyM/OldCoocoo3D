@@ -14,12 +14,19 @@ namespace Coocoo3D.ResourceWarp
         public string fullPath;
         public string relativePath;
         public bool requireReload;
+        public int modifiyIndex;
+
+        public int GetModifyIndex(FileInfo[] fileInfos)
+        {
+            IsModified(fileInfos);
+            return modifiyIndex;
+        }
 
         public bool IsModified(FileInfo[] fileInfos)
         {
             try
             {
-                var file = fileInfos.Where(u=>u.Name.Equals(relativePath,StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+                var file = fileInfos.Where(u => u.Name.Equals(relativePath, StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
                 var attr = file.LastWriteTime;
                 bool modified = false;
                 if (lastModifiedTime != attr)
@@ -28,9 +35,10 @@ namespace Coocoo3D.ResourceWarp
                     this.file = file;
                     lastModifiedTime = attr;
                 }
+                if (modified) modifiyIndex++;
                 return modified;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 lastModifiedTime = new DateTimeOffset();
                 throw;
