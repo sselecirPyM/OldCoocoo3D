@@ -99,6 +99,10 @@ namespace Coocoo3D.UI
                         var scene = ReadJsonStream<Coocoo3DScene>(file.OpenRead());
                         scene.ToScene(appBody);
                         break;
+                    case ".coocoox":
+                        appBody.RPContext.mainCaches.GetPassSetting(file.FullName);
+                        appBody.RPContext.currentPassSetting1 = file.FullName;
+                        break;
                     case ".cs":
                         appBody.RPContext.mainCaches.GetUnionShader(file.FullName);
                         break;

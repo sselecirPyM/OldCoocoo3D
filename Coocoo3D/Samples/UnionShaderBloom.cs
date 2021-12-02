@@ -1,25 +1,57 @@
 ﻿using System;
 using Coocoo3D.RenderPipeline;
 using Coocoo3DGraphics;
+using System.IO;
+using System.Collections.Generic;
 public static class UnionShaderBloom
 {
     public static bool UnionShader(UnionShaderParam param)
     {
+        if (!param.settings.EnableBloom) return true;
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.rp.mainCaches;
         var psoDesc = param.PSODesc;
-        var pass = param.passSetting.RenderSequence.Find(u => u.Name == param.passName);
-        foreach (var cbvs in pass.Pass.CBVs)
+        //var pass = param.passSetting.RenderSequence.Find(u => u.Name == param.passName);
+        //foreach (var cbvs in pass.Pass.CBVs)
+        //{
+        //    _WriteCBV(cbvs, param, cbvs.Index);
+        //}
+
+        var writer = param.GPUWriter;
+        Texture2D renderTarget = param.renderTargets[0];
+        writer.Write(renderTarget.GetWidth());
+        writer.Write(renderTarget.GetHeight());
+        writer.Write(param.settings.BloomThreshold);
+        writer.Write(param.settings.BloomIntensity);
+        writer.SetBufferImmediately(graphicsContext, false, 0);
+
+        PSO pso1 = null;
+        switch (param.passName)
         {
-            _WriteCBV(cbvs, param, cbvs.Index);
+            case "BloomBlur1":
+                {
+                    List<string> keywords = new List<string>();
+                    keywords.Add("BLOOM_1");
+                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
+                }
+                break;
+            case "BloomBlur2":
+                {
+                    List<string> keywords = new List<string>();
+                    keywords.Add("BLOOM_2");
+                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
+                }
+                break;
+            default:
+                return false;
         }
-        param.graphicsContext.SetPSO(param.PSO, psoDesc);
+        if (param.settings.DebugRenderType == DebugRenderType.Bloom)
+        {
+            psoDesc.blendState = BlendState.None;
+        }
+        param.graphicsContext.SetPSO(pso1, psoDesc);
         graphicsContext.DrawIndexed(6, 0, 0);
         return true;
-        //var pso1 = mainCaches.GetPSOWithKeywords(null, Path.GetFullPath("BloomBlur.hlsl", param.relativePath));
-        //param.graphicsContext.SetPSO(pso1, psoDesc);
-        //graphicsContext.DrawIndexed(6, 0, 0);
-        //return true;
     }
     static void _WriteCBV(CBVSlotRes cbv, UnionShaderParam unionShaderParam, int slot)
     {

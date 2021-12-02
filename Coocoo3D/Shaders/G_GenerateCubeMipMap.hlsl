@@ -90,7 +90,7 @@ RWTexture2DArray<float4> IrradianceMap : register(u0);
 TextureCube Image : register(t0);
 SamplerState s0 : register(s0);
 [numthreads(8, 8, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void csmain(uint3 dtid : SV_DispatchThreadID)
 {
 	float3 N = float3(0, 0, 0);
 	float4 dir1 = float4(0, 0, 0, 0);

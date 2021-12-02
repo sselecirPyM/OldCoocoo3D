@@ -134,11 +134,11 @@ namespace Coocoo3D.RenderPipeline
             return visualChannel;
         }
 
-        public void BeginDynamicContext(bool enableDisplay, Settings settings)
+        public void BeginDynamicContext(bool enableDisplay, Scene scene)
         {
             dynamicContextWrite.FrameBegin();
             dynamicContextWrite.EnableDisplay = enableDisplay;
-            dynamicContextWrite.settings = settings;
+            dynamicContextWrite.settings = scene.settings;
 
             dynamicContextWrite.currentPassSetting = mainCaches.GetPassSetting(currentPassSetting1);
             dynamicContextWrite.passSettingPath = currentPassSetting1;

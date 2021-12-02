@@ -5,6 +5,20 @@ using System.IO;
 using System.Collections.Generic;
 public static class UnionShaderPBRForward
 {
+    static Dictionary<DebugRenderType, string> debugKeywords = new Dictionary<DebugRenderType, string>()
+    {
+        { DebugRenderType.Albedo,"DEBUG_ALBEDO"},
+        { DebugRenderType.Depth,"DEBUG_DEPTH"},
+        { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
+        { DebugRenderType.DiffuseRender,"DEBUG_DIFFUSE_RENDER"},
+        { DebugRenderType.Emission,"DEBUG_EMISSION"},
+        { DebugRenderType.Normal,"DEBUG_NORMAL"},
+        { DebugRenderType.Position,"DEBUG_POSITION"},
+        { DebugRenderType.Roughness,"DEBUG_ROUGHNESS"},
+        { DebugRenderType.Specular,"DEBUG_SPECULAR"},
+        { DebugRenderType.SpecularRender,"DEBUG_SPECULAR_RENDER"},
+        { DebugRenderType.UV,"DEBUG_UV"},
+    };
     public static bool UnionShader(UnionShaderParam param)
     {
         var mainCaches = param.rp.mainCaches;
@@ -23,9 +37,11 @@ public static class UnionShaderPBRForward
                         bool receiveShadow = material.ReceiveShadow;
 
                         List<string> keywords = new List<string>();
+                        if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
+                            keywords.Add(debugKeyword);
                         if (hasLight)
                         {
-                            if(!receiveShadow)
+                            if (!receiveShadow)
                                 keywords.Add("DISBLE_SHADOW_RECEIVE");
                             keywords.Add("ENABLE_LIGHT");
                         }

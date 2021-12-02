@@ -236,16 +236,23 @@ PSSkinnedIn vsmain(VSSkinnedIn input)
 	output.Norm = normalize(mul(vSkinned.Norm, (float3x3)g_mWorld));
 	output.Tangent = normalize(mul(vSkinned.Tan, (float3x3)g_mWorld));
 	output.TexCoord = input.Tex;
-	//float3 pos = input.Pos;
-	//output.Norm = input.Norm;
-	//output.Tangent = input.Tan;
-	//output.Tex = input.Tex;
 
 	output.Pos = mul(float4(pos, 1), g_mWorldToProj);
 	output.wPos = float4(pos, 1);
 
 	return output;
 }
+#define ENABLE_DIFFUSE 1
+#define ENABLE_SPECULR 1
+
+#ifdef DEBUG_SPECULAR_RENDER
+#undef ENABLE_DIFFUSE
+#endif
+
+#ifdef DEBUG_DIFFUSE_RENDER
+#undef ENABLE_SPECULR
+#endif
+
 float4 psmain(PSSkinnedIn input) : SV_TARGET
 {
 	float4 texColor = texture0.Sample(s1, input.TexCoord) * _DiffuseColor;
@@ -268,10 +275,46 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
+#if ENABLE_DIFFUSE
 	outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+#endif
+#if ENABLE_SPECULR
 	outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness,1e-5)) * 4) * g_skyBoxMultiple * GF;
+#endif
 	outputColor += _Emission * albedo /** _AmbientColor*/;
-#ifdef ENABLE_LIGHT
+#if DEBUG_ALBEDO
+	return float4(albedo, 1);
+#endif
+#if DEBUG_DEPTH
+	float _depth1 = pow(input.Pos.z,2.2f);
+	if (_depth1 < 1)
+		return float4(_depth1, _depth1, _depth1,1);
+	else
+		return float4(1, 0, 0, 1);
+#endif
+#if DEBUG_DIFFUSE
+	return float4(c_diffuse,1);
+#endif
+#if DEBUG_EMISSION
+	return float4(_Emission * albedo, 1);
+#endif
+#if DEBUG_NORMAL
+	return float4(N * 0.5 + 0.5, 1);
+#endif
+#if DEBUG_POSITION
+	return input.wPos;
+#endif
+#if DEBUG_ROUGHNESS
+	float _roughness1 = pow(max(roughness,0.0001f), 2.2f);
+	return float4(_roughness1, _roughness1, _roughness1,1);
+#endif
+#if DEBUG_SPECULAR
+	return float4(c_specular,1);
+#endif
+#if DEBUG_UV
+	return float4(input.TexCoord,0,1);
+#endif
+#if ENABLE_LIGHT
 	for (int i = 0; i < 1; i++)
 	{
 		if (Lightings[i].LightColor.a == 0)continue;
@@ -295,9 +338,16 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 			float3 NdotL = saturate(dot(N, L));
 			float3 LdotH = saturate(dot(L, H));
 			float3 NdotH = saturate(dot(N, H));
-
+#if ENABLE_DIFFUSE
 			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+#else
+			float diffuse_factor = 0;
+#endif
+#if ENABLE_SPECULR
 			float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+#else
+			float3 specular_factor = 0;
+#endif
 
 			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
 		}
@@ -316,13 +366,20 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 			float3 LdotH = saturate(dot(L, H));
 			float3 NdotH = saturate(dot(N, H));
 
+#if ENABLE_DIFFUSE
 			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+#else
+			float diffuse_factor = 0;
+#endif
+#if ENABLE_SPECULR
 			float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
-
+#else
+			float3 specular_factor = 0;
+#endif
 			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
 		}
 	}
-#endif
+#endif //ENABLE_LIGHT
 
 	return float4(outputColor, texColor.a);
 }

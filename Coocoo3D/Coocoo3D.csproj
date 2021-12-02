@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <Compile Remove="Samples\UnionShaderBloom.cs" />
-    <Compile Remove="Samples\UnionShaderGBuffer.cs" />
+    <Compile Remove="Samples\UnionShaderDeferred.cs" />
     <Compile Remove="Samples\UnionShaderPBRForward.cs" />
     <Compile Remove="Samples\UnionShaderShadowMap.cs" />
   </ItemGroup>
@@ -27,7 +27,7 @@
     <None Include="Samples\UnionShaderPBRForward.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Samples\UnionShaderGBuffer.cs">
+    <None Include="Samples\UnionShaderDeferred.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Samples\UnionShaderBloom.cs">
@@ -73,6 +73,12 @@
     <None Update="Samples\DeferredGBuffer.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Samples\DeferredFinal.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Samples\Bloom.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Samples\ShadowMap.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -94,22 +100,10 @@
     <None Update="Shaders\G_PreFilterEnv.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Samples\PS_BloomBlur1.hlsl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Samples\PS_BloomBlur2.hlsl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Samples\PS_DeferredFinal.hlsl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Samples\sampleDeferredPasses.coocoox">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\samplePasses.coocoox">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Samples\VS_SkyBox.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\CSMMDSkinning.hlsl">
@@ -119,9 +113,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\VSMMDSkinning.hlsl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Shaders\VSMMDTransform.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\PostProcess.hlsl">

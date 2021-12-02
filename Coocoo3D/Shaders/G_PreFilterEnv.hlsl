@@ -213,7 +213,7 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 
 
 [numthreads(8, 8, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void csmain(uint3 dtid : SV_DispatchThreadID)
 {
 	float3 N = float4(0, 0, 0, 0);
 	uint2 size1 = imageSize;

@@ -145,7 +145,33 @@ struct PSIn
 	float4 Pos	: SV_POSITION;		//Position
 	float2 uv	: TEXCOORD;
 };
-float4 main(PSIn input) : SV_TARGET
+struct VSIn
+{
+	float4 Pos	: POSITION;			//Position
+};
+
+PSIn vsmain(VSIn input)
+{
+	PSIn output;
+	output.Pos = float4(input.Pos.xyz, 1);
+	output.Pos.z = 1 - 1e-6;
+	output.uv = input.Pos.xy;
+	//output.uv.y = 1 - output.uv.y;
+
+	return output;
+}
+#define ENABLE_DIFFUSE 1
+#define ENABLE_SPECULR 1
+
+#ifdef DEBUG_SPECULAR_RENDER
+#undef ENABLE_DIFFUSE
+#endif
+
+#ifdef DEBUG_DIFFUSE_RENDER
+#undef ENABLE_SPECULR
+#endif
+
+float4 psmain(PSIn input) : SV_TARGET
 {
 	float2 uv = input.uv * 0.5 + 0.5;
 	uv.y = 1 - uv.y;
@@ -174,10 +200,38 @@ float4 main(PSIn input) : SV_TARGET
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
 		float3 outputColor = float3(0, 0, 0);
-		//outputColor += IrradianceCube.Sample(s0, N) * g_skyBoxMultiple * c_diffuse;
-		outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
-		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
 
+#if ENABLE_DIFFUSE
+		outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+#endif
+#if ENABLE_SPECULR
+		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
+#endif
+
+#if DEBUG_DEPTH
+		float _depth1 = pow(depth1,2.2f);
+		if (_depth1 < 1)
+			return float4(_depth1, _depth1, _depth1, 1);
+		else
+			return float4(1, 0, 0, 1);
+#endif
+#if DEBUG_DIFFUSE
+		return float4(c_diffuse, 1);
+#endif
+#if DEBUG_NORMAL
+		return float4(N * 0.5 + 0.5, 1);
+#endif
+#if DEBUG_POSITION
+		return wPos;
+#endif
+#if DEBUG_ROUGHNESS
+		float _roughness1 = pow(max(roughness, 0.0001f), 2.2f);
+		return float4(_roughness1, _roughness1, _roughness1, 1);
+#endif
+#if DEBUG_SPECULAR
+		return float4(c_specular, 1);
+#endif
+#if ENABLE_LIGHT
 		for (int i = 0; i < 1; i++)
 		{
 			if (Lightings[i].LightColor.a == 0)continue;
@@ -200,9 +254,17 @@ float4 main(PSIn input) : SV_TARGET
 				float3 NdotL = saturate(dot(N, L));
 				float3 LdotH = saturate(dot(L, H));
 				float3 NdotH = saturate(dot(N, H));
-
-				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
-				float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+				
+#if ENABLE_DIFFUSE
+			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+#else
+			float diffuse_factor = 0;
+#endif
+#if ENABLE_SPECULR
+			float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+#else
+			float3 specular_factor = 0;
+#endif
 
 				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
 			}
@@ -221,13 +283,21 @@ float4 main(PSIn input) : SV_TARGET
 				float3 LdotH = saturate(dot(L, H));
 				float3 NdotH = saturate(dot(N, H));
 
+#if ENABLE_DIFFUSE
 				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+#else
+				float diffuse_factor = 0;
+#endif
+#if ENABLE_SPECULR
 				float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+#else
+				float3 specular_factor = 0;
+#endif
 
 				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
 			}
 		}
-
+#endif//ENABLE_LIGHT
 		return float4(outputColor, 1);
 	}
 	else

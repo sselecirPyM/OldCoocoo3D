@@ -208,19 +208,23 @@ namespace Coocoo3D.UI
                 ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
                 ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
                 ImGui.Checkbox("多线程渲染", ref appBody.performaceSettings.MultiThreadRendering);
-                ImGui.Checkbox("线框", ref appBody.settings.Wireframe);
-                ImGui.SetNextItemWidth(150);
-                ImGui.DragInt("阴影分辨率", ref appBody.settings.ShadowMapResolution, 128, 512, 8192);
                 float a = (float)(1.0 / appBody.GameDriverContext.FrameInterval);
                 if (!(a == a))
                     a = 2000;
-
                 if (ImGui.DragFloat("帧率限制", ref a, 10, 1, 5000))
                 {
                     if (a == a)
                         appBody.GameDriverContext.FrameInterval = 1 / a;
                 }
-                ImGui.SliderInt("天空盒最高质量", ref appBody.settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
+                var scene = appBody.CurrentScene;
+                ImGui.Checkbox("线框", ref scene.settings.Wireframe);
+                ImGui.DragInt("阴影分辨率", ref scene.settings.ShadowMapResolution, 128, 512, 8192);
+                ImGui.SliderInt("天空盒最高质量", ref scene.settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
+                ImGui.DragFloat("泛光阈值", ref scene.settings.BloomThreshold, 0.01f);
+                ImGui.DragFloat("泛光强度", ref scene.settings.BloomIntensity, 0.01f);
+                ImGui.Checkbox("泛光", ref scene.settings.EnableBloom);
+                ComboBox("调试渲染", ref scene.settings.DebugRenderType);
+
                 if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
                 {
                     renderPipelines = new string[appBody.mainCaches.PassSettings.Count];
@@ -233,7 +237,6 @@ namespace Coocoo3D.UI
                     renderPipelineKeys[_i] = pair.Key;
                     _i++;
                 }
-                appBody.mainCaches.PassSettings.Select(u => u.Value.Name);
                 if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
                 {
                     appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
@@ -362,7 +365,10 @@ vmd格式动作");
             }
             if (ImGui.TreeNode("编写着色器"))
             {
-                ImGui.TextWrapped(@"以后会逐渐加入。");
+                ImGui.TextWrapped(@"复制Samples文件夹里的内容，粘贴到任意位置，然后开始修改。
+双击.coocoox文件加载。
+当前版本格式未规范，以后可能会有变化。
+");
                 ImGui.TreePop();
             }
             if (ImGui.Button("显示ImGuiDemoWindow"))
@@ -388,7 +394,7 @@ vmd格式动作");
                 foreach (var gameObject in appBody.SelectedGameObjects)
                     appBody.CurrentScene.RemoveGameObject(gameObject);
             }
-            ImGui.DragFloat("天空盒亮度", ref appBody.settings.SkyBoxLightMultiplier, 0.05f);
+            ImGui.DragFloat("天空盒亮度", ref appBody.CurrentScene.settings.SkyBoxLightMultiplier, 0.05f);
             //while (gameObjectSelected.Count < appBody.CurrentScene.gameObjects.Count)
             //{
             //    gameObjectSelected.Add(false);
@@ -449,6 +455,7 @@ vmd格式动作");
                         ImGui.SliderFloat("金属性  ", ref material.innerStruct.Metallic, 0, 1);
                         ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
                         ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
+                        ImGui.DragFloat("发光  ", ref material.innerStruct.Emission, 0.01f);
                         string s = material.unionShader ?? "";
                         if (ImGui.InputText("UnionShader", ref s, 256))
                         {
@@ -526,6 +533,25 @@ vmd格式动作");
                 //    ImGui.EndTooltip();
             }
         }
+
+
+        public static bool ComboBox<T>(string label, ref T val) where T : struct, Enum
+        {
+            string typeName = (typeof(T)).ToString();
+            string valName = val.ToString();
+            string[] enums = Enum.GetNames<T>();
+            string[] enumsTranslation = enums;
+
+            int sourceI = Array.FindIndex(enums, u => u == valName);
+            int sourceI2 = sourceI;
+
+            bool result = ImGui.Combo(string.Format("{1}###{0}", label, label), ref sourceI, enumsTranslation, enumsTranslation.Length);
+            if (sourceI != sourceI2)
+                val = Enum.Parse<T>(enums[sourceI]);
+
+            return result;
+        }
+
         public static bool initialized = false;
 
         public static bool demoWindowOpen = false;

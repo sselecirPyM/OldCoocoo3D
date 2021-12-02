@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Coocoo3D.Components;
 using Coocoo3D.Base;
 using System.Numerics;
+using Coocoo3D.RenderPipeline;
 
 namespace Coocoo3D.Core
 {
@@ -18,6 +19,21 @@ namespace Coocoo3D.Core
     }
     public class Scene
     {
+        public Settings settings = new Settings()
+        {
+            BackgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
+            Wireframe = false,
+            SkyBoxLightMultiplier = 3.0f,
+            SkyBoxMaxQuality = 256,
+            ShadowMapResolution = 2048,
+            EnableAO = true,
+            EnableShadow = true,
+            EnableBloom = true,
+            BloomIntensity = 0.1f,
+            BloomRange = 0.1f,
+            BloomThreshold = 1.1f,
+        };
+
         public List<GameObject> gameObjects = new List<GameObject>();
         public List<GameObject> gameObjectLoadList = new List<GameObject>();
         public List<GameObject> gameObjectRemoveList = new List<GameObject>();
@@ -240,5 +256,23 @@ namespace Coocoo3D.Core
             }
             _BoneUpdate(playTime, (float)deltaTime, rendererComponents, caches);
         }
+    }
+
+    public struct Settings
+    {
+        public Vector4 BackgroundColor;
+        public bool Wireframe;
+        public DebugRenderType DebugRenderType;
+
+        public float SkyBoxLightMultiplier;
+        public int SkyBoxMaxQuality;
+        public int ShadowMapResolution;
+
+        public bool EnableAO;
+        public bool EnableShadow;
+        public bool EnableBloom;
+        public float BloomThreshold;
+        public float BloomIntensity;
+        public float BloomRange;
     }
 }

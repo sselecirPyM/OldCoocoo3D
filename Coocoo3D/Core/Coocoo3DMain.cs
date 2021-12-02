@@ -34,16 +34,6 @@ namespace Coocoo3D.Core
         public volatile int CompletedRenderCount = 0;
         public long LatestRenderTime = 0;
         #endregion
-        public Settings settings = new Settings()
-        {
-            BackgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
-            Wireframe = false,
-            SkyBoxLightMultiplier = 3.0f,
-            SkyBoxMaxQuality = 256,
-            ShadowMapResolution = 2048,
-            EnableAO = true,
-            EnableShadow = true,
-        };
         public PerformaceSettings performaceSettings = new PerformaceSettings()
         {
             MultiThreadRendering = true,
@@ -144,7 +134,7 @@ namespace Coocoo3D.Core
             }
             #region Scene Simulation
 
-            RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, settings);
+            RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, CurrentScene);
             LatestRenderTime = now;
             RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
             RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.Playing ? RPContext.gameDriverContext.DeltaTime : 0;
@@ -283,18 +273,5 @@ namespace Coocoo3D.Core
         public bool AutoReloadShaders;
         public bool AutoReloadTextures;
         public bool VSync;
-    }
-
-    public struct Settings
-    {
-        public Vector4 BackgroundColor;
-        public bool Wireframe;
-
-        public float SkyBoxLightMultiplier;
-        public int SkyBoxMaxQuality;
-        public int ShadowMapResolution;
-
-        public bool EnableAO;
-        public bool EnableShadow;
     }
 }

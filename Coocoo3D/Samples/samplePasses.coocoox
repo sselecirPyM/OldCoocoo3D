@@ -147,8 +147,7 @@
     },
     "BloomBlur1": {
       "Camera": "Main",
-      "VertexShader": "VS_SkyBox",
-      "PixelShader": "PS_BloomBlur1",
+      "UnionShader": "UnionShaderBloom.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -167,8 +166,7 @@
     },
     "BloomBlur2" :{
       "Camera": "Main",
-      "VertexShader": "VS_SkyBox",
-      "PixelShader": "PS_BloomBlur2",
+      "UnionShader": "UnionShaderBloom.cs",
       "BlendMode": "Add",
       "CBVs": [
         {
@@ -188,23 +186,12 @@
     }
   },
   "VertexShaders": [
-    {
-      "Name": "VS_SkyBox",
-      "Path": "VS_SkyBox.hlsl"
-    }
   ],
   "PixelShaders": [
-    {
-      "Name": "PS_BloomBlur1",
-      "Path": "PS_BloomBlur1.hlsl"
-    },
-    {
-      "Name": "PS_BloomBlur2",
-      "Path": "PS_BloomBlur2.hlsl"
-    }
   ],
   "UnionShaders": {
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
-    "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs"
+    "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
+    "UnionShaderBloom.cs": "UnionShaderBloom.cs"
   }
 }

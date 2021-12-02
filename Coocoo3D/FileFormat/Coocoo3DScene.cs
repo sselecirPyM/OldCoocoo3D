@@ -50,14 +50,15 @@ namespace Coocoo3D.FileFormat
         public int formatVersion = 1;
         public List<CooSceneObject> objects;
         public Dictionary<string, string> sceneProperties;
+        public Settings settings;
 
         public static Coocoo3DScene FromScene(Coocoo3DMain main)
         {
             Coocoo3DScene scene = new Coocoo3DScene();
             scene.sceneProperties = new Dictionary<string, string>();
             scene.sceneProperties.Add("skyBox", main.RPContext.skyBoxOriTex);
-            scene.sceneProperties.Add("skyBoxMultiplier", main.settings.SkyBoxLightMultiplier.ToString());
             scene.objects = new List<CooSceneObject>();
+            scene.settings = main.CurrentScene.settings;
             foreach (var obj in main.CurrentScene.gameObjects)
             {
                 var renderer = obj.GetComponent<MMDRendererComponent>();
@@ -96,10 +97,7 @@ namespace Coocoo3D.FileFormat
         }
         public void ToScene(Coocoo3DMain main)
         {
-            if (sceneProperties.TryGetValue("skyBoxMultiplier", out string multipler1) && float.TryParse(multipler1, out float multipler))
-            {
-                main.settings.SkyBoxLightMultiplier = multipler;
-            }
+            main.CurrentScene.settings = settings;
             if (sceneProperties.TryGetValue("skyBox", out string skyBox))
             {
                 main.RPContext.skyBoxOriTex = skyBox;

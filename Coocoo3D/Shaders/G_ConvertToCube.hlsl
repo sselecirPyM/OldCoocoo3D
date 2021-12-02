@@ -48,7 +48,7 @@ Texture2D Panorama : register(t0);
 SamplerState s0 : register(s0);
 
 [numthreads(8, 8, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void csmain(uint3 dtid : SV_DispatchThreadID)
 {
 	float3 N = float3(0, 0, 0);
 	uint2 size1 = imageSize;

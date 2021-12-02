@@ -9,7 +9,7 @@
       "DepthStencil": "_ShadowMap0"
     },
     {
-      "Name": "GBuffer",
+      "Name": "GBufferPass",
       "Filter": "Opaque",
       "ClearDepth": "true",
       "DepthStencil": "_ScreenDepth0",
@@ -20,7 +20,7 @@
       ]
     },
     {
-      "Name": "Final",
+      "Name": "DeferredFinalPass",
       "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
@@ -102,9 +102,9 @@
         }
       ]
     },
-    "GBuffer": {
+    "GBufferPass": {
       "Camera": "Main",
-      "UnionShader": "UnionShaderGBuffer.cs",
+      "UnionShader": "UnionShaderDeferred.cs",
       "CBVs": [
         {
           "Index": "1",
@@ -139,10 +139,9 @@
         }
       ]
     },
-    "Final": {
+    "DeferredFinalPass": {
       "Camera": "Main",
-      "VertexShader": "VS_SkyBox",
-      "PixelShader": "PS_DeferredFinal",
+      "UnionShader": "UnionShaderDeferred.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -251,8 +250,7 @@
     },
     "BloomBlur1": {
       "Camera": "Main",
-      "VertexShader": "VS_SkyBox",
-      "PixelShader": "PS_BloomBlur1",
+      "UnionShader": "UnionShaderBloom.cs",
       "CBVs": [
         {
           "Index": "0",
@@ -269,10 +267,9 @@
         }
       ]
     },
-    "BloomBlur2" :{
+    "BloomBlur2": {
       "Camera": "Main",
-      "VertexShader": "VS_SkyBox",
-      "PixelShader": "PS_BloomBlur2",
+      "UnionShader": "UnionShaderBloom.cs",
       "BlendMode": "Add",
       "CBVs": [
         {
@@ -292,28 +289,13 @@
     }
   },
   "VertexShaders": [
-    {
-      "Name": "VS_SkyBox",
-      "Path": "VS_SkyBox.hlsl"
-    }
   ],
   "PixelShaders": [
-    {
-      "Name": "PS_DeferredFinal",
-      "Path": "PS_DeferredFinal.hlsl"
-    },
-    {
-      "Name": "PS_BloomBlur1",
-      "Path": "PS_BloomBlur1.hlsl"
-    },
-    {
-      "Name": "PS_BloomBlur2",
-      "Path": "PS_BloomBlur2.hlsl"
-    }
   ],
   "UnionShaders": {
-    "UnionShaderGBuffer.cs": "UnionShaderGBuffer.cs",
+    "UnionShaderDeferred.cs": "UnionShaderDeferred.cs",
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
-    "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs"
+    "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
+    "UnionShaderBloom.cs": "UnionShaderBloom.cs"
   }
 }

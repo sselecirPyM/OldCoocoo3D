@@ -290,7 +290,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 VertexShader vertexShader = new VertexShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "main"));
+                    vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "vsmain"));
                 else
                     vertexShader.Initialize(File.ReadAllBytes(path));
                 return vertexShader;
@@ -305,7 +305,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 PixelShader pixelShader = new PixelShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "main"));
+                    pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "psmain"));
                 else
                     pixelShader.Initialize(File.ReadAllBytes(path));
                 return pixelShader;
@@ -320,7 +320,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 GeometryShader geometryShader = new GeometryShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    geometryShader.Initialize(LoadShader(DxcShaderStage.Geometry, File.ReadAllText(path), "main"));
+                    geometryShader.Initialize(LoadShader(DxcShaderStage.Geometry, File.ReadAllText(path), "gsmain"));
                 else
                     geometryShader.Initialize(File.ReadAllBytes(path));
                 return geometryShader;
@@ -403,7 +403,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 ComputeShader computeShader = new ComputeShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "main"));
+                    computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "csmain"));
                 else
                     computeShader.Initialize(File.ReadAllBytes(path));
                 return computeShader;
