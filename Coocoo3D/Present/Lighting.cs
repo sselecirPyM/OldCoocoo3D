@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Coocoo3DGraphics;
 using Coocoo3D.Components;
 using Coocoo3D.Numerics;
 using Coocoo3D.RenderPipeline;
-using Coocoo3D.Core;
 using Vortice.Mathematics;
 
 namespace Coocoo3D.Present
@@ -25,7 +21,7 @@ namespace Coocoo3D.Present
         public LightingType LightingType;
         public Vector3 Position;
         public Quaternion Rotation;
-        public Vector4 Color;
+        public Vector3 Color;
         public float Range;
 
         public int CompareTo(LightingData other)
@@ -111,7 +107,7 @@ namespace Coocoo3D.Present
         }
         public LStruct GetLStruct()
         {
-            return new LStruct { PosOrDir = GetPositionOrDirection(), Type = (uint)LightingType, Color = Color };
+            return new LStruct { PosOrDir = GetPositionOrDirection(), Type = (uint)LightingType, Color = new Vector4(Color, 1) };
         }
         public struct LStruct
         {

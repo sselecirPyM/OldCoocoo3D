@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Coocoo3D.Components;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.UI
 {
@@ -82,7 +83,16 @@ namespace Coocoo3D.UI
             ImGui.SetNextWindowPos(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("资源"))
             {
-                Resources(appBody);
+                var _openRequest = Resources(appBody);
+                if (openRequest == null)
+                    openRequest = _openRequest;
+            }
+            ImGui.End();
+            ImGui.SetNextWindowPos(new Vector2(800, 0), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.FirstUseEver);
+            if (ImGui.Begin("设置"))
+            {
+                SettingsPanel(appBody);
             }
             ImGui.End();
             ImGui.SetNextWindowSize(new Vector2(350, 300), ImGuiCond.FirstUseEver);
@@ -133,7 +143,7 @@ namespace Coocoo3D.UI
                         if (ImGui.TreeNode("光照"))
                         {
                             int current = (int)lightingComponent.LightingType;
-                            ImGui.ColorEdit4("颜色", ref lightingComponent.Color, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
+                            ImGui.ColorEdit3("颜色", ref lightingComponent.Color, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
                             ImGui.DragFloat("范围", ref lightingComponent.Range);
                             ImGui.Combo("类型", ref current, lightTypeString, 2);
                             ImGui.TreePop();
@@ -151,6 +161,7 @@ namespace Coocoo3D.UI
                 }
             }
             ImGui.End();
+            Popups(appBody);
             ImGui.Render();
             if (selectedObject != null)
             {
@@ -203,59 +214,10 @@ namespace Coocoo3D.UI
                 }
                 ImGui.TreePop();
             }
-            if (ImGui.TreeNode("设置"))
-            {
-                ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
-                ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
-                ImGui.Checkbox("多线程渲染", ref appBody.performaceSettings.MultiThreadRendering);
-                float a = (float)(1.0 / appBody.GameDriverContext.FrameInterval);
-                if (!(a == a))
-                    a = 2000;
-                if (ImGui.DragFloat("帧率限制", ref a, 10, 1, 5000))
-                {
-                    if (a == a)
-                        appBody.GameDriverContext.FrameInterval = 1 / a;
-                }
-                var scene = appBody.CurrentScene;
-                ImGui.Checkbox("线框", ref scene.settings.Wireframe);
-                ImGui.DragInt("阴影分辨率", ref scene.settings.ShadowMapResolution, 128, 512, 8192);
-                ImGui.SliderInt("天空盒最高质量", ref scene.settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
-                ImGui.DragFloat("泛光阈值", ref scene.settings.BloomThreshold, 0.01f);
-                ImGui.DragFloat("泛光强度", ref scene.settings.BloomIntensity, 0.01f);
-                ImGui.Checkbox("泛光", ref scene.settings.EnableBloom);
-                ComboBox("调试渲染", ref scene.settings.DebugRenderType);
-
-                if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
-                {
-                    renderPipelines = new string[appBody.mainCaches.PassSettings.Count];
-                    renderPipelineKeys = new string[appBody.mainCaches.PassSettings.Count];
-                }
-                int _i = 0;
-                foreach (var pair in appBody.mainCaches.PassSettings)
-                {
-                    renderPipelines[_i] = pair.Value.Name;
-                    renderPipelineKeys[_i] = pair.Key;
-                    _i++;
-                }
-                if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
-                {
-                    appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
-                }
-                if (ImGui.Button("添加视口"))
-                {
-                    vcCount++;
-                    appBody.RPContext.DelayAddVisualChannel(vcCount.ToString());
-                }
-                if (ImGui.Button("保存场景"))
-                {
-                    requireSave = true;
-                }
-                if (ImGui.Button("重新加载纹理"))
-                {
-                    appBody.mainCaches.ReloadTextures();
-                }
-                ImGui.TreePop();
-            }
+            //if (ImGui.TreeNode("设置"))
+            //{
+            //    ImGui.TreePop();
+            //}
             if (ImGui.TreeNode("帮助"))
             {
                 Help();
@@ -291,6 +253,72 @@ namespace Coocoo3D.UI
             ImGui.Text("Fps:" + appBody.framePerSecond);
         }
 
+        static void SettingsPanel(Coocoo3DMain appBody)
+        {
+            ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
+            ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
+            ImGui.Checkbox("多线程渲染", ref appBody.performaceSettings.MultiThreadRendering);
+            float a = (float)(1.0 / appBody.GameDriverContext.FrameInterval);
+            if (!(a == a))
+                a = 2000;
+            if (ImGui.DragFloat("帧率限制", ref a, 10, 1, 5000))
+            {
+                if (a == a)
+                    appBody.GameDriverContext.FrameInterval = 1 / a;
+            }
+            var scene = appBody.CurrentScene;
+            ref Settings settings = ref scene.settings;
+            ImGui.Checkbox("线框", ref settings.Wireframe);
+            ImGui.DragInt("阴影分辨率", ref settings.ShadowMapResolution, 128, 512, 8192);
+            ImGui.SliderInt("天空盒最高质量", ref settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
+            ImGui.DragFloat("泛光阈值", ref settings.BloomThreshold, 0.01f);
+            ImGui.DragFloat("泛光强度", ref settings.BloomIntensity, 0.01f);
+            ImGui.Checkbox("泛光", ref settings.EnableBloom);
+            ImGui.Checkbox("启用雾", ref settings.EnableFog);
+            ImGui.Checkbox("启用体积光", ref settings.EnableVolumetricLighting);
+            ImGui.SliderInt("体积光采样次数", ref settings.VolumetricLightingSampleCount, 16, 256);
+            ImGui.DragFloat("体积光距离", ref settings.VolumetricLightingDistance);
+            ImGui.DragFloat("体积光强度", ref settings.VolumetricLightingIntensity, 0.0001f, float.MinValue, float.MaxValue, "%.5f");
+            ImGui.ColorEdit3("雾颜色", ref settings.FogColor, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
+            ImGui.DragFloat("雾开始距离", ref settings.FogStartDistance);
+            ImGui.DragFloat("雾衰减指数", ref settings.FogDensity, 0.0001f, float.MinValue, float.MaxValue, "%.5f");
+            ComboBox("调试渲染", ref scene.settings.DebugRenderType);
+
+            if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
+            {
+                renderPipelines = new string[appBody.mainCaches.PassSettings.Count];
+                renderPipelineKeys = new string[appBody.mainCaches.PassSettings.Count];
+            }
+            int _i = 0;
+            foreach (var pair in appBody.mainCaches.PassSettings)
+            {
+                renderPipelines[_i] = pair.Value.Name;
+                renderPipelineKeys[_i] = pair.Key;
+                _i++;
+            }
+            if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
+            {
+                appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
+            }
+            if (ImGui.Button("添加视口"))
+            {
+                vcCount++;
+                appBody.RPContext.DelayAddVisualChannel(vcCount.ToString());
+            }
+            if (ImGui.Button("保存场景"))
+            {
+                requireSave = true;
+            }
+            if (ImGui.Button("重新加载纹理"))
+            {
+                appBody.mainCaches.ReloadTextures1 = true;
+            }
+            if (ImGui.Button("重新加载Shader"))
+            {
+                appBody.mainCaches.ReloadShaders = true;
+            }
+        }
+
         static void DockSpace(Coocoo3DMain appBody)
         {
             var viewPort = ImGui.GetMainViewport();
@@ -301,7 +329,7 @@ namespace Coocoo3D.UI
             ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
         }
 
-        static void Resources(Coocoo3DMain appBody)
+        static _openRequest Resources(Coocoo3DMain appBody)
         {
             if (ImGui.Button("打开文件夹"))
             {
@@ -317,7 +345,7 @@ namespace Coocoo3D.UI
                 if (viewStack.Count > 0)
                     viewRequest = viewStack.Pop();
             }
-            ImGui.Begin("资源");
+            ImGui.BeginChild("资源");
 
             lock (storageItems)
             {
@@ -337,14 +365,16 @@ namespace Coocoo3D.UI
                             var requireOpen1 = new _openRequest();
                             requireOpen1.file = file;
                             requireOpen1.folder = currentFolder;
-                            openRequest = requireOpen1;
+                            //openRequest = requireOpen1;
+                            return requireOpen1;
                         }
                     }
                 }
                 if (_requireClear)
                     storageItems.Clear();
             }
-            ImGui.End();
+            ImGui.EndChild();
+            return null;
         }
 
         static void Help()
@@ -367,6 +397,7 @@ vmd格式动作");
             {
                 ImGui.TextWrapped(@"复制Samples文件夹里的内容，粘贴到任意位置，然后开始修改。
 双击.coocoox文件加载。
+点击设置里的重新加载着色器来重新加载。
 当前版本格式未规范，以后可能会有变化。
 ");
                 ImGui.TreePop();
@@ -465,19 +496,55 @@ vmd格式动作");
                         ImGui.Checkbox("透明材质", ref material.Transparent);
                         ImGui.Checkbox("投射阴影", ref material.CastShadow);
                         ImGui.Checkbox("接收阴影", ref material.ReceiveShadow);
-                        foreach (var tex in material.textures)
-                        {
-                            string key = "imgui/" + tex.Key;
-                            if (appBody.mainCaches.TextureCaches.TryGetValue(tex.Value, out var texPack))
+                        var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
+                        if (currentPassSetting.ShowTextures != null)
+                            foreach (var texSlot in currentPassSetting.ShowTextures)
                             {
-                                appBody.mainCaches.SetTexture(key, texPack.texture2D);
+                                string key = "imgui/" + texSlot.Key;
+                                if (material.textures.TryGetValue(texSlot.Key, out var texture0) && appBody.mainCaches.TryGetTexture(texture0, out var texture))
+                                {
+                                    appBody.mainCaches.SetTexture(key, texture);
+                                }
+                                else
+                                {
+                                    appBody.mainCaches.SetTexture(key, null);
+                                }
+                                Vector2 imageSize = new Vector2(120, 120);
+                                IntPtr imageId = appBody.mainCaches.GetPtr(key);
+                                ImGui.Text(texSlot.Key);
+                                if (ImGui.ImageButton(imageId, imageSize))
+                                {
+                                    requireOpenSelectResource = true;
+                                    stringValues["fileOpen"] = "material";
+                                    stringValues["material"] = texSlot.Key;
+                                }
                             }
-                            Vector2 pos = ImGui.GetCursorScreenPos();
-                            Vector2 imageSize = new Vector2(120, 120);
-                            IntPtr imageId = appBody.mainCaches.GetPtr(key);
-                            ImGui.Text(tex.Key);
-                            ImGui.ImageButton(imageId, imageSize);
+                        if (filePropSelect != null && stringValues.GetOrCreate("fileOpen", (string a) => "") == "material")
+                        {
+                            stringValues["fileOpen"] = "";
+                            appBody.mainCaches.Texture(filePropSelect);
+                            material.textures[stringValues["material"]] = filePropSelect;
+                            filePropSelect = null;
                         }
+                        if (currentPassSetting.ShowParameters != null)
+                            foreach (var param in currentPassSetting.ShowParameters)
+                            {
+                                switch (param.Value.Type)
+                                {
+                                    case "float":
+                                        break;
+                                    case "float2":
+                                        break;
+                                    case "float3":
+                                        break;
+                                    case "float4":
+                                        break;
+                                    case "color3":
+                                        break;
+                                    case "color4":
+                                        break;
+                                }
+                            }
                     }
                 }
                 ImGui.EndChild();
@@ -534,6 +601,26 @@ vmd格式动作");
             }
         }
 
+        static void Popups(Coocoo3DMain appBody)
+        {
+            if (requireOpenSelectResource.SetFalse())
+            {
+                ImGui.OpenPopup("选择资源");
+                openResourcePopup = true;
+            }
+            ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.Appearing);
+            if (ImGui.BeginPopupModal("选择资源", ref openResourcePopup))
+            {
+                if (ImGui.Button("关闭")) openResourcePopup = false;
+                var _open = Resources(appBody);
+                if (_open != null)
+                {
+                    filePropSelect = _open.file.FullName;
+                    openResourcePopup = false;
+                }
+                ImGui.EndPopup();
+            }
+        }
 
         public static bool ComboBox<T>(string label, ref T val) where T : struct, Enum
         {
@@ -621,11 +708,16 @@ vmd格式动作");
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         }
 
+        static bool requireOpenSelectResource = false;
+        static bool openResourcePopup;
+        static string filePropSelect;
+
         static string[] lightTypeString = new[] { "方向光", "点光" };
         static int renderPipelineIndex = 0;
         static string[] renderPipelines = new string[0] { };
         static string[] renderPipelineKeys = new string[0] { };
         static int vcCount = 0;
+        static Dictionary<string, string> stringValues = new Dictionary<string, string>();
     }
     class _openRequest
     {

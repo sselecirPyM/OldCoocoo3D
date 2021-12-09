@@ -102,32 +102,43 @@ struct LightInfo
 	float4x4 LightMapVP;
 	float3 LightDir;
 	uint LightType;
-	float4 LightColor;
+	float3 LightColor;
+	float useless;
 };
 struct PointLightInfo
 {
 	float3 LightDir;
 	uint LightType;
-	float4 LightColor;
+	float3 LightColor;
+	float useless;
 };
 #define POINT_LIGHT_COUNT 4
 cbuffer cb0 : register(b0)
 {
 	float4x4 g_mWorldToProj;
 	float4x4 g_mProjToWorld;
-	float3   g_vCamPos;
+	float3   g_camPos;
 	float g_skyBoxMultiple;
+	float3 _fogColor;
+	float _fogDensity;
+	float _startDistance;
+	float _endDistance;
+	int2 _widthHeight;
+	int _volumeLightIterCount;
+	float _volumeLightMaxDistance;
+	float _volumeLightIntensity;
 	LightInfo Lightings[1];
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 };
 Texture2D texture0 :register(t0);
 Texture2D texture1 :register(t1);
 Texture2D texture2 :register(t2);
-Texture2D gbufferDepth : register (t3);
+Texture2D texture3 :register(t3);
 TextureCube EnvCube : register (t4);
-Texture2D BRDFLut : register(t5);
+Texture2D gbufferDepth : register (t5);
 Texture2D ShadowMap0 : register(t6);
 TextureCube SkyBox : register (t7);
+Texture2D BRDFLut : register(t8);
 SamplerState s0 : register(s0);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 SamplerState s3 : register(s3);
@@ -180,14 +191,19 @@ float4 psmain(PSIn input) : SV_TARGET
 	float4 buffer0Color = texture0.Sample(s3, uv);
 	float4 buffer1Color = texture1.Sample(s3, uv);
 	float4 buffer2Color = texture2.Sample(s3, uv);
+	float4 buffer3Color = texture3.Sample(s3, uv);
 
-	float4 vx = mul(float4(input.uv,0,1),g_mProjToWorld);
-	float3 V = normalize(g_vCamPos - vx.xyz / vx.w);
 
 	float4 test1 = mul(float4(input.uv, depth1, 1), g_mProjToWorld);
 	test1 /= test1.w;
 	float4 wPos = float4(test1.xyz, 1);
 
+	float3 V = normalize(g_camPos - wPos);
+
+	float3 cam2Surf = g_camPos - wPos;
+	float camDist = length(cam2Surf);
+
+	float3 outputColor = float3(0, 0, 0);
 	if (depth1 != 1.0)
 	{
 		float3 N = normalize(NormalDecode(buffer1Color.rg));
@@ -199,7 +215,7 @@ float4 psmain(PSIn input) : SV_TARGET
 		float3 c_specular = buffer2Color.rgb;
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
-		float3 outputColor = float3(0, 0, 0);
+		float3 emission = buffer3Color.rgb;
 
 #if ENABLE_DIFFUSE
 		outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
@@ -207,6 +223,7 @@ float4 psmain(PSIn input) : SV_TARGET
 #if ENABLE_SPECULR
 		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
 #endif
+		outputColor += emission;
 
 #if DEBUG_DEPTH
 		float _depth1 = pow(depth1,2.2f);
@@ -218,8 +235,11 @@ float4 psmain(PSIn input) : SV_TARGET
 #if DEBUG_DIFFUSE
 		return float4(c_diffuse, 1);
 #endif
+#if DEBUG_EMISSION
+		return float4(emission, 1);
+#endif
 #if DEBUG_NORMAL
-		return float4(N * 0.5 + 0.5, 1);
+		return float4(pow(N * 0.5 + 0.5, 2.2f), 1);
 #endif
 #if DEBUG_POSITION
 		return wPos;
@@ -234,11 +254,11 @@ float4 psmain(PSIn input) : SV_TARGET
 #if ENABLE_LIGHT
 		for (int i = 0; i < 1; i++)
 		{
-			if (Lightings[i].LightColor.a == 0)continue;
+			if (!any(Lightings[i].LightColor))continue;
 			if (Lightings[i].LightType == 0)
 			{
 				float inShadow = 1.0f;
-				float3 lightStrength = max(Lightings[i].LightColor.rgb * Lightings[i].LightColor.a, 0);
+				float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
 				float4 sPos = mul(wPos, Lightings[i].LightMapVP);
 				sPos = sPos / sPos.w;
 
@@ -254,7 +274,7 @@ float4 psmain(PSIn input) : SV_TARGET
 				float3 NdotL = saturate(dot(N, L));
 				float3 LdotH = saturate(dot(L, H));
 				float3 NdotH = saturate(dot(N, H));
-				
+
 #if ENABLE_DIFFUSE
 			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
 #else
@@ -274,7 +294,7 @@ float4 psmain(PSIn input) : SV_TARGET
 			if (PointLights[i].LightType == 1)
 			{
 				float inShadow = 1.0f;
-				float3 lightStrength = PointLights[i].LightColor.rgb * PointLights[i].LightColor.a / pow(distance(PointLights[i].LightDir, wPos), 2);
+				float3 lightStrength = PointLights[i].LightColor.rgb / pow(distance(PointLights[i].LightDir, wPos), 2);
 
 				float3 L = normalize(PointLights[i].LightDir - wPos);
 				float3 H = normalize(L + V);
@@ -298,11 +318,55 @@ float4 psmain(PSIn input) : SV_TARGET
 			}
 		}
 #endif//ENABLE_LIGHT
-		return float4(outputColor, 1);
+#if ENABLE_FOG
+		outputColor = lerp(_fogColor, outputColor, 1 / exp(max(camDist - _startDistance, 0.00001) * _fogDensity));
+#endif
 	}
 	else
 	{
-		float3 EnvColor = SkyBox.Sample(s0, -V).rgb * g_skyBoxMultiple;
-		return float4(EnvColor, 1);
+		outputColor = SkyBox.Sample(s0, -V).rgb * g_skyBoxMultiple;
 	}
+#if ENABLE_LIGHT
+#if ENABLE_VOLUME_LIGHTING
+		//const static int volumeLightIterCount = 128;
+		//const static float volumeLightMaxDistance = 128;
+		//const static float volumeLightIntensity = 0.0001f;
+		int volumeLightIterCount = _volumeLightIterCount;
+		float volumeLightMaxDistance = _volumeLightMaxDistance;
+		float volumeLightIntensity = _volumeLightIntensity;
+
+		for (int i = 0; i < 1; i++)
+		{
+			if (!any(Lightings[i].LightColor))continue;
+			if (Lightings[i].LightType == 0)
+			{
+				float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
+				float volumeLightIterStep = volumeLightMaxDistance / volumeLightIterCount;
+				volumeLightIterStep /= sqrt(clamp(1 - pow2(dot(Lightings[i].LightDir, -V)), 0.04, 1));
+				float offset = ((uv.x * _widthHeight.x * 9323 + (uv.y * _widthHeight.y - 0.5f) * 10501) % 34739 / 34739) * volumeLightIterStep;
+				float3 samplePos1 = g_camPos;
+				for (int j = 0; j < volumeLightIterCount; j++)
+				{
+					if (j * volumeLightIterStep > camDist)
+					{
+						break;
+					}
+					float inShadow = 1.0f;
+					float4 samplePos = float4(g_camPos - V * (volumeLightIterStep * j + offset), 1);
+					float4 sPos = mul(samplePos, Lightings[i].LightMapVP);
+					sPos = sPos / sPos.w;
+
+					float2 shadowTexCoords;
+					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, float3(shadowTexCoords, 0), sPos.z).r;
+
+					outputColor += inShadow * lightStrength * volumeLightIterStep * volumeLightIntensity;
+				}
+			}
+		}
+#endif
+#endif
+	return float4(outputColor, 1);
 }

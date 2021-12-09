@@ -47,7 +47,7 @@ namespace Coocoo3D.RenderPipeline
                 hasMainLight = true;
             }
             else
-                hasMainLight = false; ;
+                hasMainLight = false;
             for (int i = 0; i < lightings.Count; i++)
             {
                 LightingData lighting = lightings[i];
@@ -71,11 +71,11 @@ namespace Coocoo3D.RenderPipeline
                         case "Emission":
                             writer.Write(material.innerStruct.Emission);
                             break;
-                        case "Diffuse":
-                            writer.Write(material.innerStruct.DiffuseColor);
-                            break;
                         case "Specular":
                             writer.Write(material.innerStruct.Specular);
+                            break;
+                        case "Diffuse":
+                            writer.Write(material.innerStruct.DiffuseColor);
                             break;
                         case "SpecularColor":
                             writer.Write(material.innerStruct.SpecularColor);
@@ -83,14 +83,19 @@ namespace Coocoo3D.RenderPipeline
                         case "AmbientColor":
                             writer.Write(material.innerStruct.AmbientColor);
                             break;
-                        case "Transparent":
-                            writer.Write(material.Transparent ? 1 : 0);
+                        case "Fog":
+                            writer.Write(settings.FogColor);
+                            writer.Write(Math.Max(settings.FogDensity, 0.0001f));
+                            writer.Write(settings.FogStartDistance);
+                            writer.Write(settings.FogEndDistance);
+                            break;
+                        case "VolumetricLighting":
+                            writer.Write(settings.VolumetricLightingSampleCount);
+                            writer.Write(settings.VolumetricLightingDistance);
+                            writer.Write(settings.VolumetricLightingIntensity);
                             break;
                         case "CameraPosition":
                             writer.Write(camera.Position);
-                            break;
-                        case "DrawFlags":
-                            writer.Write((int)material.DrawFlags);
                             break;
                         case "DeltaTime":
                             writer.Write((float)context.dynamicContextRead.DeltaTime);
@@ -361,10 +366,7 @@ namespace Coocoo3D.RenderPipeline
                             Texture2D tex2D = null;
                             tex2D = _GetTex2D(material, resd.Resource);
 
-                            if (tex2D != null)
-                            {
-                                graphicsContext.SetSRVTSlot(_Tex(tex2D), resd.Index);
-                            }
+                            graphicsContext.SetSRVTSlot(_Tex(tex2D), resd.Index);
                         }
                     }
             }

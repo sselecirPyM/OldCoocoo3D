@@ -13,7 +13,7 @@ namespace Coocoo3D.Components
         public LightingType LightingType;
         public Vector3 Position;
         public Quaternion Rotation;
-        public Vector4 Color;
+        public Vector3 Color;
         public float Range;
 
         public LightingData GetLightingData()

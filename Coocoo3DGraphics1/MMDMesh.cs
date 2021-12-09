@@ -30,8 +30,6 @@ namespace Coocoo3DGraphics
         public IndexBufferView indexBufferView;
         public int indexActualLength;
 
-        public bool updated;
-
         public byte[] m_indexData;
 
         public static MMDMesh Load1(byte[] verticeData, int[] indexData, int vertexStride)

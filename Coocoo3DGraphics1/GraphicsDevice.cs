@@ -45,6 +45,7 @@ namespace Coocoo3DGraphics
         IDXGIFactory4 m_dxgiFactory;
         IDXGISwapChain3 m_swapChain;
         ID3D12Resource[] m_renderTargets = new ID3D12Resource[c_frameCount];
+        ResourceStates[] renderTargetResourceStates = new ResourceStates[c_frameCount];
         public ID3D12CommandQueue commandQueue;
         ID3D12CommandAllocator[] commandAllocators = new ID3D12CommandAllocator[c_frameCount];
 
@@ -297,15 +298,35 @@ namespace Coocoo3DGraphics
             m_commandLists1.Add(commandList);
         }
 
-        public ID3D12Resource GetRenderTarget()
+        public ID3D12Resource GetRenderTarget(ID3D12GraphicsCommandList graphicsCommandList)
         {
-            return m_renderTargets[m_swapChain.GetCurrentBackBufferIndex()];
+            int index = m_swapChain.GetCurrentBackBufferIndex();
+            var state = renderTargetResourceStates[index];
+            var stateAfter = ResourceStates.RenderTarget;
+            if (state != stateAfter)
+            {
+                graphicsCommandList.ResourceBarrierTransition(m_renderTargets[index], state, stateAfter);
+                renderTargetResourceStates[index] = stateAfter;
+            }
+            return m_renderTargets[index];
         }
 
-        public CpuDescriptorHandle GetRenderTargetView()
+        public void EndRenderTarget(ID3D12GraphicsCommandList graphicsCommandList)
+        {
+            int index = m_swapChain.GetCurrentBackBufferIndex();
+            var state = renderTargetResourceStates[index];
+            var stateAfter = ResourceStates.Present;
+            if (state != stateAfter)
+            {
+                graphicsCommandList.ResourceBarrierTransition(m_renderTargets[index], state, stateAfter);
+                renderTargetResourceStates[index] = stateAfter;
+            }
+        }
+
+        public CpuDescriptorHandle GetRenderTargetView(ID3D12GraphicsCommandList graphicsCommandList)
         {
             var handle = rtvHeap.heap.GetCPUDescriptorHandleForHeapStart() + rtvHeap.IncrementSize * m_swapChain.GetCurrentBackBufferIndex();
-            device.CreateRenderTargetView(GetRenderTarget(), null, handle);
+            device.CreateRenderTargetView(GetRenderTarget(graphicsCommandList), null, handle);
             return handle;
         }
 
@@ -325,6 +346,7 @@ namespace Coocoo3DGraphics
             {
                 m_renderTargets[n]?.Dispose();
                 m_renderTargets[n] = null;
+                renderTargetResourceStates[n] = ResourceStates.Common;
             }
 
             UpdateRenderTargetSize();
@@ -387,7 +409,7 @@ namespace Coocoo3DGraphics
         }
 
 
-        public void Present(bool vsync)
+        internal void Present(bool vsync)
         {
             // 第一个参数指示 DXGI 进行阻止直到 VSync，这使应用程序
             // 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
@@ -447,7 +469,7 @@ namespace Coocoo3DGraphics
                 if (m_recycleList[i].m_removeFrame > m_currentFenceValue - c_frameCount + 1)
                     temp.Add(m_recycleList[i]);
                 else
-                    m_recycleList[i].m_recycleResource.Dispose();
+                    m_recycleList[i].m_recycleResource.Release();
             m_recycleList = temp;
             for (int i = 0; i < m_commandLists1.Count; i++)
                 m_commandLists.Add(m_commandLists1[i]);

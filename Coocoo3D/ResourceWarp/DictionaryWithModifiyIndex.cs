@@ -48,6 +48,7 @@ namespace Coocoo3D.ResourceWarp
         public void Clear()
         {
             ((ICollection<KeyValuePair<TKey, TValue>>)internalDictionary).Clear();
+            ((ICollection<KeyValuePair<TKey, int>>)indices).Clear();
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)

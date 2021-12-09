@@ -184,10 +184,10 @@ namespace Coocoo3D.Core
                 graphicsDevice.SetLogicalSize(RPContext.NewSize);
                 graphicsDevice.WaitForGpu();
             }
-            RPContext.PreConfig();
-
             if (!Recording)
                 mainCaches.OnFrame();
+            RPContext.PreConfig();
+
             ProcessingList.MoveToAnother(_processingList);
             if (!_processingList.IsEmpty())
             {
@@ -244,12 +244,10 @@ namespace Coocoo3D.Core
                         currentRenderPipeline.EndFrame();
                     }
                     GameDriver.AfterRender(RPContext, graphicsContext);
-                    graphicsContext.ResourceBarrierScreen(ResourceStates.Present, ResourceStates.RenderTarget);
                     widgetRenderer.Render(RPContext, graphicsContext);
-                    graphicsContext.ResourceBarrierScreen(ResourceStates.RenderTarget, ResourceStates.Present);
+                    graphicsContext.Present(performaceSettings.VSync);
                     graphicsContext.EndCommand();
                     graphicsContext.Execute();
-                    graphicsDevice.Present(performaceSettings.VSync);
                     CompletedRenderCount++;
                 }
             }

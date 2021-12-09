@@ -21,7 +21,9 @@ namespace Coocoo3D.RenderPipeline
         public List<_AssetDefine> PixelShaders;
         public List<_AssetDefine> ComputeShaders;
         public List<_AssetDefine> Texture2Ds;
-        public Dictionary<string,string> UnionShaders;
+        public Dictionary<string, string> UnionShaders;
+        public Dictionary<string, string> ShowTextures;
+        public Dictionary<string, PassParameter> ShowParameters;
 
         [NonSerialized]
         public string path;
@@ -57,6 +59,11 @@ namespace Coocoo3D.RenderPipeline
             {
                 renderTarget.Value.Name = renderTarget.Key;
             }
+            if (ShowParameters != null)
+                foreach (var parameter in ShowParameters)
+                {
+                    parameter.Value.Name = parameter.Key;
+                }
             foreach (var passMatch in RenderSequence)
             {
                 if (passMatch.Name != null)
@@ -164,9 +171,18 @@ namespace Coocoo3D.RenderPipeline
         public string Path;
         public string EntryPoint;
     }
-    public struct PassParameter
+    public class PassParameter
     {
         public string Name;
-        public float Value;
+        public string Type;
+        public string Default;
+        public string Min;
+        public string Max;
+        [NonSerialized]
+        public object defaultValue;
+        [NonSerialized]
+        public object minValue;
+        [NonSerialized]
+        public object maxValue;
     }
 }

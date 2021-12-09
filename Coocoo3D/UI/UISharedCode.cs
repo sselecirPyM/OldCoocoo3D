@@ -6,14 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Present;
-using Coocoo3DGraphics;
 using System.Numerics;
 using Coocoo3D.Utility;
 using Coocoo3D.Core;
 using System.Threading;
 using Coocoo3D.ResourceWarp;
-using Coocoo3D.RenderPipeline;
-using System.Runtime.InteropServices;
 
 namespace Coocoo3D.UI
 {
@@ -38,7 +35,7 @@ namespace Coocoo3D.UI
             lighting.Name = "Lighting";
             lighting.Rotation = Quaternion.CreateFromYawPitchRoll(0, 1.3962634015954636615389526147909f, 0);
             lighting.Position = new Vector3(0, 1, 0);
-            lightingComponent.Color = new Vector4(3, 3, 3, 1);
+            lightingComponent.Color = new Vector3(3, 3, 3);
             lightingComponent.Range = 10;
             appBody.CurrentScene.AddGameObject(lighting);
             appBody.RequireRender();

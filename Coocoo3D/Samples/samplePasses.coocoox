@@ -52,7 +52,7 @@
       },
       "Format": "D32_Float"
     },
-    "_Blur0" :{
+    "_Blur0": {
       "Size": {
         "Multiplier": "0.5",
         "Source": "OutputSize"
@@ -113,7 +113,9 @@
             "Specular",
             "Diffuse",
             "CameraPosition",
-            "IndirectMultiplier"
+            "IndirectMultiplier",
+            "Fog",
+            "WidthHeight"
           ]
         }
       ],
@@ -126,7 +128,7 @@
         {
           "Index": "1",
           "ResourceType": "Texture2D",
-          "Resource": "_Albedo"
+          "Resource": "_Emission"
         },
         {
           "Index": "2",
@@ -164,7 +166,7 @@
         }
       ]
     },
-    "BloomBlur2" :{
+    "BloomBlur2": {
       "Camera": "Main",
       "UnionShader": "UnionShaderBloom.cs",
       "BlendMode": "Add",
@@ -193,5 +195,9 @@
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs"
+  },
+  "ShowTextures": {
+    "_Albedo": "",
+    "_Emission": ""
   }
 }

@@ -27,15 +27,14 @@ namespace Coocoo3D.RenderPipeline
 
         public Dictionary<string, ModelPack> ModelPackCaches = new Dictionary<string, ModelPack>();
         public Dictionary<string, MMDMotion> Motions = new Dictionary<string, MMDMotion>();
-        public Dictionary<string, PassSetting> PassSettings = new Dictionary<string, PassSetting>();
         public Dictionary<string, VertexShader> VertexShaders = new Dictionary<string, VertexShader>();
         public Dictionary<string, PixelShader> PixelShaders = new Dictionary<string, PixelShader>();
         public Dictionary<string, GeometryShader> GeometryShaders = new Dictionary<string, GeometryShader>();
         public Dictionary<string, ComputeShader> ComputeShaders = new Dictionary<string, ComputeShader>();
+
+        public DictionaryWithModifiyIndex<string, PassSetting> PassSettings = new DictionaryWithModifiyIndex<string, PassSetting>();
         public DictionaryWithModifiyIndex<string, PSO> PipelineStateObjects = new DictionaryWithModifiyIndex<string, PSO>();
-
         public DictionaryWithModifiyIndex<string, TextureCube> TextureCubes = new DictionaryWithModifiyIndex<string, TextureCube>();
-
         public DictionaryWithModifiyIndex<string, UnionShader> UnionShaders = new DictionaryWithModifiyIndex<string, UnionShader>();
         public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new DictionaryWithModifiyIndex<string, Assembly>();
         public Dictionary<string, RootSignature> RootSignatures = new Dictionary<string, RootSignature>();
@@ -50,6 +49,7 @@ namespace Coocoo3D.RenderPipeline
         public Action _RequireRender;
 
         public bool ReloadTextures1 = false;
+        public bool ReloadShaders = false;
 
         public void AddFolder(DirectoryInfo folder)
         {
@@ -72,6 +72,16 @@ namespace Coocoo3D.RenderPipeline
         ConcurrentDictionary<Texture2DPack, Uploader> uploaders = new ConcurrentDictionary<Texture2DPack, Uploader>();
         public void OnFrame()
         {
+            if (ReloadShaders.SetFalse())
+            {
+                Assemblies.Clear();
+                UnionShaders.Clear();
+                foreach (var pso in PipelineStateObjects)
+                {
+                    pso.Value?.Dispose();
+                }
+                PipelineStateObjects.Clear();
+            }
             if (ReloadTextures1.SetFalse() && TextureCaches.Count > 0)
             {
                 var packs = TextureCaches.ToList();
@@ -92,8 +102,8 @@ namespace Coocoo3D.RenderPipeline
             {
                 var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
                 tex1.Mark(GraphicsObjectStatus.loading);
-                Dictionary<string, object> taskParam = new Dictionary<string, object>();
                 InitFolder(Path.GetDirectoryName(notLoad.Value.fullPath));
+                Dictionary<string, object> taskParam = new Dictionary<string, object>();
                 taskParam["pack"] = notLoad.Value;
                 taskParam["knownFile"] = KnownFiles.GetOrCreate(notLoad.Value.fullPath, (string path) => new KnownFile()
                 {
@@ -171,7 +181,6 @@ namespace Coocoo3D.RenderPipeline
                 if (!InitFolder(folderPath) && !Path.IsPathRooted(folderPath))
                     return null;
                 var folder = (Path.IsPathRooted(folderPath)) ? new DirectoryInfo(folderPath) : KnownFolders[folderPath];
-#if !DEBUG
                 try
                 {
                     if (caches is DictionaryWithModifiyIndex<string, T> a)
@@ -179,9 +188,9 @@ namespace Coocoo3D.RenderPipeline
                         int modifyIndex = knownFile.GetModifyIndex(folder.GetFiles());
                         if (modifyIndex > a.GetModifyIndex(path))
                         {
+                            a.SetModifyIndex(path, modifyIndex);
                             file = createFun(knownFile.file);
                             caches[path] = file;
-                            a.SetModifyIndex(path, modifyIndex);
                         }
                     }
                     else if (knownFile.IsModified(folder.GetFiles()))
@@ -192,26 +201,13 @@ namespace Coocoo3D.RenderPipeline
                 }
                 catch
                 {
+#if !DEBUG
                     file = null;
                     caches[path] = file;
-                }
 #else
-                if (caches is DictionaryWithModifiyIndex<string, T> a)
-                {
-                    int modifyIndex = knownFile.GetModifyIndex(folder.GetFiles());
-                    if (modifyIndex > a.GetModifyIndex(path))
-                    {
-                        file = createFun(knownFile.file);
-                        caches[path] = file;
-                        a.SetModifyIndex(path, modifyIndex);
-                    }
-                }
-                else if (knownFile.IsModified(folder.GetFiles()))
-                {
-                    file = createFun(knownFile.file);
-                    caches[path] = file;
-                }
+                    throw;
 #endif
+                }
             }
             return file;
         }
@@ -424,20 +420,28 @@ namespace Coocoo3D.RenderPipeline
             }
             return GetT(PipelineStateObjects, xPath, path, file =>
             {
-                string source = File.ReadAllText(file.FullName);
-                DxcDefine[] dxcDefines = null;
-                if (keywords != null)
+                try
                 {
-                    dxcDefines = new DxcDefine[keywords.Count];
-                    for (int i = 0; i < keywords.Count; i++)
+                    string source = File.ReadAllText(file.FullName);
+                    DxcDefine[] dxcDefines = null;
+                    if (keywords != null)
                     {
-                        dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                        dxcDefines = new DxcDefine[keywords.Count];
+                        for (int i = 0; i < keywords.Count; i++)
+                        {
+                            dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                        }
                     }
+                    byte[] vs = enableVS ? LoadShader(DxcShaderStage.Vertex, source, "vsmain", null, dxcDefines) : null;
+                    byte[] ps = enablePS ? LoadShader(DxcShaderStage.Pixel, source, "psmain", null, dxcDefines) : null;
+                    PSO pso = new PSO(vs, null, ps);
+                    return pso;
                 }
-                byte[] vs = enableVS ? LoadShader(DxcShaderStage.Vertex, source, "vsmain", null, dxcDefines) : null;
-                byte[] ps = enablePS ? LoadShader(DxcShaderStage.Pixel, source, "psmain", null, dxcDefines) : null;
-                PSO pso = new PSO(vs, null, ps);
-                return pso;
+                catch(Exception e)
+                {
+                    Console.WriteLine(e);
+                    return null;
+                }
             });
         }
 
@@ -445,8 +449,14 @@ namespace Coocoo3D.RenderPipeline
         {
             var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { }, fileName, dxcDefines);
             if (result.GetStatus() != SharpGen.Runtime.Result.Ok)
-                throw new Exception(result.GetErrors());
-            return result.GetResult().ToArray();
+            {
+                string err = result.GetErrors();
+                result.Dispose();
+                throw new Exception(err);
+            }
+            byte[] resultData = result.GetResult().ToArray();
+            result.Dispose();
+            return resultData;
         }
 
         public Dictionary<IntPtr, string> ptr2string = new Dictionary<IntPtr, string>();
@@ -555,7 +565,7 @@ namespace Coocoo3D.RenderPipeline
         public bool TryGetTexture(string s, out Texture2D tex)
         {
             bool result = TextureCaches.TryGetValue(s, out var tex1);
-            tex = tex1.texture2D;
+            tex = tex1?.texture2D;
             return result;
         }
 
@@ -610,11 +620,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
             }
-        }
-
-        public void ReloadTextures()
-        {
-            ReloadTextures1 = true;
         }
 
         public void Dispose()

@@ -20,13 +20,6 @@ namespace Coocoo3D.RenderPipeline
                 loadList.Add(mesh);
             }
         }
-        public void AddObject(TextureCube texture, Uploader uploader)
-        {
-            lock (loadList)
-            {
-                loadList.Add(new TextureCubeUploadPack( texture,uploader));
-            }
-        }
         public void AddObject(Texture2D texture2D, Uploader uploader)
         {
             lock (loadList)
@@ -52,9 +45,7 @@ namespace Coocoo3D.RenderPipeline
         {
             foreach (var obj in loadList)
             {
-                if (obj is TextureCubeUploadPack p1)
-                    graphicsContext.UploadTexture(p1.texture, p1.uploader);
-                else if (obj is Texture2DUploadPack p2)
+                if (obj is Texture2DUploadPack p2)
                     graphicsContext.UploadTexture(p2.texture, p2.uploader);
                 else if (obj is MMDMesh p3)
                     graphicsContext.UploadMesh(p3);

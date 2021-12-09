@@ -439,9 +439,9 @@ namespace Coocoo3D.RenderPipeline
             {
                 return tex;
             }
-            else if (mainCaches.TextureCaches.TryGetValue(name, out var tex2))
+            else if (mainCaches.TryGetTexture(name, out var tex2))
             {
-                return tex2.texture2D;
+                return tex2;
             }
             return null;
         }

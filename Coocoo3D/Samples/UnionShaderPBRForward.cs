@@ -39,6 +39,8 @@ public static class UnionShaderPBRForward
                         List<string> keywords = new List<string>();
                         if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                             keywords.Add(debugKeyword);
+                        if(param.settings.EnableFog)
+                            keywords.Add("ENABLE_FOG");
                         if (hasLight)
                         {
                             if (!receiveShadow)
@@ -52,8 +54,11 @@ public static class UnionShaderPBRForward
                     return false;
             }
             graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);
-            param.graphicsContext.SetPSO(pso1, psoDesc);
-            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+            if (pso1 != null)
+            {
+                param.graphicsContext.SetPSO(pso1, psoDesc);
+                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+            }
             return true;
         }
         else
@@ -68,8 +73,11 @@ public static class UnionShaderPBRForward
                 default:
                     return false;
             }
-            param.graphicsContext.SetPSO(pso1, psoDesc);
-            graphicsContext.DrawIndexed(6, 0, 0);
+            if (pso1 != null)
+            {
+                param.graphicsContext.SetPSO(pso1, psoDesc);
+                graphicsContext.DrawIndexed(6, 0, 0);
+            }
             return true;
         }
     }

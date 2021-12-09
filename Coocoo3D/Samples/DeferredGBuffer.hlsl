@@ -127,7 +127,7 @@ SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
 
 Texture2D texture0 :register(t0);
-Texture2D texture1 :register(t1);
+Texture2D Emission :register(t1);
 float2 NormalEncode(float3 n)
 {
 	float2 enc = normalize(n.xy) * (sqrt(-n.z * 0.5 + 0.5));
@@ -140,6 +140,7 @@ struct MRTOutput
 	float4 color0 : COLOR0;
 	float4 color1 : COLOR1;
 	float4 color2 : COLOR2;
+	float4 color3 : COLOR3;
 };
 
 MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
@@ -156,9 +157,11 @@ MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 
 	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
+	float3 emission = Emission.Sample(s1, input.Tex) * _Emission;
 
-	output.color0 = float4(c_diffuse, _Metallic);
+	output.color0 = float4(c_diffuse, 1);
 	output.color1 = float4(encodedNormal, _Roughness, 1);
 	output.color2 = float4(c_specular, 1);
+	output.color3 = float4(emission, 1);
 	return output;
 }

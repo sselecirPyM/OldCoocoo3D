@@ -16,7 +16,8 @@
       "RenderTargets": [
         "_ScreenColor0",
         "_ScreenColor1",
-        "_ScreenColor2"
+        "_ScreenColor2",
+        "_ScreenColor3"
       ]
     },
     {
@@ -80,7 +81,13 @@
       },
       "Format": "R16G16B16A16_UNorm"
     },
-    "_Blur0" :{
+    "_ScreenColor3": {
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_UNorm"
+    },
+    "_Blur0": {
       "Size": {
         "Multiplier": "0.5",
         "Source": "OutputSize"
@@ -130,7 +137,7 @@
         {
           "Index": "1",
           "ResourceType": "Texture2D",
-          "Resource": "_Albedo"
+          "Resource": "_Emission"
         },
         {
           "Index": "2",
@@ -150,6 +157,9 @@
             "CameraInvert",
             "CameraPosition",
             "IndirectMultiplier",
+            "Fog",
+            "WidthHeight",
+            "VolumetricLighting",
             "DirectionalLight",
             "PointLights4"
           ]
@@ -174,7 +184,7 @@
         {
           "Index": "3",
           "ResourceType": "Texture2D",
-          "Resource": "_ScreenDepth0"
+          "Resource": "_ScreenColor3"
         },
         {
           "Index": "4",
@@ -184,7 +194,7 @@
         {
           "Index": "5",
           "ResourceType": "Texture2D",
-          "Resource": "_BRDFLUT"
+          "Resource": "_ScreenDepth0"
         },
         {
           "Index": "6",
@@ -195,7 +205,12 @@
           "Index": "7",
           "ResourceType": "TextureCube",
           "Resource": "_SkyBox"
-        }
+        },
+        {
+          "Index": "8",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        },
       ]
     },
     "DrawObjectPass": {
@@ -216,7 +231,8 @@
             "Specular",
             "Diffuse",
             "CameraPosition",
-            "IndirectMultiplier"
+            "IndirectMultiplier",
+            "Fog"
           ]
         }
       ],
@@ -229,7 +245,7 @@
         {
           "Index": "1",
           "ResourceType": "Texture2D",
-          "Resource": "_Albedo"
+          "Resource": "_Emission"
         },
         {
           "Index": "2",
@@ -297,5 +313,9 @@
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs"
+  },
+  "ShowTextures": {
+    "_Albedo": "",
+    "_Emission": ""
   }
 }

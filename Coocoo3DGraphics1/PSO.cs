@@ -199,13 +199,13 @@ namespace Coocoo3DGraphics
         {
             foreach (var combine in m_pipelineStates)
             {
-                combine.Dispose();
+                combine.Release();
             }
             m_pipelineStates.Clear();
         }
 
 
-        public int GetVariantIndex(GraphicsDevice graphicsDevice, RootSignature graphicsSignature, PSODesc psoDesc)
+        internal int GetVariantIndex(GraphicsDevice graphicsDevice, RootSignature graphicsSignature, PSODesc psoDesc)
         {
             _PSODesc1 _psoDesc1;
             _psoDesc1.desc = psoDesc;
@@ -286,14 +286,6 @@ namespace Coocoo3DGraphics
                 return (int)m_psoDescs.Count - 1;
             }
             return index;
-        }
-
-        public void DelayDestroy(GraphicsDevice graphicsDevice)
-        {
-            for (int i = 0; i < m_pipelineStates.Count; i++)
-            {
-                graphicsDevice.ResourceDelayRecycle(m_pipelineStates[i]);
-            }
         }
     }
 }

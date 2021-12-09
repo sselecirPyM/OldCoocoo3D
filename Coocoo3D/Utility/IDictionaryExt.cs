@@ -32,7 +32,7 @@ namespace Coocoo3D.Utility
             }
             return val;
         }
-        public static T GetOrCreate<T1, T>(this IDictionary<T1, T> dict, T1 key, Func<T1, T> createFun) where T : new()
+        public static T GetOrCreate<T1, T>(this IDictionary<T1, T> dict, T1 key, Func<T1, T> createFun) 
         {
             if (dict.TryGetValue(key, out T v))
             {
@@ -46,7 +46,7 @@ namespace Coocoo3D.Utility
 
             return v;
         }
-        public static T GetOrCreate<T1, T>(this IDictionary<T1, T> dict, T1 key, Func<T> createFun) where T : new()
+        public static T GetOrCreate<T1, T>(this IDictionary<T1, T> dict, T1 key, Func<T> createFun)
         {
             if (dict.TryGetValue(key, out T v))
             {

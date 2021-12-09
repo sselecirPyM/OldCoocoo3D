@@ -103,13 +103,15 @@ struct LightInfo
 	float4x4 LightMapVP;
 	float3 LightDir;
 	uint LightType;
-	float4 LightColor;
+	float3 LightColor;
+	float useless;
 };
 struct PointLightInfo
 {
 	float3 LightDir;
 	uint LightType;
-	float4 LightColor;
+	float3 LightColor;
+	float useless;
 };
 #define POINT_LIGHT_COUNT 4
 cbuffer cb1 : register(b1)
@@ -123,14 +125,19 @@ cbuffer cb1 : register(b1)
 	float _Emission;
 	float _Specular;
 	float4 _DiffuseColor;
-	float3 g_vCamPos;
+	float3 g_camPos;
 	float g_skyBoxMultiple;
+	float3 _fogColor;
+	float _fogDensity;
+	float _startDistance;
+	float _endDistance;
+	float2 _notuse123123;
 }
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 Texture2D texture0 : register(t0);
-Texture2D texture1 : register(t1);
+Texture2D Emission : register(t1);
 Texture2D ShadowMap0 : register(t2);
 TextureCube EnvCube : register (t3);
 Texture2D BRDFLut : register(t4);
@@ -258,7 +265,9 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float4 texColor = texture0.Sample(s1, input.TexCoord) * _DiffuseColor;
 	clip(texColor.a - 0.01f);
 
-	float3 V = normalize(g_vCamPos - input.wPos);
+	float3 cam2Surf = g_camPos - input.wPos;
+	float camDist = length(cam2Surf);
+	float3 V = normalize(cam2Surf);
 	float3 N = normalize(input.Norm);
 	float NdotV = saturate(dot(N, V));
 
@@ -275,13 +284,15 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
+	float3 emission = Emission.Sample(s1, input.TexCoord) * _Emission;
+
 #if ENABLE_DIFFUSE
 	outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
 #endif
 #if ENABLE_SPECULR
 	outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness,1e-5)) * 4) * g_skyBoxMultiple * GF;
 #endif
-	outputColor += _Emission * albedo /** _AmbientColor*/;
+	outputColor += emission;
 #if DEBUG_ALBEDO
 	return float4(albedo, 1);
 #endif
@@ -296,10 +307,10 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	return float4(c_diffuse,1);
 #endif
 #if DEBUG_EMISSION
-	return float4(_Emission * albedo, 1);
+	return float4(emission, 1);
 #endif
 #if DEBUG_NORMAL
-	return float4(N * 0.5 + 0.5, 1);
+	return float4(pow(N * 0.5 + 0.5, 2.2f), 1);
 #endif
 #if DEBUG_POSITION
 	return input.wPos;
@@ -317,11 +328,11 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #if ENABLE_LIGHT
 	for (int i = 0; i < 1; i++)
 	{
-		if (Lightings[i].LightColor.a == 0)continue;
+		if (!any(Lightings[i].LightColor))continue;
 		if (Lightings[i].LightType == 0)
 		{
 			float inShadow = 1.0f;
-			float3 lightStrength = max(Lightings[i].LightColor.rgb * Lightings[i].LightColor.a, 0);
+			float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
 			float4 sPos = mul(input.wPos, Lightings[i].LightMapVP);
 			sPos = sPos / sPos.w;
 
@@ -357,7 +368,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 		if (PointLights[i].LightType == 1)
 		{
 			float inShadow = 1.0f;
-			float3 lightStrength = PointLights[i].LightColor.rgb * PointLights[i].LightColor.a / pow(distance(PointLights[i].LightDir, input.wPos), 2);
+			float3 lightStrength = PointLights[i].LightColor.rgb / pow(distance(PointLights[i].LightDir, input.wPos), 2);
 
 			float3 L = normalize(PointLights[i].LightDir - input.wPos);
 			float3 H = normalize(L + V);
@@ -380,6 +391,8 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 		}
 	}
 #endif //ENABLE_LIGHT
-
+#if ENABLE_FOG
+	outputColor = lerp(_fogColor, outputColor,1 / exp(max(camDist - _startDistance,0.00001) * _fogDensity));
+#endif
 	return float4(outputColor, texColor.a);
 }

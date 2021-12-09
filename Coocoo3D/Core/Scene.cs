@@ -32,6 +32,15 @@ namespace Coocoo3D.Core
             BloomIntensity = 0.1f,
             BloomRange = 0.1f,
             BloomThreshold = 1.1f,
+            FogDensity = 0.0005f,
+            FogColor = new Vector3(0.4f, 0.4f, 0.6f),
+            FogStartDistance = 50,
+            FogEndDistance = 100000,
+            EnableFog = true,
+            VolumetricLightingSampleCount = 32,
+            VolumetricLightingDistance = 128,
+            VolumetricLightingIntensity = 0.0001f,
+            EnableVolumetricLighting = false
         };
 
         public List<GameObject> gameObjects = new List<GameObject>();
@@ -271,8 +280,19 @@ namespace Coocoo3D.Core
         public bool EnableAO;
         public bool EnableShadow;
         public bool EnableBloom;
+        public bool EnableFog;
+        public bool EnableVolumetricLighting;
         public float BloomThreshold;
         public float BloomIntensity;
         public float BloomRange;
+
+        public Vector3 FogColor;
+        public float FogStartDistance;
+        public float FogEndDistance;
+        public float FogDensity;
+
+        public int VolumetricLightingSampleCount;
+        public float VolumetricLightingDistance;
+        public float VolumetricLightingIntensity;
     }
 }

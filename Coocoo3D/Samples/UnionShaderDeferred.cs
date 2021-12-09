@@ -41,24 +41,29 @@ public static class UnionShaderDeferred
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
+                    if (param.settings.EnableFog)
+                        keywords.Add("ENABLE_FOG");
+                    if (param.settings.EnableVolumetricLighting)
+                        keywords.Add("ENABLE_VOLUME_LIGHTING");
                     if (hasLight)
-                    {
                         keywords.Add("ENABLE_LIGHT");
-                    }
                     pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
                 }
                 break;
             default:
                 return false;
         }
-        param.graphicsContext.SetPSO(pso1, psoDesc);
-        if (material != null)
+        if (pso1 != null)
         {
-            graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);
-            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+            param.graphicsContext.SetPSO(pso1, psoDesc);
+            if (material != null)
+            {
+                graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);
+                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+            }
+            else
+                graphicsContext.DrawIndexed(6, 0, 0);
         }
-        else
-            graphicsContext.DrawIndexed(6, 0, 0);
         return true;
     }
 }

@@ -26,6 +26,7 @@ namespace Coocoo3D.ResourceWarp
         public Vector3[] tangent;
         MMDMesh meshInstance;
         public int vertexCount;
+        public bool skinning;
 
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
 
@@ -70,6 +71,7 @@ namespace Coocoo3D.ResourceWarp
         public void Reload(BinaryReader reader, string storageFolder)
         {
             pmx.Reload(reader);
+            skinning = true;
             vertexCount = pmx.Vertices.Length;
             position = new Vector3[pmx.Vertices.Length];
             normal = new Vector3[pmx.Vertices.Length];
@@ -120,8 +122,8 @@ namespace Coocoo3D.ResourceWarp
                     },
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
                     skinning = true,
-                    CastShadow = true,
-                    ReceiveShadow = true,
+                    CastShadow = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.CastSelfShadow),
+                    ReceiveShadow = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawSelfShadow),
                 };
                 indexOffset += mmdMat.TriangeIndexNum;
                 if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)

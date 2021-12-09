@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Core;
 using Coocoo3D.Components;
-using Coocoo3D.UI;
 using System.IO;
 using Coocoo3D.Present;
 using Coocoo3D.ResourceWarp;
@@ -42,6 +41,7 @@ namespace Coocoo3D.FileFormat
     {
         public float metallic;
         public float roughness;
+        public float emission;
         public Dictionary<string, string> textures;
         public string unionShader;
     }
@@ -75,6 +75,7 @@ namespace Coocoo3D.FileFormat
                         _cooMaterial material1 = new _cooMaterial();
                         material1.metallic = material.innerStruct.Metallic;
                         material1.roughness = material.innerStruct.Roughness;
+                        material1.emission = material.innerStruct.Emission;
                         material1.unionShader = material.unionShader;
                         material1.textures = new Dictionary<string, string>(material.textures);
 
@@ -109,7 +110,6 @@ namespace Coocoo3D.FileFormat
                 {
                     string pmxPath = obj.path;
                     ModelPack modelPack = main.mainCaches.GetModel(pmxPath);
-                    UISharedCode.PreloadTextures(main, Path.GetDirectoryName(obj.path), modelPack.pmx);
 
                     GameObject gameObject = new GameObject();
                     gameObject.Reload2(modelPack);
@@ -134,9 +134,16 @@ namespace Coocoo3D.FileFormat
                             {
                                 mat.innerStruct.Metallic = mat1.metallic;
                                 mat.innerStruct.Roughness = mat1.roughness;
+                                mat.innerStruct.Emission = mat1.emission;
                                 mat.unionShader = mat1.unionShader;
                                 if (mat1.textures != null)
+                                {
                                     mat.textures = new Dictionary<string, string>(mat1.textures);
+                                    foreach (var tex in mat.textures)
+                                    {
+                                        main.mainCaches.Texture(tex.Value);
+                                    }
+                                }
                             }
                         }
                     }
@@ -150,10 +157,10 @@ namespace Coocoo3D.FileFormat
                     lighting.Name = obj.name ?? string.Empty;
                     lighting.Rotation = obj.rotation;
                     lighting.Position = obj.position;
-                    lightingComponent.Color = new Vector4(3, 3, 3, 1);
+                    lightingComponent.Color = new Vector3(3, 3, 3);
                     if (obj.lighting != null)
                     {
-                        lightingComponent.Color = new Vector4(obj.lighting.color, 1);
+                        lightingComponent.Color = obj.lighting.color;
                     }
 
                     lightingComponent.Range = 10;

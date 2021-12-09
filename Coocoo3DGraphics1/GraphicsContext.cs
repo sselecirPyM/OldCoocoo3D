@@ -38,17 +38,14 @@ namespace Coocoo3DGraphics
             }
 
             m_commandList.SetPipelineState(pipelineState);
-        }
-
-        public void SetPSO(PSO pso, int variantIndex)
-        {
-            m_commandList.SetPipelineState(pso.m_pipelineStates[variantIndex]);
+            InReference(pipelineState);
         }
 
         public void SetPSO(PSO pso, in PSODesc desc)
         {
             int variantIndex = pso.GetVariantIndex(graphicsDevice, currentRootSignature, desc);
             m_commandList.SetPipelineState(pso.m_pipelineStates[variantIndex]);
+            InReference(pso.m_pipelineStates[variantIndex]);
         }
 
         public void SetSRVTSlot(Texture2D texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
@@ -138,7 +135,6 @@ namespace Coocoo3DGraphics
                 mesh.indexBufferView.SizeInBytes = mesh.m_indexCount * 4;
                 mesh.indexBufferView.Format = Format.R32_UInt;
             }
-            mesh.updated = true;
         }
 
         public void BeginUpdateMesh(MMDMesh mesh)
@@ -182,9 +178,6 @@ namespace Coocoo3DGraphics
             vtBuf.vertexBufferView.BufferLocation = vtBuf.vertex.GPUVirtualAddress;
             vtBuf.vertexBufferView.StrideInBytes = sizeInBytes / mesh.m_vertexCount;
             vtBuf.vertexBufferView.SizeInBytes = sizeInBytes;
-
-
-            mesh.updated = true;
         }
 
         public void EndUpdateMesh(MMDMesh mesh)
@@ -207,60 +200,60 @@ namespace Coocoo3DGraphics
                 UpdateCBStaticResource(buffer, m_commandList, data);
         }
 
-        public unsafe void UploadTexture(TextureCube texture, Uploader uploader)
-        {
-            texture.width = uploader.m_width;
-            texture.height = uploader.m_height;
-            texture.mipLevels = uploader.m_mipLevels;
-            texture.format = uploader.m_format;
+        //public unsafe void UploadTexture(TextureCube texture, Uploader uploader)
+        //{
+        //    texture.width = uploader.m_width;
+        //    texture.height = uploader.m_height;
+        //    texture.mipLevels = uploader.m_mipLevels;
+        //    texture.format = uploader.m_format;
 
-            ResourceDescription textureDesc = new ResourceDescription();
-            textureDesc.MipLevels = (ushort)uploader.m_mipLevels;
-            textureDesc.Format = uploader.m_format;
-            textureDesc.Width = (ulong)uploader.m_width;
-            textureDesc.Height = uploader.m_height;
-            textureDesc.Flags = ResourceFlags.None;
-            textureDesc.DepthOrArraySize = 6;
-            textureDesc.SampleDescription.Count = 1;
-            textureDesc.SampleDescription.Quality = 0;
-            textureDesc.Dimension = ResourceDimension.Texture2D;
+        //    ResourceDescription textureDesc = new ResourceDescription();
+        //    textureDesc.MipLevels = (ushort)uploader.m_mipLevels;
+        //    textureDesc.Format = uploader.m_format;
+        //    textureDesc.Width = (ulong)uploader.m_width;
+        //    textureDesc.Height = uploader.m_height;
+        //    textureDesc.Flags = ResourceFlags.None;
+        //    textureDesc.DepthOrArraySize = 6;
+        //    textureDesc.SampleDescription.Count = 1;
+        //    textureDesc.SampleDescription.Quality = 0;
+        //    textureDesc.Dimension = ResourceDimension.Texture2D;
 
-            int bitsPerPixel = (int)GraphicsDevice.BitsPerPixel(textureDesc.Format);
-            CreateResource(textureDesc, null, ref texture.resource);
+        //    int bitsPerPixel = (int)GraphicsDevice.BitsPerPixel(textureDesc.Format);
+        //    CreateResource(textureDesc, null, ref texture.resource);
 
-            texture.resource.Name = "texCube";
-            ID3D12Resource uploadBuffer = null;
-            CreateBuffer(uploader.m_data.Length, ref uploadBuffer, ResourceStates.GenericRead, HeapType.Upload);
-            uploadBuffer.Name = "uploadbuffer texcube";
-            graphicsDevice.ResourceDelayRecycle(uploadBuffer);
+        //    texture.resource.Name = "texCube";
+        //    ID3D12Resource uploadBuffer = null;
+        //    CreateBuffer(uploader.m_data.Length, ref uploadBuffer, ResourceStates.GenericRead, HeapType.Upload);
+        //    uploadBuffer.Name = "uploadbuffer texcube";
+        //    graphicsDevice.ResourceDelayRecycle(uploadBuffer);
 
-            SubresourceData[] subresources = new SubresourceData[textureDesc.MipLevels * 6];
-            for (int i = 0; i < 6; i++)
-            {
-                int width = (int)textureDesc.Width;
-                int height = textureDesc.Height;
-                IntPtr pdata = Marshal.UnsafeAddrOfPinnedArrayElement(uploader.m_data, (uploader.m_data.Length / 6) * i);
-                for (int j = 0; j < textureDesc.MipLevels; j++)
-                {
-                    SubresourceData subresourcedata = new SubresourceData();
-                    subresourcedata.DataPointer = pdata;
-                    subresourcedata.RowPitch = (IntPtr)(width * bitsPerPixel / 8);
-                    subresourcedata.SlicePitch = (IntPtr)(width * height * bitsPerPixel / 8);
-                    pdata += width * height * bitsPerPixel / 8;
+        //    SubresourceData[] subresources = new SubresourceData[textureDesc.MipLevels * 6];
+        //    for (int i = 0; i < 6; i++)
+        //    {
+        //        int width = (int)textureDesc.Width;
+        //        int height = textureDesc.Height;
+        //        IntPtr pdata = Marshal.UnsafeAddrOfPinnedArrayElement(uploader.m_data, (uploader.m_data.Length / 6) * i);
+        //        for (int j = 0; j < textureDesc.MipLevels; j++)
+        //        {
+        //            SubresourceData subresourcedata = new SubresourceData();
+        //            subresourcedata.DataPointer = pdata;
+        //            subresourcedata.RowPitch = (IntPtr)(width * bitsPerPixel / 8);
+        //            subresourcedata.SlicePitch = (IntPtr)(width * height * bitsPerPixel / 8);
+        //            pdata += width * height * bitsPerPixel / 8;
 
-                    subresources[i * textureDesc.MipLevels + j] = subresourcedata;
-                    width /= 2;
-                    height /= 2;
-                }
-            }
+        //            subresources[i * textureDesc.MipLevels + j] = subresourcedata;
+        //            width /= 2;
+        //            height /= 2;
+        //        }
+        //    }
 
-            UpdateSubresources(m_commandList, texture.resource, uploadBuffer, 0, 0, textureDesc.MipLevels * 6, subresources);
+        //    UpdateSubresources(m_commandList, texture.resource, uploadBuffer, 0, 0, textureDesc.MipLevels * 6, subresources);
 
-            m_commandList.ResourceBarrierTransition(texture.resource, ResourceStates.CopyDestination, ResourceStates.GenericRead);
-            texture.resourceStates = ResourceStates.GenericRead;
+        //    m_commandList.ResourceBarrierTransition(texture.resource, ResourceStates.CopyDestination, ResourceStates.GenericRead);
+        //    texture.resourceStates = ResourceStates.GenericRead;
 
-            texture.Status = GraphicsObjectStatus.loaded;
-        }
+        //    texture.Status = GraphicsObjectStatus.loaded;
+        //}
 
         public unsafe void UploadTexture(Texture2D texture, Uploader uploader)
         {
@@ -269,7 +262,7 @@ namespace Coocoo3DGraphics
             texture.mipLevels = uploader.m_mipLevels;
             texture.format = uploader.m_format;
 
-            ResourceDescription textureDesc = Texture2DDescription(texture);
+            var textureDesc = Texture2DDescription(texture);
             graphicsDevice.ResourceDelayRecycle(texture.depthStencilView);
             texture.depthStencilView = null;
             graphicsDevice.ResourceDelayRecycle(texture.renderTargetView);
@@ -471,24 +464,17 @@ namespace Coocoo3DGraphics
             SetComputeUAVT(textureCube, mipIndex, currentRootSignature.uav[slot]);
         }
 
-        static readonly StreamOutputBufferView[] zeroStreamOutputBufferView = new StreamOutputBufferView[1];
-        public void SetSOMeshNone()
+        public void CopyTexture(ReadBackTexture2D target, Texture2D texture2D, int index)
         {
-            m_commandList.SOSetTargets(0, 1, zeroStreamOutputBufferView);
-        }
-
-        public void CopyTexture(ReadBackTexture2D target, Texture2D texture2d, int index)
-        {
-            var d3dDevice = graphicsDevice.device;
-            var backBuffer = texture2d.resource;
-            texture2d.StateChange(m_commandList, ResourceStates.CopySource);
+            var backBuffer = texture2D.resource;
+            texture2D.StateChange(m_commandList, ResourceStates.CopySource);
 
             PlacedSubresourceFootPrint footPrint = new PlacedSubresourceFootPrint();
             footPrint.Footprint.Width = target.m_width;
             footPrint.Footprint.Height = target.m_height;
             footPrint.Footprint.Depth = 1;
             footPrint.Footprint.RowPitch = (target.m_width * 4 + 255) & ~255;
-            footPrint.Footprint.Format = texture2d.format;
+            footPrint.Footprint.Format = texture2D.format;
             TextureCopyLocation Dst = new TextureCopyLocation(target.m_textureReadBack[index], footPrint);
             TextureCopyLocation Src = new TextureCopyLocation(backBuffer, 0);
             m_commandList.CopyTextureRegion(Dst, 0, 0, 0, Src, null);
@@ -508,7 +494,7 @@ namespace Coocoo3DGraphics
         public void ClearScreen(Vector4 color)
         {
             var handle1 = graphicsDevice.rtvHeap.GetTempCpuHandle();
-            graphicsDevice.device.CreateRenderTargetView(graphicsDevice.GetRenderTarget(), null, handle1);
+            graphicsDevice.device.CreateRenderTargetView(graphicsDevice.GetRenderTarget(m_commandList), null, handle1);
             m_commandList.ClearRenderTargetView(handle1, new Vortice.Mathematics.Color(color));
         }
 
@@ -589,20 +575,16 @@ namespace Coocoo3DGraphics
             m_commandList.SetComputeRootSignature(rootSignature.rootSignature);
         }
 
-        public void ResourceBarrierScreen(ResourceStates before, ResourceStates after)
-        {
-            m_commandList.ResourceBarrierTransition(graphicsDevice.GetRenderTarget(), before, after);
-        }
-
         public void SetRenderTargetScreen(Vector4 color, bool clearScreen)
         {
             var size = graphicsDevice.m_d3dRenderTargetSize;
 
             m_commandList.RSSetScissorRect((int)size.X, (int)size.Y);
             m_commandList.RSSetViewport(0, 0, (int)size.X, (int)size.Y);
+            var renderTargetView = graphicsDevice.GetRenderTargetView(m_commandList);
             if (clearScreen)
-                m_commandList.ClearRenderTargetView(graphicsDevice.GetRenderTargetView(), new Vortice.Mathematics.Color4(color));
-            m_commandList.OMSetRenderTargets(graphicsDevice.GetRenderTargetView());
+                m_commandList.ClearRenderTargetView(renderTargetView, new Vortice.Mathematics.Color4(color));
+            m_commandList.OMSetRenderTargets(renderTargetView);
         }
 
         public void Draw(int vertexCount, int startVertexLocation)
@@ -629,6 +611,8 @@ namespace Coocoo3DGraphics
 
         public void EndCommand()
         {
+            if (present)
+                graphicsDevice.EndRenderTarget(m_commandList);
             m_commandList.Close();
         }
 
@@ -637,7 +621,23 @@ namespace Coocoo3DGraphics
             graphicsDevice.commandQueue.ExecuteCommandList(m_commandList);
             graphicsDevice.ReturnCommandList(m_commandList);
             m_commandList = null;
+            if (present)
+                graphicsDevice.Present(presentVsync);
+            present = false;
+            foreach(var resource in referenceThisCommand)
+            {
+                resource.AddRef();
+                graphicsDevice.ResourceDelayRecycle(resource);
+            }
+            referenceThisCommand.Clear();
         }
+
+        public void Present(bool vsync)
+        {
+            present = true;
+            presentVsync = vsync;
+        }
+
         public static void BeginAlloctor(GraphicsDevice device)
         {
             device.GetCommandAllocator().Reset();
@@ -703,8 +703,16 @@ namespace Coocoo3DGraphics
             graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
             return gpuDescriptorHandle;
         }
+        void InReference(ID3D12Object iD3D12Object)
+        {
+            referenceThisCommand.Add(iD3D12Object);
+        }
+        public HashSet<ID3D12Object> referenceThisCommand = new HashSet<ID3D12Object>();
 
         public PSODesc psoDesc;
         public UnnamedInputLayout unnamedInputLayout;
+
+        public bool present;
+        public bool presentVsync;
     }
 }
