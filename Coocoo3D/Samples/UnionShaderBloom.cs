@@ -7,7 +7,8 @@ public static class UnionShaderBloom
 {
     public static bool UnionShader(UnionShaderParam param)
     {
-        if (!param.settings.EnableBloom) return true;
+        var drp = param.rp.dynamicContextRead;
+        if ((bool?)drp.GetSettingsValue("EnableBloom") != true) return true;
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.rp.mainCaches;
         var psoDesc = param.PSODesc;
@@ -21,8 +22,8 @@ public static class UnionShaderBloom
         Texture2D renderTarget = param.renderTargets[0];
         writer.Write(renderTarget.GetWidth());
         writer.Write(renderTarget.GetHeight());
-        writer.Write(param.settings.BloomThreshold);
-        writer.Write(param.settings.BloomIntensity);
+        writer.Write((float)drp.GetSettingsValue("BloomThreshold"));
+        writer.Write((float)drp.GetSettingsValue("BloomIntensity"));
         writer.SetBufferImmediately(graphicsContext, false, 0);
 
         PSO pso1 = null;
@@ -55,39 +56,16 @@ public static class UnionShaderBloom
     }
     static void _WriteCBV(CBVSlotRes cbv, UnionShaderParam unionShaderParam, int slot)
     {
+        if (cbv.Datas == null || cbv.Datas.Count == 0) return;
         var material = unionShaderParam.material;
         var context = unionShaderParam.rp;
         var writer = unionShaderParam.GPUWriter;
-        var camera = unionShaderParam.camera;
+        var camera = unionShaderParam.visualChannel.cameraData;
         var settings = unionShaderParam.settings;
         foreach (var s in cbv.Datas)
         {
             switch (s)
             {
-                case "Metallic":
-                    writer.Write(material.innerStruct.Metallic);
-                    break;
-                case "Roughness":
-                    writer.Write(material.innerStruct.Roughness);
-                    break;
-                case "Emission":
-                    writer.Write(material.innerStruct.Emission);
-                    break;
-                case "Diffuse":
-                    writer.Write(material.innerStruct.DiffuseColor);
-                    break;
-                case "Specular":
-                    writer.Write(material.innerStruct.Specular);
-                    break;
-                case "SpecularColor":
-                    writer.Write(material.innerStruct.SpecularColor);
-                    break;
-                case "AmbientColor":
-                    writer.Write(material.innerStruct.AmbientColor);
-                    break;
-                case "Transparent":
-                    writer.Write(material.Transparent ? 1 : 0);
-                    break;
                 case "DrawFlags":
                     writer.Write((int)material.DrawFlags);
                     break;

@@ -484,6 +484,12 @@ namespace Coocoo3DGraphics
         {
             m_commandList.RSSetScissorRect(new Vortice.RawRect(left, top, right, bottom));
         }
+        public void RSSetScissorRectAndViewport(int left, int top, int right, int bottom)
+        {
+            m_commandList.RSSetScissorRect(new Vortice.RawRect(left, top, right, bottom));
+            m_commandList.RSSetViewport(left, top, right - left, bottom - top);
+        }
+
         public void Begin()
         {
             m_commandList = graphicsDevice.GetCommandList();
@@ -624,7 +630,7 @@ namespace Coocoo3DGraphics
             if (present)
                 graphicsDevice.Present(presentVsync);
             present = false;
-            foreach(var resource in referenceThisCommand)
+            foreach (var resource in referenceThisCommand)
             {
                 resource.AddRef();
                 graphicsDevice.ResourceDelayRecycle(resource);

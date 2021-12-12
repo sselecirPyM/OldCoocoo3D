@@ -11,7 +11,7 @@ public static class UnionShaderPBRForward
         { DebugRenderType.Depth,"DEBUG_DEPTH"},
         { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
         { DebugRenderType.DiffuseRender,"DEBUG_DIFFUSE_RENDER"},
-        { DebugRenderType.Emission,"DEBUG_EMISSION"},
+        { DebugRenderType.Emissive,"DEBUG_EMISSIVE"},
         { DebugRenderType.Normal,"DEBUG_NORMAL"},
         { DebugRenderType.Position,"DEBUG_POSITION"},
         { DebugRenderType.Roughness,"DEBUG_ROUGHNESS"},
@@ -26,7 +26,8 @@ public static class UnionShaderPBRForward
         var material = param.material;
         var graphicsContext = param.graphicsContext;
         var psoDesc = param.PSODesc;
-        var lightings = param.rp.dynamicContextRead.lightings;
+        var drp = param.rp.dynamicContextRead;
+        var lightings = drp.lightings;
         if (material != null)
         {
             switch (param.passName)
@@ -34,13 +35,15 @@ public static class UnionShaderPBRForward
                 case "DrawObjectPass":
                     {
                         bool hasLight = lightings.Count != 0;
-                        bool receiveShadow = material.ReceiveShadow;
+                        bool receiveShadow = (bool)drp.GetSettingsValue(material, "ReceiveShadow");
 
                         List<string> keywords = new List<string>();
                         if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                             keywords.Add(debugKeyword);
-                        if(param.settings.EnableFog)
+                        if ((bool)drp.GetSettingsValue("EnableFog"))
                             keywords.Add("ENABLE_FOG");
+                        if (material.Skinning)
+                            keywords.Add("SKINNING");
                         if (hasLight)
                         {
                             if (!receiveShadow)

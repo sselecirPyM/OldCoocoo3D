@@ -26,21 +26,7 @@ namespace Coocoo3D.Core
             SkyBoxLightMultiplier = 3.0f,
             SkyBoxMaxQuality = 256,
             ShadowMapResolution = 2048,
-            EnableAO = true,
             EnableShadow = true,
-            EnableBloom = true,
-            BloomIntensity = 0.1f,
-            BloomRange = 0.1f,
-            BloomThreshold = 1.1f,
-            FogDensity = 0.0005f,
-            FogColor = new Vector3(0.4f, 0.4f, 0.6f),
-            FogStartDistance = 50,
-            FogEndDistance = 100000,
-            EnableFog = true,
-            VolumetricLightingSampleCount = 32,
-            VolumetricLightingDistance = 128,
-            VolumetricLightingIntensity = 0.0001f,
-            EnableVolumetricLighting = false
         };
 
         public List<GameObject> gameObjects = new List<GameObject>();
@@ -267,7 +253,7 @@ namespace Coocoo3D.Core
         }
     }
 
-    public struct Settings
+    public class Settings
     {
         public Vector4 BackgroundColor;
         public bool Wireframe;
@@ -277,22 +263,23 @@ namespace Coocoo3D.Core
         public int SkyBoxMaxQuality;
         public int ShadowMapResolution;
 
-        public bool EnableAO;
         public bool EnableShadow;
-        public bool EnableBloom;
-        public bool EnableFog;
-        public bool EnableVolumetricLighting;
-        public float BloomThreshold;
-        public float BloomIntensity;
-        public float BloomRange;
 
-        public Vector3 FogColor;
-        public float FogStartDistance;
-        public float FogEndDistance;
-        public float FogDensity;
+        [NonSerialized]
+        public Dictionary<string, object> Parameters = new Dictionary<string, object>();
 
-        public int VolumetricLightingSampleCount;
-        public float VolumetricLightingDistance;
-        public float VolumetricLightingIntensity;
+        public Dictionary<string, bool> bValue;
+        public Dictionary<string, int> iValue;
+        public Dictionary<string, float> fValue;
+        public Dictionary<string, Vector2> f2Value;
+        public Dictionary<string, Vector3> f3Value;
+        public Dictionary<string, Vector4> f4Value;
+
+        public Settings GetClone()
+        {
+            var clone = (Settings)this.MemberwiseClone();
+            clone.Parameters = new Dictionary<string, object>(Parameters);
+            return clone;
+        }
     }
 }

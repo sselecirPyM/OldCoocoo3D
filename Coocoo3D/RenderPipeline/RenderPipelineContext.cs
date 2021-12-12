@@ -138,7 +138,7 @@ namespace Coocoo3D.RenderPipeline
         {
             dynamicContextWrite.FrameBegin();
             dynamicContextWrite.EnableDisplay = enableDisplay;
-            dynamicContextWrite.settings = scene.settings;
+            dynamicContextWrite.settings = scene.settings.GetClone();
 
             dynamicContextWrite.currentPassSetting = mainCaches.GetPassSetting(currentPassSetting1);
             dynamicContextWrite.passSettingPath = currentPassSetting1;
@@ -244,9 +244,12 @@ namespace Coocoo3D.RenderPipeline
                 //mesh.AddBuffer<Vector3>(rendererComponent.meshPosData1, 0);
                 //graphicsContext.UploadMesh(mesh);
 
-                graphicsContext.BeginUpdateMesh(mesh);
-                graphicsContext.UpdateMesh<Vector3>(mesh, rendererComponent.meshPosData1, 0);
-                graphicsContext.EndUpdateMesh(mesh);
+                if (rendererComponent.meshNeedUpdate.SetFalse())
+                {
+                    graphicsContext.BeginUpdateMesh(mesh);
+                    graphicsContext.UpdateMesh<Vector3>(mesh, rendererComponent.meshPosData1, 0);
+                    graphicsContext.EndUpdateMesh(mesh);
+                }
             }
             #endregion
         }
@@ -256,12 +259,24 @@ namespace Coocoo3D.RenderPipeline
             screenSize.X = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
             screenSize.Y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
 
-            if (!Initialized) return;
             if (delayAddVc.TryDequeue(out var vcName))
             {
                 AddVisualChannel(vcName);
             }
-            ConfigVisualChannels();
+            foreach (var visualChannel1 in visualChannels.Values)
+            {
+                var outputSize = visualChannel1.outputSize;
+                if (outputSize.X != visualChannel1.FinalOutput.width || outputSize.Y != visualChannel1.FinalOutput.height)
+                {
+                    visualChannel1.OutputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
+                    graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
+                    mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
+
+                    visualChannel1.FinalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
+                    graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
+                    mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
+                }
+            }
             ConfigPassSettings(dynamicContextRead.currentPassSetting, dynamicContextRead.passSettingPath);
             foreach (var visualChannel in visualChannels.Values)
             {
@@ -285,13 +300,13 @@ namespace Coocoo3D.RenderPipeline
                 int y;
                 if (rt.Size.Source == "OutputSize")
                 {
-                    x = (int)(outputSize.X * rt.Size.Multiplier);
-                    y = (int)(outputSize.Y * rt.Size.Multiplier);
+                    x = (int)(outputSize.X * rt.Size.Multiplier + 0.5f);
+                    y = (int)(outputSize.Y * rt.Size.Multiplier + 0.5f);
                 }
                 else if (rt.Size.Source == "ShadowMapSize")
                 {
-                    x = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier);
-                    y = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier);
+                    x = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
+                    y = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
                 }
                 else
                 {
@@ -309,25 +324,6 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void ConfigVisualChannels()
-        {
-            foreach (var visualChannel1 in visualChannels.Values)
-            {
-                var outputSize = visualChannel1.outputSize;
-                if (outputSize.X != visualChannel1.FinalOutput.width || outputSize.Y != visualChannel1.FinalOutput.height)
-                {
-                    visualChannel1.OutputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
-                    graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
-                    mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
-
-                    visualChannel1.FinalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
-                    graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
-                    mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
-                }
-            }
-        }
-
-        public bool Initialized = false;
         public Task LoadTask;
         public void ReloadDefalutResources()
         {
@@ -336,8 +332,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 mainCaches.Texture(tex2dDef.Path, false);
             }
-
-            Initialized = true;
         }
 
         public bool ConfigPassSettings(PassSetting passSetting, string passPath)

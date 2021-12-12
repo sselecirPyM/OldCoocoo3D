@@ -124,6 +124,9 @@ namespace Coocoo3D.UI
                     if (ImGui.TreeNode("描述"))
                     {
                         ImGui.Text(selectedObject.Description);
+                        if (rendererComponent != null)
+                            ImGui.Text(string.Format("顶点数：{0} 索引数：{1}", rendererComponent.meshVertexCount, rendererComponent.meshIndexCount));
+
                         ImGui.TreePop();
                     }
                     if (ImGui.TreeNode("transform"))
@@ -138,25 +141,19 @@ namespace Coocoo3D.UI
                     {
                         RendererComponent(appBody, rendererComponent);
                     }
-                    if (lightingComponent != null)
+                    if (lightingComponent != null && ImGui.TreeNode("光照"))
                     {
-                        if (ImGui.TreeNode("光照"))
-                        {
-                            int current = (int)lightingComponent.LightingType;
-                            ImGui.ColorEdit3("颜色", ref lightingComponent.Color, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
-                            ImGui.DragFloat("范围", ref lightingComponent.Range);
-                            ImGui.Combo("类型", ref current, lightTypeString, 2);
-                            ImGui.TreePop();
-                            lightingComponent.LightingType = (Present.LightingType)current;
-                        }
+                        int current = (int)lightingComponent.LightingType;
+                        ImGui.ColorEdit3("颜色", ref lightingComponent.Color, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
+                        ImGui.DragFloat("范围", ref lightingComponent.Range);
+                        ImGui.Combo("类型", ref current, lightTypeString, 2);
+                        ImGui.TreePop();
+                        lightingComponent.LightingType = (Present.LightingType)current;
                     }
-                    if (volumeComponent != null)
+                    if (volumeComponent != null && ImGui.TreeNode("体积"))
                     {
-                        if (ImGui.TreeNode("体积"))
-                        {
-                            ImGui.DragFloat3("尺寸", ref volumeComponent.Size);
-                            ImGui.TreePop();
-                        }
+                        ImGui.DragFloat3("尺寸", ref volumeComponent.Size);
+                        ImGui.TreePop();
                     }
                 }
             }
@@ -214,10 +211,6 @@ namespace Coocoo3D.UI
                 }
                 ImGui.TreePop();
             }
-            //if (ImGui.TreeNode("设置"))
-            //{
-            //    ImGui.TreePop();
-            //}
             if (ImGui.TreeNode("帮助"))
             {
                 Help();
@@ -271,18 +264,11 @@ namespace Coocoo3D.UI
             ImGui.Checkbox("线框", ref settings.Wireframe);
             ImGui.DragInt("阴影分辨率", ref settings.ShadowMapResolution, 128, 512, 8192);
             ImGui.SliderInt("天空盒最高质量", ref settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
-            ImGui.DragFloat("泛光阈值", ref settings.BloomThreshold, 0.01f);
-            ImGui.DragFloat("泛光强度", ref settings.BloomIntensity, 0.01f);
-            ImGui.Checkbox("泛光", ref settings.EnableBloom);
-            ImGui.Checkbox("启用雾", ref settings.EnableFog);
-            ImGui.Checkbox("启用体积光", ref settings.EnableVolumetricLighting);
-            ImGui.SliderInt("体积光采样次数", ref settings.VolumetricLightingSampleCount, 16, 256);
-            ImGui.DragFloat("体积光距离", ref settings.VolumetricLightingDistance);
-            ImGui.DragFloat("体积光强度", ref settings.VolumetricLightingIntensity, 0.0001f, float.MinValue, float.MaxValue, "%.5f");
-            ImGui.ColorEdit3("雾颜色", ref settings.FogColor, ImGuiColorEditFlags.HDR | ImGuiColorEditFlags.Float);
-            ImGui.DragFloat("雾开始距离", ref settings.FogStartDistance);
-            ImGui.DragFloat("雾衰减指数", ref settings.FogDensity, 0.0001f, float.MinValue, float.MaxValue, "%.5f");
+
             ComboBox("调试渲染", ref scene.settings.DebugRenderType);
+
+            var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
+            ShowParams(currentPassSetting.ShowSettingParameters, settings.Parameters);
 
             if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
             {
@@ -316,6 +302,128 @@ namespace Coocoo3D.UI
             if (ImGui.Button("重新加载Shader"))
             {
                 appBody.mainCaches.ReloadShaders = true;
+            }
+        }
+
+        static void ShowParams(Dictionary<string, RenderPipeline.PassParameter> showParams, Dictionary<string, object> values)
+        {
+            if (showParams != null)
+            {
+                bool tempB;
+                float tempF;
+                Vector2 tempF2;
+                Vector3 tempF3;
+                Vector4 tempF4;
+                int tempI;
+                foreach (var param in showParams)
+                {
+                    var val = param.Value;
+                    if (val.IsHidden) continue;
+                    switch (val.Type)
+                    {
+                        case "bool":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is bool x1)
+                                    tempB = x1;
+                                else
+                                    tempB = (bool)val.defaultValue;
+                                if (ImGui.Checkbox(val.Name, ref tempB))
+                                    values[param.Key] = tempB;
+                            }
+                            break;
+                        case "int":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is int x1)
+                                    tempI = x1;
+                                else
+                                    tempI = (int)val.defaultValue;
+
+                                if (ImGui.DragInt(val.Name, ref tempI, 1, (int)val.minValue, (int)val.maxValue, val.Format))
+                                    values[param.Key] = tempI;
+                            }
+                            break;
+                        case "sliderInt":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is int x1)
+                                    tempI = x1;
+                                else
+                                    tempI = (int)val.defaultValue;
+                                if (ImGui.SliderInt(val.Name, ref tempI, (int)val.minValue, (int)val.maxValue, val.Format))
+                                    values[param.Key] = tempI;
+                            }
+                            break;
+                        case "float":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is float x1)
+                                    tempF = x1;
+                                else
+                                    tempF = (float)val.defaultValue;
+                                if (ImGui.DragFloat(val.Name, ref tempF, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                    values[param.Key] = tempF;
+                            }
+                            break;
+                        case "sliderFloat":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is float x1)
+                                    tempF = x1;
+                                else
+                                    tempF = (float)val.defaultValue;
+                                if (ImGui.SliderFloat(val.Name, ref tempF, (float)val.minValue, (float)val.maxValue, val.Format))
+                                    values[param.Key] = tempF;
+                            }
+                            break;
+                        case "float2":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is Vector2 x1)
+                                    tempF2 = x1;
+                                else
+                                    tempF2 = (Vector2)val.defaultValue;
+                                if (ImGui.DragFloat2(val.Name, ref tempF2, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                    values[param.Key] = tempF2;
+                            }
+                            break;
+                        case "float3":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is Vector3 x1)
+                                    tempF3 = x1;
+                                else
+                                    tempF3 = (Vector3)val.defaultValue;
+                                if (ImGui.DragFloat3(val.Name, ref tempF3, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                    values[param.Key] = tempF3;
+                            }
+                            break;
+                        case "float4":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is Vector4 x1)
+                                    tempF4 = x1;
+                                else
+                                    tempF4 = (Vector4)val.defaultValue;
+                                if (ImGui.DragFloat4(val.Name, ref tempF4, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                    values[param.Key] = tempF4;
+                            }
+                            break;
+                        case "color3":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is Vector3 x1)
+                                    tempF3 = x1;
+                                else
+                                    tempF3 = (Vector3)val.defaultValue;
+                                if (ImGui.ColorEdit3(val.Name, ref tempF3, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR))
+                                    values[param.Key] = tempF3;
+                            }
+                            break;
+                        case "color4":
+                            {
+                                if (values.TryGetValue(param.Key, out object obj1) && obj1 is Vector4 x1)
+                                    tempF4 = x1;
+                                else
+                                    tempF4 = (Vector4)val.defaultValue;
+                                if (ImGui.ColorEdit4(val.Name, ref tempF4, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR))
+                                    values[param.Key] = tempF4;
+                            }
+                            break;
+                    }
+                }
             }
         }
 
@@ -483,20 +591,19 @@ vmd格式动作");
                     {
                         var material = rendererComponent.Materials[materialSelectIndex];
                         ImGui.Text(material.Name);
-                        ImGui.SliderFloat("金属性  ", ref material.innerStruct.Metallic, 0, 1);
-                        ImGui.SliderFloat("粗糙度  ", ref material.innerStruct.Roughness, 0, 1);
-                        ImGui.SliderFloat("高光  ", ref material.innerStruct.Specular, 0, 1);
-                        ImGui.DragFloat("发光  ", ref material.innerStruct.Emission, 0.01f);
+
                         string s = material.unionShader ?? "";
                         if (ImGui.InputText("UnionShader", ref s, 256))
                         {
                             material.unionShader = s;
                         }
 
+                        ImGui.Checkbox("蒙皮", ref material.Skinning);
+                        if (ImGui.IsItemHovered())
+                            ImGui.SetTooltip("关闭蒙皮可以提高性能");
                         ImGui.Checkbox("透明材质", ref material.Transparent);
-                        ImGui.Checkbox("投射阴影", ref material.CastShadow);
-                        ImGui.Checkbox("接收阴影", ref material.ReceiveShadow);
                         var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
+                        ShowParams(currentPassSetting.ShowParameters, material.Parameters);
                         if (currentPassSetting.ShowTextures != null)
                             foreach (var texSlot in currentPassSetting.ShowTextures)
                             {
@@ -526,25 +633,6 @@ vmd格式动作");
                             material.textures[stringValues["material"]] = filePropSelect;
                             filePropSelect = null;
                         }
-                        if (currentPassSetting.ShowParameters != null)
-                            foreach (var param in currentPassSetting.ShowParameters)
-                            {
-                                switch (param.Value.Type)
-                                {
-                                    case "float":
-                                        break;
-                                    case "float2":
-                                        break;
-                                    case "float3":
-                                        break;
-                                    case "float4":
-                                        break;
-                                    case "color3":
-                                        break;
-                                    case "color4":
-                                        break;
-                                }
-                            }
                     }
                 }
                 ImGui.EndChild();

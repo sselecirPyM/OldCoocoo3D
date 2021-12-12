@@ -110,21 +110,16 @@ namespace Coocoo3D.ResourceWarp
                     Name = mmdMat.Name,
                     indexCount = mmdMat.TriangeIndexNum,
                     indexOffset = indexOffset,
-                    innerStruct =
-                    {
-                        DiffuseColor = mmdMat.DiffuseColor,
-                        SpecularColor = mmdMat.SpecularColor,
-                        EdgeSize = mmdMat.EdgeScale,
-                        EdgeColor = mmdMat.EdgeColor,
-                        AmbientColor = new Vector3(MathF.Pow(mmdMat.AmbientColor.X, 2.2f), MathF.Pow(mmdMat.AmbientColor.Y, 2.2f), MathF.Pow(mmdMat.AmbientColor.Z, 2.2f)),
-                        Roughness = 0.8f,
-                        Specular = 0.5f,
-                    },
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
-                    skinning = true,
-                    CastShadow = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.CastSelfShadow),
-                    ReceiveShadow = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawSelfShadow),
+                    Skinning = true,
                 };
+                mat.Parameters["DiffuseColor"] = mmdMat.DiffuseColor;
+                mat.Parameters["SpecularColor"] = mmdMat.SpecularColor;
+                mat.Parameters["EdgeSize"] = mmdMat.EdgeScale;
+                mat.Parameters["AmbientColor"] = mmdMat.AmbientColor;
+                mat.Parameters["EdgeColor"] = mmdMat.EdgeColor;
+                mat.Parameters["CastShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.CastSelfShadow);
+                mat.Parameters["ReceiveShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawSelfShadow);
                 indexOffset += mmdMat.TriangeIndexNum;
                 if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)
                 {

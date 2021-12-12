@@ -286,7 +286,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 VertexShader vertexShader = new VertexShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "vsmain"));
+                    vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "vsmain", path));
                 else
                     vertexShader.Initialize(File.ReadAllBytes(path));
                 return vertexShader;
@@ -301,7 +301,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 PixelShader pixelShader = new PixelShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "psmain"));
+                    pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "psmain", path));
                 else
                     pixelShader.Initialize(File.ReadAllBytes(path));
                 return pixelShader;
@@ -316,7 +316,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 GeometryShader geometryShader = new GeometryShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    geometryShader.Initialize(LoadShader(DxcShaderStage.Geometry, File.ReadAllText(path), "gsmain"));
+                    geometryShader.Initialize(LoadShader(DxcShaderStage.Geometry, File.ReadAllText(path), "gsmain", path));
                 else
                     geometryShader.Initialize(File.ReadAllBytes(path));
                 return geometryShader;
@@ -399,7 +399,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 ComputeShader computeShader = new ComputeShader();
                 if (Path.GetExtension(path) == ".hlsl")
-                    computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "csmain"));
+                    computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "csmain", path));
                 else
                     computeShader.Initialize(File.ReadAllBytes(path));
                 return computeShader;
@@ -432,12 +432,12 @@ namespace Coocoo3D.RenderPipeline
                             dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
                         }
                     }
-                    byte[] vs = enableVS ? LoadShader(DxcShaderStage.Vertex, source, "vsmain", null, dxcDefines) : null;
-                    byte[] ps = enablePS ? LoadShader(DxcShaderStage.Pixel, source, "psmain", null, dxcDefines) : null;
+                    byte[] vs = enableVS ? LoadShader(DxcShaderStage.Vertex, source, "vsmain", path, dxcDefines) : null;
+                    byte[] ps = enablePS ? LoadShader(DxcShaderStage.Pixel, source, "psmain", path, dxcDefines) : null;
                     PSO pso = new PSO(vs, null, ps);
                     return pso;
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine(e);
                     return null;
@@ -445,9 +445,9 @@ namespace Coocoo3D.RenderPipeline
             });
         }
 
-        static byte[] LoadShader(DxcShaderStage shaderStage, string shaderCode, string entryPoint, string fileName = null, DxcDefine[] dxcDefines = null)
+        static byte[] LoadShader(DxcShaderStage shaderStage, string shaderCode, string entryPoint, string fileName, DxcDefine[] dxcDefines = null)
         {
-            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { }, fileName, dxcDefines);
+            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { }, fileName, dxcDefines, null);
             if (result.GetStatus() != SharpGen.Runtime.Result.Ok)
             {
                 string err = result.GetErrors();

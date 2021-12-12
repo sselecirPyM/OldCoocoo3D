@@ -1,10 +1,8 @@
-﻿using Coocoo3D.Base;
-using Coocoo3D.Components;
+﻿using Coocoo3D.Components;
 using Coocoo3D.MMDSupport;
 using Coocoo3D.Present;
 using Coocoo3D.ResourceWarp;
 using Coocoo3D.Numerics;
-using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -430,37 +428,15 @@ namespace Coocoo3D.Components
         public int indexCount;
         public DrawFlag DrawFlags;
         public bool Transparent;
-        public bool CastShadow;
-        public bool ReceiveShadow;
-        public bool skinning;
-
-        public InnerStruct innerStruct;
-        public struct InnerStruct
-        {
-            public Vector4 DiffuseColor;
-            public Vector4 SpecularColor;
-            public Vector3 AmbientColor;
-            public float EdgeSize;
-            public Vector4 EdgeColor;
-
-            public float Metallic;
-            public float Roughness;
-            public float Emission;
-            public float Subsurface;
-            public float Specular;
-            public float SpecularTint;
-            public float Anisotropic;
-            public float Sheen;
-            public float SheenTint;
-            public float Clearcoat;
-            public float ClearcoatGloss;
-        }
+        public bool Skinning;
         public Dictionary<string, string> textures = new Dictionary<string, string>();
+        public Dictionary<string, object> Parameters = new Dictionary<string, object>();
 
         public RuntimeMaterial GetClone()
         {
             var mat = (RuntimeMaterial)MemberwiseClone();
             mat.textures = new Dictionary<string, string>(textures);
+            mat.Parameters = new Dictionary<string, object>(Parameters);
             return mat;
         }
 

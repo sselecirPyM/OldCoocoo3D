@@ -20,12 +20,13 @@ namespace Coocoo3D.RenderPipeline
         public override void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var graphicsContext = visualChannel.graphicsContext;
-            var settings = context.dynamicContextRead.settings;
-            var rendererComponents = context.dynamicContextRead.renderers;
-            var lightings = context.dynamicContextRead.lightings;
+            var drp = context.dynamicContextRead;
+            var settings = drp.settings;
+            var rendererComponents = drp.renderers;
+            var lightings = drp.lightings;
             var camera = visualChannel.cameraData;
             var mainCaches = context.mainCaches;
-            var passSetting = context.dynamicContextRead.currentPassSetting;
+            var passSetting = drp.currentPassSetting;
             Texture2D texLoading = mainCaches.GetTexture("Assets/Textures/loading.png");
             Texture2D texError = mainCaches.GetTexture("Assets/Textures/error.png");
             List<LightingData> pointLights = new List<LightingData>();
@@ -34,15 +35,12 @@ namespace Coocoo3D.RenderPipeline
             bool hasMainLight = false;
             MiscProcess.Process(context, visualChannel.GPUWriter);
             Matrix4x4 lightCameraMatrix0 = Matrix4x4.Identity;
-            Matrix4x4 invLightCameraMatrix0 = Matrix4x4.Identity;
             if (lightings.Count > 0 && lightings[0].LightingType == LightingType.Directional)
             {
-                if (context.dynamicContextRead.volumes.Count == 0)
+                if (drp.volumes.Count == 0)
                     lightCameraMatrix0 = lightings[0].GetLightingMatrix(camera.pvMatrix);
                 else
-                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(visualChannel, context.dynamicContextRead);
-
-                Matrix4x4.Invert(lightCameraMatrix0, out invLightCameraMatrix0);
+                    lightCameraMatrix0 = lightings[0].GetLightingMatrix(visualChannel, drp);
 
                 hasMainLight = true;
             }
@@ -58,50 +56,19 @@ namespace Coocoo3D.RenderPipeline
 
             void _WriteCBV1(CBVSlotRes cbv, PassMatch1 _pass, GPUWriter writer, RuntimeMaterial material, MMDRendererComponent _rc)
             {
+                if (cbv.Datas == null || cbv.Datas.Count == 0) return;
                 foreach (var s in cbv.Datas)
                 {
                     switch (s)
                     {
-                        case "Metallic":
-                            writer.Write(material.innerStruct.Metallic);
-                            break;
-                        case "Roughness":
-                            writer.Write(material.innerStruct.Roughness);
-                            break;
-                        case "Emission":
-                            writer.Write(material.innerStruct.Emission);
-                            break;
-                        case "Specular":
-                            writer.Write(material.innerStruct.Specular);
-                            break;
-                        case "Diffuse":
-                            writer.Write(material.innerStruct.DiffuseColor);
-                            break;
-                        case "SpecularColor":
-                            writer.Write(material.innerStruct.SpecularColor);
-                            break;
-                        case "AmbientColor":
-                            writer.Write(material.innerStruct.AmbientColor);
-                            break;
-                        case "Fog":
-                            writer.Write(settings.FogColor);
-                            writer.Write(Math.Max(settings.FogDensity, 0.0001f));
-                            writer.Write(settings.FogStartDistance);
-                            writer.Write(settings.FogEndDistance);
-                            break;
-                        case "VolumetricLighting":
-                            writer.Write(settings.VolumetricLightingSampleCount);
-                            writer.Write(settings.VolumetricLightingDistance);
-                            writer.Write(settings.VolumetricLightingIntensity);
-                            break;
                         case "CameraPosition":
                             writer.Write(camera.Position);
                             break;
                         case "DeltaTime":
-                            writer.Write((float)context.dynamicContextRead.DeltaTime);
+                            writer.Write((float)drp.DeltaTime);
                             break;
                         case "Time":
-                            writer.Write((float)context.dynamicContextRead.Time);
+                            writer.Write((float)drp.Time);
                             break;
                         case "World":
                             writer.Write(_rc.LocalToWorld);
@@ -128,30 +95,10 @@ namespace Coocoo3D.RenderPipeline
                             }
                             break;
                         case "Camera":
-                            if (_pass.Pass.Camera == "Main")
-                            {
-                                writer.Write(camera.vpMatrix);
-                            }
-                            else if (_pass.Pass.Camera == "ShadowMap")
-                            {
-                                if (lightings.Count > 0)
-                                    writer.Write(lightCameraMatrix0);
-                                else
-                                    writer.Write(Matrix4x4.Identity);
-                            }
+                            writer.Write(camera.vpMatrix);
                             break;
                         case "CameraInvert":
-                            if (_pass.Pass.Camera == "Main")
-                            {
-                                writer.Write(camera.pvMatrix);
-                            }
-                            else if (_pass.Pass.Camera == "ShadowMap")
-                            {
-                                if (lightings.Count > 0)
-                                    writer.Write(invLightCameraMatrix0);
-                                else
-                                    writer.Write(Matrix4x4.Identity);
-                            }
+                            writer.Write(camera.pvMatrix);
                             break;
                         case "DirectionalLight":
                             if (lightings.Count > 0)
@@ -191,17 +138,25 @@ namespace Coocoo3D.RenderPipeline
                             writer.Write(settings.SkyBoxLightMultiplier);
                             break;
                         default:
-                            var st = _rc?.morphStateComponent;
-                            if (st != null && st.stringMorphIndexMap.TryGetValue(s, out int _i))
+                            object settingValue = null;
+                            if (material != null)
+                                settingValue = drp.GetSettingsValue(material, s);
+                            settingValue ??= drp.GetSettingsValue(s);
+                            if (settingValue != null)
                             {
-                                writer.Write(st.Weights.Computed[_i]);
+                                if (settingValue is float f1)
+                                    writer.Write(f1);
+                                if (settingValue is Vector2 f2)
+                                    writer.Write(f2);
+                                if (settingValue is Vector3 f3)
+                                    writer.Write(f3);
+                                if (settingValue is Vector4 f4)
+                                    writer.Write(f4);
+                                if (settingValue is int i1)
+                                    writer.Write(i1);
+                                continue;
                             }
-                            else if (material != null && material.textures.ContainsKey(s))
-                            {
-                                writer.Write(1.0f);
-                            }
-                            else
-                                writer.Write(0.0f);
+
                             break;
                     }
                 }
@@ -225,7 +180,6 @@ namespace Coocoo3D.RenderPipeline
                 graphicsContext = graphicsContext,
                 visualChannel = visualChannel,
                 GPUWriter = new GPUWriter(),
-                camera = camera,
                 settings = settings,
                 relativePath = System.IO.Path.GetDirectoryName(passSetting.path)
             };
@@ -281,7 +235,7 @@ namespace Coocoo3D.RenderPipeline
                 if (combinedPass.DrawObjects)
                 {
                     passPsoDesc.inputLayout = InputLayout.mmd;
-                    passPsoDesc.wireFrame = context.dynamicContextRead.settings.Wireframe;
+                    passPsoDesc.wireFrame = drp.settings.Wireframe;
 
                     for (int i = 0; i < rendererComponents.Count; i++)
                     {
@@ -403,44 +357,24 @@ namespace Coocoo3D.RenderPipeline
                 return !material.Transparent;
             if (material.textures.ContainsKey(filter))
                 return true;
+            var obj = context.dynamicContextRead.GetSettingsValue(material, filter);
+            if (obj is bool b1 && b1)
+                return true;
             return false;
         }
 
         static void _WriteCBV(CBVSlotRes cbv, UnionShaderParam unionShaderParam, int slot)
         {
+            if (cbv.Datas == null || cbv.Datas.Count == 0) return;
             var material = unionShaderParam.material;
             var context = unionShaderParam.rp;
             var writer = unionShaderParam.GPUWriter;
-            var camera = unionShaderParam.camera;
+            var camera = unionShaderParam.visualChannel.cameraData;
             var settings = unionShaderParam.settings;
             foreach (var s in cbv.Datas)
             {
                 switch (s)
                 {
-                    case "Metallic":
-                        writer.Write(material.innerStruct.Metallic);
-                        break;
-                    case "Roughness":
-                        writer.Write(material.innerStruct.Roughness);
-                        break;
-                    case "Emission":
-                        writer.Write(material.innerStruct.Emission);
-                        break;
-                    case "Diffuse":
-                        writer.Write(material.innerStruct.DiffuseColor);
-                        break;
-                    case "Specular":
-                        writer.Write(material.innerStruct.Specular);
-                        break;
-                    case "SpecularColor":
-                        writer.Write(material.innerStruct.SpecularColor);
-                        break;
-                    case "AmbientColor":
-                        writer.Write(material.innerStruct.AmbientColor);
-                        break;
-                    case "Transparent":
-                        writer.Write(material.Transparent ? 1 : 0);
-                        break;
                     case "DrawFlags":
                         writer.Write((int)material.DrawFlags);
                         break;

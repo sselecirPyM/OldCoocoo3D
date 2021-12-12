@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Coocoo3DGraphics;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
+using System.Numerics;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -24,6 +25,8 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, string> UnionShaders;
         public Dictionary<string, string> ShowTextures;
         public Dictionary<string, PassParameter> ShowParameters;
+        public Dictionary<string, string> ShowSettingTextures;
+        public Dictionary<string, PassParameter> ShowSettingParameters;
 
         [NonSerialized]
         public string path;
@@ -62,7 +65,14 @@ namespace Coocoo3D.RenderPipeline
             if (ShowParameters != null)
                 foreach (var parameter in ShowParameters)
                 {
-                    parameter.Value.Name = parameter.Key;
+                    parameter.Value.Name ??= parameter.Key;
+                    parameter.Value.GenerateRuntimeValue();
+                }
+            if (ShowSettingParameters != null)
+                foreach (var parameter in ShowSettingParameters)
+                {
+                    parameter.Value.Name ??= parameter.Key;
+                    parameter.Value.GenerateRuntimeValue();
                 }
             foreach (var passMatch in RenderSequence)
             {
@@ -118,8 +128,8 @@ namespace Coocoo3D.RenderPipeline
         public string ComputeShader;
         public string UnionShader;
         public BlendState BlendMode;
-        public List<SRVUAVSlotRes> SRVs;
         public List<CBVSlotRes> CBVs;
+        public List<SRVUAVSlotRes> SRVs;
         public List<SRVUAVSlotRes> UAVs;
     }
 
@@ -139,18 +149,6 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public VarSize Size;
         public Format Format;
-    }
-    public struct PParameter
-    {
-        public string Name;
-        public float Value;
-    }
-    public class PTopAccelerateStructure
-    {
-        public string Name;
-        public string Filter;
-        public List<SRVUAVSlotRes> SRVs;
-        public List<CBVSlotRes> CBVs;
     }
     public class VarSize
     {
@@ -178,11 +176,86 @@ namespace Coocoo3D.RenderPipeline
         public string Default;
         public string Min;
         public string Max;
+        public string Step;
+        public string Format;
+        public bool IsHidden;
         [NonSerialized]
         public object defaultValue;
         [NonSerialized]
         public object minValue;
         [NonSerialized]
         public object maxValue;
+        [NonSerialized]
+        public object step;
+
+        public void GenerateRuntimeValue()
+        {
+            if (Type == "float" || Type == "sliderFloat")
+            {
+                float f1;
+                if (float.TryParse(Default, out f1))
+                    defaultValue = f1;
+                else
+                    defaultValue = default(float);
+
+                if (float.TryParse(Min, out f1))
+                    minValue = f1;
+                else
+                    minValue = float.MinValue;
+
+                if (float.TryParse(Max, out f1))
+                    maxValue = f1;
+                else
+                    maxValue = float.MaxValue;
+
+                if (float.TryParse(Step, out f1))
+                    step = f1;
+                else
+                    step = 1.0f;
+
+                Format ??= "%.3f";
+            }
+            else if (Type == "float2")
+            {
+                defaultValue = Utility.StringConvert.GetFloat2(Default);
+            }
+            else if (Type == "float3" || Type == "color3")
+            {
+                defaultValue = Utility.StringConvert.GetFloat3(Default);
+            }
+            else if (Type == "float4" || Type == "color4")
+            {
+                defaultValue = Utility.StringConvert.GetFloat4(Default);
+            }
+            else if (Type == "int" || Type == "sliderInt")
+            {
+                int f1;
+                if (int.TryParse(Default, out f1))
+                    defaultValue = f1;
+                else
+                    defaultValue = default(int);
+
+                if (int.TryParse(Min, out f1))
+                    minValue = f1;
+                else
+                    minValue = int.MinValue;
+
+                if (int.TryParse(Max, out f1))
+                    maxValue = f1;
+                else
+                    maxValue = int.MaxValue;
+
+                if (int.TryParse(Step, out f1))
+                    step = f1;
+                else
+                    step = 1;
+            }
+            else if (Type == "bool")
+            {
+                if (bool.TryParse(Default, out bool f1))
+                    defaultValue = f1;
+                else defaultValue = default(bool);
+            }
+        }
     }
 }

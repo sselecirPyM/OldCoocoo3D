@@ -69,7 +69,7 @@
           "Index": "1",
           "Datas": [
             "World",
-            "Camera"
+            "DirectionalLight"
           ]
         }
       ]
@@ -109,12 +109,14 @@
             "PointLights4",
             "Metallic",
             "Roughness",
-            "Emission",
+            "Emissive",
             "Specular",
-            "Diffuse",
             "CameraPosition",
             "IndirectMultiplier",
-            "Fog",
+            "FogColor",
+            "FogDensity",
+            "FogStartDistance",
+            "FogEndDistance",
             "WidthHeight"
           ]
         }
@@ -128,7 +130,7 @@
         {
           "Index": "1",
           "ResourceType": "Texture2D",
-          "Resource": "_Emission"
+          "Resource": "_Emissive"
         },
         {
           "Index": "2",
@@ -152,10 +154,7 @@
       "UnionShader": "UnionShaderBloom.cs",
       "CBVs": [
         {
-          "Index": "0",
-          "Datas": [
-            "WidthHeight"
-          ]
+          "Index": "0"
         }
       ],
       "SRVs": [
@@ -172,10 +171,7 @@
       "BlendMode": "Add",
       "CBVs": [
         {
-          "Index": "0",
-          "Datas": [
-            "WidthHeight"
-          ]
+          "Index": "0"
         }
       ],
       "SRVs": [
@@ -187,10 +183,6 @@
       ]
     }
   },
-  "VertexShaders": [
-  ],
-  "PixelShaders": [
-  ],
   "UnionShaders": {
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
@@ -198,6 +190,95 @@
   },
   "ShowTextures": {
     "_Albedo": "",
-    "_Emission": ""
+    "_Emissive": ""
+  },
+  "ShowParameters": {
+    "Metallic": {
+      "Name": "金属度",
+      "Type": "sliderFloat",
+      "Min": "0",
+      "Max": "1",
+      "Step": "0.01"
+    },
+    "Roughness": {
+      "Name": "粗糙度",
+      "Type": "sliderFloat",
+      "Default": "0.8",
+      "Min": "0",
+      "Max": "1",
+      "Step": "0.01"
+    },
+    "Specular": {
+      "Name": "高光",
+      "Type": "sliderFloat",
+      "Default": "0.5",
+      "Min": "0",
+      "Max": "1",
+      "Step": "0.01"
+    },
+    "Emissive": {
+      "Name": "自发光",
+      "Type": "float",
+      "Step": "0.01"
+    },
+    "CastShadow": {
+      "Name": "投射阴影",
+      "Type": "bool",
+      "Default": "true"
+    },
+    "ReceiveShadow": {
+      "Name": "接收阴影",
+      "Type": "bool",
+      "Default": "true"
+    }
+  },
+  "ShowSettingParameters": {
+    "EnableBloom": {
+      "Name": "启用泛光",
+      "Type": "bool",
+      "Default": "true"
+    },
+    "BloomThreshold": {
+      "Name": "泛光阈值",
+      "Type": "float",
+      "Default": "1.05",
+      "Step": "0.01",
+      "Min": "0"
+    },
+    "BloomIntensity": {
+      "Name": "泛光强度",
+      "Type": "float",
+      "Default": "0.1",
+      "Step": "0.01",
+      "Min": "0"
+    },
+    "EnableFog": {
+      "Name": "启用雾",
+      "Type": "bool",
+      "Default": "true"
+    },
+    "FogColor": {
+      "Name": "雾颜色",
+      "Type": "color3",
+      "Default": "[0.4,0.4,0.6]"
+    },
+    "FogDensity": {
+      "Name": "雾密度",
+      "Type": "float",
+      "Default": "0.0005",
+      "Step": "0.00001",
+      "Min": "0.0001",
+      "Format": "%.5f"
+    },
+    "FogStartDistance": {
+      "Name": "雾开始距离",
+      "Type": "float",
+      "Default": "50"
+    },
+    "FogEndDistance": {
+      "Name": "雾结束距离",
+      "Type": "float",
+      "Default": "100000"
+    }
   }
 }

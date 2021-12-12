@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Components;
-using Coocoo3D.Present;
 using Coocoo3DGraphics;
 using Coocoo3D.RenderPipeline.Wrap;
 
@@ -25,7 +24,6 @@ namespace Coocoo3D.RenderPipeline
         public string passName;
         public string relativePath;
         public GPUWriter GPUWriter;
-        public CameraData camera;
         public Core.Settings settings;
         public Texture2D[] renderTargets;
         public Texture2D depthStencil;

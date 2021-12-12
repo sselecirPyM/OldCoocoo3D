@@ -11,7 +11,7 @@ public static class UnionShaderDeferred
         { DebugRenderType.Depth,"DEBUG_DEPTH"},
         { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
         { DebugRenderType.DiffuseRender,"DEBUG_DIFFUSE_RENDER"},
-        { DebugRenderType.Emission,"DEBUG_EMISSION"},
+        { DebugRenderType.Emissive,"DEBUG_EMISSIVE"},
         { DebugRenderType.Normal,"DEBUG_NORMAL"},
         { DebugRenderType.Position,"DEBUG_POSITION"},
         { DebugRenderType.Roughness,"DEBUG_ROUGHNESS"},
@@ -25,13 +25,17 @@ public static class UnionShaderDeferred
         var mainCaches = param.rp.mainCaches;
         var psoDesc = param.PSODesc;
         var material = param.material;
-        var lightings = param.rp.dynamicContextRead.lightings;
+        var drp = param.rp.dynamicContextRead;
+        var lightings = drp.lightings;
         PSO pso1 = null;
         switch (param.passName)
         {
             case "GBufferPass":
                 {
-                    pso1 = mainCaches.GetPSOWithKeywords(null, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
+                    List<string> keywords = new List<string>();
+                    if (material.Skinning)
+                        keywords.Add("SKINNING");
+                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
                 }
                 break;
             case "DeferredFinalPass":
@@ -41,9 +45,9 @@ public static class UnionShaderDeferred
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
-                    if (param.settings.EnableFog)
+                    if ((bool)drp.GetSettingsValue("EnableFog"))
                         keywords.Add("ENABLE_FOG");
-                    if (param.settings.EnableVolumetricLighting)
+                    if ((bool)drp.GetSettingsValue("EnableVolumetricLighting"))
                         keywords.Add("ENABLE_VOLUME_LIGHTING");
                     if (hasLight)
                         keywords.Add("ENABLE_LIGHT");
