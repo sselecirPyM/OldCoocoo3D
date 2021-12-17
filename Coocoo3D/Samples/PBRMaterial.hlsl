@@ -7,7 +7,6 @@
 
 struct LightInfo
 {
-	float4x4 LightMapVP;
 	float3 LightDir;
 	uint LightType;
 	float3 LightColor;
@@ -25,6 +24,8 @@ cbuffer cb1 : register(b1)
 {
 	float4x4 g_mWorld;
 	float4x4 g_mWorldToProj;
+	float4x4 LightMapVP;
+	float4x4 LightMapVP1;
 	LightInfo Lightings[1];
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 	float _Metallic;
@@ -151,7 +152,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #if DEBUG_UV
 	return float4(input.TexCoord,0,1);
 #endif
-#if ENABLE_LIGHT
+#if ENABLE_DIRECTIONAL_LIGHT
 	for (int i = 0; i < 1; i++)
 	{
 		if (!any(Lightings[i].LightColor))continue;
@@ -159,16 +160,28 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 		{
 			float inShadow = 1.0f;
 			float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
-			float4 sPos = mul(input.wPos, Lightings[i].LightMapVP);
-			sPos = sPos / sPos.w;
-
-			float2 shadowTexCoords;
-			shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
-			shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+			if (i == 0)
+			{
 #ifndef DISBLE_SHADOW_RECEIVE
-			if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-				inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords, sPos.z).r;
+				float4 sPos;
+				float2 shadowTexCoords;
+				sPos = mul(input.wPos, LightMapVP);
+				sPos = sPos / sPos.w;
+				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords *float2( 0.5,1), sPos.z).r;
+				else
+				{
+					sPos = mul(input.wPos, LightMapVP1);
+					sPos = sPos / sPos.w;
+					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1)+float2(0.5,0), sPos.z).r;
+				}
 #endif
+			}
 			float3 L = normalize(Lightings[i].LightDir);
 			float3 H = normalize(L + V);
 
@@ -189,6 +202,8 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
 		}
 	}
+#endif //ENABLE_DIRECTIONAL_LIGHT
+#if ENABLE_POINT_LIGHT
 	for (int i = 0; i < 4; i++)
 	{
 		if (PointLights[i].LightType == 1)
@@ -216,7 +231,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
 		}
 	}
-#endif //ENABLE_LIGHT
+#endif //ENABLE_POINT_LIGHT
 #if ENABLE_FOG
 	outputColor = lerp(_fogColor, outputColor,1 / exp(max(camDist - _startDistance,0.00001) * _fogDensity));
 #endif

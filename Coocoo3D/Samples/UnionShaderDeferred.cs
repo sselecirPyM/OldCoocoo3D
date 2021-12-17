@@ -26,8 +26,9 @@ public static class UnionShaderDeferred
         var psoDesc = param.PSODesc;
         var material = param.material;
         var drp = param.rp.dynamicContextRead;
-        var lightings = drp.lightings;
-        PSO pso1 = null;
+        var directionalLights = drp.directionalLights;
+        var pointLights = drp.pointLights;
+        PSO pso = null;
         switch (param.passName)
         {
             case "GBufferPass":
@@ -35,31 +36,35 @@ public static class UnionShaderDeferred
                     List<string> keywords = new List<string>();
                     if (material.Skinning)
                         keywords.Add("SKINNING");
-                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
                 }
                 break;
             case "DeferredFinalPass":
                 {
-                    bool hasLight = lightings.Count != 0;
-
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
                     if ((bool)drp.GetSettingsValue("EnableFog"))
                         keywords.Add("ENABLE_FOG");
-                    if ((bool)drp.GetSettingsValue("EnableVolumetricLighting"))
-                        keywords.Add("ENABLE_VOLUME_LIGHTING");
-                    if (hasLight)
-                        keywords.Add("ENABLE_LIGHT");
-                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
+
+                    if (directionalLights.Count != 0)
+                    {
+                        keywords.Add("ENABLE_DIRECTIONAL_LIGHT");
+                        if ((bool)drp.GetSettingsValue("EnableVolumetricLighting"))
+                            keywords.Add("ENABLE_VOLUME_LIGHTING");
+                    }
+                    if (pointLights.Count != 0)
+                        keywords.Add("ENABLE_POINT_LIGHT");
+
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
                 }
                 break;
             default:
                 return false;
         }
-        if (pso1 != null)
+        if (pso != null)
         {
-            param.graphicsContext.SetPSO(pso1, psoDesc);
+            param.graphicsContext.SetPSO(pso, psoDesc);
             if (material != null)
             {
                 graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);

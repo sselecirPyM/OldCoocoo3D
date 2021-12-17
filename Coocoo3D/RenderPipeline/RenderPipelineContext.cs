@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Utility;
@@ -141,7 +140,7 @@ namespace Coocoo3D.RenderPipeline
             dynamicContextWrite.settings = scene.settings.GetClone();
 
             dynamicContextWrite.currentPassSetting = mainCaches.GetPassSetting(currentPassSetting1);
-            dynamicContextWrite.passSettingPath = currentPassSetting1;
+            dynamicContextWrite.currentPassSetting.path = currentPassSetting1;
 
             dynamicContextWrite.frameRenderIndex = frameRenderCount;
             frameRenderCount++;
@@ -277,7 +276,7 @@ namespace Coocoo3D.RenderPipeline
                     mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
                 }
             }
-            ConfigPassSettings(dynamicContextRead.currentPassSetting, dynamicContextRead.passSettingPath);
+            ConfigPassSettings(dynamicContextRead.currentPassSetting);
             foreach (var visualChannel in visualChannels.Values)
             {
                 PrepareRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
@@ -290,7 +289,7 @@ namespace Coocoo3D.RenderPipeline
             var outputSize = visualChannel.outputSize;
             foreach (var rt in passSetting.RenderTargets.Values)
             {
-                string rtName = string.Format("SceneView/{0}/{1}", visualChannel.Name, rt.Name);
+                string rtName = visualChannel.GetTexName(rt.Name);
                 if (!RTs.TryGetValue(rtName, out var tex2d))
                 {
                     tex2d = new Texture2D();
@@ -334,12 +333,11 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public bool ConfigPassSettings(PassSetting passSetting, string passPath)
+        public bool ConfigPassSettings(PassSetting passSetting)
         {
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
-            passSetting.path = passPath;
-            string path1 = Path.GetDirectoryName(passPath);
+            string path1 = Path.GetDirectoryName(passSetting.path);
             if (passSetting.VertexShaders != null)
                 foreach (var shader in passSetting.VertexShaders)
                     passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
@@ -356,67 +354,63 @@ namespace Coocoo3D.RenderPipeline
                     passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
                 }
             }
-            foreach (var pass in passSetting.RenderSequence)
+            if (passSetting.Dispatcher != null) passSetting.Dispatcher = Path.GetFullPath(passSetting.Dispatcher, path1);
+            foreach (var sequence in passSetting.RenderSequence)
             {
-                if (pass.Type == "Swap") continue;
-
-                int SlotComparison(SRVUAVSlotRes x1, SRVUAVSlotRes y1)
-                {
-                    return x1.Index.CompareTo(y1.Index);
-                }
-                int SlotComparison1(CBVSlotRes x1, CBVSlotRes y1)
+                var pass = passSetting.Passes[sequence.Name];
+                int SlotComparison(SlotRes x1, SlotRes y1)
                 {
                     return x1.Index.CompareTo(y1.Index);
                 }
                 StringBuilder stringBuilder = new StringBuilder();
-                pass.Pass.CBVs?.Sort(SlotComparison1);
-                pass.Pass.SRVs?.Sort(SlotComparison);
-                pass.Pass.UAVs?.Sort(SlotComparison);
+                pass.CBVs?.Sort(SlotComparison);
+                pass.SRVs?.Sort(SlotComparison);
+                pass.UAVs?.Sort(SlotComparison);
 
-                if (pass.Pass.CBVs != null)
+                if (pass.CBVs != null)
                 {
                     int count = 0;
-                    foreach (var cbv in pass.Pass.CBVs)
+                    foreach (var cbv in pass.CBVs)
                     {
                         for (int i = count; i < cbv.Index + 1; i++)
                             stringBuilder.Append('C');
                         count = cbv.Index + 1;
                     }
                 }
-                if (pass.Pass.SRVs != null)
+                if (pass.SRVs != null)
                 {
                     int count = 0;
-                    foreach (var srv in pass.Pass.SRVs)
+                    foreach (var srv in pass.SRVs)
                     {
                         for (int i = count; i < srv.Index + 1; i++)
                             stringBuilder.Append('s');
                         count = srv.Index + 1;
                     }
                 }
-                if (pass.Pass.UAVs != null)
+                if (pass.UAVs != null)
                 {
                     int count = 0;
-                    foreach (var uav in pass.Pass.UAVs)
+                    foreach (var uav in pass.UAVs)
                     {
                         for (int i = count; i < uav.Index + 1; i++)
                             stringBuilder.Append('u');
                         count = uav.Index + 1;
                     }
                 }
-                pass.rootSignatureKey = stringBuilder.ToString();
+                sequence.rootSignatureKey = stringBuilder.ToString();
                 VertexShader vs = null;
                 GeometryShader gs = null;
                 PixelShader ps = null;
-                if (pass.Pass.VertexShader != null)
-                    vs = mainCaches.GetVertexShader(passSetting.aliases[pass.Pass.VertexShader]);
-                if (pass.Pass.GeometryShader != null)
-                    gs = mainCaches.GetGeometryShader(passSetting.aliases[pass.Pass.GeometryShader]);
-                if (pass.Pass.PixelShader != null)
-                    ps = mainCaches.GetPixelShader(passSetting.aliases[pass.Pass.PixelShader]);
+                if (pass.VertexShader != null)
+                    vs = mainCaches.GetVertexShader(passSetting.aliases[pass.VertexShader]);
+                if (pass.GeometryShader != null)
+                    gs = mainCaches.GetGeometryShader(passSetting.aliases[pass.GeometryShader]);
+                if (pass.PixelShader != null)
+                    ps = mainCaches.GetPixelShader(passSetting.aliases[pass.PixelShader]);
                 PSO pso = new PSO();
                 pso.Initialize(vs, gs, ps);
-                pass.PSODefault = pso;
-                RPAssetsManager.PSOs[pass.Pass.Name] = pso;
+                sequence.PSODefault = pso;
+                RPAssetsManager.PSOs[pass.Name] = pso;
             }
             passSetting.configured = true;
             return true;

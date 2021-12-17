@@ -88,12 +88,12 @@ namespace Coocoo3D.ResourceWarp
                 boneId[i * 4 + 1] = (ushort)pmx.Vertices[i].boneId1;
                 boneId[i * 4 + 2] = (ushort)pmx.Vertices[i].boneId2;
                 boneId[i * 4 + 3] = (ushort)pmx.Vertices[i].boneId3;
-                float weightTotal = 0;
+
                 boneWeights[i * 4 + 0] = pmx.Vertices[i].Weights.X;
                 boneWeights[i * 4 + 1] = pmx.Vertices[i].Weights.Y;
                 boneWeights[i * 4 + 2] = pmx.Vertices[i].Weights.Z;
                 boneWeights[i * 4 + 3] = pmx.Vertices[i].Weights.W;
-                weightTotal = boneWeights[i * 4 + 0] + boneWeights[i * 4 + 1] + boneWeights[i * 4 + 2] + boneWeights[i * 4 + 3];
+                float weightTotal = boneWeights[i * 4 + 0] + boneWeights[i * 4 + 1] + boneWeights[i * 4 + 2] + boneWeights[i * 4 + 3];
                 boneWeights[i * 4 + 0] /= weightTotal;
                 boneWeights[i * 4 + 1] /= weightTotal;
                 boneWeights[i * 4 + 2] /= weightTotal;
@@ -113,6 +113,18 @@ namespace Coocoo3D.ResourceWarp
                     DrawFlags = (DrawFlag)mmdMat.DrawFlags,
                     Skinning = true,
                 };
+                Vector3 min;
+                Vector3 max;
+                min = position[pmx.TriangleIndexs[indexOffset]];
+                max = position[pmx.TriangleIndexs[indexOffset]];
+                for (int k = 0; k < mat.indexCount; k++)
+                {
+                    min = Vector3.Min(min, position[pmx.TriangleIndexs[indexOffset + k]]);
+                    max = Vector3.Max(max, position[pmx.TriangleIndexs[indexOffset + k]]);
+                }
+
+                mat.boundingBox = new Vortice.Mathematics.BoundingBox(min, max);
+
                 mat.Parameters["DiffuseColor"] = mmdMat.DiffuseColor;
                 mat.Parameters["SpecularColor"] = mmdMat.SpecularColor;
                 mat.Parameters["EdgeSize"] = mmdMat.EdgeScale;
@@ -128,13 +140,10 @@ namespace Coocoo3D.ResourceWarp
 
                     mat.textures["_Albedo"] = texPath;
                 }
-                else
+                else if (i > 0)
                 {
-                    if (i > 0)
-                    {
-                        var prevMat = Materials[i - 1];
-                        mat.textures["_Albedo"] = prevMat.textures["_Albedo"];
-                    }
+                    var prevMat = Materials[i - 1];
+                    mat.textures["_Albedo"] = prevMat.textures["_Albedo"];
                 }
 
                 Materials.Add(mat);

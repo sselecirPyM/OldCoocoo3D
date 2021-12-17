@@ -2,7 +2,6 @@
 
 struct LightInfo
 {
-	float4x4 LightMapVP;
 	float3 LightDir;
 	uint LightType;
 	float3 LightColor;
@@ -30,8 +29,12 @@ cbuffer cb0 : register(b0)
 	int _volumeLightIterCount;
 	float _volumeLightMaxDistance;
 	float _volumeLightIntensity;
+	float4x4 LightMapVP;
+	float4x4 LightMapVP1;
 	LightInfo Lightings[1];
+#if ENABLE_POINT_LIGHT
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
+#endif
 };
 Texture2D texture0 :register(t0);
 Texture2D texture1 :register(t1);
@@ -154,7 +157,7 @@ float4 psmain(PSIn input) : SV_TARGET
 #if DEBUG_SPECULAR
 		return float4(c_specular, 1);
 #endif
-#if ENABLE_LIGHT
+#if ENABLE_DIRECTIONAL_LIGHT
 		for (int i = 0; i < 1; i++)
 		{
 			if (!any(Lightings[i].LightColor))continue;
@@ -162,14 +165,26 @@ float4 psmain(PSIn input) : SV_TARGET
 			{
 				float inShadow = 1.0f;
 				float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
-				float4 sPos = mul(wPos, Lightings[i].LightMapVP);
-				sPos = sPos / sPos.w;
-
-				float2 shadowTexCoords;
-				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
-				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, float3(shadowTexCoords, 0), sPos.z).r;
+				if (i == 0)
+				{
+					float4 sPos;
+					float2 shadowTexCoords;
+					sPos = mul(wPos, LightMapVP);
+					sPos = sPos / sPos.w;
+					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1), sPos.z).r;
+					else
+					{
+						sPos = mul(wPos, LightMapVP1);
+						sPos = sPos / sPos.w;
+						shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+						shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+						if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+							inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
+					}
+				}
 
 				float3 L = normalize(Lightings[i].LightDir);
 				float3 H = normalize(L + V);
@@ -192,6 +207,8 @@ float4 psmain(PSIn input) : SV_TARGET
 				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
 			}
 		}
+#endif//ENABLE_DIRECTIONAL_LIGHT
+#if ENABLE_POINT_LIGHT
 		for (int i = 0; i < POINT_LIGHT_COUNT; i++)
 		{
 			if (PointLights[i].LightType == 1)
@@ -220,7 +237,7 @@ float4 psmain(PSIn input) : SV_TARGET
 				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
 			}
 		}
-#endif//ENABLE_LIGHT
+#endif//ENABLE_POINT_LIGHT
 #if ENABLE_FOG
 		outputColor = lerp(_fogColor, outputColor, 1 / exp(max(camDist - _startDistance, 0.00001) * _fogDensity));
 #endif
@@ -229,7 +246,7 @@ float4 psmain(PSIn input) : SV_TARGET
 	{
 		outputColor = SkyBox.Sample(s0, -V).rgb * g_skyBoxMultiple;
 	}
-#if ENABLE_LIGHT
+#if ENABLE_DIRECTIONAL_LIGHT
 #if ENABLE_VOLUME_LIGHTING
 		int volumeLightIterCount = _volumeLightIterCount;
 		float volumeLightMaxDistance = _volumeLightMaxDistance;
@@ -253,14 +270,23 @@ float4 psmain(PSIn input) : SV_TARGET
 					}
 					float inShadow = 1.0f;
 					float4 samplePos = float4(g_camPos - V * (volumeLightIterStep * j + offset), 1);
-					float4 sPos = mul(samplePos, Lightings[i].LightMapVP);
-					sPos = sPos / sPos.w;
-
+					float4 sPos;
 					float2 shadowTexCoords;
+					sPos = mul(samplePos, LightMapVP);
+					sPos = sPos / sPos.w;
 					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, float3(shadowTexCoords, 0), sPos.z).r;
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1), sPos.z).r;
+					else
+					{
+						sPos = mul(samplePos, LightMapVP1);
+						sPos = sPos / sPos.w;
+						shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+						shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+						if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+							inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
+					}
 
 					outputColor += inShadow * lightStrength * volumeLightIterStep * volumeLightIntensity;
 				}

@@ -14,6 +14,16 @@ public static class UnionShaderShadowMap
         var drp = param.rp.dynamicContextRead;
         if ((bool)drp.GetSettingsValue(material, "CastShadow"))
         {
+            if (!param.visualChannel.CustomValue.ContainsKey(param.passName))
+            {
+                param.visualChannel.CustomValue[param.passName] = 0;
+                int width = param.depthStencil.GetWidth();
+                int height = param.depthStencil.GetHeight();
+                if (param.passName == "ShadowMapPass0")
+                    graphicsContext.RSSetScissorRectAndViewport(0, 0, width / 2, height);
+                if (param.passName == "ShadowMapPass1")
+                    graphicsContext.RSSetScissorRectAndViewport(width / 2, 0, width, height);
+            }
             List<string> keywords = new List<string>();
             if (material.Skinning)
                 keywords.Add("SKINNING");

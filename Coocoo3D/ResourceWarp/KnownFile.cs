@@ -12,7 +12,6 @@ namespace Coocoo3D.ResourceWarp
         public DateTimeOffset lastModifiedTime;
         public FileInfo file;
         public string fullPath;
-        public string relativePath;
         public bool requireReload;
         public int modifiyIndex;
 
@@ -26,7 +25,7 @@ namespace Coocoo3D.ResourceWarp
         {
             try
             {
-                var file = fileInfos.Where(u => u.Name.Equals(relativePath, StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
+                var file = fileInfos.Where(u => u.Name.Equals(Path.GetFileName(fullPath), StringComparison.CurrentCultureIgnoreCase)).FirstOrDefault();
                 var attr = file.LastWriteTime;
                 bool modified = false;
                 if (lastModifiedTime != attr)

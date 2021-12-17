@@ -8,10 +8,7 @@ using System.Threading;
 using Coocoo3DGraphics;
 using Coocoo3D.Present;
 using Coocoo3D.Utility;
-using Coocoo3D.FileFormat;
-using Coocoo3D.Components;
 using Coocoo3D.RenderPipeline;
-using Vortice.Direct3D12;
 using Coocoo3D.UI;
 
 namespace Coocoo3D.Core
@@ -50,7 +47,6 @@ namespace Coocoo3D.Core
         {
             RPContext.Reload();
             GameDriver = _GeneralGameDriver;
-            _currentRenderPipeline = forwardRenderPipeline2;
             mainCaches.processingList = ProcessingList;
             mainCaches._RequireRender = RequireRender;
 
@@ -87,11 +83,10 @@ namespace Coocoo3D.Core
             //});
         }
         #region Rendering
-        ForwardRenderPipeline2 forwardRenderPipeline2 = new ForwardRenderPipeline2();
+        HybirdRenderPipeline hybridRenderPipeline = new HybirdRenderPipeline();
         //RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
         public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
-        RenderPipeline.RenderPipeline _currentRenderPipeline;
         public ImguiInput imguiInput = new ImguiInput();
 
         public void RequireRender(bool updateEntities)
@@ -144,11 +139,6 @@ namespace Coocoo3D.Core
             lock (CurrentScene)
             {
                 RPContext.dynamicContextWrite.gameObjects.AddRange(CurrentScene.gameObjects);
-            }
-
-            for (int i = 0; i < SelectedGameObjects.Count; i++)
-            {
-                LightingComponent lightingComponent = SelectedGameObjects[i].GetComponent<LightingComponent>();
             }
 
             RPContext.dynamicContextWrite.Preprocess();
@@ -208,8 +198,6 @@ namespace Coocoo3D.Core
             {
                 GraphicsContext.BeginAlloctor(graphicsDevice);
 
-                var currentRenderPipeline = _currentRenderPipeline;//避免在渲染时切换
-
                 bool thisFrameReady = widgetRenderer.Ready;
                 if (thisFrameReady)
                 {
@@ -218,7 +206,7 @@ namespace Coocoo3D.Core
                     graphicsContext.Begin();
                     if (RPContext.dynamicContextRead.EnableDisplay)
                     {
-                        currentRenderPipeline.BeginFrame();
+                        hybridRenderPipeline.BeginFrame(RPContext);
                     }
                     RPContext.UpdateGPUResource();
 
@@ -238,10 +226,10 @@ namespace Coocoo3D.Core
                     {
                         foreach (var visualChannel in RPContext.visualChannels.Values)
                         {
-                            currentRenderPipeline.RenderCamera(RPContext, visualChannel);
+                            hybridRenderPipeline.RenderCamera(RPContext, visualChannel);
                             postProcess.RenderCamera(RPContext, visualChannel);
                         }
-                        currentRenderPipeline.EndFrame();
+                        hybridRenderPipeline.EndFrame(RPContext);
                     }
                     GameDriver.AfterRender(RPContext, graphicsContext);
                     widgetRenderer.Render(RPContext, graphicsContext);

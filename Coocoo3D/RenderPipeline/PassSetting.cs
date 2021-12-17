@@ -14,7 +14,7 @@ namespace Coocoo3D.RenderPipeline
     public class PassSetting
     {
         public string Name;
-        public List<PassMatch1> RenderSequence;
+        public List<RenderSequence> RenderSequence;
         public Dictionary<string, RenderTarget> RenderTargets;
         public Dictionary<string, Pass> Passes;
         public List<_AssetDefine> VertexShaders;
@@ -27,6 +27,7 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, PassParameter> ShowParameters;
         public Dictionary<string, string> ShowSettingTextures;
         public Dictionary<string, PassParameter> ShowSettingParameters;
+        public string Dispatcher;
 
         [NonSerialized]
         public string path;
@@ -80,12 +81,8 @@ namespace Coocoo3D.RenderPipeline
                 {
                     if (passMatch.Type == null)
                         passMatch.DrawObjects = true;
-                    foreach (var pass in Passes)
-                    {
-                        if (passMatch.Name == pass.Key)
-                            passMatch.Pass = pass.Value;
-                    }
-                    if (passMatch.Pass == null)
+
+                    if (!Passes.ContainsKey(passMatch.Name))
                         return false;
                 }
                 else
@@ -95,7 +92,7 @@ namespace Coocoo3D.RenderPipeline
             return true;
         }
     }
-    public class PassMatch1
+    public class RenderSequence
     {
         public string Name;
         public int DepthBias;
@@ -109,39 +106,35 @@ namespace Coocoo3D.RenderPipeline
         public CullMode CullMode;
         public string Filter;
 
+        public Dictionary<string, string> PropertiesOverride;
+
         [NonSerialized]
         public PSO PSODefault;
         [NonSerialized]
         public bool DrawObjects;
-        [NonSerialized]
-        public Pass Pass;
         [NonSerialized]
         public string rootSignatureKey;
     }
     public class Pass
     {
         public string Name;
-        public string Camera;
         public string VertexShader;
         public string GeometryShader;
         public string PixelShader;
         public string ComputeShader;
         public string UnionShader;
         public BlendState BlendMode;
-        public List<CBVSlotRes> CBVs;
-        public List<SRVUAVSlotRes> SRVs;
-        public List<SRVUAVSlotRes> UAVs;
+        public Dictionary<string, string> Properties;
+        public List<SlotRes> CBVs;
+        public List<SlotRes> SRVs;
+        public List<SlotRes> UAVs;
     }
 
-    public struct SRVUAVSlotRes
+    public struct SlotRes
     {
         public int Index;
         public string ResourceType;
         public string Resource;
-    }
-    public struct CBVSlotRes
-    {
-        public int Index;
         public List<string> Datas;
     }
     public class RenderTarget

@@ -269,6 +269,7 @@ namespace Coocoo3D.UI
 
             var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
             ShowParams(currentPassSetting.ShowSettingParameters, settings.Parameters);
+            ShowTextures(appBody, "settings", currentPassSetting.ShowSettingTextures, settings.textures);
 
             if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
             {
@@ -427,6 +428,39 @@ namespace Coocoo3D.UI
             }
         }
 
+        static void ShowTextures(Coocoo3DMain appBody, string id, Dictionary<string, string> showTextures, Dictionary<string, string> textures)
+        {
+            if (showTextures != null)
+                foreach (var texSlot in showTextures)
+                {
+                    string key = "imgui/" + texSlot.Key;
+                    if (textures.TryGetValue(texSlot.Key, out var texture0) && appBody.mainCaches.TryGetTexture(texture0, out var texture))
+                    {
+                        appBody.mainCaches.SetTexture(key, texture);
+                    }
+                    else
+                    {
+                        appBody.mainCaches.SetTexture(key, null);
+                    }
+                    Vector2 imageSize = new Vector2(120, 120);
+                    IntPtr imageId = appBody.mainCaches.GetPtr(key);
+                    ImGui.Text(texSlot.Key);
+                    if (ImGui.ImageButton(imageId, imageSize))
+                    {
+                        requireOpenSelectResource = true;
+                        stringValues["fileOpen"] = id;
+                        stringValues["material"] = texSlot.Key;
+                    }
+                }
+            if (filePropSelect != null && stringValues.GetOrCreate("fileOpen", (string a) => "") == id)
+            {
+                stringValues["fileOpen"] = "";
+                appBody.mainCaches.Texture(filePropSelect);
+                textures[stringValues["material"]] = filePropSelect;
+                filePropSelect = null;
+            }
+        }
+
         static void DockSpace(Coocoo3DMain appBody)
         {
             var viewPort = ImGui.GetMainViewport();
@@ -523,17 +557,16 @@ vmd格式动作");
                 UISharedCode.NewLighting(appBody);
             }
             ImGui.SameLine();
-            if (ImGui.Button("新体积"))
-            {
-                UISharedCode.NewVolume(appBody);
-            }
-            ImGui.SameLine();
+            //if (ImGui.Button("新体积"))
+            //{
+            //    UISharedCode.NewVolume(appBody);
+            //}
+            //ImGui.SameLine();
             if (ImGui.Button("移除物体"))
             {
                 foreach (var gameObject in appBody.SelectedGameObjects)
                     appBody.CurrentScene.RemoveGameObject(gameObject);
             }
-            ImGui.DragFloat("天空盒亮度", ref appBody.CurrentScene.settings.SkyBoxLightMultiplier, 0.05f);
             //while (gameObjectSelected.Count < appBody.CurrentScene.gameObjects.Count)
             //{
             //    gameObjectSelected.Add(false);
@@ -604,35 +637,7 @@ vmd格式动作");
                         ImGui.Checkbox("透明材质", ref material.Transparent);
                         var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
                         ShowParams(currentPassSetting.ShowParameters, material.Parameters);
-                        if (currentPassSetting.ShowTextures != null)
-                            foreach (var texSlot in currentPassSetting.ShowTextures)
-                            {
-                                string key = "imgui/" + texSlot.Key;
-                                if (material.textures.TryGetValue(texSlot.Key, out var texture0) && appBody.mainCaches.TryGetTexture(texture0, out var texture))
-                                {
-                                    appBody.mainCaches.SetTexture(key, texture);
-                                }
-                                else
-                                {
-                                    appBody.mainCaches.SetTexture(key, null);
-                                }
-                                Vector2 imageSize = new Vector2(120, 120);
-                                IntPtr imageId = appBody.mainCaches.GetPtr(key);
-                                ImGui.Text(texSlot.Key);
-                                if (ImGui.ImageButton(imageId, imageSize))
-                                {
-                                    requireOpenSelectResource = true;
-                                    stringValues["fileOpen"] = "material";
-                                    stringValues["material"] = texSlot.Key;
-                                }
-                            }
-                        if (filePropSelect != null && stringValues.GetOrCreate("fileOpen", (string a) => "") == "material")
-                        {
-                            stringValues["fileOpen"] = "";
-                            appBody.mainCaches.Texture(filePropSelect);
-                            material.textures[stringValues["material"]] = filePropSelect;
-                            filePropSelect = null;
-                        }
+                        ShowTextures(appBody, "material", currentPassSetting.ShowTextures, material.textures);
                     }
                 }
                 ImGui.EndChild();

@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,6 +24,8 @@ namespace Coocoo3D.Components
         public int meshVertexCount;
         public int meshIndexCount;
         public Vector3[] meshPosData;
+
+        public bool skinning;
 
         public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
 
@@ -432,6 +433,8 @@ namespace Coocoo3D.Components
         public Dictionary<string, string> textures = new Dictionary<string, string>();
         public Dictionary<string, object> Parameters = new Dictionary<string, object>();
 
+        public Vortice.Mathematics.BoundingBox boundingBox;
+
         public RuntimeMaterial GetClone()
         {
             var mat = (RuntimeMaterial)MemberwiseClone();
@@ -563,6 +566,7 @@ namespace Coocoo3D.FileFormat
 
             var rendererComponent = new MMDRendererComponent();
             gameObject.AddComponent(rendererComponent);
+            rendererComponent.skinning = true;
             rendererComponent.morphStateComponent.Reload(modelResource);
 
             rendererComponent.Initialize2(modelPack);

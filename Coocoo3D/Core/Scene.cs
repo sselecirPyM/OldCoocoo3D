@@ -1,7 +1,6 @@
 ﻿using Coocoo3D.Present;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,10 +22,8 @@ namespace Coocoo3D.Core
         {
             BackgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             Wireframe = false,
-            SkyBoxLightMultiplier = 3.0f,
             SkyBoxMaxQuality = 256,
             ShadowMapResolution = 2048,
-            EnableShadow = true,
         };
 
         public List<GameObject> gameObjects = new List<GameObject>();
@@ -259,11 +256,8 @@ namespace Coocoo3D.Core
         public bool Wireframe;
         public DebugRenderType DebugRenderType;
 
-        public float SkyBoxLightMultiplier;
         public int SkyBoxMaxQuality;
         public int ShadowMapResolution;
-
-        public bool EnableShadow;
 
         [NonSerialized]
         public Dictionary<string, object> Parameters = new Dictionary<string, object>();
@@ -275,10 +269,13 @@ namespace Coocoo3D.Core
         public Dictionary<string, Vector3> f3Value;
         public Dictionary<string, Vector4> f4Value;
 
+        public Dictionary<string, string> textures = new Dictionary<string, string>();
+
         public Settings GetClone()
         {
             var clone = (Settings)this.MemberwiseClone();
             clone.Parameters = new Dictionary<string, object>(Parameters);
+            clone.textures = new Dictionary<string, string>(textures);
             return clone;
         }
     }

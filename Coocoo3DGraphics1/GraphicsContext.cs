@@ -48,6 +48,38 @@ namespace Coocoo3DGraphics
             InReference(pso.m_pipelineStates[variantIndex]);
         }
 
+        public void SetPSO(RTPSO pso)
+        {
+            var device = graphicsDevice.device;
+            if (pso.so == null)
+            {
+                List<ExportDescription> exportDescriptions = new List<ExportDescription>();
+
+                for (int i = 0; i < pso.rayGenShaders.Length; i++)
+                    exportDescriptions.Add(new ExportDescription(pso.rayGenShaders[i]));
+                for (int i = 0; i < pso.hitShaders.Length; i++)
+                    exportDescriptions.Add(new ExportDescription(pso.hitShaders[i]));
+                for (int i = 0; i < pso.missShaders.Length; i++)
+                    exportDescriptions.Add(new ExportDescription(pso.missShaders[i]));
+
+                DxilLibraryDescription dxilLibraryDescription = new DxilLibraryDescription(pso.datas, exportDescriptions.ToArray());
+
+                //SubObjectToExportsAssociation subObjectToExportsAssociation = new SubObjectToExportsAssociation(,)
+                //StateSubObject stateSubObject = new StateSubObject(dxilLibraryDescription);
+                //StateSubObject stateSubObject1 = new StateSubObject(new GlobalRootSignature(currentRootSignature.rootSignature));
+
+                //var desc = new StateObjectDescription(StateObjectType.RaytracingPipeline, stateSubObject);
+                //pso.so = device.CreateStateObject<ID3D12StateObject>(desc);
+                //m_commandList.SetPipelineState1(pso.so);
+                //new DispatchRaysDescription(,);
+                //m_commandList.DispatchRays();
+                //var asInput = new BuildRaytracingAccelerationStructureInputs();
+                //asInput.GeometryDescriptions=
+                //new BuildRaytracingAccelerationStructureDescription(,)
+                //m_commandList.BuildRaytracingAccelerationStructure();
+            }
+        }
+
         public void SetSRVTSlot(Texture2D texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
 
         public void SetSRVTSlot(TextureCube texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
@@ -516,7 +548,7 @@ namespace Coocoo3DGraphics
         }
         public void SetRTV(Texture2D RTV, Vector4 color, bool clear) => SetRTVDSV(RTV, null, color, clear, false);
 
-        public void SetRTV(Texture2D[] RTVs, Vector4 color, bool clear) => SetRTVDSV(RTVs, null, color, clear, false);
+        public void SetRTV(IList<Texture2D> RTVs, Vector4 color, bool clear) => SetRTVDSV(RTVs, null, color, clear, false);
 
         public void SetRTVDSV(Texture2D RTV, Texture2D DSV, Vector4 color, bool clearRTV, bool clearDSV)
         {
@@ -540,16 +572,15 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public void SetRTVDSV(Texture2D[] RTVs, Texture2D DSV, Vector4 color, bool clearRTV, bool clearDSV)
+        public void SetRTVDSV(IList<Texture2D> RTVs, Texture2D DSV, Vector4 color, bool clearRTV, bool clearDSV)
         {
             m_commandList.RSSetScissorRect(RTVs[0].width, RTVs[0].height);
             m_commandList.RSSetViewport(0, 0, RTVs[0].width, RTVs[0].height);
 
-            CpuDescriptorHandle[] handles = new CpuDescriptorHandle[RTVs.Length];
-            for (int i = 0; i < RTVs.Length; i++)
+            CpuDescriptorHandle[] handles = new CpuDescriptorHandle[RTVs.Count];
+            for (int i = 0; i < RTVs.Count; i++)
             {
-                Texture2D tex = RTVs[i];
-                tex.StateChange(m_commandList, ResourceStates.RenderTarget);
+                RTVs[i].StateChange(m_commandList, ResourceStates.RenderTarget);
                 handles[i] = RTVs[i].GetRenderTargetView(graphicsDevice.device);
                 if (clearRTV)
                     m_commandList.ClearRenderTargetView(handles[i], new Vortice.Mathematics.Color4(color));
@@ -572,13 +603,13 @@ namespace Coocoo3DGraphics
         public void SetRootSignature(RootSignature rootSignature)
         {
             this.currentRootSignature = rootSignature;
-            m_commandList.SetGraphicsRootSignature(rootSignature.rootSignature);
+            m_commandList.SetGraphicsRootSignature(rootSignature.GetRootSignature(graphicsDevice));
         }
 
         public void SetRootSignatureCompute(RootSignature rootSignature)
         {
             this.currentRootSignature = rootSignature;
-            m_commandList.SetComputeRootSignature(rootSignature.rootSignature);
+            m_commandList.SetComputeRootSignature(rootSignature.GetRootSignature(graphicsDevice));
         }
 
         public void SetRenderTargetScreen(Vector4 color, bool clearScreen)
@@ -595,7 +626,6 @@ namespace Coocoo3DGraphics
 
         public void Draw(int vertexCount, int startVertexLocation)
         {
-            //m_commandList.SetPipelineState(pipelineStateObject.GetState(graphicsDevice, psoDesc, currentRootSignature, unnamedInputLayout));
             m_commandList.DrawInstanced(vertexCount, 1, startVertexLocation, 0);
         }
 
@@ -606,7 +636,6 @@ namespace Coocoo3DGraphics
 
         public void DrawIndexedInstanced(int indexCountPerInstance, int instanceCount, int startIndexLocation, int baseVertexLocation, int startInstanceLocation)
         {
-            //m_commandList.SetPipelineState(pipelineStateObject.GetState(graphicsDevice, psoDesc, currentRootSignature, unnamedInputLayout));
             m_commandList.DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
         }
 

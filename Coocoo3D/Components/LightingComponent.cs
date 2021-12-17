@@ -16,13 +16,21 @@ namespace Coocoo3D.Components
         public Vector3 Color;
         public float Range;
 
-        public LightingData GetLightingData()
+        public DirectionalLightData GetDirectionalLightData()
         {
-            return new LightingData
+            return new DirectionalLightData
             {
-                LightingType = LightingType,
-                Position = Position,
                 Rotation = Rotation,
+                Direction = Vector3.Transform(-Vector3.UnitZ, Rotation),
+                Color = Color,
+            };
+        }
+
+        public PointLightData GetPointLightData()
+        {
+            return new PointLightData
+            {
+                Position = Position,
                 Color = Color,
                 Range = Range,
             };

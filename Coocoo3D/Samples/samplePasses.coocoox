@@ -10,8 +10,14 @@
       ]
     },
     {
-      "Name": "ShadowMapPass",
+      "Name": "ShadowMapPass0",
       "ClearDepth": "true",
+      "DepthBias": "3000",
+      "SlopeScaledDepthBias": "1.0",
+      "DepthStencil": "_ShadowMap0"
+    },
+    {
+      "Name": "ShadowMapPass1",
       "DepthBias": "3000",
       "SlopeScaledDepthBias": "1.0",
       "DepthStencil": "_ShadowMap0"
@@ -61,21 +67,37 @@
     }
   },
   "Passes": {
-    "ShadowMapPass": {
-      "Camera": "ShadowMap",
+    "ShadowMapPass0": {
+      "Properties": {
+        "ShadowMap": ""
+      },
       "UnionShader": "UnionShaderShadowMap.cs",
       "CBVs": [
         {
           "Index": "1",
           "Datas": [
             "World",
-            "DirectionalLight"
+            "DirectionalLightMatrix0"
+          ]
+        }
+      ]
+    },
+    "ShadowMapPass1": {
+      "Properties": {
+        "ShadowMap": ""
+      },
+      "UnionShader": "UnionShaderShadowMap.cs",
+      "CBVs": [
+        {
+          "Index": "1",
+          "Datas": [
+            "World",
+            "DirectionalLightMatrix1"
           ]
         }
       ]
     },
     "DrawSkyBoxPass": {
-      "Camera": "Main",
       "UnionShader": "UnionShaderPBRForward.cs",
       "CBVs": [
         {
@@ -96,7 +118,6 @@
       ]
     },
     "DrawObjectPass": {
-      "Camera": "Main",
       "UnionShader": "UnionShaderPBRForward.cs",
       "BlendMode": "Alpha",
       "CBVs": [
@@ -105,6 +126,8 @@
           "Datas": [
             "World",
             "Camera",
+            "DirectionalLightMatrix0",
+            "DirectionalLightMatrix1",
             "DirectionalLight",
             "PointLights4",
             "Metallic",
@@ -150,7 +173,6 @@
       ]
     },
     "BloomBlur1": {
-      "Camera": "Main",
       "UnionShader": "UnionShaderBloom.cs",
       "CBVs": [
         {
@@ -166,7 +188,6 @@
       ]
     },
     "BloomBlur2": {
-      "Camera": "Main",
       "UnionShader": "UnionShaderBloom.cs",
       "BlendMode": "Add",
       "CBVs": [
@@ -188,9 +209,12 @@
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs"
   },
+  "Dispatcher": "Dispatcher.cs",
   "ShowTextures": {
     "_Albedo": "",
     "_Emissive": ""
+  },
+  "ShowSettingTextures": {
   },
   "ShowParameters": {
     "Metallic": {
@@ -233,6 +257,13 @@
     }
   },
   "ShowSettingParameters": {
+    "IndirectMultiplier": {
+      "Name": "天空盒亮度",
+      "Type": "float",
+      "Default": "3",
+      "Step": "0.01",
+      "Min": "0"
+    },
     "EnableBloom": {
       "Name": "启用泛光",
       "Type": "bool",
@@ -267,7 +298,7 @@
       "Type": "float",
       "Default": "0.0005",
       "Step": "0.00001",
-      "Min": "0.0001",
+      "Min": "0.00001",
       "Format": "%.5f"
     },
     "FogStartDistance": {

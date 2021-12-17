@@ -1,6 +1,5 @@
 ﻿using Coocoo3D.Numerics;
 using Coocoo3D.Present;
-using Coocoo3D.RenderPipeline.Wrap;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
@@ -20,18 +19,17 @@ namespace Coocoo3D.RenderPipeline
         public GraphicsContext graphicsContext;
         public Texture2D FinalOutput = new Texture2D();
         public Texture2D OutputRTV = new Texture2D();
-        public RenderPipeline renderPipeline;
-        public GPUWriter GPUWriter = new GPUWriter();
+        public Dictionary<string, object> CustomValue = new Dictionary<string, object>();
 
         public void Onframe(RenderPipelineContext RPContext)
         {
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
             cameraData = camera.GetCameraData();
+            CustomValue.Clear();
         }
 
         public void Dispose()
         {
-            renderPipeline = null;
 
         }
 

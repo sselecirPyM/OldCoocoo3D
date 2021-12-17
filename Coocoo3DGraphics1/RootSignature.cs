@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Vortice.Direct3D12;
 using static Coocoo3DGraphics.DXHelper;
@@ -20,31 +21,20 @@ namespace Coocoo3DGraphics
         public Dictionary<int, int> cbv = new Dictionary<int, int>();
         public Dictionary<int, int> srv = new Dictionary<int, int>();
         public Dictionary<int, int> uav = new Dictionary<int, int>();
-        public ID3D12RootSignature rootSignature;
+        internal ID3D12RootSignature rootSignature;
         public string Name;
 
-        public void ReloadSkinning(GraphicsDevice graphicsDevice)
+        public RootSignatureFlags flags = RootSignatureFlags.None;
+        public GraphicSignatureDesc[] descs;
+
+        internal ID3D12RootSignature GetRootSignature(GraphicsDevice graphicsDevice)
         {
-            FeatureDataRootSignature featherData;
-            featherData.HighestVersion = RootSignatureVersion.Version11;
-            if (graphicsDevice.device.CheckFeatureSupport(Feature.RootSignature, ref featherData))
-            {
-                featherData.HighestVersion = RootSignatureVersion.Version10;
-            }
-
-            RootParameter1[] rootParameters = new RootParameter1[1];
-            rootParameters[0] = new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(0, 0), ShaderVisibility.All);
-
-
-            RootSignatureDescription1 rootSignatureDescription = new RootSignatureDescription1();
-            rootSignatureDescription.Flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput | RootSignatureFlags.DenyPixelShaderRootAccess;
-            rootSignatureDescription.Parameters = rootParameters;
-
-            cbv[0] = 0;
-            ThrowIfFailed(graphicsDevice.device.CreateRootSignature(0, rootSignatureDescription, out rootSignature));
+            if (rootSignature == null)
+                Sign1(graphicsDevice);
+            return rootSignature;
         }
 
-        public void Sign1(GraphicsDevice graphicsDevice, IReadOnlyList<GraphicSignatureDesc> Descs, RootSignatureFlags flags)
+        internal void Sign1(GraphicsDevice graphicsDevice)
         {
             cbv.Clear();
             srv.Clear();
@@ -81,7 +71,7 @@ namespace Coocoo3DGraphics
             samplerDescription[2].Filter = Filter.ComparisonMinMagMipLinear;
             samplerDescription[3].Filter = Filter.MinMagMipPoint;
 
-            RootParameter1[] rootParameters = new RootParameter1[Descs.Count];
+            RootParameter1[] rootParameters = new RootParameter1[descs.Length];
 
             int cbvCount = 0;
             int srvCount = 0;
@@ -90,9 +80,9 @@ namespace Coocoo3DGraphics
             srv.Clear();
             uav.Clear();
 
-            for (int i = 0; i < Descs.Count; i++)
+            for (int i = 0; i < descs.Length; i++)
             {
-                GraphicSignatureDesc t = Descs[i];
+                GraphicSignatureDesc t = descs[i];
                 switch (t)
                 {
                     case GraphicSignatureDesc.CBV:
@@ -133,23 +123,25 @@ namespace Coocoo3DGraphics
             rootSignatureDescription.Flags = flags;
             rootSignatureDescription.Parameters = rootParameters;
 
+            rootSignature?.Release();
             rootSignature = graphicsDevice.device.CreateRootSignature<ID3D12RootSignature>(0, rootSignatureDescription);
-
         }
 
-        public void Reload(GraphicsDevice graphicsDevice, GraphicSignatureDesc[] Descs)
+        public void Reload(GraphicSignatureDesc[] Descs)
         {
-            Sign1(graphicsDevice, Descs, RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput);
+            descs = Descs.ToArray();
+            flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput;
         }
 
-        public void ReloadCompute(GraphicsDevice graphicsDevice, IReadOnlyList<GraphicSignatureDesc> Descs)
+        public void ReloadCompute(IReadOnlyList<GraphicSignatureDesc> Descs)
         {
-            Sign1(graphicsDevice, Descs, RootSignatureFlags.None);
+            descs = Descs.ToArray();
+            flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput;
         }
 
         public void Dispose()
         {
-            rootSignature?.Dispose();
+            rootSignature?.Release();
             rootSignature = null;
         }
     }

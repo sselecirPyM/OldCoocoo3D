@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Core;
 using Coocoo3D.Components;
-using System.IO;
 using Coocoo3D.Present;
 using Coocoo3D.ResourceWarp;
 
@@ -36,13 +35,14 @@ namespace Coocoo3D.FileFormat
     public class CooSceneObjectLighting
     {
         public Vector3 color;
+        public float range;
     }
     public class _cooMaterial
     {
         public Dictionary<string, string> textures;
         public string unionShader;
         public bool skinning;
-
+        public bool transparent;
 
         public Dictionary<string, bool> bValue;
         public Dictionary<string, int> iValue;
@@ -100,6 +100,7 @@ namespace Coocoo3D.FileFormat
                         _cooMaterial material1 = new _cooMaterial();
                         material1.unionShader = material.unionShader;
                         material1.skinning = material.Skinning;
+                        material1.transparent = material.Transparent;
                         material1.textures = new Dictionary<string, string>(material.textures);
 
                         sceneObject.materials[material.Name] = material1;
@@ -122,7 +123,8 @@ namespace Coocoo3D.FileFormat
                     CooSceneObject sceneObject = new CooSceneObject(obj);
                     sceneObject.type = "lighting";
                     sceneObject.lighting = new CooSceneObjectLighting();
-                    sceneObject.lighting.color = new Vector3(lighting.Color.X, lighting.Color.Y, lighting.Color.Z);
+                    sceneObject.lighting.color = lighting.Color;
+                    sceneObject.lighting.range = lighting.Range;
                     scene.objects.Add(sceneObject);
                 }
             }
@@ -190,12 +192,13 @@ namespace Coocoo3D.FileFormat
                     lighting.Rotation = obj.rotation;
                     lighting.Position = obj.position;
                     lightingComponent.Color = new Vector3(3, 3, 3);
+                    lightingComponent.Range = 10;
                     if (obj.lighting != null)
                     {
                         lightingComponent.Color = obj.lighting.color;
+                        lightingComponent.Range = obj.lighting.range;
                     }
 
-                    lightingComponent.Range = 10;
                     main.CurrentScene.AddGameObject(lighting);
                 }
             }
@@ -209,6 +212,7 @@ namespace Coocoo3D.FileFormat
                 {
                     mat.unionShader = mat1.unionShader;
                     mat.Skinning = mat1.skinning;
+                    mat.Transparent = mat1.transparent;
 
                     _func2(mat1.fValue, mat.Parameters);
                     _func2(mat1.f2Value, mat.Parameters);

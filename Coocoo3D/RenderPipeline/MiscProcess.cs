@@ -25,7 +25,7 @@ namespace Coocoo3D.RenderPipeline
                 rp.mainCaches.GetSkyBox(rp.skyBoxName, rp.graphicsContext, out var texSkyBox, out var texReflect);
                 int roughnessLevel = 5;
 
-                var rootSignature = rp.mainCaches.GetRootSignature(rp.graphicsDevice, "Csu");
+                var rootSignature = rp.mainCaches.GetRootSignature("Csu");
 
                 graphicsContext.SetRootSignatureCompute(rootSignature);
 

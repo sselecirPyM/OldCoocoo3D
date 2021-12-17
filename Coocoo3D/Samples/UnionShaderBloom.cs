@@ -54,7 +54,7 @@ public static class UnionShaderBloom
         graphicsContext.DrawIndexed(6, 0, 0);
         return true;
     }
-    static void _WriteCBV(CBVSlotRes cbv, UnionShaderParam unionShaderParam, int slot)
+    static void _WriteCBV(SlotRes cbv, UnionShaderParam unionShaderParam, int slot)
     {
         if (cbv.Datas == null || cbv.Datas.Count == 0) return;
         var material = unionShaderParam.material;
@@ -108,43 +108,6 @@ public static class UnionShaderBloom
                             writer.Write(0);
                         }
                     }
-                    break;
-                //case "DirectionalLight":
-                //    if (lightings.Count > 0)
-                //    {
-                //        var lstruct = lightings[0].GetLStruct();
-
-                //        writer.Write(lightCameraMatrix0);
-                //        writer.Write(lstruct.PosOrDir);
-                //        writer.Write((int)lstruct.Type);
-                //        writer.Write(lstruct.Color);
-                //    }
-                //    else
-                //    {
-                //        writer.Write(Matrix4x4.Identity);
-                //        writer.Write(new Vector4());
-                //        writer.Write(new Vector4());
-                //    }
-                //    break;
-                //case "PointLights4":
-                //    {
-                //        int count = Math.Min(pointLights.Count, 4);
-                //        for (int pli = 0; pli < count; pli++)
-                //        {
-                //            var lstruct = pointLights[pli].GetLStruct();
-                //            writer.Write(lstruct.PosOrDir);
-                //            writer.Write((int)lstruct.Type);
-                //            writer.Write(lstruct.Color);
-                //        }
-                //        for (int i = 0; i < 4 - count; i++)
-                //        {
-                //            writer.Write(new Vector4());
-                //            writer.Write(new Vector4());
-                //        }
-                //    }
-                //    break;
-                case "IndirectMultiplier":
-                    writer.Write(settings.SkyBoxLightMultiplier);
                     break;
             }
         }

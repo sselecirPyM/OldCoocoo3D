@@ -60,7 +60,7 @@ namespace Coocoo3DGraphics
         public InputLayout inputLayout;
         public BlendState blendState;
         public CullMode cullMode;
-        public PrimitiveTopologyType ptt;
+        public PrimitiveTopologyType primitiveTopologyType;
         public Format rtvFormat;
         public Format dsvFormat;
         public int renderTargetCount;
@@ -78,7 +78,7 @@ namespace Coocoo3DGraphics
             return inputLayout == other.inputLayout &&
                    blendState == other.blendState &&
                    cullMode == other.cullMode &&
-                   ptt == other.ptt &&
+                   primitiveTopologyType == other.primitiveTopologyType &&
                    rtvFormat == other.rtvFormat &&
                    dsvFormat == other.dsvFormat &&
                    renderTargetCount == other.renderTargetCount &&
@@ -93,7 +93,7 @@ namespace Coocoo3DGraphics
             hash.Add(inputLayout);
             hash.Add(blendState);
             hash.Add(cullMode);
-            hash.Add(ptt);
+            hash.Add(primitiveTopologyType);
             hash.Add(rtvFormat);
             hash.Add(dsvFormat);
             hash.Add(renderTargetCount);
@@ -258,7 +258,7 @@ namespace Coocoo3DGraphics
                     state.DepthStencilFormat = psoDesc.dsvFormat;
                 }
                 state.SampleMask = uint.MaxValue;
-                state.PrimitiveTopologyType = psoDesc.ptt;
+                state.PrimitiveTopologyType = psoDesc.primitiveTopologyType;
                     state.BlendState = BlendDescSelect(psoDesc.blendState);
                     state.SampleDescription = new SampleDescription(1, 0);
 

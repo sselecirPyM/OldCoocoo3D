@@ -59,7 +59,7 @@ namespace Coocoo3D.RenderPipeline
 
             var rpAssets = context.RPAssetsManager;
             var caches = context.mainCaches;
-            var rsPP = context.mainCaches.GetRootSignature(context.graphicsDevice, "CCs");
+            var rsPP = context.mainCaches.GetRootSignature( "CCs");
 
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.BackgroundColor, true);
 
@@ -72,7 +72,7 @@ namespace Coocoo3D.RenderPipeline
             desc.slopeScaledDepthBias = 0;
             desc.dsvFormat = Format.Unknown;
             desc.inputLayout = InputLayout.postProcess;
-            desc.ptt = PrimitiveTopologyType.Triangle;
+            desc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
             desc.rtvFormat = context.swapChainFormat;
             desc.renderTargetCount = 1;
             desc.wireFrame = false;
@@ -91,7 +91,7 @@ namespace Coocoo3D.RenderPipeline
             desc.depthBias = 0;
             desc.slopeScaledDepthBias = 0;
             desc.dsvFormat = Format.Unknown;
-            desc.ptt = PrimitiveTopologyType.Triangle;
+            desc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
             desc.rtvFormat = context.swapChainFormat;
             desc.renderTargetCount = 1;
             desc.wireFrame = false;
