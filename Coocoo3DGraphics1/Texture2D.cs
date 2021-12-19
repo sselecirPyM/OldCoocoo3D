@@ -112,7 +112,7 @@ namespace Coocoo3DGraphics
 
         public void Dispose()
         {
-            resource?.Dispose();
+            resource?.Release();
             resource = null;
             renderTargetView?.Dispose();
             renderTargetView = null;

@@ -7,23 +7,18 @@ public static class UnionShaderBloom
 {
     public static bool UnionShader(UnionShaderParam param)
     {
-        var drp = param.rp.dynamicContextRead;
-        if ((bool?)drp.GetSettingsValue("EnableBloom") != true) return true;
+        if ((bool?)param.GetSettingsValue("EnableBloom") != true) return true;
         var graphicsContext = param.graphicsContext;
-        var mainCaches = param.rp.mainCaches;
+        var mainCaches = param.mainCaches;
         var psoDesc = param.PSODesc;
-        //var pass = param.passSetting.RenderSequence.Find(u => u.Name == param.passName);
-        //foreach (var cbvs in pass.Pass.CBVs)
-        //{
-        //    _WriteCBV(cbvs, param, cbvs.Index);
-        //}
+
 
         var writer = param.GPUWriter;
         Texture2D renderTarget = param.renderTargets[0];
         writer.Write(renderTarget.GetWidth());
         writer.Write(renderTarget.GetHeight());
-        writer.Write((float)drp.GetSettingsValue("BloomThreshold"));
-        writer.Write((float)drp.GetSettingsValue("BloomIntensity"));
+        writer.Write((float)param.GetSettingsValue("BloomThreshold"));
+        writer.Write((float)param.GetSettingsValue("BloomIntensity"));
         writer.SetBufferImmediately(graphicsContext, false, 0);
 
         PSO pso1 = null;
@@ -53,64 +48,5 @@ public static class UnionShaderBloom
         param.graphicsContext.SetPSO(pso1, psoDesc);
         graphicsContext.DrawIndexed(6, 0, 0);
         return true;
-    }
-    static void _WriteCBV(SlotRes cbv, UnionShaderParam unionShaderParam, int slot)
-    {
-        if (cbv.Datas == null || cbv.Datas.Count == 0) return;
-        var material = unionShaderParam.material;
-        var context = unionShaderParam.rp;
-        var writer = unionShaderParam.GPUWriter;
-        var camera = unionShaderParam.visualChannel.cameraData;
-        var settings = unionShaderParam.settings;
-        foreach (var s in cbv.Datas)
-        {
-            switch (s)
-            {
-                case "DrawFlags":
-                    writer.Write((int)material.DrawFlags);
-                    break;
-                case "DeltaTime":
-                    writer.Write((float)context.dynamicContextRead.DeltaTime);
-                    break;
-                case "Time":
-                    writer.Write((float)context.dynamicContextRead.Time);
-                    break;
-                case "World":
-                    writer.Write(unionShaderParam.renderer.LocalToWorld);
-                    break;
-                case "CameraPosition":
-                    writer.Write(camera.Position);
-                    break;
-                case "Camera":
-                    writer.Write(camera.vpMatrix);
-                    break;
-                case "CameraInvert":
-                    writer.Write(camera.pvMatrix);
-                    break;
-                case "WidthHeight":
-                    {
-                        var depthStencil = unionShaderParam.depthStencil;
-                        var renderTargets = unionShaderParam.renderTargets;
-                        if (renderTargets != null && renderTargets.Length > 0)
-                        {
-                            Texture2D renderTarget = renderTargets[0];
-                            writer.Write(renderTarget.GetWidth());
-                            writer.Write(renderTarget.GetHeight());
-                        }
-                        else if (depthStencil != null)
-                        {
-                            writer.Write(depthStencil.GetWidth());
-                            writer.Write(depthStencil.GetHeight());
-                        }
-                        else
-                        {
-                            writer.Write(0);
-                            writer.Write(0);
-                        }
-                    }
-                    break;
-            }
-        }
-        writer.SetBufferImmediately(unionShaderParam.graphicsContext, false, slot);
     }
 }

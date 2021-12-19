@@ -21,15 +21,14 @@ public static class UnionShaderPBRForward
     };
     public static bool UnionShader(UnionShaderParam param)
     {
-        var mainCaches = param.rp.mainCaches;
+        var mainCaches = param.mainCaches;
         PSO pso = null;
         var material = param.material;
         var graphicsContext = param.graphicsContext;
         var psoDesc = param.PSODesc;
-        var drp = param.rp.dynamicContextRead;
 
-        var directionalLights = drp.directionalLights;
-        var pointLights = drp.pointLights;
+        var directionalLights = param.directionalLights;
+        var pointLights = param.pointLights;
 
         if (material != null)
         {
@@ -37,15 +36,18 @@ public static class UnionShaderPBRForward
             {
                 case "DrawObjectPass":
                     {
-                        bool receiveShadow = (bool)drp.GetSettingsValue(material, "ReceiveShadow");
+                        bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
 
                         List<string> keywords = new List<string>();
                         if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                             keywords.Add(debugKeyword);
-                        if ((bool)drp.GetSettingsValue("EnableFog"))
+                        if ((bool)param.GetSettingsValue("EnableFog"))
                             keywords.Add("ENABLE_FOG");
                         if (material.Skinning)
+                        {
+                            graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
                             keywords.Add("SKINNING");
+                        }
 
                         if (directionalLights.Count != 0)
                         {
@@ -56,13 +58,16 @@ public static class UnionShaderPBRForward
                         if (pointLights.Count != 0)
                             keywords.Add("ENABLE_POINT_LIGHT");
 
+                        foreach (var cbv in param.pass.CBVs)
+                        {
+                            param.WriteCBV(cbv);
+                        }
                         pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PBRMaterial.hlsl", param.relativePath));
                     }
                     break;
                 default:
                     return false;
             }
-            graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);
             if (pso != null)
             {
                 param.graphicsContext.SetPSO(pso, psoDesc);
@@ -76,6 +81,10 @@ public static class UnionShaderPBRForward
             {
                 case "DrawSkyBoxPass":
                     {
+                        foreach (var cbv in param.pass.CBVs)
+                        {
+                            param.WriteCBV(cbv);
+                        }
                         pso = mainCaches.GetPSOWithKeywords(null, Path.GetFullPath("SkyBox.hlsl", param.relativePath));
                     }
                     break;

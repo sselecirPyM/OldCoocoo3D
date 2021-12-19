@@ -107,9 +107,24 @@ namespace Coocoo3D.UI
             {
                 ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
                 ImGui.SetNextWindowPos(new Vector2(300 + d, 0), ImGuiCond.FirstUseEver);
-                if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name)))
+                if (visualChannel.Name != "main")
                 {
-                    SceneView(appBody, visualChannel, io.MouseWheel, mouseMoveDelta);
+                    bool open = true;
+                    if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name), ref open))
+                    {
+                        SceneView(appBody, visualChannel, io.MouseWheel, mouseMoveDelta);
+                    }
+                    if (!open)
+                    {
+                        context.DelayRemoveVisualChannel(visualChannel.Name);
+                    }
+                }
+                else
+                {
+                    if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name)))
+                    {
+                        SceneView(appBody, visualChannel, io.MouseWheel, mouseMoveDelta);
+                    }
                 }
                 ImGui.End();
                 d += 50;
@@ -283,14 +298,27 @@ namespace Coocoo3D.UI
                 renderPipelineKeys[_i] = pair.Key;
                 _i++;
             }
+            for (int i = 0; i < renderPipelineKeys.Length; i++)
+            {
+                if (renderPipelineKeys[i] == appBody.RPContext.currentPassSetting1)
+                    renderPipelineIndex = i;
+            }
             if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
             {
                 appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
             }
             if (ImGui.Button("添加视口"))
             {
-                vcCount++;
-                appBody.RPContext.DelayAddVisualChannel(vcCount.ToString());
+                int c = 1;
+                while (true)
+                {
+                    if (!appBody.RPContext.visualChannels.ContainsKey(c.ToString()))
+                    {
+                        appBody.RPContext.DelayAddVisualChannel(c.ToString());
+                        break;
+                    }
+                    c++;
+                }
             }
             if (ImGui.Button("保存场景"))
             {
@@ -809,7 +837,7 @@ vmd格式动作");
         static int renderPipelineIndex = 0;
         static string[] renderPipelines = new string[0] { };
         static string[] renderPipelineKeys = new string[0] { };
-        static int vcCount = 0;
+
         static Dictionary<string, string> stringValues = new Dictionary<string, string>();
     }
     class _openRequest

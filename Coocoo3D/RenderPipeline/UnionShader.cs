@@ -7,6 +7,7 @@ using Coocoo3D.Components;
 using Coocoo3DGraphics;
 using Coocoo3D.RenderPipeline.Wrap;
 using System.Numerics;
+using Coocoo3D.Present;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -20,11 +21,14 @@ namespace Coocoo3D.RenderPipeline
 
         public List<MMDRendererComponent> renderers;
 
+        public List<DirectionalLightData> directionalLights;
+        public List<PointLightData> pointLights;
+
         public RenderSequence renderSequence;
+        public Pass pass;
 
         public GraphicsContext graphicsContext;
         public VisualChannel visualChannel;
-        public RootSignature rootSignature;
         public PSODesc PSODesc;
         public string passName;
         public string relativePath;
@@ -32,11 +36,52 @@ namespace Coocoo3D.RenderPipeline
         public Core.Settings settings;
         public Texture2D[] renderTargets;
         public Texture2D depthStencil;
+        public MainCaches mainCaches;
 
         public Texture2D texLoading;
         public Texture2D texError;
 
         public Dictionary<string, object> customValue = new Dictionary<string, object>();
+
+        public object GetSettingsValue(string name)
+        {
+            if (!passSetting.ShowSettingParameters.TryGetValue(name, out var parameter))
+                return null;
+            if (settings.Parameters.TryGetValue(name, out object val) && Validate(parameter, val))
+                return val;
+            return parameter.defaultValue;
+        }
+
+        public object GetSettingsValue(RuntimeMaterial material, string name)
+        {
+            if (!passSetting.ShowParameters.TryGetValue(name, out var parameter))
+                return null;
+            if (material.Parameters.TryGetValue(name, out object val) && Validate(parameter, val))
+                return val;
+            return parameter.defaultValue;
+        }
+
+        static bool Validate(PassParameter parameter, object val)
+        {
+            if (parameter.Type == "float" || parameter.Type == "sliderFloat" && val is float)
+                return true;
+            if (parameter.Type == "int" || parameter.Type == "sliderInt" && val is int)
+                return true;
+            if (parameter.Type == "bool" && val is bool)
+                return true;
+            if (parameter.Type == "float2" && val is Vector2)
+                return true;
+            if (parameter.Type == "float3" || parameter.Type == "color3" && val is Vector3)
+                return true;
+            if (parameter.Type == "float4" || parameter.Type == "color4" && val is Vector4)
+                return true;
+            return false;
+        }
+
+        public CBuffer GetBoneBuffer(MMDRendererComponent rendererComponent)
+        {
+            return rp.GetBoneBuffer(rendererComponent);
+        }
 
         public Texture2D GetTex2D(string name, RuntimeMaterial material = null)
         {
@@ -65,6 +110,12 @@ namespace Coocoo3D.RenderPipeline
             else
                 tex2D = rp._GetTex2DByName(name);
             return tex2D;
+        }
+
+        public void WriteCBV(SlotRes cbv)
+        {
+            WriteGPU(cbv.Datas, GPUWriter);
+            GPUWriter.SetBufferImmediately(graphicsContext, false, cbv.Index);
         }
 
         public void WriteGPU(List<string> datas, GPUWriter writer)
@@ -154,6 +205,7 @@ namespace Coocoo3D.RenderPipeline
                                 writer.Write(directionalLights[0].Direction);
                                 writer.Write((int)0);
                                 writer.Write(directionalLights[0].Color);
+                                writer.Write((int)0);
                             }
                             else
                             {
@@ -201,12 +253,52 @@ namespace Coocoo3D.RenderPipeline
                             }
                         }
                         break;
+                    case "PointLights4Cull":
+                        {
+                            var pointLights = drp.pointLights;
+                            const int lightCount = 4;
+                            int count = 0;
+                            if (pointLights.Count == 0) continue;
+                            if (material != null)
+                            {
+                                for (int i = 0; i < pointLights.Count; i++)
+                                {
+                                    Vortice.Mathematics.BoundingSphere boundingSphere = new Vortice.Mathematics.BoundingSphere(pointLights[i].Position, pointLights[i].Range);
+                                    if (material.boundingBox.Contains(boundingSphere) != Vortice.Mathematics.ContainmentType.Disjoint)
+                                    {
+                                        writer.Write(pointLights[i].Position);
+                                        writer.Write((int)1);
+                                        writer.Write(pointLights[i].Color);
+                                        writer.Write((int)1);
+                                        count++;
+                                        if (count >= lightCount) break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
+                                {
+                                    writer.Write(pointLights[i].Position);
+                                    writer.Write((int)1);
+                                    writer.Write(pointLights[i].Color);
+                                    writer.Write((int)1);
+                                    count++;
+                                }
+                            }
+                            for (int i = 0; i < lightCount - count; i++)
+                            {
+                                writer.Write(new Vector4());
+                                writer.Write(new Vector4());
+                            }
+                        }
+                        break;
 
                     default:
                         object settingValue = null;
                         if (material != null)
-                            settingValue = drp.GetSettingsValue(material, s);
-                        settingValue ??= drp.GetSettingsValue(s);
+                            settingValue = GetSettingsValue(material, s);
+                        settingValue ??= GetSettingsValue(s);
                         if (settingValue != null)
                         {
                             if (settingValue is float f1)

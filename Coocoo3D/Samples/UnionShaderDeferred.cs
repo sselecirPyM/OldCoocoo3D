@@ -22,12 +22,11 @@ public static class UnionShaderDeferred
     public static bool UnionShader(UnionShaderParam param)
     {
         var graphicsContext = param.graphicsContext;
-        var mainCaches = param.rp.mainCaches;
+        var mainCaches = param.mainCaches;
         var psoDesc = param.PSODesc;
         var material = param.material;
-        var drp = param.rp.dynamicContextRead;
-        var directionalLights = drp.directionalLights;
-        var pointLights = drp.pointLights;
+        var directionalLights = param.directionalLights;
+        var pointLights = param.pointLights;
         PSO pso = null;
         switch (param.passName)
         {
@@ -35,7 +34,14 @@ public static class UnionShaderDeferred
                 {
                     List<string> keywords = new List<string>();
                     if (material.Skinning)
+                    {
                         keywords.Add("SKINNING");
+                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                    }
+                    foreach (var cbv in param.pass.CBVs)
+                    {
+                        param.WriteCBV(cbv);
+                    }
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
                 }
                 break;
@@ -44,18 +50,22 @@ public static class UnionShaderDeferred
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
-                    if ((bool)drp.GetSettingsValue("EnableFog"))
+                    if ((bool)param.GetSettingsValue("EnableFog"))
                         keywords.Add("ENABLE_FOG");
 
                     if (directionalLights.Count != 0)
                     {
                         keywords.Add("ENABLE_DIRECTIONAL_LIGHT");
-                        if ((bool)drp.GetSettingsValue("EnableVolumetricLighting"))
+                        if ((bool)param.GetSettingsValue("EnableVolumetricLighting"))
                             keywords.Add("ENABLE_VOLUME_LIGHTING");
                     }
                     if (pointLights.Count != 0)
                         keywords.Add("ENABLE_POINT_LIGHT");
 
+                    foreach (var cbv in param.pass.CBVs)
+                    {
+                        param.WriteCBV(cbv);
+                    }
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
                 }
                 break;
@@ -67,7 +77,6 @@ public static class UnionShaderDeferred
             param.graphicsContext.SetPSO(pso, psoDesc);
             if (material != null)
             {
-                graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);
                 graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
             }
             else

@@ -469,6 +469,7 @@ namespace Coocoo3DGraphics
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
             graphicsDevice.device.CreateShaderResourceView(texture2D.resource, null, cpuDescriptorHandle);
             m_commandList.SetComputeRootDescriptorTable(index, gpuDescriptorHandle);
+            InReference(texture2D.resource);
         }
         public void SetComputeUAVT(TextureCube texture, int mipIndex, int index)
         {
@@ -486,6 +487,7 @@ namespace Coocoo3DGraphics
                 Format = texture.uavFormat,
             }, cpuHandle);
             m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
+            InReference(texture.resource);
         }
         public void SetComputeUAVTSlot(Texture2D texture2D, int slot)
         {
@@ -545,6 +547,7 @@ namespace Coocoo3DGraphics
             if (clear)
                 m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
             m_commandList.OMSetRenderTargets(new CpuDescriptorHandle[0], dsv);
+            InReference(texture.resource);
         }
         public void SetRTV(Texture2D RTV, Vector4 color, bool clear) => SetRTVDSV(RTV, null, color, clear, false);
 
@@ -565,10 +568,13 @@ namespace Coocoo3DGraphics
                 if (clearDSV)
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
                 m_commandList.OMSetRenderTargets(rtv, dsv);
+                InReference(RTV.resource);
+                InReference(DSV.resource);
             }
             else
             {
                 m_commandList.OMSetRenderTargets(rtv);
+                InReference(RTV.resource);
             }
         }
 
@@ -582,6 +588,7 @@ namespace Coocoo3DGraphics
             {
                 RTVs[i].StateChange(m_commandList, ResourceStates.RenderTarget);
                 handles[i] = RTVs[i].GetRenderTargetView(graphicsDevice.device);
+                InReference(RTVs[i].resource);
                 if (clearRTV)
                     m_commandList.ClearRenderTargetView(handles[i], new Vortice.Mathematics.Color4(color));
             }
@@ -593,6 +600,7 @@ namespace Coocoo3DGraphics
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
 
                 m_commandList.OMSetRenderTargets(handles, dsv);
+                InReference(DSV.resource);
             }
             else
             {
@@ -661,7 +669,6 @@ namespace Coocoo3DGraphics
             present = false;
             foreach (var resource in referenceThisCommand)
             {
-                resource.AddRef();
                 graphicsDevice.ResourceDelayRecycle(resource);
             }
             referenceThisCommand.Clear();
@@ -720,6 +727,7 @@ namespace Coocoo3DGraphics
 
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
             graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
+            InReference(texture.resource);
             return gpuDescriptorHandle;
         }
 
@@ -740,7 +748,10 @@ namespace Coocoo3DGraphics
         }
         void InReference(ID3D12Object iD3D12Object)
         {
-            referenceThisCommand.Add(iD3D12Object);
+            if (referenceThisCommand.Add(iD3D12Object))
+            {
+                iD3D12Object.AddRef();
+            }
         }
         public HashSet<ID3D12Object> referenceThisCommand = new HashSet<ID3D12Object>();
 

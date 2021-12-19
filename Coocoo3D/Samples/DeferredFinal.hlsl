@@ -77,15 +77,18 @@ PSIn vsmain(VSIn input)
 
 	return output;
 }
+#define ENABLE_EMISSIVE 1
 #define ENABLE_DIFFUSE 1
 #define ENABLE_SPECULR 1
 
 #ifdef DEBUG_SPECULAR_RENDER
 #undef ENABLE_DIFFUSE
+#undef ENABLE_EMISSIVE
 #endif
 
 #ifdef DEBUG_DIFFUSE_RENDER
 #undef ENABLE_SPECULR
+#undef ENABLE_EMISSIVE
 #endif
 
 float4 psmain(PSIn input) : SV_TARGET
@@ -129,7 +132,9 @@ float4 psmain(PSIn input) : SV_TARGET
 #if ENABLE_SPECULR
 		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
 #endif
+#ifdef ENABLE_EMISSIVE
 		outputColor += emissive;
+#endif
 
 #if DEBUG_DEPTH
 		float _depth1 = pow(depth1,2.2f);

@@ -8,11 +8,10 @@ public static class UnionShaderShadowMap
     public static bool UnionShader(UnionShaderParam param)
     {
         var graphicsContext = param.graphicsContext;
-        var mainCaches = param.rp.mainCaches;
+        var mainCaches = param.mainCaches;
         var psoDesc = param.PSODesc;
         var material = param.material;
-        var drp = param.rp.dynamicContextRead;
-        if ((bool)drp.GetSettingsValue(material, "CastShadow"))
+        if ((bool)param.GetSettingsValue(material, "CastShadow"))
         {
             if (!param.visualChannel.CustomValue.ContainsKey(param.passName))
             {
@@ -27,9 +26,13 @@ public static class UnionShaderShadowMap
             List<string> keywords = new List<string>();
             if (material.Skinning)
                 keywords.Add("SKINNING");
+            foreach (var cbv in param.pass.CBVs)
+            {
+                param.WriteCBV(cbv);
+            }
             var pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("ShadowMap.hlsl", param.relativePath), true, false);
             param.graphicsContext.SetPSO(pso1, psoDesc);
-            graphicsContext.SetCBVRSlot(param.rp.GetBoneBuffer(param.renderer), 0, 0, 0);
+            graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
             graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
         }
         return true;

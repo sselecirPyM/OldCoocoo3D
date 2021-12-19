@@ -30,7 +30,8 @@ namespace Coocoo3D.RenderPipeline
 
         public void Dispose()
         {
-
+            FinalOutput.Dispose();
+            OutputRTV.Dispose();
         }
 
         public string GetTexName(string texName)

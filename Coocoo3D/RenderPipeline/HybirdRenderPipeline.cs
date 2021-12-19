@@ -59,6 +59,9 @@ namespace Coocoo3D.RenderPipeline
                 texLoading = texLoading,
                 texError = texError,
                 renderers = drp.renderers,
+                directionalLights = drp.directionalLights,
+                pointLights = drp.pointLights,
+                mainCaches = mainCaches,
             };
 
             var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher) ?? defaultPassDispatcher;
@@ -75,7 +78,7 @@ namespace Coocoo3D.RenderPipeline
                 return !material.Transparent;
             if (material.textures.ContainsKey(filter))
                 return true;
-            var obj = unionShaderParam.rp.dynamicContextRead.GetSettingsValue(material, filter);
+            var obj = unionShaderParam.GetSettingsValue(material, filter);
             if (obj is bool b1 && b1)
                 return true;
             return false;
@@ -88,8 +91,8 @@ namespace Coocoo3D.RenderPipeline
             var pass = unionShaderParam.passSetting.Passes[renderSequence.Name];
 
             var graphicsContext = unionShaderParam.graphicsContext;
-            var drp = unionShaderParam.rp.dynamicContextRead;
-            var mainCaches = unionShaderParam.rp.mainCaches;
+
+            var mainCaches = unionShaderParam.mainCaches;
             var settings = unionShaderParam.settings;
             var context = unionShaderParam.rp;
             var passSetting = unionShaderParam.passSetting;
@@ -98,20 +101,19 @@ namespace Coocoo3D.RenderPipeline
             var texLoading = unionShaderParam.texLoading;
             var renderers = unionShaderParam.renderers;
 
-
             RootSignature rootSignature = mainCaches.GetRootSignature(renderSequence.rootSignatureKey);
-            unionShaderParam.rootSignature = rootSignature;
+            unionShaderParam.pass = pass;
             unionShaderParam.passName = pass.Name;
             graphicsContext.SetRootSignature(rootSignature);
 
             Texture2D depthStencil = unionShaderParam.GetTex2D(renderSequence.DepthStencil);
 
-            PSODesc passPsoDesc;
+            PSODesc psoDesc;
             Texture2D[] renderTargets = null;
             if (renderSequence.RenderTargets == null || renderSequence.RenderTargets.Count == 0)
             {
                 graphicsContext.SetDSV(depthStencil, renderSequence.ClearDepth);
-                passPsoDesc.rtvFormat = Format.Unknown;
+                psoDesc.rtvFormat = Format.Unknown;
             }
             else
             {
@@ -121,31 +123,30 @@ namespace Coocoo3D.RenderPipeline
                     renderTargets[i] = unionShaderParam.GetTex2D(renderSequence.RenderTargets[i]);
                 }
                 graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, renderSequence.ClearRenderTarget, renderSequence.ClearDepth);
-                passPsoDesc.rtvFormat = renderTargets[0].GetFormat();
+                psoDesc.rtvFormat = renderTargets[0].GetFormat();
             }
             unionShaderParam.depthStencil = depthStencil;
             unionShaderParam.renderTargets = renderTargets;
 
-            passPsoDesc.blendState = pass.BlendMode;
-            passPsoDesc.cullMode = renderSequence.CullMode;
-            passPsoDesc.depthBias = renderSequence.DepthBias;
-            passPsoDesc.slopeScaledDepthBias = renderSequence.SlopeScaledDepthBias;
-            passPsoDesc.dsvFormat = depthStencil == null ? Format.Unknown : depthStencil.GetFormat();
-            passPsoDesc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
-            passPsoDesc.renderTargetCount = renderSequence.RenderTargets == null ? 0 : renderSequence.RenderTargets.Count;
-            passPsoDesc.wireFrame = false;
+            psoDesc.blendState = pass.BlendMode;
+            psoDesc.cullMode = renderSequence.CullMode;
+            psoDesc.depthBias = renderSequence.DepthBias;
+            psoDesc.slopeScaledDepthBias = renderSequence.SlopeScaledDepthBias;
+            psoDesc.dsvFormat = depthStencil == null ? Format.Unknown : depthStencil.GetFormat();
+            psoDesc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
+            psoDesc.renderTargetCount = renderSequence.RenderTargets == null ? 0 : renderSequence.RenderTargets.Count;
+            psoDesc.wireFrame = false;
 
             if (renderSequence.Type == null)
             {
-                passPsoDesc.inputLayout = InputLayout.mmd;
-                passPsoDesc.wireFrame = drp.settings.Wireframe;
+                psoDesc.inputLayout = InputLayout.mmd;
+                psoDesc.wireFrame = settings.Wireframe;
 
                 for (int i = 0; i < renderers.Count; i++)
                 {
                     MMDRendererComponent rendererComponent = renderers[i];
                     graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
                     graphicsContext.SetMeshVertex(context.meshOverride[rendererComponent]);
-                    unionShaderParam.PSODesc = passPsoDesc;
                     unionShaderParam.renderer = rendererComponent;
                     var Materials = rendererComponent.Materials;
                     foreach (var material in Materials)
@@ -155,14 +156,11 @@ namespace Coocoo3D.RenderPipeline
                         {
                             continue;
                         }
-                        foreach (var cbv in pass.CBVs)
-                        {
-                            WriteCBV(cbv, unionShaderParam);
-                        }
                         _SetSRVs(pass.SRVs, material);
                         if (renderSequence.CullMode == 0)
-                            passPsoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
+                            psoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
 
+                        unionShaderParam.PSODesc = psoDesc;
                         bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(material.unionShader))?.Invoke(unionShaderParam);
                         if (executed != true)
                         {
@@ -170,7 +168,7 @@ namespace Coocoo3D.RenderPipeline
                         }
                         if (executed != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
                         {
-                            graphicsContext.SetPSO(renderSequence.PSODefault, passPsoDesc);
+                            graphicsContext.SetPSO(renderSequence.PSODefault, psoDesc);
                             graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
                         }
                     }
@@ -179,14 +177,10 @@ namespace Coocoo3D.RenderPipeline
             else if (renderSequence.Type == "DrawScreen")
             {
                 _SetSRVs(pass.SRVs);
-                passPsoDesc.inputLayout = InputLayout.postProcess;
-                unionShaderParam.PSODesc = passPsoDesc;
+                psoDesc.inputLayout = InputLayout.postProcess;
+                unionShaderParam.PSODesc = psoDesc;
                 unionShaderParam.renderer = null;
                 unionShaderParam.material = null;
-                foreach (var cbv in pass.CBVs)
-                {
-                    WriteCBV(cbv, unionShaderParam);
-                }
 
                 graphicsContext.SetMesh(context.ndcQuadMesh);
 
@@ -195,7 +189,7 @@ namespace Coocoo3D.RenderPipeline
                 bool? a = unionShader?.Invoke(unionShaderParam);
                 if (a != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
                 {
-                    graphicsContext.SetPSO(renderSequence.PSODefault, passPsoDesc);
+                    graphicsContext.SetPSO(renderSequence.PSODefault, psoDesc);
                     graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
                 }
             }
@@ -230,13 +224,6 @@ namespace Coocoo3D.RenderPipeline
                 return unload;
             else
                 return error;
-        }
-
-        public static void WriteCBV(SlotRes cbv, UnionShaderParam unionShaderParam)
-        {
-            var writer = unionShaderParam.GPUWriter;
-            unionShaderParam.WriteGPU(cbv.Datas, writer);
-            writer.SetBufferImmediately(unionShaderParam.graphicsContext, false, cbv.Index);
         }
     }
 }

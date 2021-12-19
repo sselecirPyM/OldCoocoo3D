@@ -27,7 +27,9 @@ cbuffer cb1 : register(b1)
 	float4x4 LightMapVP;
 	float4x4 LightMapVP1;
 	LightInfo Lightings[1];
+#if ENABLE_POINT_LIGHT
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
+#endif
 	float _Metallic;
 	float _Roughness;
 	float _Emissive;
@@ -76,15 +78,18 @@ PSSkinnedIn vsmain(VSSkinnedIn input)
 
 	return output;
 }
+#define ENABLE_EMISSIVE 1
 #define ENABLE_DIFFUSE 1
 #define ENABLE_SPECULR 1
 
 #ifdef DEBUG_SPECULAR_RENDER
 #undef ENABLE_DIFFUSE
+#undef ENABLE_EMISSIVE
 #endif
 
 #ifdef DEBUG_DIFFUSE_RENDER
 #undef ENABLE_SPECULR
+#undef ENABLE_EMISSIVE
 #endif
 
 float4 psmain(PSSkinnedIn input) : SV_TARGET
@@ -119,7 +124,9 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #if ENABLE_SPECULR
 	outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness,1e-5)) * 4) * g_skyBoxMultiple * GF;
 #endif
+#if ENABLE_EMISSIVE
 	outputColor += emissive;
+#endif
 #if DEBUG_ALBEDO
 	return float4(albedo, 1);
 #endif

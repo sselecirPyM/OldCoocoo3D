@@ -118,11 +118,16 @@ namespace Coocoo3D.RenderPipeline
             currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
         }
 
+        Queue<string> delayAddVisualChannel = new Queue<string>();
+        Queue<string> delayRemoveVisualChannel = new Queue<string>();
         public void DelayAddVisualChannel(string name)
         {
-            delayAddVc.Enqueue(name);
+            delayAddVisualChannel.Enqueue(name);
         }
-        Queue<string> delayAddVc = new Queue<string>();
+        public void DelayRemoveVisualChannel(string name)
+        {
+            delayRemoveVisualChannel.Enqueue(name);
+        }
 
         public VisualChannel AddVisualChannel(string name)
         {
@@ -131,6 +136,12 @@ namespace Coocoo3D.RenderPipeline
             visualChannel.Name = name;
             visualChannel.graphicsContext = graphicsContext;
             return visualChannel;
+        }
+
+        public void RemoveVisualChannel(string name)
+        {
+            visualChannels[name].Dispose();
+            visualChannels.Remove(name);
         }
 
         public void BeginDynamicContext(bool enableDisplay, Scene scene)
@@ -258,9 +269,13 @@ namespace Coocoo3D.RenderPipeline
             screenSize.X = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
             screenSize.Y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
 
-            if (delayAddVc.TryDequeue(out var vcName))
+            while (delayAddVisualChannel.TryDequeue(out var vcName))
             {
                 AddVisualChannel(vcName);
+            }
+            while (delayRemoveVisualChannel.TryDequeue(out var vcName))
+            {
+                RemoveVisualChannel(vcName);
             }
             foreach (var visualChannel1 in visualChannels.Values)
             {

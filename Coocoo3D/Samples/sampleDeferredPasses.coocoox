@@ -186,7 +186,7 @@
             "DirectionalLightMatrix0",
             "DirectionalLightMatrix1",
             "DirectionalLight",
-            "PointLights4"
+            "PointLights4Cull"
           ]
         }
       ],
@@ -250,7 +250,7 @@
             "DirectionalLightMatrix0",
             "DirectionalLightMatrix1",
             "DirectionalLight",
-            "PointLights4",
+            "PointLights4Cull",
             "Metallic",
             "Roughness",
             "Emissive",
