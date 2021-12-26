@@ -114,9 +114,9 @@ namespace Coocoo3DGraphics
         {
             resource?.Release();
             resource = null;
-            renderTargetView?.Dispose();
+            renderTargetView?.Release();
             renderTargetView = null;
-            depthStencilView?.Dispose();
+            depthStencilView?.Release();
             depthStencilView = null;
         }
     }

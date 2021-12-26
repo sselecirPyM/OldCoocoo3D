@@ -653,12 +653,6 @@ vmd格式动作");
                         var material = rendererComponent.Materials[materialSelectIndex];
                         ImGui.Text(material.Name);
 
-                        string s = material.unionShader ?? "";
-                        if (ImGui.InputText("UnionShader", ref s, 256))
-                        {
-                            material.unionShader = s;
-                        }
-
                         ImGui.Checkbox("蒙皮", ref material.Skinning);
                         if (ImGui.IsItemHovered())
                             ImGui.SetTooltip("关闭蒙皮可以提高性能");
@@ -673,6 +667,7 @@ vmd格式动作");
             }
             if (ImGui.TreeNode("变形"))
             {
+                ImGui.Checkbox("蒙皮", ref rendererComponent.skinning);
                 ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion);
                 if (rendererComponent.LockMotion)
                     for (int i = 0; i < rendererComponent.morphStateComponent.morphs.Count; i++)

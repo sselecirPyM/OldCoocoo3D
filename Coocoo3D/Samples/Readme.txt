@@ -34,13 +34,27 @@
 
         public Texture2D texLoading;
         public Texture2D texError;
+
+        public RayTracingShader rayTracingShader;
+
+        public GraphicsDevice graphicsDevice { get; }
+
         public Dictionary<string, object> customValue;
+        public MMDMesh mesh { get; }
+        public MMDMesh meshOverride { get; }
+
         public object GetSettingsValue(string name);
         public object GetSettingsValue(RuntimeMaterial material, string name);
         public CBuffer GetBoneBuffer(MMDRendererComponent rendererComponent);
         public Texture2D GetTex2D(string name, RuntimeMaterial material = null);
         public void WriteCBV(SlotRes cbv);
         public void WriteGPU(List<string> datas, GPUWriter writer);
+        
+        public void SetSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null);
+        public void SetComputeSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null);
+        public void SRVUAVs(List<SlotRes> SRVUAV, Dictionary<int, object> dict, Dictionary<int, int> flags = null, RuntimeMaterial material = null);
+        public Texture2D TextureFallBack(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
+        public static Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error);
     }
     
     public interface IPassDispatcher

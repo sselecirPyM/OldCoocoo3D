@@ -47,7 +47,7 @@ namespace Coocoo3D.Components
                         meshNeedUpdate = true;
                 }
             }
-
+            if (!meshNeedUpdate) return;
             new Span<Vector3>(meshPosData).CopyTo(meshPosData1);
 
             for (int i = 0; i < morphStateComponent.morphs.Count; i++)
@@ -87,8 +87,7 @@ namespace Coocoo3D.Components
         public void WriteMatriticesData()
         {
             for (int i = 0; i < bones.Count; i++)
-                boneMatricesData[i] = Matrix4x4.Transpose(bones[i].GeneratedTransform);
-            //boneMatricesData[i] = bones[i].GeneratedTransform;
+                boneMatricesData[i] = bones[i].GeneratedTransform;
         }
         public void SetPoseWithMotion(float time, MMDMotion motion)
         {
@@ -423,8 +422,6 @@ namespace Coocoo3D.Components
     {
         public string Name;
 
-        public string unionShader;
-
         public int indexOffset;
         public int indexCount;
         public DrawFlag DrawFlags;
@@ -573,21 +570,22 @@ namespace Coocoo3D.FileFormat
             rendererComponent.ReloadModel(modelPack);
         }
 
-        public static void ReloadModel(this MMDRendererComponent rendererComponent, ModelPack modelPack)
+        public static void ReloadModel(this MMDRendererComponent renderer, ModelPack modelPack)
         {
-            rendererComponent.Materials.Clear();
+            renderer.Materials.Clear();
             for (int i = 0; i < modelPack.Materials.Count; i++)
             {
                 var mat = modelPack.Materials[i].GetClone();
-                rendererComponent.Materials.Add(mat);
+                renderer.Materials.Add(mat);
             }
 
             var mesh = modelPack.GetMesh();
-            rendererComponent.meshPath = modelPack.fullPath;
-            rendererComponent.meshPosData = modelPack.position;
-            rendererComponent.meshVertexCount = mesh.GetVertexCount();
-            rendererComponent.meshIndexCount = mesh.GetIndexCount();
-            rendererComponent.meshPosData1 = new Vector3[mesh.GetVertexCount()];
+            renderer.meshPath = modelPack.fullPath;
+            renderer.meshPosData = modelPack.position;
+            renderer.meshVertexCount = mesh.GetVertexCount();
+            renderer.meshIndexCount = mesh.GetIndexCount();
+            renderer.meshPosData1 = new Vector3[mesh.GetVertexCount()];
+            new Span<Vector3>(renderer.meshPosData).CopyTo(renderer.meshPosData1);
 
             var modelResource = modelPack.pmx;
 
@@ -604,7 +602,7 @@ namespace Coocoo3D.FileFormat
                     }
                 }
             }
-            rendererComponent.ComputeVertexMorph();
+            renderer.ComputeVertexMorph();
         }
 
         public static void Initialize2(this MMDRendererComponent rendererComponent, ModelPack modelPack)

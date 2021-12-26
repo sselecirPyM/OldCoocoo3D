@@ -11,6 +11,10 @@ public static class UnionShaderShadowMap
         var mainCaches = param.mainCaches;
         var psoDesc = param.PSODesc;
         var material = param.material;
+        bool skinning = true;
+        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning && !bSkinning)
+            skinning = false;
+
         if ((bool)param.GetSettingsValue(material, "CastShadow"))
         {
             if (!param.visualChannel.CustomValue.ContainsKey(param.passName))
@@ -24,16 +28,19 @@ public static class UnionShaderShadowMap
                     graphicsContext.RSSetScissorRectAndViewport(width / 2, 0, width, height);
             }
             List<string> keywords = new List<string>();
-            if (material.Skinning)
+            if (material.Skinning && param.renderer.skinning && skinning)
                 keywords.Add("SKINNING");
             foreach (var cbv in param.pass.CBVs)
             {
                 param.WriteCBV(cbv);
             }
-            var pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("ShadowMap.hlsl", param.relativePath), true, false);
-            param.graphicsContext.SetPSO(pso1, psoDesc);
-            graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
-            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+            var pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("ShadowMap.hlsl", param.relativePath), true, false);
+            param.SetSRVs(param.pass.SRVs, material);
+            if (graphicsContext.SetPSO(pso, psoDesc))
+            {
+                graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+            }
         }
         return true;
     }

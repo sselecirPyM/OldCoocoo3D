@@ -28,6 +28,18 @@ namespace Coocoo3D.RenderPipeline.Wrap
             return allign;
         }
 
+        public byte[] GetData()
+        {
+            byte[] data = memoryStream.ToArray();
+            binaryWriter.Seek(0, SeekOrigin.Begin);
+            return data;
+        }
+
+        public void Clear()
+        {
+            binaryWriter.Seek(0, SeekOrigin.Begin);
+        }
+
         public CBuffer GetBuffer(GraphicsDevice device, GraphicsContext context, bool isCBuffer)
         {
             if (cBuffer == null)

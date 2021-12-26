@@ -36,10 +36,10 @@ cbuffer cb0 : register(b0)
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 #endif
 };
-Texture2D texture0 :register(t0);
-Texture2D texture1 :register(t1);
-Texture2D texture2 :register(t2);
-Texture2D texture3 :register(t3);
+Texture2D gbuffer0 :register(t0);
+Texture2D gbuffer1 :register(t1);
+Texture2D gbuffer2 :register(t2);
+Texture2D gbuffer3 :register(t3);
 TextureCube EnvCube : register (t4);
 Texture2D gbufferDepth : register (t5);
 Texture2D ShadowMap0 : register(t6);
@@ -97,10 +97,10 @@ float4 psmain(PSIn input) : SV_TARGET
 	uv.y = 1 - uv.y;
 
 	float depth1 = gbufferDepth.SampleLevel(s3, uv, 0).r;
-	float4 buffer0Color = texture0.Sample(s3, uv);
-	float4 buffer1Color = texture1.Sample(s3, uv);
-	float4 buffer2Color = texture2.Sample(s3, uv);
-	float4 buffer3Color = texture3.Sample(s3, uv);
+	float4 buffer0Color = gbuffer0.SampleLevel(s3, uv, 0);
+	float4 buffer1Color = gbuffer1.SampleLevel(s3, uv, 0);
+	float4 buffer2Color = gbuffer2.SampleLevel(s3, uv, 0);
+	//float4 buffer3Color = gbuffer3.SampleLevel(s3, uv, 0);
 
 
 	float4 test1 = mul(float4(input.uv, depth1, 1), g_mProjToWorld);
@@ -117,20 +117,22 @@ float4 psmain(PSIn input) : SV_TARGET
 	{
 		float3 N = normalize(NormalDecode(buffer1Color.rg));
 		float NdotV = saturate(dot(N, V));
-		float metallic = buffer0Color.a;
 		float roughness = buffer1Color.b;
 		float alpha = roughness * roughness;
 		float3 c_diffuse = buffer0Color.rgb;
 		float3 c_specular = buffer2Color.rgb;
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
-		float3 emissive = buffer3Color.rgb;
+		//float3 emissive = buffer3Color.rgb;
+		float3 emissive = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a) * 16;
 
 #if ENABLE_DIFFUSE
 		outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
 #endif
 #if ENABLE_SPECULR
+#ifndef RAY_TRACING
 		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
+#endif
 #endif
 #ifdef ENABLE_EMISSIVE
 		outputColor += emissive;

@@ -5,7 +5,7 @@ using Vortice.Direct3D12;
 
 namespace Coocoo3DGraphics
 {
-    public class ComputeShader
+    public class ComputeShader : IDisposable
     {
         public byte[] data;
         public Dictionary<ID3D12RootSignature, ID3D12PipelineState> computeShaders = new Dictionary<ID3D12RootSignature, ID3D12PipelineState>();
@@ -14,5 +14,15 @@ namespace Coocoo3DGraphics
             this.data = new byte[data.Length];
             Array.Copy(data, this.data, data.Length);
         }
+
+        public void Dispose()
+        {
+            foreach(var shader in computeShaders)
+            {
+                shader.Value.Release();
+            }
+            computeShaders.Clear();
+        }
+
     }
 }

@@ -177,7 +177,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords *float2( 0.5,1), sPos.z).r;
+					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords *float2(0.5 ,1), sPos.z).r;
 				else
 				{
 					sPos = mul(input.wPos, LightMapVP1);
@@ -185,7 +185,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1)+float2(0.5,0), sPos.z).r;
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
 				}
 #endif
 			}

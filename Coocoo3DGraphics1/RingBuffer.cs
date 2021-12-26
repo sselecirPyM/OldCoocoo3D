@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Vortice.Direct3D12;
+using System.Runtime.InteropServices;
 
 namespace Coocoo3DGraphics
 {
@@ -15,7 +16,7 @@ namespace Coocoo3DGraphics
             mapped = resource.Map(0);
         }
 
-        public IntPtr Upload(ID3D12GraphicsCommandList commandList, int size, ID3D12Resource target)
+        IntPtr Upload(ID3D12GraphicsCommandList commandList, int size, ID3D12Resource target)
         {
             if (currentPosition + size > this.size)
             {
@@ -28,7 +29,15 @@ namespace Coocoo3DGraphics
             return result;
         }
 
-        public IntPtr Upload(int size, out ulong gpuAddress)
+        public unsafe void Upload<T>(ID3D12GraphicsCommandList commandList, Span<T> data, ID3D12Resource target) where T : unmanaged
+        {
+            int size1 = Marshal.SizeOf(typeof(T)) * data.Length;
+            IntPtr ptr = Upload(commandList, size1, target);
+            var range = new Span<T>(ptr.ToPointer(), data.Length);
+            data.CopyTo(range);
+        }
+
+        IntPtr Upload(int size, out ulong gpuAddress)
         {
             if (currentPosition + size > this.size)
             {
@@ -41,9 +50,26 @@ namespace Coocoo3DGraphics
             return result;
         }
 
+        public unsafe void Upload<T>(Span<T> data, out ulong gpuAddress) where T : unmanaged
+        {
+            int size1 = Marshal.SizeOf(typeof(T)) * data.Length;
+            var range = new Span<T>(Upload(size1, out gpuAddress).ToPointer(), data.Length);
+            data.CopyTo(range);
+        }
+
+        public unsafe void Upload<T>(IReadOnlyList<T> data, out ulong gpuAddress) where T : unmanaged
+        {
+            int size1 = Marshal.SizeOf(typeof(T)) * data.Count;
+            var range = new Span<T>(Upload(size1, out gpuAddress).ToPointer(), data.Count);
+            for (int i = 0; i < data.Count; i++)
+            {
+                range[i] = data[i];
+            }
+        }
+
         public void Dispose()
         {
-            resource?.Dispose();
+            resource?.Release();
             resource = null;
         }
 

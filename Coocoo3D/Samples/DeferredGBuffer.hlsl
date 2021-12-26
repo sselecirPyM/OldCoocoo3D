@@ -64,7 +64,7 @@ struct MRTOutput
 	float4 color0 : COLOR0;
 	float4 color1 : COLOR1;
 	float4 color2 : COLOR2;
-	float4 color3 : COLOR3;
+	//float4 color3 : COLOR3;
 };
 
 MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
@@ -81,11 +81,11 @@ MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 
 	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
-	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive;
+	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive / 16;
 
-	output.color0 = float4(c_diffuse, 1);
-	output.color1 = float4(encodedNormal, _Roughness, 1);
-	output.color2 = float4(c_specular, 1);
-	output.color3 = float4(emissive, 1);
+	output.color0 = float4(c_diffuse, emissive.r);
+	output.color1 = float4(encodedNormal, _Roughness, emissive.g);
+	output.color2 = float4(c_specular, emissive.b);
+	//output.color3 = float4(emissive, 1);
 	return output;
 }

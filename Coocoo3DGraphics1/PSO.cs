@@ -113,7 +113,7 @@ namespace Coocoo3DGraphics
             return !(left == right);
         }
     }
-    public class PSO
+    public class PSO : IDisposable
     {
         static readonly InputLayoutDescription inputLayoutMMD = new InputLayoutDescription(
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0, 0),
@@ -134,20 +134,22 @@ namespace Coocoo3DGraphics
         static readonly InputLayoutDescription inputLayoutPosOnly = new InputLayoutDescription(
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0)
             );
-        static readonly InputLayoutDescription _inputLayoutImGui = new InputLayoutDescription(
+        static readonly InputLayoutDescription inputLayoutImGui = new InputLayoutDescription(
             new InputElementDescription("POSITION", 0, Format.R32G32_Float, 0),
             new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0),
             new InputElementDescription("COLOR", 0, Format.R8G8B8A8_UNorm, 0)
             );
+        static readonly BlendDescription blendStateAdd = new BlendDescription(Blend.One, Blend.One);
+        static readonly BlendDescription blendStateAlpha = new BlendDescription(Blend.SourceAlpha, Blend.InverseSourceAlpha, Blend.One, Blend.InverseSourceAlpha);
 
         BlendDescription BlendDescSelect(BlendState blendState)
         {
             if (blendState == BlendState.none)
                 return new BlendDescription(Blend.One, Blend.Zero);
             else if (blendState == BlendState.alpha)
-                return blendStateAlpha();
+                return blendStateAlpha;
             else if (blendState == BlendState.add)
-                return blendStateAdd();
+                return blendStateAdd;
             return new BlendDescription();
         }
 
@@ -167,8 +169,8 @@ namespace Coocoo3DGraphics
         public PSO(byte[] vertexShader, byte[] geometryShader, byte[] pixelShader)
         {
             this.vertexShader = vertexShader;
-            this.pixelShader = pixelShader;
             this.geometryShader = geometryShader;
+            this.pixelShader = pixelShader;
         }
 
         public PSO(VertexShader vertexShader, GeometryShader geometryShader, PixelShader pixelShader)
@@ -183,24 +185,13 @@ namespace Coocoo3DGraphics
             this.pixelShader = pixelShader?.compiledCode;
         }
 
-        BlendDescription blendStateAlpha()
-        {
-            BlendDescription blendDescription = new BlendDescription(Blend.SourceAlpha, Blend.InverseSourceAlpha, Blend.One, Blend.InverseSourceAlpha);
-            return blendDescription;
-        }
-
-        BlendDescription blendStateAdd()
-        {
-            BlendDescription blendDescription = new BlendDescription(Blend.One, Blend.One);
-            return blendDescription;
-        }
-
         public void Dispose()
         {
             foreach (var combine in m_pipelineStates)
             {
                 combine.Release();
             }
+            m_psoDescs.Clear();
             m_pipelineStates.Clear();
         }
 
@@ -220,31 +211,19 @@ namespace Coocoo3DGraphics
             }
             if (index == -1)
             {
-                StreamOutputElement[] declarations = new StreamOutputElement[5];
-                declarations[0].SemanticName = "POSITION";
-                declarations[0].ComponentCount = 3;
-                declarations[1].SemanticName = "NORMAL";
-                declarations[1].ComponentCount = 3;
-                declarations[2].SemanticName = "TEXCOORD";
-                declarations[2].ComponentCount = 2;
-                declarations[3].SemanticName = "TANGENT";
-                declarations[3].ComponentCount = 3;
-                declarations[4].SemanticName = "EDGESCALE";
-                declarations[4].ComponentCount = 1;
-
-
                 GraphicsPipelineStateDescription state = new GraphicsPipelineStateDescription();
+
+                //state.InputLayout = inputLayout.inputElementDescriptions;
+
                 if (psoDesc.inputLayout == InputLayout.mmd)
                     state.InputLayout = inputLayoutMMD;
-
                 else if (psoDesc.inputLayout == InputLayout.postProcess)
                     state.InputLayout = inputLayoutPosOnly;
-
                 else if (psoDesc.inputLayout == InputLayout.skinned)
                     state.InputLayout = inputLayoutSkinned;
-
                 else if (psoDesc.inputLayout == InputLayout.imgui)
-                    state.InputLayout = _inputLayoutImGui;
+                    state.InputLayout = inputLayoutImGui;
+
                 state.RootSignature = graphicsSignature.rootSignature;
                 if (vertexShader != null)
                     state.VertexShader = vertexShader;
@@ -252,15 +231,10 @@ namespace Coocoo3DGraphics
                     state.GeometryShader = geometryShader;
                 if (pixelShader != null)
                     state.PixelShader = pixelShader;
-                if (psoDesc.dsvFormat != Format.Unknown)
-                {
-                    state.DepthStencilState = new DepthStencilDescription(true, true);
-                    state.DepthStencilFormat = psoDesc.dsvFormat;
-                }
                 state.SampleMask = uint.MaxValue;
                 state.PrimitiveTopologyType = psoDesc.primitiveTopologyType;
-                    state.BlendState = BlendDescSelect(psoDesc.blendState);
-                    state.SampleDescription = new SampleDescription(1, 0);
+                state.BlendState = BlendDescSelect(psoDesc.blendState);
+                state.SampleDescription = new SampleDescription(1, 0);
 
                 state.RenderTargetFormats = new Format[psoDesc.renderTargetCount];
                 for (int i = 0; i < psoDesc.renderTargetCount; i++)
@@ -272,7 +246,16 @@ namespace Coocoo3DGraphics
                 RasterizerDescription rasterizerDescription = new RasterizerDescription(cullMode, psoDesc.wireFrame ? FillMode.Wireframe : FillMode.Solid);
                 rasterizerDescription.DepthBias = psoDesc.depthBias;
                 rasterizerDescription.SlopeScaledDepthBias = psoDesc.slopeScaledDepthBias;
-                rasterizerDescription.DepthClipEnable = true;
+                if (psoDesc.dsvFormat != Format.Unknown)
+                {
+                    state.DepthStencilState = new DepthStencilDescription(true, true);
+                    state.DepthStencilFormat = psoDesc.dsvFormat;
+                    rasterizerDescription.DepthClipEnable = true;
+                }
+                else
+                {
+                    state.DepthStencilState = new DepthStencilDescription(false, false);
+                }
 
                 state.RasterizerState = rasterizerDescription;
                 ID3D12PipelineState pipelineState;

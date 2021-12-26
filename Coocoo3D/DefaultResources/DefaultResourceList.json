@@ -37,10 +37,6 @@
   ],
   "texture2Ds": [
     {
-      "name": "_BRDFLUT",
-      "path": "Assets/Textures/brdflut.png"
-    },
-    {
       "name": "_ERROR",
       "path": "Assets/Textures/error.png"
     },

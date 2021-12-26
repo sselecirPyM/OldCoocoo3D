@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Utility;
 using Vortice.DXGI;
+using System.Runtime.InteropServices;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -68,7 +69,7 @@ namespace Coocoo3D.RenderPipeline
         public string skyBoxName = "_SkyBox";
         public string skyBoxOriTex = "Assets/Textures/adams_place_bridge_2k.jpg";
 
-        public MMDMesh ndcQuadMesh = new MMDMesh();
+        public MMDMesh quadMesh = new MMDMesh();
         public int frameRenderCount;
 
         public RPAssetsManager RPAssetsManager = new RPAssetsManager();
@@ -90,6 +91,8 @@ namespace Coocoo3D.RenderPipeline
 
         public string currentPassSetting1 = "Samples\\samplePasses.coocoox";
 
+        internal Wrap.GPUWriter writerReuse = new Wrap.GPUWriter();
+
         public Int2 screenSize;
         public GameDriverContext gameDriverContext = new GameDriverContext()
         {
@@ -104,6 +107,8 @@ namespace Coocoo3D.RenderPipeline
             },
         };
 
+        public bool CPUSkinning = true;
+
         public void Reload()
         {
             graphicsContext.Reload(graphicsDevice);
@@ -111,8 +116,8 @@ namespace Coocoo3D.RenderPipeline
 
             SkyBoxChanged = true;
 
-            ndcQuadMesh.ReloadNDCQuad();
-            processingList.AddObject(ndcQuadMesh);
+            quadMesh.ReloadNDCQuad();
+            processingList.AddObject(quadMesh);
             mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
             mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
             currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
@@ -164,7 +169,7 @@ namespace Coocoo3D.RenderPipeline
 
         LinearPool<MMDMesh> meshPool = new LinearPool<MMDMesh>();
         public Dictionary<MMDRendererComponent, MMDMesh> meshOverride = new Dictionary<MMDRendererComponent, MMDMesh>();
-
+        public byte[] bigBuffer;
         public void UpdateGPUResource()
         {
             meshPool.Reset();
@@ -177,88 +182,104 @@ namespace Coocoo3D.RenderPipeline
                 graphicsDevice.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }
+
+            int bufferSize = 0;
+            foreach (var renderer in dynamicContextRead.renderers)
+            {
+                bufferSize = Math.Max(GetModelPack(renderer.meshPath).vertexCount, bufferSize);
+            }
+            bigBuffer = new byte[bufferSize * 12];
             for (int i = 0; i < count; i++)
             {
-                var rendererComponent = dynamicContextRead.renderers[i];
+                var renderer = dynamicContextRead.renderers[i];
                 var mesh = meshPool.Get(() =>
-                 {
+                {
                      var mesh1 = new MMDMesh();
                      return mesh1;
-                 });
-                var originModel = GetModelPack(rendererComponent.meshPath);
+                });
+                var originModel = GetModelPack(renderer.meshPath);
                 mesh.ReloadIndex<int>(originModel.vertexCount, null);
-                meshOverride[rendererComponent] = mesh;
-
-                Matrix4x4 world = Matrix4x4.CreateFromQuaternion(rendererComponent.rotation) * Matrix4x4.CreateTranslation(rendererComponent.position);
-
-                graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], rendererComponent.boneMatricesData);
-
-                //const int parallelSize = 1024;
-                //Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
-                //{
-                //    Span<Vector3> _d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
-                //    int from = u * parallelSize;
-                //    int to = Math.Min(from + parallelSize, originModel.vertexCount);
-                //    for (int j = from; j < to; j++)
-                //    {
-                //        Vector3 pos0 = rendererComponent.meshPosData1[j];
-                //        Vector3 pos1 = Vector3.Zero;
-                //        int a = 0;
-                //        for (int k = 0; k < 4; k++)
-                //        {
-                //            int boneId = originModel.boneId[j * 4 + k];
-                //            if (boneId >= rendererComponent.bones.Count) break;
-                //            Matrix4x4 trans = rendererComponent.boneMatricesData[boneId];
-                //            float weight = originModel.boneWeights[j * 4 + k];
-                //            pos1 += Vector3.Transform(pos0, trans) * weight;
-                //            a++;
-                //        }
-                //        if (a > 0)
-                //            _d3[j] = Vector3.Transform(pos1, world);
-                //        else
-                //            _d3[j] = Vector3.Transform(pos0, world);
-                //    }
-                //});
-                //mesh.AddBuffer<Vector3>(d3.Slice(0, originModel.vertexCount), 0);
-
-                //Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
-                //{
-                //    Span<Vector3> _d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
-                //    int from = u * parallelSize;
-                //    int to = Math.Min(from + parallelSize, originModel.vertexCount);
-                //    for (int j = from; j < to; j++)
-                //    {
-                //        Vector3 norm0 = originModel.normal[j];
-                //        Vector3 norm1 = Vector3.Zero;
-                //        int a = 0;
-                //        for (int k = 0; k < 4; k++)
-                //        {
-                //            int boneId = originModel.boneId[j * 4 + k];
-                //            if (boneId >= rendererComponent.bones.Count) break;
-                //            Matrix4x4 trans = rendererComponent.boneMatricesData[boneId];
-                //            float weight = originModel.boneWeights[j * 4 + k];
-                //            norm1 += Vector3.TransformNormal(norm0, trans) * weight;
-                //            a++;
-                //        }
-                //        if (a > 0)
-                //            _d3[j] = Vector3.Normalize(Vector3.TransformNormal(norm1, world));
-                //        else
-                //            _d3[j] = Vector3.Normalize(Vector3.TransformNormal(norm0, world));
-                //    }
-                //});
-
-                //mesh.AddBuffer<Vector3>(d3.Slice(0, originModel.vertexCount), 1);
-                //graphicsContext.UploadMesh(mesh);
+                meshOverride[renderer] = mesh;
+                if (!renderer.skinning) continue;
 
 
-                //mesh.AddBuffer<Vector3>(rendererComponent.meshPosData1, 0);
-                //graphicsContext.UploadMesh(mesh);
-
-                if (rendererComponent.meshNeedUpdate.SetFalse())
+                if (CPUSkinning)
                 {
+                    Matrix4x4 world = Matrix4x4.CreateFromQuaternion(renderer.rotation) * Matrix4x4.CreateTranslation(renderer.position);
+                    const int parallelSize = 1024;
+                    Span<Vector3> d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
+                    Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
+                    {
+                        Span<Vector3> _d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
+                        int from = u * parallelSize;
+                        int to = Math.Min(from + parallelSize, originModel.vertexCount);
+                        for (int j = from; j < to; j++)
+                        {
+                            Vector3 pos0 = renderer.meshPosData1[j];
+                            Vector3 pos1 = Vector3.Zero;
+                            int a = 0;
+                            for (int k = 0; k < 4; k++)
+                            {
+                                int boneId = originModel.boneId[j * 4 + k];
+                                if (boneId >= renderer.bones.Count) break;
+                                Matrix4x4 trans = renderer.boneMatricesData[boneId];
+                                float weight = originModel.boneWeights[j * 4 + k];
+                                pos1 += Vector3.Transform(pos0, trans) * weight;
+                                a++;
+                            }
+                            if (a > 0)
+                                _d3[j] = Vector3.Transform(pos1, world);
+                            else
+                                _d3[j] = Vector3.Transform(pos0, world);
+                        }
+                    });
                     graphicsContext.BeginUpdateMesh(mesh);
-                    graphicsContext.UpdateMesh<Vector3>(mesh, rendererComponent.meshPosData1, 0);
+                    graphicsContext.UpdateMesh<Vector3>(mesh, d3.Slice(0, originModel.vertexCount), 0);
+
+                    Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
+                    {
+                        Span<Vector3> _d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
+                        int from = u * parallelSize;
+                        int to = Math.Min(from + parallelSize, originModel.vertexCount);
+                        for (int j = from; j < to; j++)
+                        {
+                            Vector3 norm0 = originModel.normal[j];
+                            Vector3 norm1 = Vector3.Zero;
+                            int a = 0;
+                            for (int k = 0; k < 4; k++)
+                            {
+                                int boneId = originModel.boneId[j * 4 + k];
+                                if (boneId >= renderer.bones.Count) break;
+                                Matrix4x4 trans = renderer.boneMatricesData[boneId];
+                                float weight = originModel.boneWeights[j * 4 + k];
+                                norm1 += Vector3.TransformNormal(norm0, trans) * weight;
+                                a++;
+                            }
+                            if (a > 0)
+                                _d3[j] = Vector3.Normalize(Vector3.TransformNormal(norm1, world));
+                            else
+                                _d3[j] = Vector3.Normalize(Vector3.TransformNormal(norm0, world));
+                        }
+                    });
+
+                    graphicsContext.UpdateMesh<Vector3>(mesh, d3.Slice(0, originModel.vertexCount), 1);
+
                     graphicsContext.EndUpdateMesh(mesh);
+                    for (int k = 0; k < renderer.boneMatricesData.Length; k++)
+                        renderer.boneMatricesData[k] = Matrix4x4.Transpose(renderer.boneMatricesData[k]);
+                    graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], renderer.boneMatricesData);
+                }
+                else
+                {
+                    for (int k = 0; k < renderer.boneMatricesData.Length; k++)
+                        renderer.boneMatricesData[k] = Matrix4x4.Transpose(renderer.boneMatricesData[k]);
+                    graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], renderer.boneMatricesData);
+                    if (renderer.meshNeedUpdate)
+                    {
+                        graphicsContext.BeginUpdateMesh(mesh);
+                        graphicsContext.UpdateMesh<Vector3>(mesh, renderer.meshPosData1, 0);
+                        graphicsContext.EndUpdateMesh(mesh);
+                    }
                 }
             }
             #endregion
@@ -338,7 +359,6 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public Task LoadTask;
         public void ReloadDefalutResources()
         {
             RPAssetsManager.LoadAssets();
@@ -362,13 +382,20 @@ namespace Coocoo3D.RenderPipeline
             if (passSetting.PixelShaders != null)
                 foreach (var shader in passSetting.PixelShaders)
                     passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
-            if (passSetting.UnionShaders != null)
-            {
-                foreach (var shader in passSetting.UnionShaders)
-                {
+
+            if (passSetting.RayTracingShaders != null)
+                foreach (var shader in passSetting.RayTracingShaders)
                     passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
-                }
-            }
+
+            if (passSetting.UnionShaders != null)
+                foreach (var shader in passSetting.UnionShaders)
+                    passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
+
+            if (passSetting.Texture2Ds != null)
+                foreach (var texture in passSetting.Texture2Ds)
+                    passSetting.aliases[texture.Key] = Path.GetFullPath(texture.Value, path1);
+
+
             if (passSetting.Dispatcher != null) passSetting.Dispatcher = Path.GetFullPath(passSetting.Dispatcher, path1);
             foreach (var sequence in passSetting.RenderSequence)
             {
@@ -456,9 +483,8 @@ namespace Coocoo3D.RenderPipeline
         public void Dispose()
         {
             foreach (var rt in RTs)
-            {
                 rt.Value.Dispose();
-            }
+            RTs.Clear();
             RPAssetsManager.Dispose();
         }
     }

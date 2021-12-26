@@ -21,21 +21,21 @@ public static class UnionShaderBloom
         writer.Write((float)param.GetSettingsValue("BloomIntensity"));
         writer.SetBufferImmediately(graphicsContext, false, 0);
 
-        PSO pso1 = null;
+        PSO pso = null;
         switch (param.passName)
         {
             case "BloomBlur1":
                 {
                     List<string> keywords = new List<string>();
                     keywords.Add("BLOOM_1");
-                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
                 }
                 break;
             case "BloomBlur2":
                 {
                     List<string> keywords = new List<string>();
                     keywords.Add("BLOOM_2");
-                    pso1 = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
                 }
                 break;
             default:
@@ -45,8 +45,9 @@ public static class UnionShaderBloom
         {
             psoDesc.blendState = BlendState.None;
         }
-        param.graphicsContext.SetPSO(pso1, psoDesc);
-        graphicsContext.DrawIndexed(6, 0, 0);
+        param.SetSRVs(param.pass.SRVs);
+        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+            graphicsContext.DrawIndexed(6, 0, 0);
         return true;
     }
 }

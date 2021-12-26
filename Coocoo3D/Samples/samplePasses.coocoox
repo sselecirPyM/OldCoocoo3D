@@ -168,7 +168,8 @@
         {
           "Index": "4",
           "ResourceType": "Texture2D",
-          "Resource": "_BRDFLUT"
+          "Resource": "_BRDFLUT",
+          "Flags": "Linear"
         }
       ]
     },
@@ -215,6 +216,9 @@
     "_Emissive": ""
   },
   "ShowSettingTextures": {
+  },
+  "Texture2Ds": {
+    "_BRDFLUT": "brdflut.png"
   },
   "ShowParameters": {
     "Metallic": {

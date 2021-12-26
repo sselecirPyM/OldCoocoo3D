@@ -49,34 +49,18 @@ namespace Coocoo3D.RenderPipeline
             Texture2D texError = context.mainCaches.GetTexture("Assets/Textures/error.png");
             Texture2D _Tex(Texture2D _tex)
             {
-                if (_tex == null)
-                    return texError;
-                else if (_tex is Texture2D _tex1)
-                    return TextureStatusSelect(_tex1, texLoading, texError, texError);
-                else
-                    return _tex;
-            };
+                return TextureStatusSelect(_tex, texLoading, texError, texError);
+            }
 
             var rpAssets = context.RPAssetsManager;
             var caches = context.mainCaches;
-            var rsPP = context.mainCaches.GetRootSignature( "CCs");
+            var rsPP = context.mainCaches.GetRootSignature("CCs");
 
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.BackgroundColor, true);
 
             graphicsContext.SetRootSignature(rsPP);
 
             PSODesc desc;
-            desc.blendState = BlendState.alpha;
-            desc.cullMode = CullMode.None;
-            desc.depthBias = 0;
-            desc.slopeScaledDepthBias = 0;
-            desc.dsvFormat = Format.Unknown;
-            desc.inputLayout = InputLayout.postProcess;
-            desc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
-            desc.rtvFormat = context.swapChainFormat;
-            desc.renderTargetCount = 1;
-            desc.wireFrame = false;
-            graphicsContext.SetMesh(context.ndcQuadMesh);
 
             var data = ImGui.GetDrawData();
             float L = data.DisplayPos.X;
@@ -104,7 +88,7 @@ namespace Coocoo3D.RenderPipeline
                 0.0f, 0.0f, 0.0f, 1.0f);
 
             GPUWriter.Write(matrix);
-            GPUWriter.SetBufferImmediately( graphicsContext, false,0);
+            GPUWriter.SetBufferImmediately(graphicsContext, false, 0);
             if (data.CmdListsCount > 0)
             {
                 unsafe
@@ -124,7 +108,7 @@ namespace Coocoo3D.RenderPipeline
                         vtxByteOfs += vertBytes;
                         idxByteOfs += indexBytes;
                     }
-                    imguiMesh.Reload1(vertexDatas, indexDatas, 20);
+                    imguiMesh.ReloadDontCopy(vertexDatas, indexDatas, 20);
                     graphicsContext.UploadMesh(imguiMesh);
                 }
                 int vtxOfs = 0;

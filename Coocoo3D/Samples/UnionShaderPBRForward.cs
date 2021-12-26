@@ -29,6 +29,9 @@ public static class UnionShaderPBRForward
 
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
+        bool skinning = true;
+        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning && !bSkinning)
+            skinning = false;
 
         if (material != null)
         {
@@ -43,7 +46,7 @@ public static class UnionShaderPBRForward
                             keywords.Add(debugKeyword);
                         if ((bool)param.GetSettingsValue("EnableFog"))
                             keywords.Add("ENABLE_FOG");
-                        if (material.Skinning)
+                        if (material.Skinning && param.renderer.skinning && skinning)
                         {
                             graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
                             keywords.Add("SKINNING");
@@ -68,11 +71,9 @@ public static class UnionShaderPBRForward
                 default:
                     return false;
             }
-            if (pso != null)
-            {
-                param.graphicsContext.SetPSO(pso, psoDesc);
+            param.SetSRVs(param.pass.SRVs, material);
+            if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                 graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-            }
             return true;
         }
         else
@@ -91,9 +92,9 @@ public static class UnionShaderPBRForward
                 default:
                     return false;
             }
-            if (pso != null)
+            param.SetSRVs(param.pass.SRVs, material);
+            if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
             {
-                param.graphicsContext.SetPSO(pso, psoDesc);
                 graphicsContext.DrawIndexed(6, 0, 0);
             }
             return true;

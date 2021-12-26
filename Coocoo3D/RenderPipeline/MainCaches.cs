@@ -22,24 +22,25 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, KnownFile> KnownFiles = new Dictionary<string, KnownFile>();
         public ConcurrentDictionary<string, DirectoryInfo> KnownFolders = new ConcurrentDictionary<string, DirectoryInfo>();
 
-        public Dictionary<string, Texture2DPack> TextureCaches = new Dictionary<string, Texture2DPack>();
-        public Dictionary<string, Texture2DPack> TextureOnDemand = new Dictionary<string, Texture2DPack>();
+        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureCaches = new DictionaryWithModifiyIndex<string, Texture2DPack>();
+        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureOnDemand = new DictionaryWithModifiyIndex<string, Texture2DPack>();
 
-        public Dictionary<string, ModelPack> ModelPackCaches = new Dictionary<string, ModelPack>();
-        public Dictionary<string, MMDMotion> Motions = new Dictionary<string, MMDMotion>();
-        public Dictionary<string, VertexShader> VertexShaders = new Dictionary<string, VertexShader>();
-        public Dictionary<string, PixelShader> PixelShaders = new Dictionary<string, PixelShader>();
-        public Dictionary<string, GeometryShader> GeometryShaders = new Dictionary<string, GeometryShader>();
-        public Dictionary<string, ComputeShader> ComputeShaders = new Dictionary<string, ComputeShader>();
+        public DictionaryWithModifiyIndex<string, ModelPack> ModelPackCaches = new DictionaryWithModifiyIndex<string, ModelPack>();
+        public DictionaryWithModifiyIndex<string, MMDMotion> Motions = new DictionaryWithModifiyIndex<string, MMDMotion>();
+        public DictionaryWithModifiyIndex<string, VertexShader> VertexShaders = new DictionaryWithModifiyIndex<string, VertexShader>();
+        public DictionaryWithModifiyIndex<string, PixelShader> PixelShaders = new DictionaryWithModifiyIndex<string, PixelShader>();
+        public DictionaryWithModifiyIndex<string, GeometryShader> GeometryShaders = new DictionaryWithModifiyIndex<string, GeometryShader>();
+        public DictionaryWithModifiyIndex<string, ComputeShader> ComputeShaders = new DictionaryWithModifiyIndex<string, ComputeShader>();
 
         public DictionaryWithModifiyIndex<string, PassSetting> PassSettings = new DictionaryWithModifiyIndex<string, PassSetting>();
+        public DictionaryWithModifiyIndex<string, RayTracingShader> RayTracingShaders = new DictionaryWithModifiyIndex<string, RayTracingShader>();
         public DictionaryWithModifiyIndex<string, PSO> PipelineStateObjects = new DictionaryWithModifiyIndex<string, PSO>();
-        public DictionaryWithModifiyIndex<string, RTPSO> RaytracingShaders = new DictionaryWithModifiyIndex<string, RTPSO>();
+        public DictionaryWithModifiyIndex<string, RTPSO> RTPSOs = new DictionaryWithModifiyIndex<string, RTPSO>();
         public DictionaryWithModifiyIndex<string, TextureCube> TextureCubes = new DictionaryWithModifiyIndex<string, TextureCube>();
         public DictionaryWithModifiyIndex<string, UnionShader> UnionShaders = new DictionaryWithModifiyIndex<string, UnionShader>();
         public DictionaryWithModifiyIndex<string, IPassDispatcher> PassDispatchers = new DictionaryWithModifiyIndex<string, IPassDispatcher>();
         public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new DictionaryWithModifiyIndex<string, Assembly>();
-        public Dictionary<string, RootSignature> RootSignatures = new Dictionary<string, RootSignature>();
+        public DictionaryWithModifiyIndex<string, RootSignature> RootSignatures = new DictionaryWithModifiyIndex<string, RootSignature>();
 
         public MainCaches()
         {
@@ -71,14 +72,10 @@ namespace Coocoo3D.RenderPipeline
         {
             if (ReloadShaders.SetFalse())
             {
-                Assemblies.Clear();
-                UnionShaders.Clear();
-                foreach (var pso in PipelineStateObjects)
-                    pso.Value?.Dispose();
-                PipelineStateObjects.Clear();
-                foreach (var passSetting in PassSettings)
-                    KnownFiles[passSetting.Key].requireReload = true;
-                PassDispatchers.Clear();
+                foreach (var knownFile in KnownFiles)
+                    knownFile.Value.requireReload = true;
+
+                Console.Clear();
             }
             if (ReloadTextures1.SetFalse() && TextureCaches.Count > 0)
             {
@@ -161,17 +158,18 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public T GetT<T>(IDictionary<string, T> caches, string path, Func<FileInfo, T> createFun) where T : class
+        public T GetT<T>(DictionaryWithModifiyIndex<string, T> caches, string path, Func<FileInfo, T> createFun) where T : class
         {
             return GetT(caches, path, path, createFun);
         }
-        public T GetT<T>(IDictionary<string, T> caches, string path, string realPath, Func<FileInfo, T> createFun) where T : class
+        public T GetT<T>(DictionaryWithModifiyIndex<string, T> caches, string path, string realPath, Func<FileInfo, T> createFun) where T : class
         {
             var knownFile = KnownFiles.GetOrCreate(realPath, () => new KnownFile()
             {
                 fullPath = realPath,
             });
-            if (!caches.TryGetValue(path, out var file) || knownFile.requireReload.SetFalse())
+            int modifyIndex = knownFile.modifiyIndex;
+            if (knownFile.requireReload.SetFalse() || knownFile.file == null)
             {
                 string folderPath = Path.GetDirectoryName(realPath);
                 if (!InitFolder(folderPath) && !Path.IsPathRooted(folderPath))
@@ -179,30 +177,31 @@ namespace Coocoo3D.RenderPipeline
                 var folder = (Path.IsPathRooted(folderPath)) ? new DirectoryInfo(folderPath) : KnownFolders[folderPath];
                 try
                 {
-                    if (caches is DictionaryWithModifiyIndex<string, T> a)
-                    {
-                        int modifyIndex = knownFile.GetModifyIndex(folder.GetFiles());
-                        if (modifyIndex > a.GetModifyIndex(path))
-                        {
-                            a.SetModifyIndex(path, modifyIndex);
-                            file = createFun(knownFile.file);
-                            caches[path] = file;
-                        }
-                    }
-                    else if (knownFile.IsModified(folder.GetFiles()))
-                    {
-                        file = createFun(knownFile.file);
-                        caches[path] = file;
-                    }
+                    modifyIndex = knownFile.GetModifyIndex(folder.GetFiles());
                 }
-                catch
+                catch (Exception e)
                 {
-#if !DEBUG
+                    Console.WriteLine(e.Message);
+                }
+            }
+            if (!caches.TryGetValue(path, out var file) || modifyIndex > caches.GetModifyIndex(path))
+            {
+                try
+                {
+                    caches.SetModifyIndex(path, modifyIndex);
+                    var file1 = createFun(knownFile.file);
+                    caches[path] = file1;
+                    if (file is IDisposable disposable)
+                        disposable?.Dispose();
+                    file = file1;
+                }
+                catch (Exception e)
+                {
+                    if (file is IDisposable disposable)
+                        disposable?.Dispose();
                     file = null;
                     caches[path] = file;
-#else
-                    throw;
-#endif
+                    Console.WriteLine(e.Message);
                 }
             }
             return file;
@@ -266,7 +265,7 @@ namespace Coocoo3D.RenderPipeline
                         for (int i = 0; i < res.Value.SRVs.Count; i++)
                         {
                             SlotRes srv = res.Value.SRVs[i];
-                            srv.Resource = srv.Resource.Replace("_BRDFLUT", "Assets/Textures/brdflut.png");
+                            //srv.Resource = srv.Resource.Replace("_BRDFLUT", "Assets/Textures/brdflut.png");
                             res.Value.SRVs[i] = srv;
                         }
                 }
@@ -327,14 +326,15 @@ namespace Coocoo3D.RenderPipeline
 
             var assembly = GetAssembly(path);
             if (assembly == null) return null;
-            if (!UnionShaders.TryGetValue(path, out UnionShader unionShader))
+
+            return GetT(UnionShaders, path, file =>
             {
                 Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
                 var info = type.GetMethod("UnionShader");
-                unionShader = (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
+                var unionShader = (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
                 UnionShaders[path] = unionShader;
-            }
-            return unionShader;
+                return unionShader;
+            });
         }
 
         public IPassDispatcher GetPassDispatcher(string path)
@@ -344,14 +344,15 @@ namespace Coocoo3D.RenderPipeline
 
             var assembly = GetAssembly(path);
             if (assembly == null) return null;
-            if (!PassDispatchers.TryGetValue(path, out IPassDispatcher dispatcher))
+
+            return GetT(PassDispatchers, path, file =>
             {
                 Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
                 var inst = Activator.CreateInstance(type);
-                dispatcher = (IPassDispatcher)inst;
+                var dispatcher = (IPassDispatcher)inst;
                 PassDispatchers[path] = dispatcher;
-            }
-            return dispatcher;
+                return dispatcher;
+            });
         }
 
         public Assembly GetAssembly(string path)
@@ -420,7 +421,17 @@ namespace Coocoo3D.RenderPipeline
             });
         }
 
-        public RTPSO GetRayTracingShader(List<string> keywords, List<string> rayGenShaders, List<string> hitShaders, List<string> missShaders, string path)
+        public RayTracingShader GetRayTracingShader(string path)
+        {
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
+            var rayTracingShader = GetT(RayTracingShaders, path, file =>
+            {
+                return ReadJsonStream<RayTracingShader>(file.OpenRead());
+            });
+            return rayTracingShader;
+        }
+
+        public RTPSO GetRTPSO(List<string> keywords, RayTracingShader shader, string path)
         {
             string xPath;
             if (keywords != null)
@@ -432,7 +443,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 xPath = path;
             }
-            return GetT(RaytracingShaders, xPath, path, file =>
+            return GetT(RTPSOs, xPath, path, file =>
             {
                 try
                 {
@@ -447,12 +458,54 @@ namespace Coocoo3D.RenderPipeline
                         }
                     }
                     byte[] result = LoadShader(DxcShaderStage.Library, source, "", path, dxcDefines);
+
+                    if (shader.hitGroups != null)
+                    {
+                        foreach (var pair in shader.hitGroups)
+                            pair.Value.name = pair.Key;
+                    }
+
                     RTPSO rtpso = new RTPSO();
                     rtpso.datas = result;
-                    rtpso.rayGenShaders = rayGenShaders.ToArray();
-                    rtpso.hitShaders = hitShaders.ToArray();
-                    rtpso.missShaders = missShaders.ToArray();
+                    if (shader.rayGenShaders != null)
+                        rtpso.rayGenShaders = shader.rayGenShaders.Values.ToArray();
+                    else
+                        rtpso.rayGenShaders = new RayTracingShaderDescription[0];
+                    if (shader.hitGroups != null)
+                        rtpso.hitGroups = shader.hitGroups.Values.ToArray();
+                    else
+                        rtpso.hitGroups = new RayTracingShaderDescription[0];
 
+                    if (shader.missShaders != null)
+                        rtpso.missShaders = shader.missShaders.Values.ToArray();
+                    else
+                        rtpso.missShaders = new RayTracingShaderDescription[0];
+
+                    rtpso.exports = shader.GetExports();
+                    List<ResourceAccessType> ShaderAccessTypes = new List<ResourceAccessType>();
+                    ShaderAccessTypes.Add(ResourceAccessType.SRV);
+                    if (shader.CBVs != null)
+                        for (int i = 0; i < shader.CBVs.Count; i++)
+                            ShaderAccessTypes.Add(ResourceAccessType.CBV);
+                    if (shader.SRVs != null)
+                        for (int i = 0; i < shader.SRVs.Count; i++)
+                            ShaderAccessTypes.Add(ResourceAccessType.SRVTable);
+                    if (shader.UAVs != null)
+                        for (int i = 0; i < shader.UAVs.Count; i++)
+                            ShaderAccessTypes.Add(ResourceAccessType.UAVTable);
+                    rtpso.shaderAccessTypes = ShaderAccessTypes.ToArray();
+                    ShaderAccessTypes.Clear();
+                    ShaderAccessTypes.Add(ResourceAccessType.SRV);
+                    ShaderAccessTypes.Add(ResourceAccessType.SRV);
+                    ShaderAccessTypes.Add(ResourceAccessType.SRV);
+                    ShaderAccessTypes.Add(ResourceAccessType.SRV);
+                    if (shader.localCBVs != null)
+                        foreach (var cbv in shader.localCBVs)
+                            ShaderAccessTypes.Add(ResourceAccessType.CBV);
+                    if (shader.localSRVs != null)
+                        foreach (var srv in shader.localSRVs)
+                            ShaderAccessTypes.Add(ResourceAccessType.SRVTable);
+                    rtpso.localShaderAccessTypes = ShaderAccessTypes.ToArray();
                     return rtpso;
                 }
                 catch (Exception e)
@@ -585,31 +638,31 @@ namespace Coocoo3D.RenderPipeline
             RootSignatures[s] = rs;
             return rs;
         }
-        GraphicSignatureDesc[] fromString(string s)
+        ResourceAccessType[] fromString(string s)
         {
-            GraphicSignatureDesc[] desc = new GraphicSignatureDesc[s.Length];
+            ResourceAccessType[] desc = new ResourceAccessType[s.Length];
             for (int i = 0; i < s.Length; i++)
             {
                 char c = s[i];
                 switch (c)
                 {
                     case 'C':
-                        desc[i] = GraphicSignatureDesc.CBV;
+                        desc[i] = ResourceAccessType.CBV;
                         break;
                     case 'c':
-                        desc[i] = GraphicSignatureDesc.CBVTable;
+                        desc[i] = ResourceAccessType.CBVTable;
                         break;
                     case 'S':
-                        desc[i] = GraphicSignatureDesc.SRV;
+                        desc[i] = ResourceAccessType.SRV;
                         break;
                     case 's':
-                        desc[i] = GraphicSignatureDesc.SRVTable;
+                        desc[i] = ResourceAccessType.SRVTable;
                         break;
                     case 'U':
-                        desc[i] = GraphicSignatureDesc.UAV;
+                        desc[i] = ResourceAccessType.UAV;
                         break;
                     case 'u':
-                        desc[i] = GraphicSignatureDesc.UAVTable;
+                        desc[i] = ResourceAccessType.UAVTable;
                         break;
                     default:
                         throw new NotImplementedException("error root signature desc.");

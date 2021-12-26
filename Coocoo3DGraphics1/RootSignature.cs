@@ -7,7 +7,7 @@ using static Coocoo3DGraphics.DXHelper;
 
 namespace Coocoo3DGraphics
 {
-    public enum GraphicSignatureDesc
+    public enum ResourceAccessType
     {
         CBV,
         SRV,
@@ -25,7 +25,7 @@ namespace Coocoo3DGraphics
         public string Name;
 
         public RootSignatureFlags flags = RootSignatureFlags.None;
-        public GraphicSignatureDesc[] descs;
+        public ResourceAccessType[] descs;
 
         internal ID3D12RootSignature GetRootSignature(GraphicsDevice graphicsDevice)
         {
@@ -34,42 +34,42 @@ namespace Coocoo3DGraphics
             return rootSignature;
         }
 
-        internal void Sign1(GraphicsDevice graphicsDevice)
+        internal void Sign1(GraphicsDevice graphicsDevice, int registerSpace = 0)
         {
-            cbv.Clear();
-            srv.Clear();
-            uav.Clear();
-
             //static samplers
-            StaticSamplerDescription[] samplerDescription = new StaticSamplerDescription[4];
-            samplerDescription[0] = new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
+            StaticSamplerDescription[] samplerDescription = null;
+            if (flags != RootSignatureFlags.LocalRootSignature)
             {
-                AddressU = TextureAddressMode.Clamp,
-                AddressV = TextureAddressMode.Clamp,
-                AddressW = TextureAddressMode.Clamp,
-                BorderColor = StaticBorderColor.OpaqueBlack,
-                ComparisonFunction = ComparisonFunction.Never,
-                Filter = Filter.MinMagMipLinear,
-                MipLODBias = 0,
-                MaxAnisotropy = 0,
-                MinLOD = 0,
-                MaxLOD = float.MaxValue,
-                ShaderVisibility = ShaderVisibility.All,
-                RegisterSpace = 0,
-                ShaderRegister = 0,
-            };
-            samplerDescription[1] = samplerDescription[0];
-            samplerDescription[2] = samplerDescription[0];
-            samplerDescription[3] = samplerDescription[0];
+                samplerDescription = new StaticSamplerDescription[4];
+                samplerDescription[0] = new StaticSamplerDescription(ShaderVisibility.All, 0, 0)
+                {
+                    AddressU = TextureAddressMode.Clamp,
+                    AddressV = TextureAddressMode.Clamp,
+                    AddressW = TextureAddressMode.Clamp,
+                    BorderColor = StaticBorderColor.OpaqueBlack,
+                    ComparisonFunction = ComparisonFunction.Never,
+                    Filter = Filter.MinMagMipLinear,
+                    MipLODBias = 0,
+                    MaxAnisotropy = 0,
+                    MinLOD = 0,
+                    MaxLOD = float.MaxValue,
+                    ShaderVisibility = ShaderVisibility.All,
+                    RegisterSpace = 0,
+                    ShaderRegister = 0,
+                };
+                samplerDescription[1] = samplerDescription[0];
+                samplerDescription[2] = samplerDescription[0];
+                samplerDescription[3] = samplerDescription[0];
 
-            samplerDescription[1].ShaderRegister = 1;
-            samplerDescription[2].ShaderRegister = 2;
-            samplerDescription[3].ShaderRegister = 3;
-            samplerDescription[1].MaxAnisotropy = 16;
-            samplerDescription[1].Filter = Filter.Anisotropic;
-            samplerDescription[2].ComparisonFunction = ComparisonFunction.Less;
-            samplerDescription[2].Filter = Filter.ComparisonMinMagMipLinear;
-            samplerDescription[3].Filter = Filter.MinMagMipPoint;
+                samplerDescription[1].ShaderRegister = 1;
+                samplerDescription[2].ShaderRegister = 2;
+                samplerDescription[3].ShaderRegister = 3;
+                samplerDescription[1].MaxAnisotropy = 16;
+                samplerDescription[1].Filter = Filter.Anisotropic;
+                samplerDescription[2].ComparisonFunction = ComparisonFunction.Less;
+                samplerDescription[2].Filter = Filter.ComparisonMinMagMipLinear;
+                samplerDescription[3].Filter = Filter.MinMagMipPoint;
+            }
 
             RootParameter1[] rootParameters = new RootParameter1[descs.Length];
 
@@ -82,36 +82,36 @@ namespace Coocoo3DGraphics
 
             for (int i = 0; i < descs.Length; i++)
             {
-                GraphicSignatureDesc t = descs[i];
+                ResourceAccessType t = descs[i];
                 switch (t)
                 {
-                    case GraphicSignatureDesc.CBV:
-                        rootParameters[i] = new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(cbvCount, 0), ShaderVisibility.All);
+                    case ResourceAccessType.CBV:
+                        rootParameters[i] = new RootParameter1(RootParameterType.ConstantBufferView, new RootDescriptor1(cbvCount, registerSpace), ShaderVisibility.All);
                         cbv[cbvCount] = i;
                         cbvCount++;
                         break;
-                    case GraphicSignatureDesc.SRV:
-                        rootParameters[i] = new RootParameter1(RootParameterType.ShaderResourceView, new RootDescriptor1(srvCount, 0), ShaderVisibility.All);
+                    case ResourceAccessType.SRV:
+                        rootParameters[i] = new RootParameter1(RootParameterType.ShaderResourceView, new RootDescriptor1(srvCount, registerSpace), ShaderVisibility.All);
                         srv[srvCount] = i;
                         srvCount++;
                         break;
-                    case GraphicSignatureDesc.UAV:
-                        rootParameters[i] = new RootParameter1(RootParameterType.UnorderedAccessView, new RootDescriptor1(uavCount, 0), ShaderVisibility.All);
+                    case ResourceAccessType.UAV:
+                        rootParameters[i] = new RootParameter1(RootParameterType.UnorderedAccessView, new RootDescriptor1(uavCount, registerSpace), ShaderVisibility.All);
                         uav[uavCount] = i;
                         uavCount++;
                         break;
-                    case GraphicSignatureDesc.CBVTable:
-                        rootParameters[i] = new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(DescriptorRangeType.ConstantBufferView, 1, cbvCount)), ShaderVisibility.All);
+                    case ResourceAccessType.CBVTable:
+                        rootParameters[i] = new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(DescriptorRangeType.ConstantBufferView, 1, cbvCount, registerSpace)), ShaderVisibility.All);
                         cbv[cbvCount] = i;
                         cbvCount++;
                         break;
-                    case GraphicSignatureDesc.SRVTable:
-                        rootParameters[i] = new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 1, srvCount)), ShaderVisibility.All);
+                    case ResourceAccessType.SRVTable:
+                        rootParameters[i] = new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(DescriptorRangeType.ShaderResourceView, 1, srvCount, registerSpace)), ShaderVisibility.All);
                         srv[srvCount] = i;
                         srvCount++;
                         break;
-                    case GraphicSignatureDesc.UAVTable:
-                        rootParameters[i] = new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(DescriptorRangeType.UnorderedAccessView, 1, uavCount)), ShaderVisibility.All);
+                    case ResourceAccessType.UAVTable:
+                        rootParameters[i] = new RootParameter1(new RootDescriptorTable1(new DescriptorRange1(DescriptorRangeType.UnorderedAccessView, 1, uavCount, registerSpace)), ShaderVisibility.All);
                         uav[uavCount] = i;
                         uavCount++;
                         break;
@@ -127,16 +127,28 @@ namespace Coocoo3DGraphics
             rootSignature = graphicsDevice.device.CreateRootSignature<ID3D12RootSignature>(0, rootSignatureDescription);
         }
 
-        public void Reload(GraphicSignatureDesc[] Descs)
+
+        public void Reload(ResourceAccessType[] Descs)
         {
             descs = Descs.ToArray();
             flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput;
         }
 
-        public void ReloadCompute(IReadOnlyList<GraphicSignatureDesc> Descs)
+        public void ReloadCompute(IReadOnlyList<ResourceAccessType> Descs)
         {
             descs = Descs.ToArray();
             flags = RootSignatureFlags.AllowInputAssemblerInputLayout | RootSignatureFlags.AllowStreamOutput;
+        }
+
+        internal void ReloadLocalRootSignature(IReadOnlyList<ResourceAccessType> Descs)
+        {
+            descs = Descs.ToArray();
+            flags = RootSignatureFlags.LocalRootSignature;
+        }
+
+        internal void ReloadRayTracing(IReadOnlyList<ResourceAccessType> Descs)
+        {
+            descs = Descs.ToArray();
         }
 
         public void Dispose()

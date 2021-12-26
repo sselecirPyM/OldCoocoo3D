@@ -28,12 +28,15 @@ public static class UnionShaderDeferred
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         PSO pso = null;
+        bool skinning = true;
+        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning && !bSkinning)
+            skinning = false;
         switch (param.passName)
         {
             case "GBufferPass":
                 {
                     List<string> keywords = new List<string>();
-                    if (material.Skinning)
+                    if (material.Skinning && param.renderer.skinning && skinning)
                     {
                         keywords.Add("SKINNING");
                         graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
@@ -61,6 +64,8 @@ public static class UnionShaderDeferred
                     }
                     if (pointLights.Count != 0)
                         keywords.Add("ENABLE_POINT_LIGHT");
+                    if (param.customValue.TryGetValue("RayTracing", out object oIsRayTracing) && oIsRayTracing is bool bIsRayTracing && bIsRayTracing)
+                        keywords.Add("RAY_TRACING");
 
                     foreach (var cbv in param.pass.CBVs)
                     {
@@ -72,13 +77,11 @@ public static class UnionShaderDeferred
             default:
                 return false;
         }
-        if (pso != null)
+        param.SetSRVs(param.pass.SRVs, material);
+        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
         {
-            param.graphicsContext.SetPSO(pso, psoDesc);
             if (material != null)
-            {
                 graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-            }
             else
                 graphicsContext.DrawIndexed(6, 0, 0);
         }

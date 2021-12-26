@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Vortice.Direct3D12;
+using Vortice.Mathematics;
+using System.Numerics;
 
 namespace Coocoo3DGraphics
 {
@@ -146,6 +148,24 @@ namespace Coocoo3DGraphics
 
             ulong Result = UpdateSubresources(pCmdList, pDestinationResource, pIntermediate, FirstSubresource, NumSubresources, RequiredSize, pLayouts, pNumRows, pRowSizesInBytes, pSrcData);
             return Result;
+        }
+
+
+        public static uint align_to(uint _alignment, uint _val)
+        {
+            return (((_val + _alignment - 1) / _alignment) * _alignment);
+        }
+
+        public static int align_to(int _alignment, int _val)
+        {
+            return (((_val + _alignment - 1) / _alignment) * _alignment);
+        }
+
+        public static Matrix3x4 GetMatrix3X4(Matrix4x4 mat)
+        {
+            return new Matrix3x4(mat.M11, mat.M12, mat.M13, mat.M14,
+                mat.M21, mat.M22, mat.M23, mat.M24,
+                mat.M31, mat.M32, mat.M33, mat.M34);
         }
     }
 }

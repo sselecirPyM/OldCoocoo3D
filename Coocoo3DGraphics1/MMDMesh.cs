@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
-using Vortice.Direct3D;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 
@@ -15,13 +14,25 @@ namespace Coocoo3DGraphics
         public VertexBufferView vertexBufferView;
         public int actualLength;
         public byte[] data;
-        public int slot;
     }
-    public class MMDMesh
+    public class MMDMesh : IDisposable
     {
         public ID3D12Resource indexBuffer;
 
-        public List<_mesh1> vtBuffers = new List<_mesh1>();
+        //public Dictionary<string, _mesh1> vertexBuffers = new Dictionary<string, _mesh1>();
+
+        //public void AddBuffer<T>(Span<T> verticeData, string name) where T : unmanaged
+        //{
+        //    Span<byte> dat = MemoryMarshal.Cast<T, byte>(verticeData);
+        //    byte[] verticeData1 = new byte[dat.Length];
+        //    dat.CopyTo(verticeData1);
+        //    var bufDef = new _mesh1();
+        //    bufDef.data = verticeData1;
+        //    vertexBuffers[name] = bufDef;
+        //}
+
+
+        public Dictionary<int, _mesh1> vtBuffers = new Dictionary<int, _mesh1>();
         public List<_mesh1> vtBuffersDisposed = new List<_mesh1>();
 
         public int m_indexCount;
@@ -32,13 +43,6 @@ namespace Coocoo3DGraphics
 
         public byte[] m_indexData;
 
-        public static MMDMesh Load1(byte[] verticeData, int[] indexData, int vertexStride)
-        {
-            MMDMesh mesh = new MMDMesh();
-            mesh.Reload1(verticeData, indexData, vertexStride);
-            return mesh;
-        }
-
         public void AddBuffer<T>(Span<T> verticeData, int slot) where T : unmanaged
         {
             Span<byte> dat = MemoryMarshal.Cast<T, byte>(verticeData);
@@ -46,49 +50,51 @@ namespace Coocoo3DGraphics
             dat.CopyTo(verticeData1);
             var bufDef = new _mesh1();
             bufDef.data = verticeData1;
-            bufDef.slot = slot;
 
-            vtBuffers.Add(bufDef);
+            vtBuffers.Add(slot, bufDef);
         }
-
-        internal void AddBuffer(int slot, int length)
+        internal _mesh1 AddBuffer(int slot)
         {
             var bufDef = new _mesh1();
-            bufDef.slot = slot;
-            vtBuffers.Add(bufDef);
+            vtBuffers.Add(slot, bufDef);
+            return bufDef;
         }
 
-        public void Reload1(byte[] verticeData, int[] indexData, int vertexStride)
+        public void ReloadDontCopy(byte[] verticeData, byte[] indexData, int vertexStride)
         {
-            vtBuffersDisposed.AddRange(vtBuffers);
+            vtBuffersDisposed.AddRange(vtBuffers.Values);
             vtBuffers.Clear();
             this.m_vertexCount = verticeData.Length / vertexStride;
-            AddBuffer<byte>(verticeData, 0);
+
+            var bufDef = new _mesh1();
+            bufDef.data = verticeData;
+            vtBuffers.Add(0, bufDef);
 
             if (indexData != null)
             {
-                this.m_indexData = new byte[indexData.Length * 4];
-                MemoryMarshal.Cast<int, byte>(indexData).CopyTo(this.m_indexData);
-                this.m_indexCount = indexData.Length;
+                this.m_indexData = indexData;
+                m_indexCount = indexData.Length / 2;
             }
         }
-        public void Reload1(byte[] verticeData, byte[] indexData, int vertexStride)
-        {
-            vtBuffersDisposed.AddRange(vtBuffers);
-            vtBuffers.Clear();
-            this.m_vertexCount = verticeData.Length / vertexStride;
-            AddBuffer<byte>(verticeData, 0);
 
-            if (indexData != null)
-            {
-                this.m_indexData = new byte[indexData.Length];
-                Array.Copy(indexData, m_indexData, indexData.Length);
-                m_indexCount = indexData.Length;
-            }
-        }
+        //public void Reload1(Span<byte> verticeData, Span<byte> indexData, int vertexStride)
+        //{
+        //    vtBuffersDisposed.AddRange(vtBuffers.Values);
+        //    vtBuffers.Clear();
+        //    this.m_vertexCount = verticeData.Length / vertexStride;
+        //    AddBuffer<byte>(verticeData, 0);
+
+        //    if (indexData != null)
+        //    {
+        //        this.m_indexData = new byte[indexData.Length];
+        //        indexData.CopyTo(m_indexData);
+        //        m_indexCount = indexData.Length / 2;
+        //    }
+        //}
+
         public void ReloadIndex<T>(int vertexCount, Span<T> indexData) where T : unmanaged
         {
-            vtBuffersDisposed.AddRange(vtBuffers);
+            vtBuffersDisposed.AddRange(vtBuffers.Values);
             vtBuffers.Clear();
             this.m_vertexCount = vertexCount;
             if (indexData != null)
@@ -134,6 +140,12 @@ namespace Coocoo3DGraphics
         public void SetIndexFormat(Format format)
         {
             indexBufferView.Format = format;
+        }
+
+        public void Dispose()
+        {
+            indexBuffer?.Release();
+            indexBuffer = null;
         }
     }
 }

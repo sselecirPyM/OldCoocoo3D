@@ -21,8 +21,9 @@ namespace Coocoo3D.RenderPipeline
         public List<_AssetDefine> GeometryShaders;
         public List<_AssetDefine> PixelShaders;
         public List<_AssetDefine> ComputeShaders;
-        public List<_AssetDefine> Texture2Ds;
+        public Dictionary<string, string> Texture2Ds;
         public Dictionary<string, string> UnionShaders;
+        public Dictionary<string, string> RayTracingShaders;
         public Dictionary<string, string> ShowTextures;
         public Dictionary<string, PassParameter> ShowParameters;
         public Dictionary<string, string> ShowSettingTextures;
@@ -123,6 +124,7 @@ namespace Coocoo3D.RenderPipeline
         public string PixelShader;
         public string ComputeShader;
         public string UnionShader;
+        public string RayTracingShader;
         public BlendState BlendMode;
         public Dictionary<string, string> Properties;
         public List<SlotRes> CBVs;
@@ -130,13 +132,6 @@ namespace Coocoo3D.RenderPipeline
         public List<SlotRes> UAVs;
     }
 
-    public struct SlotRes
-    {
-        public int Index;
-        public string ResourceType;
-        public string Resource;
-        public List<string> Datas;
-    }
     public class RenderTarget
     {
         public string Name;

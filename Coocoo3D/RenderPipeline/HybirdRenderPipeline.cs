@@ -46,14 +46,14 @@ namespace Coocoo3D.RenderPipeline
 
             Texture2D texLoading = mainCaches.GetTexture("Assets/Textures/loading.png");
             Texture2D texError = mainCaches.GetTexture("Assets/Textures/error.png");
-
+            context.writerReuse.Clear();
             UnionShaderParam unionShaderParam = new UnionShaderParam()
             {
                 rp = context,
                 passSetting = passSetting,
                 graphicsContext = graphicsContext,
                 visualChannel = visualChannel,
-                GPUWriter = new GPUWriter(),
+                GPUWriter = context.writerReuse,
                 settings = settings,
                 relativePath = System.IO.Path.GetDirectoryName(passSetting.path),
                 texLoading = texLoading,
@@ -63,9 +63,16 @@ namespace Coocoo3D.RenderPipeline
                 pointLights = drp.pointLights,
                 mainCaches = mainCaches,
             };
-
-            var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher) ?? defaultPassDispatcher;
-            dispatcher.Dispatch(unionShaderParam);
+            IPassDispatcher dispatcher;
+            if (passSetting.Dispatcher != null)
+            {
+                dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
+            }
+            else
+            {
+                dispatcher = defaultPassDispatcher;
+            }
+            dispatcher?.Dispatch(unionShaderParam);
 
         }
         static bool FilterObj(UnionShaderParam unionShaderParam, string filter)
@@ -112,7 +119,8 @@ namespace Coocoo3D.RenderPipeline
             Texture2D[] renderTargets = null;
             if (renderSequence.RenderTargets == null || renderSequence.RenderTargets.Count == 0)
             {
-                graphicsContext.SetDSV(depthStencil, renderSequence.ClearDepth);
+                if (depthStencil != null)
+                    graphicsContext.SetDSV(depthStencil, renderSequence.ClearDepth);
                 psoDesc.rtvFormat = Format.Unknown;
             }
             else
@@ -142,6 +150,7 @@ namespace Coocoo3D.RenderPipeline
                 psoDesc.inputLayout = InputLayout.mmd;
                 psoDesc.wireFrame = settings.Wireframe;
 
+                unionShaderParam.rayTracingShader = null;
                 for (int i = 0; i < renderers.Count; i++)
                 {
                     MMDRendererComponent rendererComponent = renderers[i];
@@ -156,16 +165,12 @@ namespace Coocoo3D.RenderPipeline
                         {
                             continue;
                         }
-                        _SetSRVs(pass.SRVs, material);
                         if (renderSequence.CullMode == 0)
                             psoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
 
                         unionShaderParam.PSODesc = psoDesc;
-                        bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(material.unionShader))?.Invoke(unionShaderParam);
-                        if (executed != true)
-                        {
-                            executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
-                        }
+                        bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
+
                         if (executed != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
                         {
                             graphicsContext.SetPSO(renderSequence.PSODefault, psoDesc);
@@ -176,54 +181,37 @@ namespace Coocoo3D.RenderPipeline
             }
             else if (renderSequence.Type == "DrawScreen")
             {
-                _SetSRVs(pass.SRVs);
                 psoDesc.inputLayout = InputLayout.postProcess;
                 unionShaderParam.PSODesc = psoDesc;
                 unionShaderParam.renderer = null;
                 unionShaderParam.material = null;
+                unionShaderParam.rayTracingShader = null;
+                graphicsContext.SetMesh(context.quadMesh);
 
-                graphicsContext.SetMesh(context.ndcQuadMesh);
-
-                UnionShader unionShader = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader));
-
-                bool? a = unionShader?.Invoke(unionShaderParam);
-                if (a != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
+                bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
+                if (executed != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
                 {
                     graphicsContext.SetPSO(renderSequence.PSODefault, psoDesc);
-                    graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
+                    graphicsContext.DrawIndexed(context.quadMesh.GetIndexCount(), 0, 0);
                 }
             }
-
-            void _SetSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null)
+            else if (renderSequence.Type == "RayTracing")
             {
-                if (SRVs != null)
-                    foreach (var resd in SRVs)
-                    {
-                        if (resd.ResourceType == "TextureCube")
-                        {
-                            graphicsContext.SetSRVTSlot(context._GetTexCubeByName(resd.Resource), resd.Index);
-                        }
-                        else if (resd.ResourceType == "Texture2D")
-                        {
-                            graphicsContext.SetSRVTSlot(_Tex(unionShaderParam.GetTex2D(resd.Resource, material)), resd.Index);
-                        }
-                    }
+                if (context.graphicsDevice.IsRayTracingSupport())
+                {
+                    psoDesc.inputLayout = InputLayout.postProcess;
+                    unionShaderParam.PSODesc = psoDesc;
+                    unionShaderParam.renderer = null;
+                    unionShaderParam.material = null;
+                    unionShaderParam.rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(pass.RayTracingShader));
+                    UnionShader unionShader = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader));
+                    bool? a = unionShader?.Invoke(unionShaderParam);
+                }
+                else
+                {
+                    Console.WriteLine(context.graphicsDevice.GetDeviceDescription() + " //this gpu is not support ray tracing.");
+                }
             }
-
-            Texture2D _Tex(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
-        }
-
-        static Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
-        {
-            if (texture == null) return error;
-            if (texture.Status == GraphicsObjectStatus.loaded)
-                return texture;
-            else if (texture.Status == GraphicsObjectStatus.loading)
-                return loading;
-            else if (texture.Status == GraphicsObjectStatus.unload)
-                return unload;
-            else
-                return error;
         }
     }
 }

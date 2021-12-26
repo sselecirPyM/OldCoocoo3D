@@ -18,7 +18,7 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetRootSignature(rsPostProcess);
             graphicsContext.SetRTV(visualChannel.FinalOutput, System.Numerics.Vector4.Zero, true);
             graphicsContext.SetSRVTSlot(visualChannel.OutputRTV, 0);
-            graphicsContext.SetMesh(context.ndcQuadMesh);
+            graphicsContext.SetMesh(context.quadMesh);
             PSODesc desc = new PSODesc
             {
                 blendState = BlendState.none,
@@ -33,7 +33,7 @@ namespace Coocoo3D.RenderPipeline
                 wireFrame = false,
             };
             graphicsContext.SetPSO(context.RPAssetsManager.PSOs["PostProcess"], desc);
-            graphicsContext.DrawIndexed(context.ndcQuadMesh.GetIndexCount(), 0, 0);
+            graphicsContext.DrawIndexed(context.quadMesh.GetIndexCount(), 0, 0);
         }
     }
 }

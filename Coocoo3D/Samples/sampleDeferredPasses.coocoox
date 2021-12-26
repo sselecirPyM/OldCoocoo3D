@@ -22,13 +22,19 @@
       "RenderTargets": [
         "_ScreenColor0",
         "_ScreenColor1",
-        "_ScreenColor2",
-        "_ScreenColor3"
+        "_ScreenColor2"
       ]
     },
     {
       "Name": "DeferredFinalPass",
       "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    },
+    {
+      "Name": "RayTracingPass",
+      "Type": "RayTracing",
       "RenderTargets": [
         "_Output0"
       ]
@@ -234,7 +240,8 @@
         {
           "Index": "8",
           "ResourceType": "Texture2D",
-          "Resource": "_BRDFLUT"
+          "Resource": "_BRDFLUT",
+          "Flags": "Linear"
         }
       ]
     },
@@ -288,7 +295,8 @@
         {
           "Index": "4",
           "ResourceType": "Texture2D",
-          "Resource": "_BRDFLUT"
+          "Resource": "_BRDFLUT",
+          "Flags": "Linear"
         }
       ]
     },
@@ -322,18 +330,102 @@
           "Resource": "_Blur0"
         }
       ]
+    },
+    "RayTracingPass": {
+      "RayTracingShader": "RayTracing.json",
+      "UnionShader": "UnionShaderRayTracing.cs",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "Camera",
+            "CameraInvert",
+            "CameraPosition",
+            "IndirectMultiplier"
+          ]
+        },
+        {
+          "Index": "1",
+          "Datas": [
+            "World",
+            "Camera",
+            "CameraInvert",
+            "DirectionalLightMatrix0",
+            "DirectionalLightMatrix1",
+            "DirectionalLight",
+            "Metallic",
+            "Roughness",
+            "Emissive",
+            "Specular"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "1",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT",
+          "Flags": "Linear"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenDepth0"
+        },
+        {
+          "Index": "4",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor0"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor1"
+        },
+        {
+          "Index": "6",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor2"
+        },
+        {
+          "Index": "7",
+          "ResourceType": "Texture2D",
+          "Resource": "_ShadowMap0"
+        }
+      ],
+      "UAVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Output0"
+        }
+      ]
     }
   },
   "UnionShaders": {
     "UnionShaderDeferred.cs": "UnionShaderDeferred.cs",
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
-    "UnionShaderBloom.cs": "UnionShaderBloom.cs"
+    "UnionShaderBloom.cs": "UnionShaderBloom.cs",
+    "UnionShaderRayTracing.cs": "UnionShaderRayTracing.cs"
+  },
+  "RayTracingShaders": {
+    "RayTracing.json": "RayTracing.json"
   },
   "Dispatcher": "Dispatcher.cs",
   "ShowTextures": {
     "_Albedo": "",
     "_Emissive": ""
+  },
+  "ShowSettingTextures": {
+  },
+  "Texture2Ds": {
+    "_BRDFLUT": "brdflut.png"
   },
   "ShowParameters": {
     "Metallic": {
@@ -382,6 +474,11 @@
       "Default": "3",
       "Step": "0.01",
       "Min": "0"
+    },
+    "EnableRayTracing": {
+      "Name": "启用光线追踪（如果有）",
+      "Type": "bool",
+      "Default": "true"
     },
     "EnableBloom": {
       "Name": "启用泛光",

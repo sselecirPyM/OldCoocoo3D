@@ -41,7 +41,14 @@ namespace Coocoo3D.RenderPipeline
         public Texture2D texLoading;
         public Texture2D texError;
 
+        public RayTracingShader rayTracingShader;
+
+        public GraphicsDevice graphicsDevice { get => rp.graphicsDevice; }
+
         public Dictionary<string, object> customValue = new Dictionary<string, object>();
+
+        public MMDMesh mesh { get => rp.GetMesh(renderer.meshPath); }
+        public MMDMesh meshOverride { get => rp.meshOverride[renderer]; }
 
         public object GetSettingsValue(string name)
         {
@@ -108,7 +115,11 @@ namespace Coocoo3D.RenderPipeline
             if (passSetting.RenderTargets.ContainsKey(name))
                 tex2D = rp._GetTex2DByName(visualChannel.GetTexName(name));
             else
+            {
+                name = passSetting.GetAliases(name);
+
                 tex2D = rp._GetTex2DByName(name);
+            }
             return tex2D;
         }
 
@@ -116,6 +127,12 @@ namespace Coocoo3D.RenderPipeline
         {
             WriteGPU(cbv.Datas, GPUWriter);
             GPUWriter.SetBufferImmediately(graphicsContext, false, cbv.Index);
+        }
+
+        public byte[] GetCBVData(SlotRes cbv)
+        {
+            WriteGPU(cbv.Datas, GPUWriter);
+            return GPUWriter.GetData();
         }
 
         public void WriteGPU(List<string> datas, GPUWriter writer)
@@ -316,6 +333,79 @@ namespace Coocoo3D.RenderPipeline
                         break;
                 }
             }
+        }
+
+
+        public void SetSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null)
+        {
+            if (SRVs == null) return;
+            foreach (var resd in SRVs)
+            {
+                if (resd.ResourceType == "TextureCube")
+                {
+                    graphicsContext.SetSRVTSlot(rp._GetTexCubeByName(resd.Resource), resd.Index);
+                }
+                else if (resd.ResourceType == "Texture2D")
+                {
+                    if (resd.Flags.HasFlag(SlotResFlag.Linear))
+                        graphicsContext.SetSRVTSlotLinear(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
+                    else
+                        graphicsContext.SetSRVTSlot(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
+                }
+            }
+        }
+
+        public void SetComputeSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null)
+        {
+            if (SRVs == null) return;
+            foreach (var resd in SRVs)
+            {
+                if (resd.ResourceType == "TextureCube")
+                {
+                    graphicsContext.SetComputeSRVTSlot(rp._GetTexCubeByName(resd.Resource), resd.Index);
+                }
+                else if (resd.ResourceType == "Texture2D")
+                {
+                    if (resd.Flags.HasFlag(SlotResFlag.Linear))
+                        graphicsContext.SetComputeSRVTSlotLinear(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
+                    else
+                        graphicsContext.SetComputeSRVTSlot(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
+                }
+            }
+        }
+        public void SRVUAVs(List<SlotRes> SRVUAV, Dictionary<int, object> dict, Dictionary<int, int> flags = null, RuntimeMaterial material = null)
+        {
+            if (SRVUAV == null) return;
+            foreach (var resd in SRVUAV)
+            {
+                if (resd.ResourceType == "TextureCube")
+                {
+                    dict[resd.Index] = rp._GetTexCubeByName(resd.Resource);
+                }
+                else if (resd.ResourceType == "Texture2D")
+                {
+                    dict[resd.Index] = TextureFallBack(GetTex2D(resd.Resource, material));
+
+                    if (flags != null && resd.Flags.HasFlag(SlotResFlag.Linear))
+                    {
+                        flags[resd.Index] = 0;
+                    }
+                }
+            }
+        }
+
+        public Texture2D TextureFallBack(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
+        public static Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
+        {
+            if (texture == null) return error;
+            if (texture.Status == GraphicsObjectStatus.loaded)
+                return texture;
+            else if (texture.Status == GraphicsObjectStatus.loading)
+                return loading;
+            else if (texture.Status == GraphicsObjectStatus.unload)
+                return unload;
+            else
+                return error;
         }
     }
 }

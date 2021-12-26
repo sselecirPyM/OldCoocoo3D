@@ -26,6 +26,7 @@ namespace Coocoo3D.FileFormat
         public string type;
         public string path;
         public string name;
+        public bool? skinning;
         public Vector3 position;
         public Quaternion rotation;
         public Dictionary<string, string> properties;
@@ -95,10 +96,10 @@ namespace Coocoo3D.FileFormat
                     sceneObject.properties = new Dictionary<string, string>();
                     sceneObject.properties.Add("motion", renderer.motionPath);
                     sceneObject.materials = new Dictionary<string, _cooMaterial>();
+                    sceneObject.skinning = renderer.skinning;
                     foreach (var material in renderer.Materials)
                     {
                         _cooMaterial material1 = new _cooMaterial();
-                        material1.unionShader = material.unionShader;
                         material1.skinning = material.Skinning;
                         material1.transparent = material.Transparent;
                         material1.textures = new Dictionary<string, string>(material.textures);
@@ -170,6 +171,8 @@ namespace Coocoo3D.FileFormat
                     gameObject.Rotation = obj.rotation;
                     gameObject.Position = obj.position;
                     var renderer = gameObject.GetComponent<MMDRendererComponent>();
+                    if (obj.skinning != null)
+                        renderer.skinning = (bool)obj.skinning;
                     if (obj.properties != null)
                     {
                         if (obj.properties.TryGetValue("motion", out string motion))
@@ -210,7 +213,6 @@ namespace Coocoo3D.FileFormat
             {
                 if (materials.TryGetValue(mat.Name, out _cooMaterial mat1))
                 {
-                    mat.unionShader = mat1.unionShader;
                     mat.Skinning = mat1.skinning;
                     mat.Transparent = mat1.transparent;
 

@@ -32,6 +32,8 @@ namespace Coocoo3DGraphics
 
         internal RingBuffer superRingBuffer = new RingBuffer();
 
+        internal ID3D12Resource scratchResource;
+
         string m_deviceDescription;
         UInt64 m_deviceVideoMem;
 
@@ -519,7 +521,11 @@ namespace Coocoo3DGraphics
         static bool CheckRayTracingSupport(ID3D12Device device)
         {
             FeatureDataD3D12Options5 featureDataD3D12Options5 = new FeatureDataD3D12Options5();
-            return device.CheckFeatureSupport(Vortice.Direct3D12.Feature.Options5, ref featureDataD3D12Options5);
+            var checkResult = device.CheckFeatureSupport(Vortice.Direct3D12.Feature.Options5, ref featureDataD3D12Options5);
+            if (featureDataD3D12Options5.RaytracingTier == RaytracingTier.NotSupported)
+                return false;
+            else
+                return true;
         }
 
         public ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
