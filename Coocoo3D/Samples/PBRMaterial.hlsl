@@ -44,7 +44,7 @@ cbuffer cb1 : register(b1)
 	float3 g_GIVolumePosition;
 	float3 g_GIVolumeSize;
 }
-#define SH_RESOLUTION (8)
+#define SH_RESOLUTION (16)
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
 SamplerComparisonState sampleShadowMap0 : register(s2);
@@ -124,9 +124,9 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float3 emissive = Emissive.Sample(s1, input.TexCoord) * _Emissive;
 
 #if ENABLE_DIFFUSE
-	float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+	float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple;
 #ifndef ENABLE_GI
-	outputColor += skyLight;
+	outputColor += skyLight * c_diffuse;
 #else
 	float3 giSamplePos = (((wPos.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
 	int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
@@ -162,7 +162,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	weights = max(weights, 1e-3);
 	shDiffuse /= weights;
 
-	outputColor += shDiffuse.rgb * g_skyBoxMultiple * c_diffuse;
+	outputColor += shDiffuse.rgb * c_diffuse;
 #endif
 #endif
 #if ENABLE_SPECULR

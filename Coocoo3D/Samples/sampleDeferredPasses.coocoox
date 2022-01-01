@@ -123,12 +123,12 @@
   "DynamicBuffers": {
     "GIBuffer": {
       "Size": {
-        "X": 131072
+        "X": 589824
       }
     },
     "GIBufferWrite": {
       "Size": {
-        "X": 131072
+        "X": 589824
       }
     }
   },
@@ -583,7 +583,7 @@
     "EnableRayTracing": {
       "Name": "启用光线追踪（如果有）",
       "Type": "bool",
-      "Default": "false"
+      "Default": "true"
     },
     "RayTracingReflectionThreshold": {
       "Name": "光线追踪反射阈值",
@@ -604,12 +604,12 @@
     "UpdateGI": {
       "Name": "更新全局光照（需要光线追踪）",
       "Type": "bool",
-      "Default": "false"
+      "Default": "true"
     },
     "UseGI": {
       "Name": "使用全局光照",
       "Type": "bool",
-      "Default": "false"
+      "Default": "true"
     },
     "GIVolumePosition": {
       "Name": "全局光照体积位置",

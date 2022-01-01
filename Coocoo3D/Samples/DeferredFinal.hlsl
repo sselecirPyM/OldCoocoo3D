@@ -53,7 +53,7 @@ SamplerState s0 : register(s0);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 SamplerState s3 : register(s3);
 
-#define SH_RESOLUTION (8)
+#define SH_RESOLUTION (16)
 float3 NormalDecode(float2 enc)
 {
 	float4 nn = float4(enc * 2, 0, 0) + float4(-1, -1, 1, -1);
@@ -131,9 +131,9 @@ float4 psmain(PSIn input) : SV_TARGET
 		float3 emissive = buffer2Color.rgb * 16;
 
 #if ENABLE_DIFFUSE
-		float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+		float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple;
 #ifndef ENABLE_GI
-		outputColor += skyLight;
+		outputColor += skyLight * c_diffuse;
 #else
 		float3 giSamplePos = (((wPos.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
 		int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
@@ -141,6 +141,21 @@ float4 psmain(PSIn input) : SV_TARGET
 
 		float3 lp = frac(SH_RESOLUTION * giSamplePos);
 		float4 shDiffuse = float4(0, 0, 0, 0);
+#if DEBUG_DIFFUSE_PROBES
+		int3 xyz = round(SH_RESOLUTION * giSamplePos);
+		float3 p1 = abs(lp - 1);
+		if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
+		{
+			int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
+			SH9C sh9ca = giBuffer[index];
+			shDiffuse += GetSH9Color(sh9ca, N);
+		}
+		else
+		{
+			shDiffuse += float4(skyLight, 0);
+		}
+		weights += 1;
+#else
 		for (int i = 0; i < 2; i++)
 			for (int j = 0; j < 2; j++)
 				for (int k = 0; k < 2; k++)
@@ -149,7 +164,6 @@ float4 psmain(PSIn input) : SV_TARGET
 					int3 xyz = _xyz + samplePos1;
 					float3 p1 = abs(lp - (1 - _xyz));
 					float weight = p1.x * p1.y * p1.z;
-					//float weight = 1;
 					if (dot(N, _xyz - 0.5) >= -1e2)
 					{
 						if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
@@ -166,10 +180,12 @@ float4 psmain(PSIn input) : SV_TARGET
 						}
 					}
 				}
+#endif
 		weights = max(weights, 1e-3);
 		shDiffuse /= weights;
 
-		outputColor += shDiffuse.rgb * g_skyBoxMultiple * c_diffuse;
+		outputColor += shDiffuse.rgb * c_diffuse;
+
 #endif
 #endif
 #if ENABLE_SPECULR

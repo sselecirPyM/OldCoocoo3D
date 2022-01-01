@@ -57,11 +57,26 @@ namespace RNG
 		return float2(E1, E2);
 	}
 
-	float3 HammersleySampleCos(float2 Xi)
+	float3 HemisphereSampleCos(float2 Xi)
 	{
 		float phi = 2 * RANDOM_NUMBER_PI * Xi.x;
 
 		float cosTheta = sqrt(Xi.y);
+		float sinTheta = sqrt(1 - cosTheta * cosTheta);
+
+		float3 H;
+		H.x = sinTheta * cos(phi);
+		H.y = sinTheta * sin(phi);
+		H.z = cosTheta;
+
+		return H;
+	}
+
+	float3 UniformSampleHemisphere(float2 Xi)
+	{
+		float phi = 2 * RNG::RANDOM_NUMBER_PI * Xi.x;
+
+		float cosTheta = Xi.y;
 		float sinTheta = sqrt(1 - cosTheta * cosTheta);
 
 		float3 H;
@@ -206,7 +221,7 @@ void csmain(uint3 dtid : SV_DispatchThreadID)
 	for (int i = 0; i < c_sampleCount; i++)
 	{
 		float2 E = RNG::Hammersley(i, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
-		float3 vec1 = TangentToWorld(N, RNG::HammersleySampleCos(E));
+		float3 vec1 = TangentToWorld(N, RNG::UniformSampleHemisphere(E));
 
 		float NdotL = dot(vec1, N);
 		col1 += Image.SampleLevel(s0, vec1, 10) * NdotL;

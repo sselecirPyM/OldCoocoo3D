@@ -94,7 +94,7 @@ StructuredBuffer<SH9C> giBuffer : register(t8);
 
 RWTexture2D<float4> gOutput : register(u0);
 RWStructuredBuffer<SH9C> giResult : register(u1);
-#define SH_RESOLUTION (8)
+#define SH_RESOLUTION (16)
 
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
@@ -258,7 +258,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 	payload.color += (EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF).rgb;
 	payload.color += emissive;
 
-	float3 skyLight = (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse).rgb;
+	float3 skyLight = (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple).rgb ;
 	float3 giSamplePos = (((position.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
 	int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
 	float weights = 0;
@@ -291,7 +291,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 			}
 	weights = max(weights, 1e-3);
 	shDiffuse /= weights;
-	payload.color += shDiffuse * g_skyBoxMultiple * c_diffuse;
+	payload.color += shDiffuse * c_diffuse;
 
 #if ENABLE_DIRECTIONAL_LIGHT
 	for (int i = 0; i < 1; i++)
@@ -369,13 +369,61 @@ void rayGenGI()
 	const int sampleCountY = 16;
 
 	const uint shcCount = 9;
-	const float updateFactor = 0.08;
-	const float A = 4.0 / (sampleCountX * sampleCountY) * updateFactor;
+	const float updateFactor = 0.03;
+	const float A = 4.0 * COO_PI / (sampleCountX * sampleCountY) * updateFactor;
 
 	SH9C shResult;
 	for (int i = 0; i < shcCount; i++)
 	{
 		shResult.values[i] = giBuffer[shIndex].values[i] * (1 - updateFactor);
+	}
+	float4 colors[sampleCountX * sampleCountY];
+	for (int i = 0; i < sampleCountX * sampleCountY; i++)
+	{
+		colors[i] = float4(0, 0, 0, 0);
+	}
+
+
+	const int c_sampleCount = 128;
+	for (int k = 0; k < c_sampleCount; k++)
+	{
+
+		float2 E = Hammersley(k, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
+		float3 vec1 = UniformSampleSphere(E);
+
+		RayDesc ray;
+		//ray.Origin = world.xyz;
+		ray.Origin = position;
+		ray.Direction = vec1;
+		ray.TMin = 0.05;
+		ray.TMax = 10000;
+
+		RayPayload payload;
+		payload.color = float3(0, 0, 0);
+		payload.direction = vec1;
+		TraceRay(gRtScene,
+			RAY_FLAG_NONE /*rayFlags*/,
+			0xFF,
+			0 /* ray index*/,
+			0 /* Multiplies */,
+			0 /* Miss index */,
+			ray,
+			payload);
+
+
+		for (int i = 0; i < sampleCountX; i++)
+			for (int j = 0; j < sampleCountY; j++)
+			{
+				float theta = acos(1 - i * 2.0 / (sampleCountX - 1 + 1e-3));
+				float phi = 2 * COO_PI * (j * 1 / (sampleCountY - 1 + 1e-3));
+				float3 N = normalize(GetDir(theta, phi));
+				float NdotL = dot(vec1, N);
+				if (NdotL > 0)
+				{
+					float4 color = max(float4(payload.color * NdotL, 0), 0);
+					colors[i + j * sampleCountX] += color;
+				}
+			}
 	}
 
 	for (int i = 0; i < sampleCountX; i++)
@@ -384,38 +432,7 @@ void rayGenGI()
 			float theta = acos(1 - i * 2.0 / (sampleCountX - 1 + 1e-3));
 			float phi = 2 * COO_PI * (j * 1 / (sampleCountY - 1 + 1e-3));
 			float3 N = normalize(GetDir(theta, phi));
-
-			float4 color = float4(0, 0, 0, 1);
-			const int c_sampleCount = 8;
-			for (int k = 0; k < c_sampleCount; k++)
-			{
-				float2 E = Hammersley(k, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
-				float3 vec1 = TangentToWorld(N, HammersleySampleCos(E));
-
-				float NdotL = dot(vec1, N);
-				RayDesc ray;
-				//ray.Origin = world.xyz;
-				ray.Origin = position;
-				ray.Direction = vec1;
-				ray.TMin = 0.05;
-				ray.TMax = 10000;
-
-				RayPayload payload;
-				payload.color = float3(0, 0, 0);
-				payload.direction = vec1;
-				TraceRay(gRtScene,
-					RAY_FLAG_NONE /*rayFlags*/,
-					0xFF,
-					0 /* ray index*/,
-					0 /* Multiplies */,
-					0 /* Miss index */,
-					ray,
-					payload);
-
-				color += max(float4(payload.color * NdotL, 0), 0);
-				//color += EnvCube.SampleLevel(s0, vec1, 0) * NdotL;
-			}
-			color /= c_sampleCount;
+			float4 color = colors[i + j * sampleCountX] * 2 / c_sampleCount;
 			AddSH9Color(shResult, N, color * A);
 		}
 

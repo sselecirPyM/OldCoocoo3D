@@ -91,7 +91,7 @@ public static class UnionShaderRayTracing
                     if ((bool)param.GetSettingsValue("UpdateGI"))
                     {
                         call.rayGenShader = "rayGenGI";
-                        graphicsContext.DispatchRays(8, 8, 8, call);
+                        graphicsContext.DispatchRays(16, 16, 16, call);
                         param.SwapBuffer("GIBuffer", "GIBufferWrite");
                     }
 

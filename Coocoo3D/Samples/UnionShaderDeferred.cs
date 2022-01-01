@@ -10,6 +10,7 @@ public static class UnionShaderDeferred
         { DebugRenderType.Albedo,"DEBUG_ALBEDO"},
         { DebugRenderType.Depth,"DEBUG_DEPTH"},
         { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
+        { DebugRenderType.DiffuseProbes,"DEBUG_DIFFUSE_PROBES"},
         { DebugRenderType.DiffuseRender,"DEBUG_DIFFUSE_RENDER"},
         { DebugRenderType.Emissive,"DEBUG_EMISSIVE"},
         { DebugRenderType.Normal,"DEBUG_NORMAL"},
