@@ -263,9 +263,9 @@ namespace Coocoo3D.UI
 
         static void SettingsPanel(Coocoo3DMain appBody)
         {
-            ImGui.Checkbox("垂直同步", ref appBody.performaceSettings.VSync);
-            ImGui.Checkbox("节省CPU", ref appBody.performaceSettings.SaveCpuPower);
-            ImGui.Checkbox("多线程渲染", ref appBody.performaceSettings.MultiThreadRendering);
+            ImGui.Checkbox("垂直同步", ref appBody.performanceSettings.VSync);
+            ImGui.Checkbox("节省CPU", ref appBody.performanceSettings.SaveCpuPower);
+            ImGui.Checkbox("多线程渲染", ref appBody.performanceSettings.MultiThreadRendering);
             float a = (float)(1.0 / appBody.GameDriverContext.FrameInterval);
             if (!(a == a))
                 a = 2000;
@@ -283,7 +283,7 @@ namespace Coocoo3D.UI
             ComboBox("调试渲染", ref scene.settings.DebugRenderType);
 
             var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
-            ShowParams(currentPassSetting.ShowSettingParameters, settings.Parameters);
+            ShowParams(currentPassSetting.ShowSettingParameters, settings.Parameters, settings.ParametersModifyIndex);
             ShowTextures(appBody, "settings", currentPassSetting.ShowSettingTextures, settings.textures);
 
             if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
@@ -334,7 +334,7 @@ namespace Coocoo3D.UI
             }
         }
 
-        static void ShowParams(Dictionary<string, RenderPipeline.PassParameter> showParams, Dictionary<string, object> values)
+        static void ShowParams(Dictionary<string, RenderPipeline.PassParameter> showParams, Dictionary<string, object> values, Dictionary<string, int> modifyIndexs = null)
         {
             if (showParams != null)
             {
@@ -357,7 +357,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempB = (bool)val.defaultValue;
                                 if (ImGui.Checkbox(val.Name, ref tempB))
+                                {
                                     values[param.Key] = tempB;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "int":
@@ -368,7 +372,11 @@ namespace Coocoo3D.UI
                                     tempI = (int)val.defaultValue;
 
                                 if (ImGui.DragInt(val.Name, ref tempI, 1, (int)val.minValue, (int)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempI;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "sliderInt":
@@ -378,7 +386,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempI = (int)val.defaultValue;
                                 if (ImGui.SliderInt(val.Name, ref tempI, (int)val.minValue, (int)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempI;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "float":
@@ -388,7 +400,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempF = (float)val.defaultValue;
                                 if (ImGui.DragFloat(val.Name, ref tempF, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempF;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "sliderFloat":
@@ -398,7 +414,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempF = (float)val.defaultValue;
                                 if (ImGui.SliderFloat(val.Name, ref tempF, (float)val.minValue, (float)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempF;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "float2":
@@ -408,7 +428,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempF2 = (Vector2)val.defaultValue;
                                 if (ImGui.DragFloat2(val.Name, ref tempF2, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempF2;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "float3":
@@ -418,7 +442,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempF3 = (Vector3)val.defaultValue;
                                 if (ImGui.DragFloat3(val.Name, ref tempF3, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempF3;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "float4":
@@ -428,7 +456,15 @@ namespace Coocoo3D.UI
                                 else
                                     tempF4 = (Vector4)val.defaultValue;
                                 if (ImGui.DragFloat4(val.Name, ref tempF4, (float)val.step, (float)val.minValue, (float)val.maxValue, val.Format))
+                                {
                                     values[param.Key] = tempF4;
+                                    if (modifyIndexs != null)
+                                    {
+                                        modifyIndexs.Increase(param.Key);
+                                        if (modifyIndexs != null)
+                                            modifyIndexs.Increase(param.Key);
+                                    }
+                                }
                             }
                             break;
                         case "color3":
@@ -438,7 +474,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempF3 = (Vector3)val.defaultValue;
                                 if (ImGui.ColorEdit3(val.Name, ref tempF3, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR))
+                                {
                                     values[param.Key] = tempF3;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                         case "color4":
@@ -448,7 +488,11 @@ namespace Coocoo3D.UI
                                 else
                                     tempF4 = (Vector4)val.defaultValue;
                                 if (ImGui.ColorEdit4(val.Name, ref tempF4, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.HDR))
+                                {
                                     values[param.Key] = tempF4;
+                                    if (modifyIndexs != null)
+                                        modifyIndexs.Increase(param.Key);
+                                }
                             }
                             break;
                     }
@@ -639,7 +683,7 @@ vmd格式动作");
                     {
                         RuntimeMaterial material = rendererComponent.Materials[i];
                         bool selected = i == materialSelectIndex;
-                        ImGui.Selectable(material.Name, ref selected);
+                        ImGui.Selectable(string.Format("{0}##{1}", material.Name, i), ref selected);
                         if (selected) materialSelectIndex = i;
                     }
                     ImGui.PopItemWidth();
@@ -653,9 +697,8 @@ vmd格式动作");
                         var material = rendererComponent.Materials[materialSelectIndex];
                         ImGui.Text(material.Name);
 
-                        ImGui.Checkbox("蒙皮", ref material.Skinning);
-                        if (ImGui.IsItemHovered())
-                            ImGui.SetTooltip("关闭蒙皮可以提高性能");
+                        //ImGui.Checkbox("蒙皮", ref material.Skinning);
+
                         ImGui.Checkbox("透明材质", ref material.Transparent);
                         var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
                         ShowParams(currentPassSetting.ShowParameters, material.Parameters);
@@ -668,6 +711,8 @@ vmd格式动作");
             if (ImGui.TreeNode("变形"))
             {
                 ImGui.Checkbox("蒙皮", ref rendererComponent.skinning);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("关闭蒙皮可以提高性能");
                 ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion);
                 if (rendererComponent.LockMotion)
                     for (int i = 0; i < rendererComponent.morphStateComponent.morphs.Count; i++)

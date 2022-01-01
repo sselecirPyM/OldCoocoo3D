@@ -60,12 +60,15 @@ namespace Coocoo3D.RenderPipeline
 
         public VisualChannel currentChannel;
 
-        public Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
+        private Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
+        private Dictionary<string, GPUBuffer> dynamicBuffers = new Dictionary<string, GPUBuffer>();
+
+        public Dictionary<string, int> customDataInt = new Dictionary<string, int>();
 
         public bool RequireResize;
         public Vector2 NewSize;
         public bool SkyBoxChanged = false;
-        public int skyBoxQuality = 0;
+
         public string skyBoxName = "_SkyBox";
         public string skyBoxOriTex = "Assets/Textures/adams_place_bridge_2k.jpg";
 
@@ -76,8 +79,6 @@ namespace Coocoo3D.RenderPipeline
         public GraphicsDevice graphicsDevice = new GraphicsDevice();
         public GraphicsContext graphicsContext = new GraphicsContext();
 
-        public ReadBackTexture2D ReadBackTexture2D = new ReadBackTexture2D();
-
         public RenderPipelineDynamicContext dynamicContextRead = new RenderPipelineDynamicContext();
         public RenderPipelineDynamicContext dynamicContextWrite = new RenderPipelineDynamicContext();
 
@@ -85,7 +86,6 @@ namespace Coocoo3D.RenderPipeline
 
         public ProcessingList processingList = new ProcessingList();
 
-        public Format gBufferFormat = Format.R16G16B16A16_UNorm;
         public Format outputFormat = Format.R16G16B16A16_Float;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
 
@@ -107,7 +107,7 @@ namespace Coocoo3D.RenderPipeline
             },
         };
 
-        public bool CPUSkinning = true;
+        public bool CPUSkinning = false;
 
         public void Reload()
         {
@@ -145,7 +145,10 @@ namespace Coocoo3D.RenderPipeline
 
         public void RemoveVisualChannel(string name)
         {
-            visualChannels[name].Dispose();
+            var vc = visualChannels[name];
+            if (vc == currentChannel)
+                currentChannel = visualChannels["main"];
+            vc.Dispose();
             visualChannels.Remove(name);
         }
 
@@ -169,7 +172,7 @@ namespace Coocoo3D.RenderPipeline
 
         LinearPool<MMDMesh> meshPool = new LinearPool<MMDMesh>();
         public Dictionary<MMDRendererComponent, MMDMesh> meshOverride = new Dictionary<MMDRendererComponent, MMDMesh>();
-        public byte[] bigBuffer;
+        public byte[] bigBuffer = new byte[0];
         public void UpdateGPUResource()
         {
             meshPool.Reset();
@@ -183,19 +186,24 @@ namespace Coocoo3D.RenderPipeline
                 CBs_Bone.Add(constantBuffer);
             }
 
-            int bufferSize = 0;
-            foreach (var renderer in dynamicContextRead.renderers)
+            if (CPUSkinning)
             {
-                bufferSize = Math.Max(GetModelPack(renderer.meshPath).vertexCount, bufferSize);
+                int bufferSize = 0;
+                foreach (var renderer in dynamicContextRead.renderers)
+                {
+                    bufferSize = Math.Max(GetModelPack(renderer.meshPath).vertexCount, bufferSize);
+                }
+                bufferSize *= 12;
+                if (bufferSize > bigBuffer.Length)
+                    bigBuffer = new byte[bufferSize];
             }
-            bigBuffer = new byte[bufferSize * 12];
             for (int i = 0; i < count; i++)
             {
                 var renderer = dynamicContextRead.renderers[i];
                 var mesh = meshPool.Get(() =>
                 {
-                     var mesh1 = new MMDMesh();
-                     return mesh1;
+                    var mesh1 = new MMDMesh();
+                    return mesh1;
                 });
                 var originModel = GetModelPack(renderer.meshPath);
                 mesh.ReloadIndex<int>(originModel.vertexCount, null);
@@ -205,7 +213,6 @@ namespace Coocoo3D.RenderPipeline
 
                 if (CPUSkinning)
                 {
-                    Matrix4x4 world = Matrix4x4.CreateFromQuaternion(renderer.rotation) * Matrix4x4.CreateTranslation(renderer.position);
                     const int parallelSize = 1024;
                     Span<Vector3> d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
                     Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
@@ -228,9 +235,9 @@ namespace Coocoo3D.RenderPipeline
                                 a++;
                             }
                             if (a > 0)
-                                _d3[j] = Vector3.Transform(pos1, world);
+                                _d3[j] = pos1;
                             else
-                                _d3[j] = Vector3.Transform(pos0, world);
+                                _d3[j] = pos0;
                         }
                     });
                     graphicsContext.BeginUpdateMesh(mesh);
@@ -256,9 +263,9 @@ namespace Coocoo3D.RenderPipeline
                                 a++;
                             }
                             if (a > 0)
-                                _d3[j] = Vector3.Normalize(Vector3.TransformNormal(norm1, world));
+                                _d3[j] = Vector3.Normalize(norm1);
                             else
-                                _d3[j] = Vector3.Normalize(Vector3.TransformNormal(norm0, world));
+                                _d3[j] = Vector3.Normalize(norm0);
                         }
                     });
 
@@ -323,12 +330,14 @@ namespace Coocoo3D.RenderPipeline
             if (passSetting == null) return;
 
             var outputSize = visualChannel.outputSize;
-            foreach (var rt in passSetting.RenderTargets.Values)
+            foreach (var rt1 in passSetting.RenderTargets)
             {
-                string rtName = visualChannel.GetTexName(rt.Name);
+                string rtName = visualChannel.GetTexName(rt1.Key);
+                var rt = rt1.Value;
                 if (!RTs.TryGetValue(rtName, out var tex2d))
                 {
                     tex2d = new Texture2D();
+                    tex2d.Name = rtName;
                     RTs[rtName] = tex2d;
                 }
                 int x;
@@ -357,6 +366,25 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.UpdateRenderTexture(tex2d);
                 }
             }
+            if (passSetting.DynamicBuffers != null)
+            {
+                foreach (var rt1 in passSetting.DynamicBuffers)
+                {
+                    string rtName = visualChannel.GetTexName(rt1.Key);
+                    var rt = rt1.Value;
+                    if (!dynamicBuffers.TryGetValue(rtName, out var buffer))
+                    {
+                        buffer = new GPUBuffer();
+                        buffer.Name = rtName;
+                        dynamicBuffers[rtName] = buffer;
+                    }
+                    if (rt.Size.x != buffer.size)
+                    {
+                        buffer.size = rt.Size.x;
+                        graphicsContext.UpdateDynamicBuffer(buffer);
+                    }
+                }
+            }
         }
 
         public void ReloadDefalutResources()
@@ -373,15 +401,6 @@ namespace Coocoo3D.RenderPipeline
             if (passSetting.configured) return true;
             if (!passSetting.Verify()) return false;
             string path1 = Path.GetDirectoryName(passSetting.path);
-            if (passSetting.VertexShaders != null)
-                foreach (var shader in passSetting.VertexShaders)
-                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
-            if (passSetting.GeometryShaders != null)
-                foreach (var shader in passSetting.GeometryShaders)
-                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
-            if (passSetting.PixelShaders != null)
-                foreach (var shader in passSetting.PixelShaders)
-                    passSetting.aliases[shader.Name] = Path.GetFullPath(shader.Path, path1);
 
             if (passSetting.RayTracingShaders != null)
                 foreach (var shader in passSetting.RayTracingShaders)
@@ -440,19 +459,6 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
                 sequence.rootSignatureKey = stringBuilder.ToString();
-                VertexShader vs = null;
-                GeometryShader gs = null;
-                PixelShader ps = null;
-                if (pass.VertexShader != null)
-                    vs = mainCaches.GetVertexShader(passSetting.aliases[pass.VertexShader]);
-                if (pass.GeometryShader != null)
-                    gs = mainCaches.GetGeometryShader(passSetting.aliases[pass.GeometryShader]);
-                if (pass.PixelShader != null)
-                    ps = mainCaches.GetPixelShader(passSetting.aliases[pass.PixelShader]);
-                PSO pso = new PSO();
-                pso.Initialize(vs, gs, ps);
-                sequence.PSODefault = pso;
-                RPAssetsManager.PSOs[pass.Name] = pso;
             }
             passSetting.configured = true;
             return true;
@@ -478,6 +484,30 @@ namespace Coocoo3D.RenderPipeline
         public TextureCube _GetTexCubeByName(string name)
         {
             return mainCaches.GetTextureCube(name);
+        }
+        public GPUBuffer _GetBufferByName(string name)
+        {
+            if (dynamicBuffers.TryGetValue(name, out var buffer))
+            {
+                return buffer;
+            }
+            return null;
+        }
+
+        public bool SwapBuffer(string buf1, string buf2)
+        {
+            if (dynamicBuffers.TryGetValue(buf1, out var buffer1) && dynamicBuffers.TryGetValue(buf2, out var buffer2))
+            {
+                if (buffer1.size != buffer2.size)
+                    return false;
+                dynamicBuffers[buf2] = buffer1;
+                dynamicBuffers[buf1] = buffer2;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public void Dispose()

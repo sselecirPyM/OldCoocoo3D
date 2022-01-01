@@ -262,6 +262,9 @@ namespace Coocoo3D.Core
         [NonSerialized]
         public Dictionary<string, object> Parameters = new Dictionary<string, object>();
 
+        [NonSerialized]
+        public Dictionary<string, int> ParametersModifyIndex = new Dictionary<string, int>();
+
         public Dictionary<string, bool> bValue;
         public Dictionary<string, int> iValue;
         public Dictionary<string, float> fValue;

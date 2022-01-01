@@ -83,9 +83,9 @@ MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
 	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive / 16;
 
-	output.color0 = float4(c_diffuse, emissive.r);
-	output.color1 = float4(encodedNormal, _Roughness, emissive.g);
-	output.color2 = float4(c_specular, emissive.b);
+	output.color0 = float4(c_diffuse, c_specular.r);
+	output.color1 = float4(encodedNormal, _Roughness, c_specular.g);
+	output.color2 = float4(emissive, c_specular.b);
 	//output.color3 = float4(emissive, 1);
 	return output;
 }

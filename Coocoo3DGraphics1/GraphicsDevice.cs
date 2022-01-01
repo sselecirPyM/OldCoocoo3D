@@ -14,12 +14,10 @@ namespace Coocoo3DGraphics
 {
     public class GraphicsDevice
     {
-        public class d3d12RecycleResource
+        public struct d3d12RecycleResource
         {
             public ID3D12Object m_recycleResource;
             public UInt64 m_removeFrame;
-            public HeapType heapType;
-            public int length;
         };
 
         public const int c_frameCount = 3;

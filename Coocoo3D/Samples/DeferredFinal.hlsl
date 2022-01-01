@@ -1,4 +1,5 @@
 #include "PBR.hlsli"
+#include "SH.hlsli"
 
 struct LightInfo
 {
@@ -35,6 +36,8 @@ cbuffer cb0 : register(b0)
 #if ENABLE_POINT_LIGHT
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 #endif
+	float3 g_GIVolumePosition;
+	float3 g_GIVolumeSize;
 };
 Texture2D gbuffer0 :register(t0);
 Texture2D gbuffer1 :register(t1);
@@ -45,9 +48,12 @@ Texture2D gbufferDepth : register (t5);
 Texture2D ShadowMap0 : register(t6);
 TextureCube SkyBox : register (t7);
 Texture2D BRDFLut : register(t8);
+StructuredBuffer<SH9C> giBuffer : register(t9);
 SamplerState s0 : register(s0);
 SamplerComparisonState sampleShadowMap0 : register(s2);
 SamplerState s3 : register(s3);
+
+#define SH_RESOLUTION (8)
 float3 NormalDecode(float2 enc)
 {
 	float4 nn = float4(enc * 2, 0, 0) + float4(-1, -1, 1, -1);
@@ -103,9 +109,8 @@ float4 psmain(PSIn input) : SV_TARGET
 	//float4 buffer3Color = gbuffer3.SampleLevel(s3, uv, 0);
 
 
-	float4 test1 = mul(float4(input.uv, depth1, 1), g_mProjToWorld);
-	test1 /= test1.w;
-	float4 wPos = float4(test1.xyz, 1);
+	float4 wPos = mul(float4(input.uv, depth1, 1), g_mProjToWorld);
+	wPos /= wPos.w;
 
 	float3 V = normalize(g_camPos - wPos);
 
@@ -120,14 +125,52 @@ float4 psmain(PSIn input) : SV_TARGET
 		float roughness = buffer1Color.b;
 		float alpha = roughness * roughness;
 		float3 c_diffuse = buffer0Color.rgb;
-		float3 c_specular = buffer2Color.rgb;
+		float3 c_specular = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a);
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
-		//float3 emissive = buffer3Color.rgb;
-		float3 emissive = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a) * 16;
+		float3 emissive = buffer2Color.rgb * 16;
 
 #if ENABLE_DIFFUSE
-		outputColor += EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+		float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse;
+#ifndef ENABLE_GI
+		outputColor += skyLight;
+#else
+		float3 giSamplePos = (((wPos.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
+		int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
+		float weights = 0;
+
+		float3 lp = frac(SH_RESOLUTION * giSamplePos);
+		float4 shDiffuse = float4(0, 0, 0, 0);
+		for (int i = 0; i < 2; i++)
+			for (int j = 0; j < 2; j++)
+				for (int k = 0; k < 2; k++)
+				{
+					int3 _xyz = int3(i, j, k);
+					int3 xyz = _xyz + samplePos1;
+					float3 p1 = abs(lp - (1 - _xyz));
+					float weight = p1.x * p1.y * p1.z;
+					//float weight = 1;
+					if (dot(N, _xyz - 0.5) >= -1e2)
+					{
+						if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
+						{
+							int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
+							SH9C sh9ca = giBuffer[index];
+							shDiffuse += GetSH9Color(sh9ca, N) * weight;
+							weights += weight;
+						}
+						else
+						{
+							shDiffuse += float4(skyLight * weight, 0);
+							weights += weight;
+						}
+					}
+				}
+		weights = max(weights, 1e-3);
+		shDiffuse /= weights;
+
+		outputColor += shDiffuse.rgb * g_skyBoxMultiple * c_diffuse;
+#endif
 #endif
 #if ENABLE_SPECULR
 #ifndef RAY_TRACING
@@ -139,7 +182,7 @@ float4 psmain(PSIn input) : SV_TARGET
 #endif
 
 #if DEBUG_DEPTH
-		float _depth1 = pow(depth1,2.2f);
+		float _depth1 = pow(depth1, 2.2f);
 		if (_depth1 < 1)
 			return float4(_depth1, _depth1, _depth1, 1);
 		else
@@ -201,14 +244,14 @@ float4 psmain(PSIn input) : SV_TARGET
 				float3 NdotH = saturate(dot(N, H));
 
 #if ENABLE_DIFFUSE
-			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
 #else
-			float diffuse_factor = 0;
+				float diffuse_factor = 0;
 #endif
 #if ENABLE_SPECULR
-			float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+				float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
 #else
-			float3 specular_factor = 0;
+				float3 specular_factor = 0;
 #endif
 
 				outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
@@ -246,7 +289,7 @@ float4 psmain(PSIn input) : SV_TARGET
 		}
 #endif//ENABLE_POINT_LIGHT
 #if ENABLE_FOG
-		outputColor = lerp(_fogColor, outputColor, 1 / exp(max(camDist - _startDistance, 0.00001) * _fogDensity));
+		outputColor = lerp(pow(max(_fogColor, 1e-6), 2.2f), outputColor, 1 / exp(max((camDist - _startDistance) / 10, 0.00001) * _fogDensity));
 #endif
 	}
 	else

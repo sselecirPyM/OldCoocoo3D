@@ -25,13 +25,13 @@ public static class UnionShaderPBRForward
         PSO pso = null;
         var material = param.material;
         var graphicsContext = param.graphicsContext;
-        var psoDesc = param.PSODesc;
+        var psoDesc = param.GetPSODesc();
 
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         bool skinning = true;
-        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning && !bSkinning)
-            skinning = false;
+        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
+            skinning = bSkinning;
 
         if (material != null)
         {
@@ -46,7 +46,10 @@ public static class UnionShaderPBRForward
                             keywords.Add(debugKeyword);
                         if ((bool)param.GetSettingsValue("EnableFog"))
                             keywords.Add("ENABLE_FOG");
-                        if (material.Skinning && param.renderer.skinning && skinning)
+
+                        if ((bool?)param.GetSettingsValue("UseGI") == true)
+                            keywords.Add("ENABLE_GI");
+                        if (param.renderer.skinning && skinning)
                         {
                             graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
                             keywords.Add("SKINNING");

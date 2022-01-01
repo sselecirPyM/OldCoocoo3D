@@ -10,7 +10,7 @@ public static class UnionShaderBloom
         if ((bool?)param.GetSettingsValue("EnableBloom") != true) return true;
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        var psoDesc = param.PSODesc;
+        var psoDesc = param.GetPSODesc();
 
 
         var writer = param.GPUWriter;

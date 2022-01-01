@@ -1,5 +1,6 @@
 #include "Random.hlsli"
 #include "PBR.hlsli"
+#include "SH.hlsli"
 bool equls(in float3 a, in float3 b)
 {
 	return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
@@ -89,8 +90,11 @@ Texture2D gbuffer0 :register(t4);
 Texture2D gbuffer1 :register(t5);
 Texture2D gbuffer2 :register(t6);
 Texture2D ShadowMap0 : register(t7);
+StructuredBuffer<SH9C> giBuffer : register(t8);
 
 RWTexture2D<float4> gOutput : register(u0);
+RWStructuredBuffer<SH9C> giResult : register(u1);
+#define SH_RESOLUTION (8)
 
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
@@ -103,6 +107,11 @@ cbuffer cb0 : register(b0)
 	float4x4 g_mProjToWorld;
 	float3   g_camPos;
 	float    g_skyBoxMultiple;
+	float3   g_GIVolumePosition;
+	float    g_RayTracingReflectionQuality;
+	float3   g_GIVolumeSize;
+	int      g_RandomI;
+	float    g_RayTracingReflectionThreshold;
 };
 cbuffer cb1 : register(b0, space1)
 {
@@ -132,10 +141,10 @@ void rayGen()
 
 
 	float2 xy = launchIndex.xy + 0.5f; // center in the middle of the pixel.
-	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+	float2 uv = xy / launchDim.xy;
+	float2 screenPos = uv * 2.0 - 1.0;
 	screenPos.y = -screenPos.y;
-	float2 uv = xy / DispatchRaysDimensions().xy;
-	float depth = gbufferDepth.SampleLevel(s0, uv, 0).r;
+	float depth = gbufferDepth.SampleLevel(s3, uv, 0).r;
 
 	if (depth == 1.0) return;
 	float4 buffer0Color = gbuffer0.SampleLevel(s3, uv, 0);
@@ -143,63 +152,62 @@ void rayGen()
 	float4 buffer2Color = gbuffer2.SampleLevel(s3, uv, 0);
 
 	float4 world = mul(float4(screenPos, depth, 1), g_mProjToWorld);
-	world.xyz /= world.w;
-	world.w = 1;
+	world /= world.w;
 
 	float3 V = normalize(g_camPos - world.xyz);
 	float3 N = normalize(NormalDecode(buffer1Color.rg));
 	float NdotV = saturate(dot(N, V));
 	float roughness = buffer1Color.b;
 	float alpha = roughness * roughness;
-	float3 c_specular = buffer2Color.rgb;
+	float3 c_specular = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a);
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
-	float2 crd = float2(launchIndex.xy);
-	float2 dims = float2(launchDim.xy);
-
-	float2 d = ((crd / dims) * 2.f - 1.f);
-	float aspectRatio = dims.x / dims.y;
-
-	uint randomState = RNG::RandomSeed(DispatchRaysIndex().x + DispatchRaysIndex().y * 8192);
-	int sampleCount = 2 + (int)(roughness * 256 * GF);
+	uint randomState = RNG::RandomSeed(DispatchRaysIndex().x + DispatchRaysIndex().y * 8192 + g_RandomI);
+	int sampleCount = 1 + (int)(roughness * 256 * g_RayTracingReflectionQuality * GF);
 	float3 specReflectColor = float3(0, 0, 0);
 	float weight = 0;
-	for (int i = 0; i < sampleCount; i++)
+	if (g_RayTracingReflectionThreshold > roughness)
 	{
-		float2 E = Hammersley(i, sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
-		float3 H = TangentToWorld(ImportanceSampleGGX(E, Pow4(roughness)).xyz, N);
-		float3 L = 2 * dot(V, H) * H - V;
-
-		float NdotL = saturate(dot(N, L));
-		L = normalize(L);
-		if (NdotL > 0)
+		for (int i = 0; i < sampleCount; i++)
 		{
-			RayDesc ray;
-			ray.Origin = world.xyz;
-			ray.Direction = L;
-			ray.TMin = 0.01;
-			ray.TMax = 10000;
+			float2 E = Hammersley(i, sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
+			float3 H = TangentToWorld(ImportanceSampleGGX(E, Pow4(roughness)).xyz, N);
+			float3 L = 2 * dot(V, H) * H - V;
 
-			RayPayload payload;
-			payload.color = float4(0, 0, 0, 0);
-			payload.direction = L;
-			TraceRay(gRtScene,
-				RAY_FLAG_NONE /*rayFlags*/,
-				0xFF,
-				0 /* ray index*/,
-				0 /* Multiplies */,
-				0 /* Miss index */,
-				ray,
-				payload);
-			specReflectColor += payload.color * NdotL;
-			weight += NdotL;
+			float NdotL = saturate(dot(N, L));
+			L = normalize(L);
+
+			if (NdotL > 0)
+			{
+				RayDesc ray;
+				ray.Origin = world.xyz;
+				ray.Direction = L;
+				ray.TMin = 0.01;
+				ray.TMax = 10000;
+
+				RayPayload payload;
+				payload.color = float3(0, 0, 0);
+				payload.direction = L;
+				TraceRay(gRtScene,
+					RAY_FLAG_NONE /*rayFlags*/,
+					0xFF,
+					0 /* ray index*/,
+					0 /* Multiplies */,
+					0 /* Miss index */,
+					ray,
+					payload);
+				specReflectColor += payload.color * NdotL;
+				weight += NdotL;
+			}
 		}
+		specReflectColor = specReflectColor / max(weight, 1e-4) * GF;
+		gOutput[launchIndex.xy] = float4(specReflectColor, 0);
 	}
-	specReflectColor = specReflectColor / max(weight, 1e-6) * GF;
-
-	//gOutput[launchIndex.xy] += float4(EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF, 0);
-	gOutput[launchIndex.xy] += float4(specReflectColor, 0);
+	else
+	{
+		gOutput[launchIndex.xy] = float4(EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF, 0);
+	}
 }
 
 [shader("miss")]
@@ -240,16 +248,50 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 
 	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
-	float3 V = - payload.direction;
+	float3 V = -payload.direction;
 
 	float NdotV = saturate(dot(N, V));
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
-	payload.color += (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse).rgb;
+	//payload.color += (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse).rgb;
 	payload.color += (EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF).rgb;
 	payload.color += emissive;
 
+	float3 skyLight = (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse).rgb;
+	float3 giSamplePos = (((position.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
+	int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
+	float weights = 0;
+
+	float3 lp = frac(SH_RESOLUTION * giSamplePos);
+	float4 shDiffuse = float4(0, 0, 0, 0);
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			for (int k = 0; k < 2; k++)
+			{
+				int3 _xyz = int3(i, j, k);
+				int3 xyz = _xyz + samplePos1;
+				float3 p1 = abs(lp - (1 - _xyz));
+				float weight = p1.x * p1.y * p1.z;
+				if (dot(N, _xyz - 0.5) >= -1e2)
+				{
+					if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
+					{
+						int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
+						SH9C sh9ca = giBuffer[index];
+						shDiffuse += GetSH9Color(sh9ca, N) * weight;
+						weights += weight;
+					}
+					else
+					{
+						shDiffuse += float4(skyLight * weight, 0);
+						weights += weight;
+					}
+				}
+			}
+	weights = max(weights, 1e-3);
+	shDiffuse /= weights;
+	payload.color += shDiffuse * g_skyBoxMultiple * c_diffuse;
 
 #if ENABLE_DIRECTIONAL_LIGHT
 	for (int i = 0; i < 1; i++)
@@ -296,4 +338,86 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 	//payload.color = albedo;
 	//payload.color = float4(position, 1);
 	//payload.color = float4(N * 0.5 + 0.5, 1);
+}
+
+
+float Pow2(float x) {
+	return x * x;
+}
+
+float3 GetDir(float theta, float phi) {
+	float3 result;
+	float s_theta, c_theta, s_phi, c_phi;
+	sincos(theta, s_theta, c_theta);
+	sincos(phi, s_phi, c_phi);
+	result.z = c_theta;
+	result.x = s_theta * c_phi;
+	result.y = s_theta * s_phi;
+	return result;
+}
+
+[shader("raygeneration")]
+void rayGenGI()
+{
+	uint3 launchIndex = DispatchRaysIndex();
+	uint3 launchDim = DispatchRaysDimensions();
+	int shIndex = launchIndex.x + launchIndex.y * SH_RESOLUTION + launchIndex.z * SH_RESOLUTION * SH_RESOLUTION;
+	float3 position = ((float3)launchIndex / float3(SH_RESOLUTION, SH_RESOLUTION, SH_RESOLUTION) - 0.5f) * g_GIVolumeSize + g_GIVolumePosition;
+
+	uint randomState = RNG::RandomSeed(launchIndex.x + launchIndex.y * 2048 + launchIndex.z * 4194304 + g_RandomI);
+	const int sampleCountX = 16;
+	const int sampleCountY = 16;
+
+	const uint shcCount = 9;
+	const float updateFactor = 0.08;
+	const float A = 4.0 / (sampleCountX * sampleCountY) * updateFactor;
+
+	SH9C shResult;
+	for (int i = 0; i < shcCount; i++)
+	{
+		shResult.values[i] = giBuffer[shIndex].values[i] * (1 - updateFactor);
+	}
+
+	for (int i = 0; i < sampleCountX; i++)
+		for (int j = 0; j < sampleCountY; j++)
+		{
+			float theta = acos(1 - i * 2.0 / (sampleCountX - 1 + 1e-3));
+			float phi = 2 * COO_PI * (j * 1 / (sampleCountY - 1 + 1e-3));
+			float3 N = normalize(GetDir(theta, phi));
+
+			float4 color = float4(0, 0, 0, 1);
+			const int c_sampleCount = 8;
+			for (int k = 0; k < c_sampleCount; k++)
+			{
+				float2 E = Hammersley(k, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
+				float3 vec1 = TangentToWorld(N, HammersleySampleCos(E));
+
+				float NdotL = dot(vec1, N);
+				RayDesc ray;
+				//ray.Origin = world.xyz;
+				ray.Origin = position;
+				ray.Direction = vec1;
+				ray.TMin = 0.05;
+				ray.TMax = 10000;
+
+				RayPayload payload;
+				payload.color = float3(0, 0, 0);
+				payload.direction = vec1;
+				TraceRay(gRtScene,
+					RAY_FLAG_NONE /*rayFlags*/,
+					0xFF,
+					0 /* ray index*/,
+					0 /* Multiplies */,
+					0 /* Miss index */,
+					ray,
+					payload);
+
+				color += max(float4(payload.color * NdotL, 0), 0);
+				//color += EnvCube.SampleLevel(s0, vec1, 0) * NdotL;
+			}
+			color /= c_sampleCount;
+			AddSH9Color(shResult, N, color * A);
+		}
+
+	giResult[shIndex] = shResult;
 }

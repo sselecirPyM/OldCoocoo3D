@@ -21,7 +21,6 @@ namespace Coocoo3D
             SDL_GetWindowWMInfo(window, ref info);
             IntPtr hwnd = info.info.win.window;
             coocoo3DMain.graphicsDevice.SetSwapChainPanel(hwnd, Width, Height);
-            coocoo3DMain.swapChainReady = true;
             #region key map
             Dictionary<uint, int> sdlMouse2ImguiMouse = new Dictionary<uint, int>();
             sdlMouse2ImguiMouse[SDL_BUTTON_LEFT] = 0;
@@ -165,7 +164,7 @@ namespace Coocoo3D
                 }
                 catch (Exception e)
                 {
-                    SDL_ShowSimpleMessageBox(SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "error", e.Message, window);
+                    SDL_ShowSimpleMessageBox(SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "error", e.Message + "\n" + e.StackTrace, window);
                 }
             }
         }

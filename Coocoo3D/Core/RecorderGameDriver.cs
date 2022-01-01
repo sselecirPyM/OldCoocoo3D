@@ -76,6 +76,9 @@ namespace Coocoo3D.Core
         const int encFrameCount = 8;
         int exIndex = 0;
         Pack1[] packs = new Pack1[encFrameCount];
+
+        public ReadBackTexture2D ReadBackTexture2D = new ReadBackTexture2D();
+
         public override void AfterRender(RenderPipelineContext rpContext, GraphicsContext graphicsContext)
         {
             ref GameDriverContext context = ref rpContext.gameDriverContext;
@@ -84,7 +87,7 @@ namespace Coocoo3D.Core
             {
                 int index1 = RecordCount % c_frameCount;
                 var visualchannel = rpContext.visualChannels["main"];
-                var ReadBackTexture2D = rpContext.ReadBackTexture2D;
+
                 if (ReadBackTexture2D.GetWidth() != visualchannel.outputSize.X || ReadBackTexture2D.GetHeight() != visualchannel.outputSize.Y)
                 {
                     ReadBackTexture2D.Reload(visualchannel.outputSize.X, visualchannel.outputSize.Y, 4);

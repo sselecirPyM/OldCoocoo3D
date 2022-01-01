@@ -23,20 +23,20 @@ public static class UnionShaderDeferred
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        var psoDesc = param.PSODesc;
+        var psoDesc = param.GetPSODesc();
         var material = param.material;
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         PSO pso = null;
         bool skinning = true;
-        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning && !bSkinning)
-            skinning = false;
+        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
+            skinning = bSkinning;
         switch (param.passName)
         {
             case "GBufferPass":
                 {
                     List<string> keywords = new List<string>();
-                    if (material.Skinning && param.renderer.skinning && skinning)
+                    if (param.renderer.skinning && skinning)
                     {
                         keywords.Add("SKINNING");
                         graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
@@ -53,6 +53,8 @@ public static class UnionShaderDeferred
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
+                    if ((bool)param.GetSettingsValue("UseGI"))
+                        keywords.Add("ENABLE_GI");
                     if ((bool)param.GetSettingsValue("EnableFog"))
                         keywords.Add("ENABLE_FOG");
 
@@ -72,6 +74,22 @@ public static class UnionShaderDeferred
                         param.WriteCBV(cbv);
                     }
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
+                }
+                break;
+            case "DenoisePass":
+                {
+                    if (!(param.customValue.TryGetValue("RayTracing", out object oIsRayTracing) && oIsRayTracing is bool bIsRayTracing && bIsRayTracing))
+                        return true;
+
+                    List<string> keywords = new List<string>();
+                    if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
+                        keywords.Add(debugKeyword);
+
+                    foreach (var cbv in param.pass.CBVs)
+                    {
+                        param.WriteCBV(cbv);
+                    }
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("RayTracingDenoise.hlsl", param.relativePath));
                 }
                 break;
             default:

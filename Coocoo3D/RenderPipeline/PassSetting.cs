@@ -16,10 +16,8 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public List<RenderSequence> RenderSequence;
         public Dictionary<string, RenderTarget> RenderTargets;
+        public Dictionary<string, RenderTarget> DynamicBuffers;
         public Dictionary<string, Pass> Passes;
-        public List<_AssetDefine> VertexShaders;
-        public List<_AssetDefine> GeometryShaders;
-        public List<_AssetDefine> PixelShaders;
         public List<_AssetDefine> ComputeShaders;
         public Dictionary<string, string> Texture2Ds;
         public Dictionary<string, string> UnionShaders;
@@ -60,10 +58,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 pass.Value.Name = pass.Key;
             }
-            foreach (var renderTarget in RenderTargets)
-            {
-                renderTarget.Value.Name = renderTarget.Key;
-            }
+
             if (ShowParameters != null)
                 foreach (var parameter in ShowParameters)
                 {
@@ -78,13 +73,8 @@ namespace Coocoo3D.RenderPipeline
                 }
             foreach (var passMatch in RenderSequence)
             {
-                if (passMatch.Name != null)
+                if (passMatch.Name != null && Passes.ContainsKey(passMatch.Name))
                 {
-                    if (passMatch.Type == null)
-                        passMatch.DrawObjects = true;
-
-                    if (!Passes.ContainsKey(passMatch.Name))
-                        return false;
                 }
                 else
                     return false;
@@ -110,10 +100,6 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, string> PropertiesOverride;
 
         [NonSerialized]
-        public PSO PSODefault;
-        [NonSerialized]
-        public bool DrawObjects;
-        [NonSerialized]
         public string rootSignatureKey;
     }
     public class Pass
@@ -134,7 +120,6 @@ namespace Coocoo3D.RenderPipeline
 
     public class RenderTarget
     {
-        public string Name;
         public VarSize Size;
         public Format Format;
     }
@@ -186,64 +171,76 @@ namespace Coocoo3D.RenderPipeline
                 else
                     defaultValue = default(float);
 
-                if (float.TryParse(Min, out f1))
-                    minValue = f1;
-                else
-                    minValue = float.MinValue;
-
-                if (float.TryParse(Max, out f1))
-                    maxValue = f1;
-                else
-                    maxValue = float.MaxValue;
-
-                if (float.TryParse(Step, out f1))
-                    step = f1;
-                else
-                    step = 1.0f;
-
-                Format ??= "%.3f";
+                FloatDefaultSettings();
             }
             else if (Type == "float2")
             {
                 defaultValue = Utility.StringConvert.GetFloat2(Default);
+
+                FloatDefaultSettings();
             }
             else if (Type == "float3" || Type == "color3")
             {
                 defaultValue = Utility.StringConvert.GetFloat3(Default);
+
+                FloatDefaultSettings();
             }
             else if (Type == "float4" || Type == "color4")
             {
                 defaultValue = Utility.StringConvert.GetFloat4(Default);
+
+                FloatDefaultSettings();
             }
             else if (Type == "int" || Type == "sliderInt")
             {
-                int f1;
-                if (int.TryParse(Default, out f1))
-                    defaultValue = f1;
+                int i1;
+                if (int.TryParse(Default, out i1))
+                    defaultValue = i1;
                 else
                     defaultValue = default(int);
 
-                if (int.TryParse(Min, out f1))
-                    minValue = f1;
+                if (int.TryParse(Min, out i1))
+                    minValue = i1;
                 else
                     minValue = int.MinValue;
 
-                if (int.TryParse(Max, out f1))
-                    maxValue = f1;
+                if (int.TryParse(Max, out i1))
+                    maxValue = i1;
                 else
                     maxValue = int.MaxValue;
 
-                if (int.TryParse(Step, out f1))
-                    step = f1;
+                if (int.TryParse(Step, out i1))
+                    step = i1;
                 else
                     step = 1;
             }
             else if (Type == "bool")
             {
-                if (bool.TryParse(Default, out bool f1))
-                    defaultValue = f1;
+                if (bool.TryParse(Default, out bool b1))
+                    defaultValue = b1;
                 else defaultValue = default(bool);
             }
+        }
+
+        void FloatDefaultSettings()
+        {
+            float f1;
+
+            if (float.TryParse(Min, out f1))
+                minValue = f1;
+            else
+                minValue = float.MinValue;
+
+            if (float.TryParse(Max, out f1))
+                maxValue = f1;
+            else
+                maxValue = float.MaxValue;
+            if (float.TryParse(Step, out f1))
+                step = f1;
+            else
+                step = 1.0f;
+
+            Format ??= "%.3f";
         }
     }
 }

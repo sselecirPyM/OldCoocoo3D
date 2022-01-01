@@ -42,7 +42,7 @@ namespace Coocoo3D.FileFormat
     {
         public Dictionary<string, string> textures;
         public string unionShader;
-        public bool skinning;
+        //public bool skinning;
         public bool transparent;
 
         public Dictionary<string, bool> bValue;
@@ -100,7 +100,7 @@ namespace Coocoo3D.FileFormat
                     foreach (var material in renderer.Materials)
                     {
                         _cooMaterial material1 = new _cooMaterial();
-                        material1.skinning = material.Skinning;
+                        //material1.skinning = material.Skinning;
                         material1.transparent = material.Transparent;
                         material1.textures = new Dictionary<string, string>(material.textures);
 
@@ -213,7 +213,7 @@ namespace Coocoo3D.FileFormat
             {
                 if (materials.TryGetValue(mat.Name, out _cooMaterial mat1))
                 {
-                    mat.Skinning = mat1.skinning;
+                    //mat.Skinning = mat1.skinning;
                     mat.Transparent = mat1.transparent;
 
                     _func2(mat1.fValue, mat.Parameters);

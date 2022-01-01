@@ -29,7 +29,7 @@ namespace Coocoo3D.RenderPipeline
 
         public GraphicsContext graphicsContext;
         public VisualChannel visualChannel;
-        public PSODesc PSODesc;
+
         public string passName;
         public string relativePath;
         public GPUWriter GPUWriter;
@@ -47,8 +47,18 @@ namespace Coocoo3D.RenderPipeline
 
         public Dictionary<string, object> customValue = new Dictionary<string, object>();
 
+        public Dictionary<string, int> customValueIntPersistent { get => rp.customDataInt; }
+
+        public double deltaTime { get => rp.dynamicContextRead.DeltaTime; }
+        public double realDeltaTime { get => rp.dynamicContextRead.RealDeltaTime; }
+        public double time { get => rp.dynamicContextRead.Time; }
+
         public MMDMesh mesh { get => rp.GetMesh(renderer.meshPath); }
         public MMDMesh meshOverride { get => rp.meshOverride[renderer]; }
+
+        public Random _random;
+
+        public Random random { get => _random ??= new Random(rp.frameRenderCount); }
 
         public object GetSettingsValue(string name)
         {
@@ -123,6 +133,27 @@ namespace Coocoo3D.RenderPipeline
             return tex2D;
         }
 
+        public string _getBufferName(string name, RuntimeMaterial material = null)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+            if (passSetting.DynamicBuffers.ContainsKey(name))
+                return visualChannel.GetTexName(name);
+            else
+                return name;
+        }
+
+        public GPUBuffer GetBuffer(string name, RuntimeMaterial material = null)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+            //if (passSetting.DynamicBuffers.ContainsKey(name))
+            //    return rp._GetBufferByName(visualChannel.GetTexName(name));
+            //else
+            //    return rp._GetBufferByName(name);
+            return rp._GetBufferByName(_getBufferName(name, material));
+        }
+
         public void WriteCBV(SlotRes cbv)
         {
             WriteGPU(cbv.Datas, GPUWriter);
@@ -144,11 +175,14 @@ namespace Coocoo3D.RenderPipeline
             {
                 switch (s)
                 {
+                    case "RealDeltaTime":
+                        writer.Write((float)realDeltaTime);
+                        break;
                     case "DeltaTime":
-                        writer.Write((float)rp.dynamicContextRead.DeltaTime);
+                        writer.Write((float)deltaTime);
                         break;
                     case "Time":
-                        writer.Write((float)rp.dynamicContextRead.Time);
+                        writer.Write((float)time);
                         break;
                     case "World":
                         writer.Write(renderer.LocalToWorld);
@@ -310,6 +344,12 @@ namespace Coocoo3D.RenderPipeline
                             }
                         }
                         break;
+                    case "RandomI":
+                        writer.Write(random.Next());
+                        break;
+                    case "RandomF":
+                        writer.Write((float)random.NextDouble());
+                        break;
 
                     default:
                         object settingValue = null;
@@ -335,7 +375,6 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-
         public void SetSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null)
         {
             if (SRVs == null) return;
@@ -352,27 +391,37 @@ namespace Coocoo3D.RenderPipeline
                     else
                         graphicsContext.SetSRVTSlot(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
                 }
+                else if (resd.ResourceType == "Buffer")
+                {
+                    graphicsContext.SetSRVTSlot(GetBuffer(resd.Resource), resd.Index);
+                }
             }
         }
 
-        public void SetComputeSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null)
+        public void SetUAVs(List<SlotRes> UAVs, RuntimeMaterial material = null)
         {
-            if (SRVs == null) return;
-            foreach (var resd in SRVs)
+            if (UAVs == null) return;
+            foreach (var resd in UAVs)
             {
-                if (resd.ResourceType == "TextureCube")
+                //if (resd.ResourceType == "TextureCube")
+                //{
+                //    graphicsContext.SetUAVTSlot(rp._GetTexCubeByName(resd.Resource), resd.Index);
+                //}
+                //else
+                if (resd.ResourceType == "Texture2D")
                 {
-                    graphicsContext.SetComputeSRVTSlot(rp._GetTexCubeByName(resd.Resource), resd.Index);
+                    //if (resd.Flags.HasFlag(SlotResFlag.Linear))
+                    //    graphicsContext.SetUAVTSlotLinear(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
+                    //else
+                    graphicsContext.SetUAVTSlot(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
                 }
-                else if (resd.ResourceType == "Texture2D")
+                else if (resd.ResourceType == "Buffer")
                 {
-                    if (resd.Flags.HasFlag(SlotResFlag.Linear))
-                        graphicsContext.SetComputeSRVTSlotLinear(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
-                    else
-                        graphicsContext.SetComputeSRVTSlot(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
+                    graphicsContext.SetUAVTSlot(GetBuffer(resd.Resource), resd.Index);
                 }
             }
         }
+
         public void SRVUAVs(List<SlotRes> SRVUAV, Dictionary<int, object> dict, Dictionary<int, int> flags = null, RuntimeMaterial material = null)
         {
             if (SRVUAV == null) return;
@@ -391,7 +440,17 @@ namespace Coocoo3D.RenderPipeline
                         flags[resd.Index] = 0;
                     }
                 }
+                else if (resd.ResourceType == "Buffer")
+                {
+                    dict[resd.Index] = GetBuffer(resd.Resource);
+                }
             }
+        }
+
+        public bool SwapBuffer(string buf1, string buf2)
+        {
+            if (string.IsNullOrEmpty(buf1) || string.IsNullOrEmpty(buf2)) return false;
+            return rp.SwapBuffer(_getBufferName(buf1), _getBufferName(buf2));
         }
 
         public Texture2D TextureFallBack(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);
@@ -406,6 +465,40 @@ namespace Coocoo3D.RenderPipeline
                 return unload;
             else
                 return error;
+        }
+
+        public PSODesc GetPSODesc()
+        {
+            PSODesc psoDesc;
+            if (renderSequence.RenderTargets == null || renderSequence.RenderTargets.Count == 0)
+            {
+                psoDesc.rtvFormat = Vortice.DXGI.Format.Unknown;
+            }
+            else
+            {
+                psoDesc.rtvFormat = GetTex2D(renderSequence.RenderTargets[0]).GetFormat();
+            }
+            psoDesc.dsvFormat = depthStencil == null ? Vortice.DXGI.Format.Unknown : depthStencil.GetFormat();
+
+            psoDesc.blendState = pass.BlendMode;
+            psoDesc.cullMode = renderSequence.CullMode;
+            psoDesc.depthBias = renderSequence.DepthBias;
+            psoDesc.slopeScaledDepthBias = renderSequence.SlopeScaledDepthBias;
+            psoDesc.primitiveTopologyType = Vortice.Direct3D12.PrimitiveTopologyType.Triangle;
+            psoDesc.renderTargetCount = renderSequence.RenderTargets == null ? 0 : renderSequence.RenderTargets.Count;
+            psoDesc.wireFrame = false;
+
+            if (renderSequence.Type == null)
+            {
+                psoDesc.inputLayout = InputLayout.mmd;
+                psoDesc.wireFrame = settings.Wireframe;
+                psoDesc.cullMode = material.DrawDoubleFace ? Vortice.Direct3D12.CullMode.None : Vortice.Direct3D12.CullMode.Back;
+            }
+            else
+            {
+                psoDesc.inputLayout = InputLayout.postProcess;
+            }
+            return psoDesc;
         }
     }
 }

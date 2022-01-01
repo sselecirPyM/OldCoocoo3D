@@ -37,7 +37,7 @@ namespace Coocoo3D.RenderPipeline
 
         List<Dictionary<Matrix4x4, Matrix4x4>> lightMatrixCaches = new List<Dictionary<Matrix4x4, Matrix4x4>>();
 
-        static float[] lightMatrixLevel = { 0.0f, 0.975f, 0.993f, 0.997f, 0.998f };
+        static float[] lightMatrixLevel = { 0.0f, 0.98f, 0.9945f, 0.998f, 0.999f };
         public Matrix4x4 GetLightMatrix(Matrix4x4 pvMatrix, int level)
         {
             return GetLightMatrix1(pvMatrix, level, lightMatrixLevel[level], lightMatrixLevel[level + 1]);

@@ -16,11 +16,11 @@
   <ItemGroup>
     <Compile Remove="Samples\Dispatcher.cs" />
     <Compile Remove="Samples\UnionShaderBloom.cs" />
+    <Compile Remove="Samples\UnionShaderComputeTest.cs" />
     <Compile Remove="Samples\UnionShaderDeferred.cs" />
     <Compile Remove="Samples\UnionShaderPBRForward.cs" />
     <Compile Remove="Samples\UnionShaderShadowMap.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="Samples\Dispatcher.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -29,6 +29,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Samples\UnionShaderPBRForward.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Samples\UnionShaderComputeTest.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Samples\UnionShaderDeferred.cs">
@@ -74,6 +77,9 @@
     <None Update="Samples\brdflut.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Samples\RayTracingDenoise.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Samples\RayTracing.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -84,6 +90,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\Random.hlsli">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Samples\SH.hlsli">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\Skinning.hlsli">

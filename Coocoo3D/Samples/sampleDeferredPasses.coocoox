@@ -26,15 +26,22 @@
       ]
     },
     {
-      "Name": "DeferredFinalPass",
-      "Type": "DrawScreen",
+      "Name": "RayTracingPass",
+      "Type": "RayTracing",
       "RenderTargets": [
-        "_Output0"
+        "_RayTracing0"
       ]
     },
     {
-      "Name": "RayTracingPass",
-      "Type": "RayTracing",
+      "Name": "DenoisePass",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_ScreenColor2"
+      ]
+    },
+    {
+      "Name": "DeferredFinalPass",
+      "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
       ]
@@ -99,6 +106,12 @@
       },
       "Format": "R16G16B16A16_UNorm"
     },
+    "_RayTracing0": {
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_UNorm"
+    },
     "_Blur0": {
       "Size": {
         "Multiplier": "0.5",
@@ -107,7 +120,36 @@
       "Format": "R16G16B16A16_Float"
     }
   },
+  "DynamicBuffers": {
+    "GIBuffer": {
+      "Size": {
+        "X": 131072
+      }
+    },
+    "GIBufferWrite": {
+      "Size": {
+        "X": 131072
+      }
+    }
+  },
   "Passes": {
+    "TestComputePass": {
+      "UnionShader": "UnionShaderComputeTest.cs",
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        }
+      ],
+      "UAVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Buffer",
+          "Resource": "GIBuffer"
+        }
+      ]
+    },
     "ShadowMapPass0": {
       "Properties": {
         "ShadowMap": ""
@@ -192,7 +234,9 @@
             "DirectionalLightMatrix0",
             "DirectionalLightMatrix1",
             "DirectionalLight",
-            "PointLights4Cull"
+            "PointLights4Cull",
+            "GIVolumePosition",
+            "GIVolumeSize"
           ]
         }
       ],
@@ -242,6 +286,44 @@
           "ResourceType": "Texture2D",
           "Resource": "_BRDFLUT",
           "Flags": "Linear"
+        },
+        {
+          "Index": "9",
+          "ResourceType": "Buffer",
+          "Resource": "GIBuffer"
+        }
+      ]
+    },
+    "DenoisePass": {
+      "UnionShader": "UnionShaderDeferred.cs",
+      "BlendMode": "Add",
+      "CBVs": [
+        {
+          "Index": "0",
+          "Datas": [
+            "Camera",
+            "CameraInvert",
+            "CameraPosition",
+            "IndirectMultiplier",
+            "WidthHeight"
+          ]
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_RayTracing0"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenColor1"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenDepth0"
         }
       ]
     },
@@ -267,7 +349,9 @@
             "FogColor",
             "FogDensity",
             "FogStartDistance",
-            "FogEndDistance"
+            "FogEndDistance",
+            "GIVolumePosition",
+            "GIVolumeSize"
           ]
         }
       ],
@@ -297,6 +381,11 @@
           "ResourceType": "Texture2D",
           "Resource": "_BRDFLUT",
           "Flags": "Linear"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "Buffer",
+          "Resource": "GIBuffer"
         }
       ]
     },
@@ -341,7 +430,12 @@
             "Camera",
             "CameraInvert",
             "CameraPosition",
-            "IndirectMultiplier"
+            "IndirectMultiplier",
+            "GIVolumePosition",
+            "RayTracingReflectionQuality",
+            "GIVolumeSize",
+            "RandomI",
+            "RayTracingReflectionThreshold"
           ]
         },
         {
@@ -396,13 +490,23 @@
           "Index": "7",
           "ResourceType": "Texture2D",
           "Resource": "_ShadowMap0"
+        },
+        {
+          "Index": "8",
+          "ResourceType": "Buffer",
+          "Resource": "GIBuffer"
         }
       ],
       "UAVs": [
         {
           "Index": "0",
           "ResourceType": "Texture2D",
-          "Resource": "_Output0"
+          "Resource": "_RayTracing0"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Buffer",
+          "Resource": "GIBufferWrite"
         }
       ]
     }
@@ -412,7 +516,8 @@
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs",
-    "UnionShaderRayTracing.cs": "UnionShaderRayTracing.cs"
+    "UnionShaderRayTracing.cs": "UnionShaderRayTracing.cs",
+    "UnionShaderComputeTest.cs": "UnionShaderComputeTest.cs"
   },
   "RayTracingShaders": {
     "RayTracing.json": "RayTracing.json"
@@ -478,7 +583,44 @@
     "EnableRayTracing": {
       "Name": "启用光线追踪（如果有）",
       "Type": "bool",
-      "Default": "true"
+      "Default": "false"
+    },
+    "RayTracingReflectionThreshold": {
+      "Name": "光线追踪反射阈值",
+      "Type": "float",
+      "Default": "0.5",
+      "Step": "0.01",
+      "Min": "0",
+      "Max": "1"
+    },
+    "RayTracingReflectionQuality": {
+      "Name": "光线追踪反射质量",
+      "Type": "float",
+      "Default": "1",
+      "Step": "0.01",
+      "Min": "0",
+      "Max": "5"
+    },
+    "UpdateGI": {
+      "Name": "更新全局光照（需要光线追踪）",
+      "Type": "bool",
+      "Default": "false"
+    },
+    "UseGI": {
+      "Name": "使用全局光照",
+      "Type": "bool",
+      "Default": "false"
+    },
+    "GIVolumePosition": {
+      "Name": "全局光照体积位置",
+      "Type": "float3",
+      "Default": "[0,25.1,2]"
+    },
+    "GIVolumeSize": {
+      "Name": "全局光照体积大小",
+      "Type": "float3",
+      "Default": "[200,50,200]",
+      "Min": "10"
     },
     "EnableBloom": {
       "Name": "启用泛光",

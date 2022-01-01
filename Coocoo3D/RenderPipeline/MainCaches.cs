@@ -144,13 +144,14 @@ namespace Coocoo3D.RenderPipeline
                 var tex1 = TextureCaches.GetOrCreate(loadCompleted.Key);
                 tex1.srgb = loadCompleted.Value.srgb;
                 if (loadCompleted.Value.loadTask.Status == TaskStatus.RanToCompletion &&
-                    (loadCompleted.Value.Status == GraphicsObjectStatus.loaded ||
+                   (loadCompleted.Value.Status == GraphicsObjectStatus.loaded ||
                     loadCompleted.Value.Status == GraphicsObjectStatus.error))
                 {
                     tex1.fullPath = loadCompleted.Value.fullPath;
                     tex1.Mark(loadCompleted.Value.Status);
                     if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
                     {
+                        tex1.texture2D.Name = tex1.fullPath;
                         processingList.AddObject(tex1.texture2D, uploader);
                     }
                     TextureOnDemand.Remove(loadCompleted.Key);
@@ -207,7 +208,7 @@ namespace Coocoo3D.RenderPipeline
             return file;
         }
 
-        public Texture2D GetTexture1(string path, GraphicsContext graphicsContext)
+        public Texture2D GetTextureLoaded(string path, GraphicsContext graphicsContext)
         {
             if (string.IsNullOrEmpty(path)) return null;
             return GetT(TextureCaches, path, file =>
@@ -413,10 +414,38 @@ namespace Coocoo3D.RenderPipeline
             return GetT(ComputeShaders, path, file =>
             {
                 ComputeShader computeShader = new ComputeShader();
-                if (Path.GetExtension(path) == ".hlsl")
-                    computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "csmain", path));
-                else
-                    computeShader.Initialize(File.ReadAllBytes(path));
+                computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "csmain", path));
+                return computeShader;
+            });
+        }
+
+        public ComputeShader GetComputeShaderWithKeywords(List<string> keywords, string path)
+        {
+            string xPath;
+            if (keywords != null)
+            {
+                keywords.Sort();
+                xPath = path + string.Concat(keywords);
+            }
+            else
+            {
+                xPath = path;
+            }
+            if (string.IsNullOrEmpty(path)) return null;
+            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
+            return GetT(ComputeShaders, path, xPath, file =>
+            {
+                DxcDefine[] dxcDefines = null;
+                if (keywords != null)
+                {
+                    dxcDefines = new DxcDefine[keywords.Count];
+                    for (int i = 0; i < keywords.Count; i++)
+                    {
+                        dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                    }
+                }
+                ComputeShader computeShader = new ComputeShader();
+                computeShader.Initialize(LoadShader(DxcShaderStage.Compute, File.ReadAllText(path), "csmain", path, dxcDefines));
                 return computeShader;
             });
         }

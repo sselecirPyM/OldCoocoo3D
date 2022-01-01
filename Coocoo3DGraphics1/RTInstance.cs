@@ -14,5 +14,6 @@ namespace Coocoo3DGraphics
         public Dictionary<int, object> CBVs;
         public Dictionary<int, object> SRVs;
         public Dictionary<int, object> UAVs;
+        public byte instanceMask = 0xff;
     }
 }

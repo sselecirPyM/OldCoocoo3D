@@ -9,11 +9,11 @@ public static class UnionShaderShadowMap
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        var psoDesc = param.PSODesc;
+        var psoDesc = param.GetPSODesc();
         var material = param.material;
         bool skinning = true;
-        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning && !bSkinning)
-            skinning = false;
+        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
+            skinning = bSkinning;
 
         if ((bool)param.GetSettingsValue(material, "CastShadow"))
         {
@@ -28,7 +28,7 @@ public static class UnionShaderShadowMap
                     graphicsContext.RSSetScissorRectAndViewport(width / 2, 0, width, height);
             }
             List<string> keywords = new List<string>();
-            if (material.Skinning && param.renderer.skinning && skinning)
+            if (param.renderer.skinning && skinning)
                 keywords.Add("SKINNING");
             foreach (var cbv in param.pass.CBVs)
             {

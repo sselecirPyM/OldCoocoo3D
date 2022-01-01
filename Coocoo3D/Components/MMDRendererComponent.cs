@@ -424,9 +424,9 @@ namespace Coocoo3D.Components
 
         public int indexOffset;
         public int indexCount;
-        public DrawFlag DrawFlags;
+        public bool DrawDoubleFace;
         public bool Transparent;
-        public bool Skinning;
+        //public bool Skinning;
         public Dictionary<string, string> textures = new Dictionary<string, string>();
         public Dictionary<string, object> Parameters = new Dictionary<string, object>();
 

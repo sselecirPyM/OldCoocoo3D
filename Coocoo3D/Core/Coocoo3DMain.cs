@@ -27,11 +27,15 @@ namespace Coocoo3D.Core
         public GeneralGameDriver _GeneralGameDriver = new GeneralGameDriver();
         public RecorderGameDriver _RecorderGameDriver = new RecorderGameDriver();
         #region Time
-
-        public volatile int CompletedRenderCount = 0;
+        public int CompletedRenderCount = 0;
         public long LatestRenderTime = 0;
+
+        public double deltaTime1;
+        public float framePerSecond;
+        public long fpsPreviousUpdate;
+        public int fpsRenderCount;
         #endregion
-        public PerformaceSettings performaceSettings = new PerformaceSettings()
+        public PerformanceSettings performanceSettings = new PerformanceSettings()
         {
             MultiThreadRendering = true,
             SaveCpuPower = true,
@@ -41,7 +45,7 @@ namespace Coocoo3D.Core
         };
 
         Thread renderWorkThread;
-        CancellationTokenSource canRenderThread;
+        CancellationTokenSource cancelRenderThread;
         public GameDriverContext GameDriverContext { get => RPContext.gameDriverContext; }
         public Coocoo3DMain()
         {
@@ -55,36 +59,30 @@ namespace Coocoo3D.Core
             CurrentScene.physics3DScene.Initialize();
             CurrentScene.physics3DScene.SetGravitation(new Vector3(0, -98.01f, 0));
 
-            canRenderThread = new CancellationTokenSource();
+            cancelRenderThread = new CancellationTokenSource();
             renderWorkThread = new Thread(() =>
             {
-                var token = canRenderThread.Token;
+                var token = cancelRenderThread.Token;
                 while (!token.IsCancellationRequested)
                 {
                     long now = stopwatch1.ElapsedTicks;
                     if ((now - LatestRenderTime) / 1e7f < RPContext.gameDriverContext.FrameInterval) continue;
                     bool actualRender = RenderFrame();
-                    if ((performaceSettings.SaveCpuPower && !Recording) && (!performaceSettings.VSync || !actualRender))
+                    if ((performanceSettings.SaveCpuPower && !Recording) && (!performanceSettings.VSync || !actualRender))
                         System.Threading.Thread.Sleep(1);
                 }
             });
             renderWorkThread.IsBackground = true;
             renderWorkThread.Start();
 
-            //RPContext.LoadTask = Task.Run(() =>
-            //{
             RPContext.ReloadDefalutResources();
             widgetRenderer.Reload(RPContext);
-            if (graphicsDevice.IsRayTracingSupport())
-            {
-                //await rayTracingRenderPipeline1.ReloadAssets(RPContext);
-            }
+
             RequireRender();
-            //});
         }
         #region Rendering
         HybirdRenderPipeline hybridRenderPipeline = new HybirdRenderPipeline();
-        //RayTracingRenderPipeline1 rayTracingRenderPipeline1 = new RayTracingRenderPipeline1();
+
         public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         public ImguiInput imguiInput = new ImguiInput();
@@ -102,15 +100,10 @@ namespace Coocoo3D.Core
         ProcessingList _processingList = new ProcessingList();
         public RenderPipelineContext RPContext = new RenderPipelineContext();
 
-        public bool swapChainReady;
         public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
         public GraphicsContext graphicsContext { get => RPContext.graphicsContext; }
         Task RenderTask1;
 
-        public double deltaTime1;
-        public float framePerSecond;
-        public long fpsPreviousUpdate;
-        public int fpsRenderCount;
         private bool RenderFrame()
         {
             long now = stopwatch1.ElapsedTicks;
@@ -194,57 +187,50 @@ namespace Coocoo3D.Core
             {
                 visualChannel.Onframe(RPContext);
             }
-            if (swapChainReady)
+
+            bool thisFrameReady = widgetRenderer.Ready;
+            if (thisFrameReady)
             {
+                imguiInput.Update();
+                UI.UIImGui.GUI(this);
                 GraphicsContext.BeginAlloctor(graphicsDevice);
-
-                bool thisFrameReady = widgetRenderer.Ready;
-                if (thisFrameReady)
+                graphicsContext.Begin();
+                if (RPContext.dynamicContextRead.EnableDisplay)
                 {
-                    imguiInput.Update();
-                    UI.UIImGui.GUI(this);
-                    graphicsContext.Begin();
-                    if (RPContext.dynamicContextRead.EnableDisplay)
-                    {
-                        hybridRenderPipeline.BeginFrame(RPContext);
-                    }
-                    RPContext.UpdateGPUResource();
-
-                    if (performaceSettings.MultiThreadRendering)
-                        RenderTask1 = Task.Run(_RenderFunction);
-                    else
-                        _RenderFunction();
+                    hybridRenderPipeline.BeginFrame(RPContext);
                 }
+                RPContext.UpdateGPUResource();
+
+                if (performanceSettings.MultiThreadRendering)
+                    RenderTask1 = Task.Run(_RenderFunction);
                 else
-                {
-                    graphicsDevice.RenderComplete();
-                }
+                    _RenderFunction();
+            }
 
-                void _RenderFunction()
+            void _RenderFunction()
+            {
+                if (RPContext.dynamicContextRead.EnableDisplay)
                 {
-                    if (RPContext.dynamicContextRead.EnableDisplay)
+                    foreach (var visualChannel in RPContext.visualChannels.Values)
                     {
-                        foreach (var visualChannel in RPContext.visualChannels.Values)
-                        {
-                            hybridRenderPipeline.RenderCamera(RPContext, visualChannel);
-                            postProcess.RenderCamera(RPContext, visualChannel);
-                        }
-                        hybridRenderPipeline.EndFrame(RPContext);
+                        hybridRenderPipeline.RenderCamera(RPContext, visualChannel);
+                        postProcess.RenderCamera(RPContext, visualChannel);
                     }
-                    GameDriver.AfterRender(RPContext, graphicsContext);
-                    widgetRenderer.Render(RPContext, graphicsContext);
-                    graphicsContext.Present(performaceSettings.VSync);
-                    graphicsContext.EndCommand();
-                    graphicsContext.Execute();
-                    CompletedRenderCount++;
+                    hybridRenderPipeline.EndFrame(RPContext);
                 }
+                GameDriver.AfterRender(RPContext, graphicsContext);
+                widgetRenderer.Render(RPContext, graphicsContext);
+                graphicsContext.Present(performanceSettings.VSync);
+                graphicsContext.EndCommand();
+                graphicsContext.Execute();
+                CompletedRenderCount++;
             }
             return true;
         }
 
         public void Dispose()
         {
-            canRenderThread.Cancel();
+            cancelRenderThread.Cancel();
             graphicsDevice.WaitForGpu();
             RPContext.Dispose();
         }
@@ -252,7 +238,7 @@ namespace Coocoo3D.Core
         public bool Recording = false;
     }
 
-    public struct PerformaceSettings
+    public struct PerformanceSettings
     {
         public bool MultiThreadRendering;
         public bool SaveCpuPower;

@@ -24,7 +24,7 @@ public static class UnionShaderRayTracing
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        var psoDesc = param.PSODesc;
+        var psoDesc = param.GetPSODesc();
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         var rayTracingShader = param.rayTracingShader;
@@ -82,15 +82,21 @@ public static class UnionShaderRayTracing
                     call.UAVs = new();
                     param.SRVUAVs(param.pass.UAVs, call.UAVs);
                     call.SRVs = new();
-                    param.SRVUAVs(param.pass.SRVs, call.SRVs,call.srvFlags);
+                    param.SRVUAVs(param.pass.SRVs, call.SRVs, call.srvFlags);
 
                     call.CBVs = new();
                     call.CBVs.Add(0, param.GetCBVData(CBVs[0]));
+                    call.missShaders = new[] { "miss" };
+
+                    if ((bool)param.GetSettingsValue("UpdateGI"))
+                    {
+                        call.rayGenShader = "rayGenGI";
+                        graphicsContext.DispatchRays(8, 8, 8, call);
+                        param.SwapBuffer("GIBuffer", "GIBufferWrite");
+                    }
 
                     call.rayGenShader = "rayGen";
-                    call.missShaders = new[] { "miss" };
                     graphicsContext.DispatchRays(width, height, 1, call);
-
 
                     foreach (var inst in tpas.instances)
                         inst.accelerationStruct.Dispose();

@@ -100,7 +100,7 @@ namespace Coocoo3D.RenderPipeline.Wrap
 
         public void SetBufferComputeImmediately(GraphicsContext context, bool isCBuffer,int slot)
         {
-            context.SetComputeCBVRSlot(new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Position), slot);
+            context.SetCBVRSlot(new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Position), slot);
             binaryWriter.Seek(0, SeekOrigin.Begin);
         }
     }

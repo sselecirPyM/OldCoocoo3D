@@ -25,7 +25,8 @@ namespace Coocoo3D.RenderPipeline
             var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
             dispatcher?.FrameBegin(context);
 
-            MiscProcess.Process(context, new GPUWriter());
+            context.writerReuse.Clear();
+            MiscProcess.Process(context, context.writerReuse);
         }
         public void EndFrame(RenderPipelineContext context)
         {
@@ -115,13 +116,11 @@ namespace Coocoo3D.RenderPipeline
 
             Texture2D depthStencil = unionShaderParam.GetTex2D(renderSequence.DepthStencil);
 
-            PSODesc psoDesc;
             Texture2D[] renderTargets = null;
             if (renderSequence.RenderTargets == null || renderSequence.RenderTargets.Count == 0)
             {
                 if (depthStencil != null)
                     graphicsContext.SetDSV(depthStencil, renderSequence.ClearDepth);
-                psoDesc.rtvFormat = Format.Unknown;
             }
             else
             {
@@ -131,81 +130,54 @@ namespace Coocoo3D.RenderPipeline
                     renderTargets[i] = unionShaderParam.GetTex2D(renderSequence.RenderTargets[i]);
                 }
                 graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, renderSequence.ClearRenderTarget, renderSequence.ClearDepth);
-                psoDesc.rtvFormat = renderTargets[0].GetFormat();
             }
             unionShaderParam.depthStencil = depthStencil;
             unionShaderParam.renderTargets = renderTargets;
 
-            psoDesc.blendState = pass.BlendMode;
-            psoDesc.cullMode = renderSequence.CullMode;
-            psoDesc.depthBias = renderSequence.DepthBias;
-            psoDesc.slopeScaledDepthBias = renderSequence.SlopeScaledDepthBias;
-            psoDesc.dsvFormat = depthStencil == null ? Format.Unknown : depthStencil.GetFormat();
-            psoDesc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
-            psoDesc.renderTargetCount = renderSequence.RenderTargets == null ? 0 : renderSequence.RenderTargets.Count;
-            psoDesc.wireFrame = false;
 
             if (renderSequence.Type == null)
             {
-                psoDesc.inputLayout = InputLayout.mmd;
-                psoDesc.wireFrame = settings.Wireframe;
-
                 unionShaderParam.rayTracingShader = null;
-                for (int i = 0; i < renderers.Count; i++)
+                foreach (MMDRendererComponent renderer in renderers)
                 {
-                    MMDRendererComponent rendererComponent = renderers[i];
-                    graphicsContext.SetMesh(context.GetMesh(rendererComponent.meshPath));
-                    graphicsContext.SetMeshVertex(context.meshOverride[rendererComponent]);
-                    unionShaderParam.renderer = rendererComponent;
-                    var Materials = rendererComponent.Materials;
-                    foreach (var material in Materials)
+                    graphicsContext.SetMesh(context.GetMesh(renderer.meshPath), context.meshOverride[renderer]);
+                    unionShaderParam.renderer = renderer;
+
+                    foreach (var material in renderer.Materials)
                     {
                         unionShaderParam.material = material;
                         if (!FilterObj(unionShaderParam, renderSequence.Filter))
                         {
                             continue;
                         }
-                        if (renderSequence.CullMode == 0)
-                            psoDesc.cullMode = material.DrawFlags.HasFlag(DrawFlag.DrawDoubleFace) ? CullMode.None : CullMode.Back;
-
-                        unionShaderParam.PSODesc = psoDesc;
                         bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
-
-                        if (executed != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
-                        {
-                            graphicsContext.SetPSO(renderSequence.PSODefault, psoDesc);
-                            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-                        }
                     }
                 }
+
+                //unionShaderParam.renderer = null;
+                //unionShaderParam.material = null;
+                //unionShaderParam.rayTracingShader = null;
+                //bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
+
             }
             else if (renderSequence.Type == "DrawScreen")
             {
-                psoDesc.inputLayout = InputLayout.postProcess;
-                unionShaderParam.PSODesc = psoDesc;
                 unionShaderParam.renderer = null;
                 unionShaderParam.material = null;
                 unionShaderParam.rayTracingShader = null;
                 graphicsContext.SetMesh(context.quadMesh);
 
                 bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
-                if (executed != true && renderSequence.PSODefault.Status == GraphicsObjectStatus.loaded)
-                {
-                    graphicsContext.SetPSO(renderSequence.PSODefault, psoDesc);
-                    graphicsContext.DrawIndexed(context.quadMesh.GetIndexCount(), 0, 0);
-                }
             }
             else if (renderSequence.Type == "RayTracing")
             {
                 if (context.graphicsDevice.IsRayTracingSupport())
                 {
-                    psoDesc.inputLayout = InputLayout.postProcess;
-                    unionShaderParam.PSODesc = psoDesc;
                     unionShaderParam.renderer = null;
                     unionShaderParam.material = null;
                     unionShaderParam.rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(pass.RayTracingShader));
                     UnionShader unionShader = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader));
-                    bool? a = unionShader?.Invoke(unionShaderParam);
+                    bool? executed = unionShader?.Invoke(unionShaderParam);
                 }
                 else
                 {

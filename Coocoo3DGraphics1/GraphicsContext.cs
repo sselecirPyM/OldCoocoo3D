@@ -18,32 +18,41 @@ namespace Coocoo3DGraphics
         GraphicsDevice graphicsDevice;
         ID3D12GraphicsCommandList4 m_commandList;
         public RootSignature currentRootSignature;
+        RootSignature _currentGraphicsRootSignature;
+        RootSignature _currentComputeRootSignature;
 
         public Dictionary<int, object> slots = new Dictionary<int, object>();
 
         public RTPSO currentRTPSO;
         public PSO currentPSO;
-        public bool stateChanged;
+
+        public Dictionary<int, ulong> currentCBVs = new Dictionary<int, ulong>();
+        public Dictionary<int, ulong> currentSRVs = new Dictionary<int, ulong>();
+        public Dictionary<int, ulong> currentUAVs = new Dictionary<int, ulong>();
 
         public void Reload(GraphicsDevice device)
         {
             this.graphicsDevice = device;
         }
 
-        public void SetPSO(ComputeShader computeShader)
+        public bool SetPSO(ComputeShader computeShader)
         {
             if (!computeShader.computeShaders.TryGetValue(currentRootSignature.rootSignature, out ID3D12PipelineState pipelineState))
             {
                 ComputePipelineStateDescription desc = new ComputePipelineStateDescription();
                 desc.ComputeShader = computeShader.data;
                 desc.RootSignature = currentRootSignature.rootSignature;
-                ThrowIfFailed(graphicsDevice.device.CreateComputePipelineState(desc, out pipelineState));
+                if(graphicsDevice.device.CreateComputePipelineState(desc, out pipelineState).Failure)
+                {
+                    return false;
+                }
 
                 computeShader.computeShaders[currentRootSignature.rootSignature] = pipelineState;
             }
 
             m_commandList.SetPipelineState(pipelineState);
             InReference(pipelineState);
+            return true;
         }
 
         public bool SetPSO(PSO pso, in PSODesc desc)
@@ -53,7 +62,6 @@ namespace Coocoo3DGraphics
             {
                 m_commandList.SetPipelineState(pso.m_pipelineStates[variantIndex]);
                 InReference(pso.m_pipelineStates[variantIndex]);
-                stateChanged = true;
                 currentPSO = pso;
                 currentPSODesc = desc;
                 return true;
@@ -107,10 +115,11 @@ namespace Coocoo3DGraphics
                 stateSubObjects.Add(new StateSubObject(new RaytracingPipelineConfig(2)));
                 stateSubObjects.Add(new StateSubObject(new GlobalRootSignature(pso.globalRootSignature.rootSignature)));
                 var result = device.CreateStateObject(new StateObjectDescription(StateObjectType.RaytracingPipeline, stateSubObjects.ToArray()), out pso.so);
-                if (result.Failure) return false;
+                if (result.Failure)
+                    return false;
             }
+            SetRootSignature(pso.globalRootSignature);
             currentRTPSO = pso;
-            m_commandList.SetComputeRootSignature(pso.globalRootSignature.rootSignature);
             m_commandList.SetPipelineState1(pso.so);
             return true;
         }
@@ -170,7 +179,7 @@ namespace Coocoo3DGraphics
                         raytracingInstanceDescription.AccelerationStructure = (long)btas.resource.GPUVirtualAddress;
                         raytracingInstanceDescription.InstanceContributionToHitGroupIndex = (Vortice.UInt24)(uint)i;
                         raytracingInstanceDescription.InstanceID = (Vortice.UInt24)(uint)i;
-                        raytracingInstanceDescription.InstanceMask = 0xff;
+                        raytracingInstanceDescription.InstanceMask = instance.instanceMask;
                         raytracingInstanceDescription.Transform = GetMatrix3X4(Matrix4x4.Transpose(instance.transform));
                         raytracingInstanceDescriptions[i] = raytracingInstanceDescription;
                         btas.initialized = true;
@@ -208,7 +217,7 @@ namespace Coocoo3DGraphics
             dispatchRaysDescription.MissShaderTable = new GpuVirtualAddressRangeAndStride();
 
             currentRootSignature = currentRTPSO.globalRootSignature;
-            SetComputeSRVRSlot(call.tpas.resource.GPUVirtualAddress, 0);
+            SetSRVRSlot(call.tpas.resource.GPUVirtualAddress, 0);
             byte[] data = new byte[32];
             MemoryStream memoryStream = new MemoryStream();
             BinaryWriter writer = new BinaryWriter(memoryStream);
@@ -232,13 +241,15 @@ namespace Coocoo3DGraphics
                             if (srv0 is Texture2D tex2d)
                             {
                                 if (!call.srvFlags.ContainsKey(srvOffset))
-                                    SetComputeSRVTSlot(tex2d, srvOffset);
+                                    SetSRVTSlot(tex2d, srvOffset);
                                 else
-                                    SetComputeSRVTSlotLinear(tex2d, srvOffset);
+                                    SetSRVTSlotLinear(tex2d, srvOffset);
 
                             }
                             else if (srv0 is TextureCube texCube)
-                                SetComputeSRVTSlot(texCube, srvOffset);
+                                SetSRVTSlot(texCube, srvOffset);
+                            else if (srv0 is GPUBuffer buffer)
+                                SetSRVTSlot(buffer, srvOffset);
                         }
 
                         srvOffset++;
@@ -248,11 +259,11 @@ namespace Coocoo3DGraphics
                         if (call.CBVs != null && call.CBVs.TryGetValue(cbvOffset, out object cbv0))
                         {
                             if (cbv0 is byte[] cbvData)
-                                SetComputeCBVRSlot<byte>(cbvData, cbvOffset);
+                                SetCBVRSlot<byte>(cbvData, cbvOffset);
                             else if (cbv0 is Matrix4x4[] cbvDataM)
-                                SetComputeCBVRSlot<Matrix4x4>(cbvDataM, cbvOffset);
+                                SetCBVRSlot<Matrix4x4>(cbvDataM, cbvOffset);
                             else if (cbv0 is Vector4[] cbvDataF4)
-                                SetComputeCBVRSlot<Vector4>(cbvDataF4, cbvOffset);
+                                SetCBVRSlot<Vector4>(cbvDataF4, cbvOffset);
                         }
 
                         cbvOffset++;
@@ -262,7 +273,9 @@ namespace Coocoo3DGraphics
                         if (call.UAVs != null && call.UAVs.TryGetValue(uavOffset, out object uav0))
                         {
                             if (uav0 is Texture2D tex2d)
-                                SetComputeUAVTSlot(tex2d, uavOffset);
+                                SetUAVTSlot(tex2d, uavOffset);
+                            else if (uav0 is GPUBuffer buffer)
+                                SetUAVTSlot(buffer, uavOffset);
                         }
                         uavOffset++;
                     }
@@ -324,6 +337,8 @@ namespace Coocoo3DGraphics
                             {
                                 if (srv0 is Texture2D tex2d)
                                     writer.Write(GetSRVHandle(tex2d).Ptr);
+                                else if (srv0 is GPUBuffer buffer)
+                                    writer.Write(GetSRVHandle(buffer).Ptr);
                                 else if (srv0 is ID3D12Resource resource)
                                     writer.Write(InReferenceAddr(resource));
                                 else
@@ -378,6 +393,7 @@ namespace Coocoo3DGraphics
             writer.Seek(0, SeekOrigin.Begin);
 
             pRtsoProps.Dispose();
+            PipelineBindingCompute();
             m_commandList.DispatchRays(dispatchRaysDescription);
         }
 
@@ -386,18 +402,46 @@ namespace Coocoo3DGraphics
             currentInputLayout = inputLayout;
         }
 
-        public void SetSRVTSlotLinear(Texture2D texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture, true));
+        public void SetSRVTSlotLinear(Texture2D texture, int slot) => currentSRVs[slot] = GetSRVHandle(texture, true).Ptr;
 
-        public void SetSRVTSlot(Texture2D texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
+        public void SetSRVTSlot(Texture2D texture, int slot) => currentSRVs[slot] = GetSRVHandle(texture).Ptr;
 
-        public void SetSRVTSlot(TextureCube texture, int slot) => m_commandList.SetGraphicsRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
+        public void SetSRVTSlot(TextureCube texture, int slot) => currentSRVs[slot] = GetSRVHandle(texture).Ptr;
 
-        public void SetCBVRSlot(CBuffer buffer, int offset256, int size256, int slot) => SetCBVR(buffer, offset256, size256, currentRootSignature.cbv[slot]);
+        public void SetSRVTSlot(GPUBuffer buffer, int slot) => currentSRVs[slot] = GetSRVHandle(buffer).Ptr;
+
+        public void SetSRVTLim(TextureCube texture, int mips, int slot) => currentSRVs[slot] = GetSRVHandleWithMip(texture, mips).Ptr;
+
+        void SetSRVRSlot(ulong gpuAddr, int slot) => currentSRVs[slot] = gpuAddr;
+
+        public void SetCBVRSlot(CBuffer buffer, int offset256, int size256, int slot) => currentCBVs[slot] = buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256);
 
         public void SetCBVRSlot<T>(Span<T> data, int slot) where T : unmanaged
         {
             graphicsDevice.superRingBuffer.Upload(data, out ulong addr);
-            m_commandList.SetGraphicsRootConstantBufferView(currentRootSignature.cbv[slot], addr);
+            currentCBVs[slot] = addr;
+        }
+
+        public void SetUAVTSlot(Texture2D texture2D, int slot) => currentUAVs[slot] = GetUAVHandle(texture2D).Ptr;
+        public void SetUAVTSlot(GPUBuffer buffer, int slot) => currentUAVs[slot] = GetUAVHandle(buffer).Ptr;
+
+        public void SetUAVTSlot(TextureCube texture, int mipIndex, int slot)
+        {
+            var d3dDevice = graphicsDevice.device;
+            texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
+            if (!(mipIndex < texture.mipLevels))
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
+            d3dDevice.CreateUnorderedAccessView(texture.resource, null, new UnorderedAccessViewDescription()
+            {
+                ViewDimension = UnorderedAccessViewDimension.Texture2DArray,
+                Texture2DArray = new Texture2DArrayUnorderedAccessView() { MipSlice = mipIndex, ArraySize = 6 },
+                Format = texture.uavFormat,
+            }, cpuHandle);
+            currentUAVs[slot] = gpuHandle.Ptr;
+            InReference(texture.resource);
         }
 
         public unsafe void UpdateCBStaticResource<T>(CBuffer buffer, ID3D12GraphicsCommandList commandList, Span<T> data) where T : unmanaged
@@ -718,6 +762,13 @@ namespace Coocoo3DGraphics
             texture.Status = GraphicsObjectStatus.loaded;
         }
 
+        public void UpdateDynamicBuffer(GPUBuffer buffer)
+        {
+            CreateUAVBuffer(buffer.size, ref buffer.resource);
+            buffer.resource.Name = buffer.Name;
+            buffer.resourceStates = ResourceStates.UnorderedAccess;
+        }
+
         public void UpdateReadBackTexture(ReadBackTexture2D texture)
         {
             if (texture.m_textureReadBack != null)
@@ -744,77 +795,41 @@ namespace Coocoo3DGraphics
             InReference(mesh.indexBuffer);
         }
 
-        public void SetMeshVertex(MMDMesh mesh)
+        public void SetMesh(MMDMesh mesh, MMDMesh meshOverride)
         {
             m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             foreach (var vtBuf in mesh.vtBuffers)
             {
+                if (!meshOverride.vtBuffers.ContainsKey(vtBuf.Key))
+                {
+                    m_commandList.IASetVertexBuffers(vtBuf.Key, vtBuf.Value.vertexBufferView);
+                    InReference(vtBuf.Value.vertex);
+                }
+            }
+            foreach (var vtBuf in meshOverride.vtBuffers)
+            {
                 m_commandList.IASetVertexBuffers(vtBuf.Key, vtBuf.Value.vertexBufferView);
                 InReference(vtBuf.Value.vertex);
             }
-        }
-
-        public void SetMeshIndex(MMDMesh mesh)
-        {
             m_commandList.IASetIndexBuffer(mesh.indexBufferView);
             InReference(mesh.indexBuffer);
         }
 
-        public void SetComputeSRVTSlotLinear(Texture2D texture, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture, true));
+        //public void SetMeshVertex(MMDMesh mesh)
+        //{
+        //    m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+        //    foreach (var vtBuf in mesh.vtBuffers)
+        //    {
+        //        m_commandList.IASetVertexBuffers(vtBuf.Key, vtBuf.Value.vertexBufferView);
+        //        InReference(vtBuf.Value.vertex);
+        //    }
+        //}
 
-        public void SetComputeSRVTSlot(Texture2D texture, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
-
-        public void SetComputeSRVTSlot(TextureCube texture, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandle(texture));
-
-        public void SetComputeSRVTLim(TextureCube texture, int mips, int slot) => m_commandList.SetComputeRootDescriptorTable(currentRootSignature.srv[slot], GetSRVHandleWithMip(texture, mips));
-
-        public void SetComputeCBVRSlot(CBuffer buffer, int offset256, int size256, int slot) => m_commandList.SetComputeRootConstantBufferView(currentRootSignature.cbv[slot], buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
-
-        public void SetComputeCBVRSlot<T>(Span<T> data, int slot) where T : unmanaged
-        {
-            graphicsDevice.superRingBuffer.Upload(data, out ulong addr);
-            m_commandList.SetComputeRootConstantBufferView(currentRootSignature.cbv[slot], addr);
-        }
-
-        void SetComputeSRVRSlot(ulong gpuAddr, int slot)
-        {
-            m_commandList.SetComputeRootShaderResourceView(currentRootSignature.srv[slot], gpuAddr);
-        }
-
-        void SetComputeUAVT(Texture2D texture2D, int index)
-        {
-            texture2D.StateChange(m_commandList, ResourceStates.UnorderedAccess);
-            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
-            graphicsDevice.device.CreateUnorderedAccessView(texture2D.resource, null, null, cpuDescriptorHandle);
-            m_commandList.SetComputeRootDescriptorTable(index, gpuDescriptorHandle);
-            InReference(texture2D.resource);
-        }
-        void SetComputeUAVT(TextureCube texture, int mipIndex, int index)
-        {
-            var d3dDevice = graphicsDevice.device;
-            texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
-            if (!(mipIndex < texture.mipLevels))
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuHandle, out var gpuHandle);
-            d3dDevice.CreateUnorderedAccessView(texture.resource, null, new UnorderedAccessViewDescription()
-            {
-                ViewDimension = UnorderedAccessViewDimension.Texture2DArray,
-                Texture2DArray = new Texture2DArrayUnorderedAccessView() { MipSlice = mipIndex, ArraySize = 6 },
-                Format = texture.uavFormat,
-            }, cpuHandle);
-            m_commandList.SetComputeRootDescriptorTable(index, gpuHandle);
-            InReference(texture.resource);
-        }
-        public void SetComputeUAVTSlot(Texture2D texture2D, int slot)
-        {
-            SetComputeUAVT(texture2D, currentRootSignature.uav[slot]);
-        }
-        public void SetComputeUAVTSlot(TextureCube textureCube, int mipIndex, int slot)
-        {
-            SetComputeUAVT(textureCube, mipIndex, currentRootSignature.uav[slot]);
-        }
+        //public void SetMeshIndex(MMDMesh mesh)
+        //{
+        //    m_commandList.IASetIndexBuffer(mesh.indexBufferView);
+        //    InReference(mesh.indexBuffer);
+        //}
 
         public void CopyTexture(ReadBackTexture2D target, Texture2D texture2D, int index)
         {
@@ -847,11 +862,20 @@ namespace Coocoo3DGraphics
             m_commandList = graphicsDevice.GetCommandList();
             m_commandList.Reset(graphicsDevice.GetCommandAllocator());
             m_commandList.SetDescriptorHeaps(1, new ID3D12DescriptorHeap[] { graphicsDevice.cbvsrvuavHeap.heap });
+            ClearState();
+        }
+
+        public void ClearState()
+        {
             currentPSO = null;
             currentRTPSO = null;
+            _currentGraphicsRootSignature = null;
+            _currentComputeRootSignature = null;
             currentRootSignature = null;
             currentInputLayout = null;
-            stateChanged = true;
+            currentCBVs.Clear();
+            currentSRVs.Clear();
+            currentUAVs.Clear();
         }
 
         public void ClearScreen(Vector4 color)
@@ -938,14 +962,9 @@ namespace Coocoo3DGraphics
 
         public void SetRootSignature(RootSignature rootSignature)
         {
+            ClearState();
             this.currentRootSignature = rootSignature;
-            m_commandList.SetGraphicsRootSignature(rootSignature.GetRootSignature(graphicsDevice));
-        }
-
-        public void SetRootSignatureCompute(RootSignature rootSignature)
-        {
-            this.currentRootSignature = rootSignature;
-            m_commandList.SetComputeRootSignature(rootSignature.GetRootSignature(graphicsDevice));
+            rootSignature.GetRootSignature(graphicsDevice);
         }
 
         public void SetRenderTargetScreen(Vector4 color, bool clearScreen)
@@ -962,21 +981,131 @@ namespace Coocoo3DGraphics
 
         public void Draw(int vertexCount, int startVertexLocation)
         {
+            PipelineBinding();
             m_commandList.DrawInstanced(vertexCount, 1, startVertexLocation, 0);
         }
 
         public void DrawIndexed(int indexCount, int startIndexLocation, int baseVertexLocation)
         {
+            PipelineBinding();
             DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
         }
 
         public void DrawIndexedInstanced(int indexCountPerInstance, int instanceCount, int startIndexLocation, int baseVertexLocation, int startInstanceLocation)
         {
+            PipelineBinding();
             m_commandList.DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+        }
+
+        void PipelineBindingCompute()
+        {
+            if (_currentComputeRootSignature != currentRootSignature)
+            {
+                _currentComputeRootSignature = currentRootSignature;
+                _currentGraphicsRootSignature = null;
+                m_commandList.SetComputeRootSignature(currentRootSignature.rootSignature);
+            }
+            int cbvOffset = 0;
+            int srvOffset = 0;
+            int uavOffset = 0;
+            for (int i = 0; i < currentRootSignature.descs.Length; i++)
+            {
+                ResourceAccessType d = currentRootSignature.descs[i];
+                if (d == ResourceAccessType.CBV)
+                {
+                    if (currentCBVs.TryGetValue(cbvOffset, out ulong addr))
+                        m_commandList.SetComputeRootConstantBufferView(i, addr);
+                    cbvOffset++;
+                }
+                else if (d == ResourceAccessType.CBVTable)
+                {
+                    if (currentCBVs.TryGetValue(cbvOffset, out ulong addr))
+                        m_commandList.SetComputeRootDescriptorTable(i, new GpuDescriptorHandle() { Ptr = addr });
+                    cbvOffset++;
+                }
+                else if (d == ResourceAccessType.SRV)
+                {
+                    if (currentSRVs.TryGetValue(srvOffset, out ulong addr))
+                        m_commandList.SetComputeRootShaderResourceView(i, addr);
+                    srvOffset++;
+                }
+                else if (d == ResourceAccessType.SRVTable)
+                {
+                    if (currentSRVs.TryGetValue(srvOffset, out ulong addr))
+                        m_commandList.SetComputeRootDescriptorTable(i, new GpuDescriptorHandle() { Ptr = addr });
+                    srvOffset++;
+                }
+                else if (d == ResourceAccessType.UAV)
+                {
+                    if (currentUAVs.TryGetValue(uavOffset, out ulong addr))
+                        m_commandList.SetComputeRootUnorderedAccessView(i, addr);
+                    uavOffset++;
+                }
+                else if (d == ResourceAccessType.UAVTable)
+                {
+                    if (currentUAVs.TryGetValue(uavOffset, out ulong addr))
+                        m_commandList.SetComputeRootDescriptorTable(i, new GpuDescriptorHandle() { Ptr = addr });
+                    uavOffset++;
+                }
+            }
+        }
+
+        void PipelineBinding()
+        {
+            if (_currentGraphicsRootSignature != currentRootSignature)
+            {
+                _currentGraphicsRootSignature = currentRootSignature;
+                _currentComputeRootSignature = null;
+                m_commandList.SetGraphicsRootSignature(currentRootSignature.rootSignature);
+            }
+            int cbvOffset = 0;
+            int srvOffset = 0;
+            int uavOffset = 0;
+            for (int i = 0; i < currentRootSignature.descs.Length; i++)
+            {
+                ResourceAccessType d = currentRootSignature.descs[i];
+                if (d == ResourceAccessType.CBV)
+                {
+                    if (currentCBVs.TryGetValue(cbvOffset, out ulong addr))
+                        m_commandList.SetGraphicsRootConstantBufferView(i, addr);
+                    cbvOffset++;
+                }
+                else if (d == ResourceAccessType.CBVTable)
+                {
+                    if (currentCBVs.TryGetValue(cbvOffset, out ulong addr))
+                        m_commandList.SetGraphicsRootDescriptorTable(i, new GpuDescriptorHandle() { Ptr = addr });
+                    cbvOffset++;
+                }
+                else if (d == ResourceAccessType.SRV)
+                {
+                    if (currentSRVs.TryGetValue(srvOffset, out ulong addr))
+                        m_commandList.SetGraphicsRootShaderResourceView(i, addr);
+                    srvOffset++;
+                }
+                else if (d == ResourceAccessType.SRVTable)
+                {
+                    if (currentSRVs.TryGetValue(srvOffset, out ulong addr))
+                        m_commandList.SetGraphicsRootDescriptorTable(i, new GpuDescriptorHandle() { Ptr = addr });
+                    srvOffset++;
+                }
+                else if (d == ResourceAccessType.UAV)
+                {
+                    if (currentUAVs.TryGetValue(uavOffset, out ulong addr))
+                        m_commandList.SetGraphicsRootUnorderedAccessView(i, addr);
+                    uavOffset++;
+                }
+                else if (d == ResourceAccessType.UAVTable)
+                {
+                    if (currentUAVs.TryGetValue(uavOffset, out ulong addr))
+                        m_commandList.SetGraphicsRootDescriptorTable(i, new GpuDescriptorHandle() { Ptr = addr });
+                    uavOffset++;
+                }
+            }
         }
 
         public void Dispatch(int x, int y, int z)
         {
+            PipelineBindingCompute();
             m_commandList.Dispatch(x, y, z);
         }
 
@@ -1012,13 +1141,6 @@ namespace Coocoo3DGraphics
         {
             device.GetCommandAllocator().Reset();
         }
-
-        void SetCBVR(CBuffer buffer, int index)
-        {
-            m_commandList.SetGraphicsRootConstantBufferView(index, buffer.GetCurrentVirtualAddress());
-        }
-
-        void SetCBVR(CBuffer buffer, int offset256, int size256, int index) => m_commandList.SetGraphicsRootConstantBufferView(index, buffer.GetCurrentVirtualAddress() + (ulong)(offset256 * 256));
 
         void CreateBuffer(int bufferLength, ref ID3D12Resource resource, ResourceStates resourceStates = ResourceStates.CopyDestination, HeapType heapType = HeapType.Default)
         {
@@ -1067,6 +1189,40 @@ namespace Coocoo3DGraphics
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
             graphicsDevice.device.CreateUnorderedAccessView(texture.resource, null, null, cpuDescriptorHandle);
             InReference(texture.resource);
+            return gpuDescriptorHandle;
+        }
+        GpuDescriptorHandle GetUAVHandle(GPUBuffer buffer)
+        {
+            buffer.StateChange(m_commandList, ResourceStates.UnorderedAccess);
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+            graphicsDevice.device.CreateUnorderedAccessView(buffer.resource, null, new UnorderedAccessViewDescription()
+            {
+                Format = Format.R32_Typeless,
+                ViewDimension = UnorderedAccessViewDimension.Buffer,
+                Buffer = new BufferUnorderedAccessView()
+                {
+                    Flags = BufferUnorderedAccessViewFlags.Raw,
+                    NumElements = buffer.size / 4
+                }
+            }, cpuDescriptorHandle);
+            InReference(buffer.resource);
+            return gpuDescriptorHandle;
+        }
+        GpuDescriptorHandle GetSRVHandle(GPUBuffer buffer)
+        {
+            buffer.StateChange(m_commandList, ResourceStates.GenericRead);
+            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+            srvDesc.Format = Format.R32_Typeless;
+            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.Buffer;
+            srvDesc.Buffer.FirstElement = 0;
+            srvDesc.Buffer.NumElements = buffer.size / 4;
+            srvDesc.Buffer.Flags = BufferShaderResourceViewFlags.Raw;
+
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+            graphicsDevice.device.CreateShaderResourceView(buffer.resource, srvDesc, cpuDescriptorHandle);
+            InReference(buffer.resource);
             return gpuDescriptorHandle;
         }
         GpuDescriptorHandle GetSRVHandle(Texture2D texture, bool linear = false)

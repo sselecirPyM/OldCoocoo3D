@@ -110,8 +110,7 @@ namespace Coocoo3D.ResourceWarp
                     Name = mmdMat.Name,
                     indexCount = mmdMat.TriangeIndexNum,
                     indexOffset = indexOffset,
-                    DrawFlags = (DrawFlag)mmdMat.DrawFlags,
-                    Skinning = true,
+                    //Skinning = true,
                 };
                 Vector3 min;
                 Vector3 max;
@@ -124,7 +123,7 @@ namespace Coocoo3D.ResourceWarp
                 }
 
                 mat.boundingBox = new Vortice.Mathematics.BoundingBox(min, max);
-
+                mat.DrawDoubleFace = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawDoubleFace);
                 mat.Parameters["DiffuseColor"] = mmdMat.DiffuseColor;
                 mat.Parameters["SpecularColor"] = mmdMat.SpecularColor;
                 mat.Parameters["EdgeSize"] = mmdMat.EdgeScale;
