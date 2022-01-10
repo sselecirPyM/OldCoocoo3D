@@ -15,14 +15,19 @@
 
   <ItemGroup>
     <Compile Remove="Samples\Dispatcher.cs" />
+    <Compile Remove="Samples\DRDispatcher.cs" />
     <Compile Remove="Samples\UnionShaderBloom.cs" />
     <Compile Remove="Samples\UnionShaderComputeTest.cs" />
     <Compile Remove="Samples\UnionShaderDeferred.cs" />
     <Compile Remove="Samples\UnionShaderPBRForward.cs" />
     <Compile Remove="Samples\UnionShaderShadowMap.cs" />
+    <Compile Remove="Samples\UnionShaderRayTracing.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Samples\Dispatcher.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Samples\DRDispatcher.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Samples\UnionShaderShadowMap.cs">
@@ -47,7 +52,7 @@
 
   <ItemGroup>
     <PackageReference Include="BulletSharp.x64" Version="0.12.0" />
-    <PackageReference Include="ImGui.NET" Version="1.78.0" />
+    <PackageReference Include="ImGui.NET" Version="1.86.0" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="8.5.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

@@ -23,9 +23,6 @@ namespace Coocoo3DGraphics
         public Format uavFormat;
         public GraphicsObjectStatus Status;
 
-        public int GetWidth() => width;
-        public int GetHeight() => height;
-
         public void ReloadAsDepthStencil(int width, int height, Format format)
         {
             this.width = width;
@@ -50,7 +47,9 @@ namespace Coocoo3DGraphics
             this.mipLevels = 1;
         }
 
-        public void ReloadAsRTVUAV(int width, int height, Format format)
+
+        public void ReloadAsRTVUAV(int width, int height, Format format) => ReloadAsRTVUAV(width, height, 1, format);
+        public void ReloadAsRTVUAV(int width, int height, int mipLevels, Format format)
         {
             this.width = width;
             this.height = height;
@@ -58,7 +57,7 @@ namespace Coocoo3DGraphics
             this.dsvFormat = Format.Unknown;
             this.rtvFormat = format;
             this.uavFormat = format;
-            this.mipLevels = 1;
+            this.mipLevels = mipLevels;
         }
 
         public void Reload(Texture2D texture)

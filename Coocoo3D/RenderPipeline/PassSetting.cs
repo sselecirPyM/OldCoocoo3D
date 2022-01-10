@@ -16,6 +16,7 @@ namespace Coocoo3D.RenderPipeline
         public string Name;
         public List<RenderSequence> RenderSequence;
         public Dictionary<string, RenderTarget> RenderTargets;
+        public Dictionary<string, RenderTarget> RenderTargetCubes;
         public Dictionary<string, RenderTarget> DynamicBuffers;
         public Dictionary<string, Pass> Passes;
         public List<_AssetDefine> ComputeShaders;
@@ -95,7 +96,6 @@ namespace Coocoo3D.RenderPipeline
         public bool ClearDepth;
         public bool ClearRenderTarget;
         public CullMode CullMode;
-        public string Filter;
 
         public Dictionary<string, string> PropertiesOverride;
 

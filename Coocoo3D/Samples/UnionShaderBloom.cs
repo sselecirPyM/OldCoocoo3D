@@ -12,11 +12,10 @@ public static class UnionShaderBloom
         var mainCaches = param.mainCaches;
         var psoDesc = param.GetPSODesc();
 
-
         var writer = param.GPUWriter;
         Texture2D renderTarget = param.renderTargets[0];
-        writer.Write(renderTarget.GetWidth());
-        writer.Write(renderTarget.GetHeight());
+        writer.Write(renderTarget.width);
+        writer.Write(renderTarget.height);
         writer.Write((float)param.GetSettingsValue("BloomThreshold"));
         writer.Write((float)param.GetSettingsValue("BloomIntensity"));
         writer.SetBufferImmediately(graphicsContext, false, 0);

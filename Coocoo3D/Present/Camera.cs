@@ -58,7 +58,7 @@ namespace Coocoo3D.Present
             var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
             Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos, LookAtPoint, up);
             float nearClip1 = MathF.Max(nearClip, 0.001f);
-            Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Fov, AspectRatio, nearClip1, MathF.Max(MathF.Max(farClip, nearClip1 + 1e-1f), 0.002f));
+            Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Math.Clamp(Fov, 1e-3f, MathF.PI - 1e-3f), AspectRatio, nearClip1, MathF.Max(MathF.Max(farClip, nearClip1 + 1e-1f), 0.002f));
             Matrix4x4 vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
             Matrix4x4.Invert(vpMatrix, out Matrix4x4 pvMatrix);
             return new CameraData()

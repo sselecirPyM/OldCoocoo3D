@@ -23,9 +23,7 @@ public static class UnionShaderPBRForward
     {
         var mainCaches = param.mainCaches;
         PSO pso = null;
-        var material = param.material;
         var graphicsContext = param.graphicsContext;
-        var psoDesc = param.GetPSODesc();
 
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
@@ -33,12 +31,21 @@ public static class UnionShaderPBRForward
         if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
             skinning = bSkinning;
 
-        if (material != null)
+        switch (param.passName)
         {
-            switch (param.passName)
-            {
-                case "DrawObjectPass":
+            case "DrawObjectPass":
+            case "DrawTransparentPass":
+                param.WriteCBV(param.pass.CBVs[1]);
+                foreach (var renderer in param.renderers)
+                {
+                    param.SetMesh(graphicsContext, renderer);
+                    param.renderer = renderer;
+
+                    foreach (var material in renderer.Materials)
                     {
+                        if (param.passName == "DrawTransparentPass" && !material.Transparent) continue;
+                        param.material = material;
+                        var psoDesc = param.GetPSODesc();
                         bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
 
                         List<string> keywords = new List<string>();
@@ -64,43 +71,36 @@ public static class UnionShaderPBRForward
                         if (pointLights.Count != 0)
                             keywords.Add("ENABLE_POINT_LIGHT");
 
-                        foreach (var cbv in param.pass.CBVs)
-                        {
-                            param.WriteCBV(cbv);
-                        }
+                        //foreach (var cbv in param.pass.CBVs)
+                        //{
+                        //    param.WriteCBV(cbv);
+                        //}
+                        param.WriteCBV(param.pass.CBVs[0]);
                         pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PBRMaterial.hlsl", param.relativePath));
+                        param.SetSRVs(param.pass.SRVs, material);
+                        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
                     }
-                    break;
-                default:
-                    return false;
-            }
-            param.SetSRVs(param.pass.SRVs, material);
-            if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-            return true;
-        }
-        else
-        {
-            switch (param.passName)
-            {
-                case "DrawSkyBoxPass":
+                }
+                break;
+            case "DrawSkyBoxPass":
+                {
+                    foreach (var cbv in param.pass.CBVs)
                     {
-                        foreach (var cbv in param.pass.CBVs)
-                        {
-                            param.WriteCBV(cbv);
-                        }
-                        pso = mainCaches.GetPSOWithKeywords(null, Path.GetFullPath("SkyBox.hlsl", param.relativePath));
+                        param.WriteCBV(cbv);
                     }
-                    break;
-                default:
-                    return false;
-            }
-            param.SetSRVs(param.pass.SRVs, material);
-            if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-            {
-                graphicsContext.DrawIndexed(6, 0, 0);
-            }
-            return true;
+                    var psoDesc = param.GetPSODesc();
+                    pso = mainCaches.GetPSOWithKeywords(null, Path.GetFullPath("SkyBox.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs, null);
+                    if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                    {
+                        graphicsContext.DrawIndexed(6, 0, 0);
+                    }
+                }
+                break;
+            default:
+                return false;
         }
+        return true;
     }
 }

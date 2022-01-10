@@ -42,7 +42,7 @@ namespace Coocoo3DGraphics
                 ComputePipelineStateDescription desc = new ComputePipelineStateDescription();
                 desc.ComputeShader = computeShader.data;
                 desc.RootSignature = currentRootSignature.rootSignature;
-                if(graphicsDevice.device.CreateComputePipelineState(desc, out pipelineState).Failure)
+                if (graphicsDevice.device.CreateComputePipelineState(desc, out pipelineState).Failure)
                 {
                     return false;
                 }
@@ -423,12 +423,14 @@ namespace Coocoo3DGraphics
         }
 
         public void SetUAVTSlot(Texture2D texture2D, int slot) => currentUAVs[slot] = GetUAVHandle(texture2D).Ptr;
+        public void SetUAVTSlot(TextureCube textureCube, int slot) => currentUAVs[slot] = GetUAVHandle(textureCube).Ptr;
         public void SetUAVTSlot(GPUBuffer buffer, int slot) => currentUAVs[slot] = GetUAVHandle(buffer).Ptr;
 
         public void SetUAVTSlot(TextureCube texture, int mipIndex, int slot)
         {
             var d3dDevice = graphicsDevice.device;
-            texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
+            //texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
+            texture.SetPartResourceState(m_commandList, ResourceStates.UnorderedAccess, mipIndex, 1);
             if (!(mipIndex < texture.mipLevels))
             {
                 throw new ArgumentOutOfRangeException();
@@ -756,7 +758,8 @@ namespace Coocoo3DGraphics
                 ? new ClearValue(texture.dsvFormat, new DepthStencilValue(1.0f, 0))
                 : new ClearValue(texture.format, new Vortice.Mathematics.Color4());
             CreateResource(textureDesc, clearValue, ref texture.resource, ResourceStates.GenericRead);
-            texture.resourceStates = ResourceStates.GenericRead;
+            //texture.resourceStates = ResourceStates.GenericRead;
+            texture.InitResourceState(ResourceStates.GenericRead);
             texture.resource.Name = "render texCube";
 
             texture.Status = GraphicsObjectStatus.loaded;
@@ -884,6 +887,9 @@ namespace Coocoo3DGraphics
             graphicsDevice.device.CreateRenderTargetView(graphicsDevice.GetRenderTarget(m_commandList), null, handle1);
             m_commandList.ClearRenderTargetView(handle1, new Vortice.Mathematics.Color(color));
         }
+        public void SetRTV(Texture2D RTV, Vector4 color, bool clear) => SetRTVDSV(RTV, null, color, clear, false);
+
+        public void SetRTV(IList<Texture2D> RTVs, Vector4 color, bool clear) => SetRTVDSV(RTVs, null, color, clear, false);
 
         public void SetDSV(Texture2D texture, bool clear)
         {
@@ -892,14 +898,11 @@ namespace Coocoo3DGraphics
             texture.StateChange(m_commandList, ResourceStates.DepthWrite);
             var dsv = texture.GetDepthStencilView(graphicsDevice.device);
             InReference(texture.depthStencilView);
+            InReference(texture.resource);
             if (clear)
                 m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
             m_commandList.OMSetRenderTargets(new CpuDescriptorHandle[0], dsv);
-            InReference(texture.resource);
         }
-        public void SetRTV(Texture2D RTV, Vector4 color, bool clear) => SetRTVDSV(RTV, null, color, clear, false);
-
-        public void SetRTV(IList<Texture2D> RTVs, Vector4 color, bool clear) => SetRTVDSV(RTVs, null, color, clear, false);
 
         public void SetRTVDSV(Texture2D RTV, Texture2D DSV, Vector4 color, bool clearRTV, bool clearDSV)
         {
@@ -908,6 +911,7 @@ namespace Coocoo3DGraphics
             RTV.StateChange(m_commandList, ResourceStates.RenderTarget);
             var rtv = RTV.GetRenderTargetView(graphicsDevice.device);
             InReference(RTV.renderTargetView);
+            InReference(RTV.resource);
             if (clearRTV)
                 m_commandList.ClearRenderTargetView(rtv, new Vortice.Mathematics.Color4(color));
             if (DSV != null)
@@ -915,16 +919,40 @@ namespace Coocoo3DGraphics
                 DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
                 var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
                 InReference(DSV.depthStencilView);
+                InReference(DSV.resource);
                 if (clearDSV)
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
                 m_commandList.OMSetRenderTargets(rtv, dsv);
-                InReference(RTV.resource);
-                InReference(DSV.resource);
             }
             else
             {
                 m_commandList.OMSetRenderTargets(rtv);
-                InReference(RTV.resource);
+            }
+        }
+
+        public void SetRTVDSV(TextureCube RTV, Texture2D DSV, Vector4 color, int faceIndex, bool clearRTV, bool clearDSV)
+        {
+            m_commandList.RSSetScissorRect(RTV.width, RTV.height);
+            m_commandList.RSSetViewport(0, 0, RTV.width, RTV.height);
+            RTV.SetResourceState(m_commandList, ResourceStates.RenderTarget, 0, faceIndex);
+            var rtv = RTV.GetRenderTargetView(graphicsDevice.device, 0, faceIndex);
+            InReference(RTV.renderTargetView);
+            InReference(RTV.resource);
+            if (clearRTV)
+                m_commandList.ClearRenderTargetView(rtv, new Vortice.Mathematics.Color4(color));
+            if (DSV != null)
+            {
+                DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
+                var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
+                InReference(DSV.depthStencilView);
+                InReference(DSV.resource);
+                if (clearDSV)
+                    m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
+                m_commandList.OMSetRenderTargets(rtv, dsv);
+            }
+            else
+            {
+                m_commandList.OMSetRenderTargets(rtv);
             }
         }
 
@@ -948,11 +976,11 @@ namespace Coocoo3DGraphics
                 DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
                 var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
                 InReference(DSV.depthStencilView);
+                InReference(DSV.resource);
                 if (clearDSV)
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
 
                 m_commandList.OMSetRenderTargets(handles, dsv);
-                InReference(DSV.resource);
             }
             else
             {
@@ -1191,6 +1219,24 @@ namespace Coocoo3DGraphics
             InReference(texture.resource);
             return gpuDescriptorHandle;
         }
+
+        GpuDescriptorHandle GetUAVHandle(TextureCube texture)
+        {
+            //texture.StateChange(m_commandList, ResourceStates.UnorderedAccess);
+            texture.SetAllResourceState(m_commandList, ResourceStates.UnorderedAccess);
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+            graphicsDevice.device.CreateUnorderedAccessView(texture.resource, null, new UnorderedAccessViewDescription()
+            {
+                Format = Format.R32_Typeless,
+                ViewDimension = UnorderedAccessViewDimension.Buffer,
+                Texture2DArray = new Texture2DArrayUnorderedAccessView
+                {
+                    ArraySize = 6,
+                },
+            }, cpuDescriptorHandle);
+            InReference(texture.resource);
+            return gpuDescriptorHandle;
+        }
         GpuDescriptorHandle GetUAVHandle(GPUBuffer buffer)
         {
             buffer.StateChange(m_commandList, ResourceStates.UnorderedAccess);
@@ -1243,11 +1289,23 @@ namespace Coocoo3DGraphics
             return gpuDescriptorHandle;
         }
 
-        GpuDescriptorHandle GetSRVHandle(TextureCube texture) => GetSRVHandleWithMip(texture, texture.mipLevels);
+        GpuDescriptorHandle GetSRVHandle(TextureCube texture)
+        {
+            texture.SetAllResourceState(m_commandList, ResourceStates.GenericRead);
+            ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
+            srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.Format = texture.format;
+            srvDesc.ViewDimension = Vortice.Direct3D12.ShaderResourceViewDimension.TextureCube;
+            srvDesc.TextureCube.MipLevels = texture.mipLevels;
 
+            graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
+            graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
+            return gpuDescriptorHandle;
+        }
         GpuDescriptorHandle GetSRVHandleWithMip(TextureCube texture, int mips)
         {
-            texture.StateChange(m_commandList, ResourceStates.GenericRead);
+            //texture.StateChange(m_commandList, ResourceStates.GenericRead);
+            texture.SetPartResourceState(m_commandList, ResourceStates.GenericRead, 0, mips);
             ShaderResourceViewDescription srvDesc = new ShaderResourceViewDescription();
             srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
             srvDesc.Format = texture.format;

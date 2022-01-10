@@ -61,6 +61,7 @@ namespace Coocoo3D.RenderPipeline
         public VisualChannel currentChannel;
 
         private Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
+        private Dictionary<string, TextureCube> RTCs = new Dictionary<string, TextureCube>();
         private Dictionary<string, GPUBuffer> dynamicBuffers = new Dictionary<string, GPUBuffer>();
 
         public Dictionary<string, int> customDataInt = new Dictionary<string, int>();
@@ -357,13 +358,52 @@ namespace Coocoo3D.RenderPipeline
                     x = rt.Size.x;
                     y = rt.Size.y;
                 }
-                if (tex2d.GetWidth() != x || tex2d.GetHeight() != y)
+                if (tex2d.width != x || tex2d.height != y)
                 {
                     if (rt.Format == Format.D16_UNorm || rt.Format == Format.D24_UNorm_S8_UInt || rt.Format == Format.D32_Float)
                         tex2d.ReloadAsDepthStencil(x, y, rt.Format);
                     else
                         tex2d.ReloadAsRTVUAV(x, y, rt.Format);
                     graphicsContext.UpdateRenderTexture(tex2d);
+                }
+            }
+            if (passSetting.RenderTargetCubes != null)
+            {
+                foreach (var rt1 in passSetting.RenderTargetCubes)
+                {
+                    string rtName = visualChannel.GetTexName(rt1.Key);
+                    var rt = rt1.Value;
+                    if (!RTCs.TryGetValue(rtName, out var texCube))
+                    {
+                        texCube = new TextureCube();
+                        texCube.Name = rtName;
+                        RTCs[rtName] = texCube;
+                    }
+                    int x;
+                    int y;
+                    if (rt.Size.Source == "OutputSize")
+                    {
+                        x = (int)(outputSize.X * rt.Size.Multiplier + 0.5f);
+                        y = (int)(outputSize.Y * rt.Size.Multiplier + 0.5f);
+                    }
+                    else if (rt.Size.Source == "ShadowMapSize")
+                    {
+                        x = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
+                        y = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
+                    }
+                    else
+                    {
+                        x = rt.Size.x;
+                        y = rt.Size.y;
+                    }
+                    if (texCube.width != x || texCube.height != y)
+                    {
+                        if (rt.Format == Format.D16_UNorm || rt.Format == Format.D24_UNorm_S8_UInt || rt.Format == Format.D32_Float)
+                            texCube.ReloadAsDSV(x, y, rt.Format);
+                        else
+                            texCube.ReloadAsRTVUAV(x, y, rt.Format);
+                        graphicsContext.UpdateRenderTexture(texCube);
+                    }
                 }
             }
             if (passSetting.DynamicBuffers != null)
@@ -414,8 +454,10 @@ namespace Coocoo3D.RenderPipeline
                 foreach (var texture in passSetting.Texture2Ds)
                     passSetting.aliases[texture.Key] = Path.GetFullPath(texture.Value, path1);
 
-
-            if (passSetting.Dispatcher != null) passSetting.Dispatcher = Path.GetFullPath(passSetting.Dispatcher, path1);
+            if (passSetting.Dispatcher != null)
+                passSetting.Dispatcher = Path.GetFullPath(passSetting.Dispatcher, path1);
+            else
+                Console.WriteLine("Missing dispacher.");
             foreach (var sequence in passSetting.RenderSequence)
             {
                 var pass = passSetting.Passes[sequence.Name];
@@ -483,6 +525,11 @@ namespace Coocoo3D.RenderPipeline
         }
         public TextureCube _GetTexCubeByName(string name)
         {
+            if (string.IsNullOrEmpty(name)) return null;
+            if (RTCs.TryGetValue(name, out var tex))
+            {
+                return tex;
+            }
             return mainCaches.GetTextureCube(name);
         }
         public GPUBuffer _GetBufferByName(string name)
@@ -502,6 +549,27 @@ namespace Coocoo3D.RenderPipeline
                     return false;
                 dynamicBuffers[buf2] = buffer1;
                 dynamicBuffers[buf1] = buffer2;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool SwapTexture(string tex1, string tex2)
+        {
+            if (RTs.TryGetValue(tex1, out var buffer1) && RTs.TryGetValue(tex2, out var buffer2))
+            {
+                if (buffer1.width != buffer2.width ||
+                    buffer1.height != buffer2.height ||
+                    buffer1.format != buffer2.format ||
+                    buffer1.dsvFormat != buffer2.dsvFormat ||
+                    buffer1.rtvFormat != buffer2.rtvFormat ||
+                    buffer1.uavFormat != buffer2.uavFormat)
+                    return false;
+                RTs[tex2] = buffer1;
+                RTs[tex1] = buffer2;
                 return true;
             }
             else

@@ -266,7 +266,6 @@ namespace Coocoo3D.RenderPipeline
                         for (int i = 0; i < res.Value.SRVs.Count; i++)
                         {
                             SlotRes srv = res.Value.SRVs[i];
-                            //srv.Resource = srv.Resource.Replace("_BRDFLUT", "Assets/Textures/brdflut.png");
                             res.Value.SRVs[i] = srv;
                         }
                 }
@@ -587,7 +586,7 @@ namespace Coocoo3D.RenderPipeline
 
         static byte[] LoadShader(DxcShaderStage shaderStage, string shaderCode, string entryPoint, string fileName, DxcDefine[] dxcDefines = null)
         {
-            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { ShaderModel = DxcShaderModel.Model6_3 }, fileName, dxcDefines, null);
+            var result = DxcCompiler.Compile(shaderStage, shaderCode, entryPoint, new DxcCompilerOptions() { ShaderModel = shaderStage == DxcShaderStage.Library ? DxcShaderModel.Model6_3 : DxcShaderModel.Model6_0 }, fileName, dxcDefines, null);
             if (result.GetStatus() != SharpGen.Runtime.Result.Ok)
             {
                 string err = result.GetErrors();

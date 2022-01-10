@@ -66,7 +66,6 @@ namespace Coocoo3D.RenderPipeline
                     }
                 }
                 {
-                    graphicsContext.SetSRVTSlot(texSkyBox, 0);
                     int pow2a;
                     {
                         int j = currentQuality % (roughnessLevel + 1);
@@ -83,6 +82,7 @@ namespace Coocoo3D.RenderPipeline
                         gpuWriter.Write(j * j / (4.0f * 4.0f));
                         gpuWriter.SetBufferComputeImmediately(graphicsContext, true, 0);
 
+                        graphicsContext.SetSRVTSlot(texSkyBox, 0);
                         graphicsContext.SetUAVTSlot(texReflect, j, 0);
                         graphicsContext.Dispatch((int)(texReflect.width + 7) / 8 / pow2a, (int)(texReflect.height + 7) / 8 / pow2a, 6);
                     }

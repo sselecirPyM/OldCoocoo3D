@@ -125,22 +125,28 @@
           "Index": "1",
           "Datas": [
             "World",
-            "Camera",
-            "DirectionalLightMatrix0",
-            "DirectionalLightMatrix1",
-            "DirectionalLight",
             "PointLights4Cull",
             "Metallic",
             "Roughness",
             "Emissive",
             "Specular",
+            "WidthHeight"
+          ]
+        },
+        {
+          "Index": 2,
+          "Datas": [
+            "Camera",
             "CameraPosition",
+            "DirectionalLightMatrix0",
+            "DirectionalLightMatrix1",
+            "DirectionalLight",
             "IndirectMultiplier",
             "FogColor",
             "FogDensity",
             "FogStartDistance",
-            "FogEndDistance",
-            "WidthHeight"
+            "FogEndDistance"
+
           ]
         }
       ],

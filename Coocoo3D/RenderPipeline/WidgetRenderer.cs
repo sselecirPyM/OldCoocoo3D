@@ -127,7 +127,7 @@ namespace Coocoo3D.RenderPipeline
 
                         tex = _Tex(tex);
 
-                        graphicsContext.SetSRVTSlot(tex, 0);
+                        graphicsContext.SetSRVTSlotLinear(tex, 0);//srgb2srgb
                         graphicsContext.RSSetScissorRect((int)(cmd.ClipRect.X - clip_off.X), (int)(cmd.ClipRect.Y - clip_off.Y), (int)(cmd.ClipRect.Z - clip_off.X), (int)(cmd.ClipRect.W - clip_off.Y));
                         graphicsContext.DrawIndexed((int)cmd.ElemCount, (int)(cmd.IdxOffset) + idxOfs, (int)(cmd.VtxOffset) + vtxOfs);
                     }

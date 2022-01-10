@@ -4,7 +4,7 @@ using Coocoo3DGraphics;
 using System.IO;
 using System.Collections.Generic;
 using System.Numerics;
-public class Dispatcher : IPassDispatcher
+public class DRDispatcher : IPassDispatcher
 {
     public void FrameBegin(RenderPipelineContext context)
     {

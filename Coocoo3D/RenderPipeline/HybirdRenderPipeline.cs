@@ -16,7 +16,6 @@ namespace Coocoo3D.RenderPipeline
 {
     public class HybirdRenderPipeline
     {
-        DefaultPassDispatcher defaultPassDispatcher = new DefaultPassDispatcher();
         public void BeginFrame(RenderPipelineContext context)
         {
             var drp = context.dynamicContextRead;
@@ -35,7 +34,6 @@ namespace Coocoo3D.RenderPipeline
             var mainCaches = context.mainCaches;
             var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
             dispatcher?.FrameEnd(context);
-
         }
         public void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
@@ -64,57 +62,30 @@ namespace Coocoo3D.RenderPipeline
                 pointLights = drp.pointLights,
                 mainCaches = mainCaches,
             };
-            IPassDispatcher dispatcher;
+            IPassDispatcher dispatcher = null;
             if (passSetting.Dispatcher != null)
-            {
                 dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
-            }
-            else
-            {
-                dispatcher = defaultPassDispatcher;
-            }
             dispatcher?.Dispatch(unionShaderParam);
 
         }
-        static bool FilterObj(UnionShaderParam unionShaderParam, string filter)
+
+        public static void DispatchPass(UnionShaderParam param)
         {
-            if (string.IsNullOrEmpty(filter)) return true;
-            var material = unionShaderParam.material;
-            if (filter == "Transparent")
-                return material.Transparent;
-            if (filter == "Opaque")
-                return !material.Transparent;
-            if (material.textures.ContainsKey(filter))
-                return true;
-            var obj = unionShaderParam.GetSettingsValue(material, filter);
-            if (obj is bool b1 && b1)
-                return true;
-            return false;
-        }
+            var renderSequence = param.renderSequence;
+            var pass = param.passSetting.Passes[renderSequence.Name];
 
-        public static void DispatchPass(UnionShaderParam unionShaderParam)
-        {
-            var visualChannel = unionShaderParam.visualChannel;
-            var renderSequence = unionShaderParam.renderSequence;
-            var pass = unionShaderParam.passSetting.Passes[renderSequence.Name];
+            var graphicsContext = param.graphicsContext;
 
-            var graphicsContext = unionShaderParam.graphicsContext;
-
-            var mainCaches = unionShaderParam.mainCaches;
-            var settings = unionShaderParam.settings;
-            var context = unionShaderParam.rp;
-            var passSetting = unionShaderParam.passSetting;
-
-            var texError = unionShaderParam.texError;
-            var texLoading = unionShaderParam.texLoading;
-            var renderers = unionShaderParam.renderers;
+            var mainCaches = param.mainCaches;
+            var context = param.rp;
+            var passSetting = param.passSetting;
 
             RootSignature rootSignature = mainCaches.GetRootSignature(renderSequence.rootSignatureKey);
-            unionShaderParam.pass = pass;
-            unionShaderParam.passName = pass.Name;
+            param.pass = pass;
+            param.passName = pass.Name;
             graphicsContext.SetRootSignature(rootSignature);
 
-            Texture2D depthStencil = unionShaderParam.GetTex2D(renderSequence.DepthStencil);
+            Texture2D depthStencil = param.GetTex2D(renderSequence.DepthStencil);
 
             Texture2D[] renderTargets = null;
             if (renderSequence.RenderTargets == null || renderSequence.RenderTargets.Count == 0)
@@ -127,61 +98,42 @@ namespace Coocoo3D.RenderPipeline
                 renderTargets = new Texture2D[renderSequence.RenderTargets.Count];
                 for (int i = 0; i < renderSequence.RenderTargets.Count; i++)
                 {
-                    renderTargets[i] = unionShaderParam.GetTex2D(renderSequence.RenderTargets[i]);
+                    renderTargets[i] = param.GetTex2D(renderSequence.RenderTargets[i]);
                 }
                 graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, renderSequence.ClearRenderTarget, renderSequence.ClearDepth);
             }
-            unionShaderParam.depthStencil = depthStencil;
-            unionShaderParam.renderTargets = renderTargets;
+            param.depthStencil = depthStencil;
+            param.renderTargets = renderTargets;
 
 
             if (renderSequence.Type == null)
             {
-                unionShaderParam.rayTracingShader = null;
-                foreach (MMDRendererComponent renderer in renderers)
-                {
-                    graphicsContext.SetMesh(context.GetMesh(renderer.meshPath), context.meshOverride[renderer]);
-                    unionShaderParam.renderer = renderer;
-
-                    foreach (var material in renderer.Materials)
-                    {
-                        unionShaderParam.material = material;
-                        if (!FilterObj(unionShaderParam, renderSequence.Filter))
-                        {
-                            continue;
-                        }
-                        bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
-                    }
-                }
-
-                //unionShaderParam.renderer = null;
-                //unionShaderParam.material = null;
-                //unionShaderParam.rayTracingShader = null;
-                //bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
-
+                param.renderer = null;
+                param.material = null;
+                param.rayTracingShader = null;
+                bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(param);
             }
             else if (renderSequence.Type == "DrawScreen")
             {
-                unionShaderParam.renderer = null;
-                unionShaderParam.material = null;
-                unionShaderParam.rayTracingShader = null;
+                param.renderer = null;
+                param.material = null;
+                param.rayTracingShader = null;
                 graphicsContext.SetMesh(context.quadMesh);
 
-                bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(unionShaderParam);
+                bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(param);
             }
             else if (renderSequence.Type == "RayTracing")
             {
                 if (context.graphicsDevice.IsRayTracingSupport())
                 {
-                    unionShaderParam.renderer = null;
-                    unionShaderParam.material = null;
-                    unionShaderParam.rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(pass.RayTracingShader));
-                    UnionShader unionShader = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader));
-                    bool? executed = unionShader?.Invoke(unionShaderParam);
+                    param.renderer = null;
+                    param.material = null;
+                    param.rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(pass.RayTracingShader));
+                    bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(param);
                 }
                 else
                 {
-                    Console.WriteLine(context.graphicsDevice.GetDeviceDescription() + " //this gpu is not support ray tracing.");
+                    Console.WriteLine(context.graphicsDevice.GetDeviceDescription() + " //this gpu does not support ray tracing.");
                 }
             }
         }

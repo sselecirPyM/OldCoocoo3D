@@ -24,8 +24,6 @@ public static class UnionShaderDeferred
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        var psoDesc = param.GetPSODesc();
-        var material = param.material;
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         PSO pso = null;
@@ -35,22 +33,40 @@ public static class UnionShaderDeferred
         switch (param.passName)
         {
             case "GBufferPass":
+                foreach (var renderer in param.renderers)
                 {
-                    List<string> keywords = new List<string>();
-                    if (param.renderer.skinning && skinning)
+                    param.SetMesh(graphicsContext, renderer);
+                    param.renderer = renderer;
+
+                    foreach (var material in renderer.Materials)
                     {
-                        keywords.Add("SKINNING");
-                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                        if (material.Transparent) continue;
+                        param.material = material;
+                        var psoDesc = param.GetPSODesc();
+                        List<string> keywords = new List<string>();
+                        if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
+                            keywords.Add(debugKeyword);
+                        if (param.renderer.skinning && skinning)
+                        {
+                            keywords.Add("SKINNING");
+                            graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                        }
+                        foreach (var cbv in param.pass.CBVs)
+                        {
+                            param.WriteCBV(cbv);
+                        }
+                        pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
+                        param.SetSRVs(param.pass.SRVs, material);
+                        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+                        else
+                            Console.WriteLine("gbuffer pass error");
                     }
-                    foreach (var cbv in param.pass.CBVs)
-                    {
-                        param.WriteCBV(cbv);
-                    }
-                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
                 }
                 break;
             case "DeferredFinalPass":
                 {
+                    var psoDesc = param.GetPSODesc();
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
@@ -75,6 +91,11 @@ public static class UnionShaderDeferred
                         param.WriteCBV(cbv);
                     }
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs, null);
+                    if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                        graphicsContext.DrawIndexed(6, 0, 0);
+                    else
+                        Console.WriteLine("final render pass error");
                 }
                 break;
             case "DenoisePass":
@@ -82,6 +103,7 @@ public static class UnionShaderDeferred
                     if (!(param.customValue.TryGetValue("RayTracing", out object oIsRayTracing) && oIsRayTracing is bool bIsRayTracing && bIsRayTracing))
                         return true;
 
+                    var psoDesc = param.GetPSODesc();
                     List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(debugKeyword);
@@ -91,18 +113,15 @@ public static class UnionShaderDeferred
                         param.WriteCBV(cbv);
                     }
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("RayTracingDenoise.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs, null);
+                    if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                        graphicsContext.DrawIndexed(6, 0, 0);
+                    else
+                        Console.WriteLine("denoise pass error");
                 }
                 break;
             default:
                 return false;
-        }
-        param.SetSRVs(param.pass.SRVs, material);
-        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-        {
-            if (material != null)
-                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-            else
-                graphicsContext.DrawIndexed(6, 0, 0);
         }
         return true;
     }

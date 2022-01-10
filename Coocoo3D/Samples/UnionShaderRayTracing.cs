@@ -24,7 +24,6 @@ public static class UnionShaderRayTracing
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        var psoDesc = param.GetPSODesc();
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         var rayTracingShader = param.rayTracingShader;
@@ -55,6 +54,7 @@ public static class UnionShaderRayTracing
                         foreach (var material in renderer.Materials)
                         {
                             param.material = material;
+                            var psoDesc = param.GetPSODesc();
                             var btas = new RTBottomLevelAccelerationStruct();
 
                             btas.mesh = param.mesh;
@@ -74,8 +74,8 @@ public static class UnionShaderRayTracing
                     }
 
                     Texture2D renderTarget = param.renderTargets[0];
-                    int width = renderTarget.GetWidth();
-                    int height = renderTarget.GetHeight();
+                    int width = renderTarget.width;
+                    int height = renderTarget.height;
 
                     RayTracingCall call = new RayTracingCall();
                     call.tpas = tpas;

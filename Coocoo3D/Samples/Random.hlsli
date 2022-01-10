@@ -50,6 +50,16 @@ namespace RNG
 		float theta = 2 * 3.141592653589793238 * Random01(state);
 		return R * cos(theta);
 	}
+
+	float2 Random01F2(inout uint state)
+	{
+		return float2(Random01(state), Random01(state));
+	}
+
+	float3 Random01F3(inout uint state)
+	{
+		return float3(Random01(state), Random01(state), Random01(state));
+	}
 }
 
 float2 Hammersley(uint Index, uint NumSamples, uint2 Random)

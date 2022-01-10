@@ -24,10 +24,6 @@ struct PointLightInfo
 cbuffer cb1 : register(b1)
 {
 	float4x4 g_mWorld;
-	float4x4 g_mWorldToProj;
-	float4x4 LightMapVP;
-	float4x4 LightMapVP1;
-	LightInfo Lightings[1];
 #if ENABLE_POINT_LIGHT
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 #endif
@@ -35,7 +31,15 @@ cbuffer cb1 : register(b1)
 	float _Roughness;
 	float _Emissive;
 	float _Specular;
+}
+
+cbuffer cb2 : register(b2)
+{
+	float4x4 g_mWorldToProj;
 	float3 g_camPos;
+	float4x4 LightMapVP;
+	float4x4 LightMapVP1;
+	LightInfo Lightings[1];
 	float g_skyBoxMultiple;
 	float3 _fogColor;
 	float _fogDensity;

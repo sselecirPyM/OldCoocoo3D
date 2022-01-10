@@ -46,6 +46,7 @@ namespace Coocoo3D.RenderPipeline
         public GraphicsDevice graphicsDevice { get => rp.graphicsDevice; }
 
         public Dictionary<string, object> customValue = new Dictionary<string, object>();
+        public Dictionary<string, object> gpuValueOverride = new Dictionary<string, object>();
 
         public Dictionary<string, int> customValueIntPersistent { get => rp.customDataInt; }
 
@@ -133,6 +134,23 @@ namespace Coocoo3D.RenderPipeline
             return tex2D;
         }
 
+        public TextureCube GetTexCube(string name, RuntimeMaterial material = null)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
+            TextureCube tex2D;
+            if (passSetting.RenderTargetCubes.ContainsKey(name))
+                tex2D = rp._GetTexCubeByName(visualChannel.GetTexName(name));
+            else
+            {
+                name = passSetting.GetAliases(name);
+
+                tex2D = rp._GetTexCubeByName(name);
+            }
+            return tex2D;
+        }
+
         public string _getBufferName(string name, RuntimeMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
@@ -143,14 +161,20 @@ namespace Coocoo3D.RenderPipeline
                 return name;
         }
 
+        public string _getTextureName(string name, RuntimeMaterial material = null)
+        {
+            if (string.IsNullOrEmpty(name))
+                return name;
+            if (passSetting.RenderTargets.ContainsKey(name))
+                return visualChannel.GetTexName(name);
+            else
+                return name;
+        }
+
         public GPUBuffer GetBuffer(string name, RuntimeMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
                 return null;
-            //if (passSetting.DynamicBuffers.ContainsKey(name))
-            //    return rp._GetBufferByName(visualChannel.GetTexName(name));
-            //else
-            //    return rp._GetBufferByName(name);
             return rp._GetBufferByName(_getBufferName(name, material));
         }
 
@@ -166,6 +190,11 @@ namespace Coocoo3D.RenderPipeline
             return GPUWriter.GetData();
         }
 
+        public void SetMesh(GraphicsContext graphicsContext, MMDRendererComponent renderer)
+        {
+            graphicsContext.SetMesh(rp.GetMesh(renderer.meshPath), rp.meshOverride[renderer]);
+        }
+
         public void WriteGPU(List<string> datas, GPUWriter writer)
         {
             if (datas == null || datas.Count == 0) return;
@@ -173,6 +202,22 @@ namespace Coocoo3D.RenderPipeline
             var drp = rp.dynamicContextRead;
             foreach (var s in datas)
             {
+                if (gpuValueOverride.TryGetValue(s, out object gpuValue))
+                {
+                    if (gpuValue is float f1)
+                        writer.Write(f1);
+                    else if (gpuValue is Vector2 f2)
+                        writer.Write(f2);
+                    else if (gpuValue is Vector3 f3)
+                        writer.Write(f3);
+                    else if (gpuValue is Vector4 f4)
+                        writer.Write(f4);
+                    else if (gpuValue is int i1)
+                        writer.Write(i1);
+                    else if (gpuValue is Matrix4x4 m)
+                        writer.Write(m);
+                    continue;
+                }
                 switch (s)
                 {
                     case "RealDeltaTime":
@@ -201,13 +246,13 @@ namespace Coocoo3D.RenderPipeline
                             if (renderTargets != null && renderTargets.Length > 0)
                             {
                                 Texture2D renderTarget = renderTargets[0];
-                                writer.Write(renderTarget.GetWidth());
-                                writer.Write(renderTarget.GetHeight());
+                                writer.Write(renderTarget.width);
+                                writer.Write(renderTarget.height);
                             }
                             else if (depthStencil != null)
                             {
-                                writer.Write(depthStencil.GetWidth());
-                                writer.Write(depthStencil.GetHeight());
+                                writer.Write(depthStencil.width);
+                                writer.Write(depthStencil.height);
                             }
                             else
                             {
@@ -350,6 +395,15 @@ namespace Coocoo3D.RenderPipeline
                     case "RandomF":
                         writer.Write((float)random.NextDouble());
                         break;
+                    case "RandomF2":
+                        writer.Write(new Vector2((float)random.NextDouble(), (float)random.NextDouble()));
+                        break;
+                    case "RandomF3":
+                        writer.Write(new Vector3((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble()));
+                        break;
+                    case "RandomF4":
+                        writer.Write(new Vector4((float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble(), (float)random.NextDouble()));
+                        break;
 
                     default:
                         object settingValue = null;
@@ -403,12 +457,11 @@ namespace Coocoo3D.RenderPipeline
             if (UAVs == null) return;
             foreach (var resd in UAVs)
             {
-                //if (resd.ResourceType == "TextureCube")
-                //{
-                //    graphicsContext.SetUAVTSlot(rp._GetTexCubeByName(resd.Resource), resd.Index);
-                //}
-                //else
-                if (resd.ResourceType == "Texture2D")
+                if (resd.ResourceType == "TextureCube")
+                {
+                    graphicsContext.SetUAVTSlot(rp._GetTexCubeByName(resd.Resource), resd.Index);
+                }
+                else if (resd.ResourceType == "Texture2D")
                 {
                     //if (resd.Flags.HasFlag(SlotResFlag.Linear))
                     //    graphicsContext.SetUAVTSlotLinear(TextureFallBack(GetTex2D(resd.Resource, material)), resd.Index);
@@ -451,6 +504,12 @@ namespace Coocoo3D.RenderPipeline
         {
             if (string.IsNullOrEmpty(buf1) || string.IsNullOrEmpty(buf2)) return false;
             return rp.SwapBuffer(_getBufferName(buf1), _getBufferName(buf2));
+        }
+
+        public bool SwapTexture(string tex1, string tex2)
+        {
+            if (string.IsNullOrEmpty(tex1) || string.IsNullOrEmpty(tex2)) return false;
+            return rp.SwapTexture(_getTextureName(tex1), _getTextureName(tex2));
         }
 
         public Texture2D TextureFallBack(Texture2D _tex) => TextureStatusSelect(_tex, texLoading, texError, texError);

@@ -258,7 +258,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 	payload.color += (EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF).rgb;
 	payload.color += emissive;
 
-	float3 skyLight = (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple).rgb ;
+	float3 skyLight = (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple).rgb;
 	float3 giSamplePos = (((position.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
 	int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
 	float weights = 0;
@@ -362,9 +362,9 @@ void rayGenGI()
 	uint3 launchIndex = DispatchRaysIndex();
 	uint3 launchDim = DispatchRaysDimensions();
 	int shIndex = launchIndex.x + launchIndex.y * SH_RESOLUTION + launchIndex.z * SH_RESOLUTION * SH_RESOLUTION;
-	float3 position = ((float3)launchIndex / float3(SH_RESOLUTION, SH_RESOLUTION, SH_RESOLUTION) - 0.5f) * g_GIVolumeSize + g_GIVolumePosition;
-
 	uint randomState = RNG::RandomSeed(launchIndex.x + launchIndex.y * 2048 + launchIndex.z * 4194304 + g_RandomI);
+	float3 position = (clamp((launchIndex + RNG::Random01F3(randomState) - 0.5f) / float3(SH_RESOLUTION, SH_RESOLUTION, SH_RESOLUTION), 0, 1) - 0.5f) * g_GIVolumeSize + g_GIVolumePosition;
+
 	const int sampleCountX = 16;
 	const int sampleCountY = 16;
 
