@@ -98,3 +98,18 @@ float3 UniformSampleSphere(float2 Xi)
 
 	return H;
 }
+
+float3 UniformSampleHemisphere(float2 Xi)
+{
+	float phi = 2 * RNG::RANDOM_NUMBER_PI * Xi.x;
+
+	float cosTheta = Xi.y;
+	float sinTheta = sqrt(1 - cosTheta * cosTheta);
+
+	float3 H;
+	H.x = sinTheta * cos(phi);
+	H.y = sinTheta * sin(phi);
+	H.z = cosTheta;
+
+	return H;
+}

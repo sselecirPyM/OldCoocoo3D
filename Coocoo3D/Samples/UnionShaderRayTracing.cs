@@ -9,6 +9,7 @@ public static class UnionShaderRayTracing
     static Dictionary<DebugRenderType, string> debugKeywords = new Dictionary<DebugRenderType, string>()
     {
         { DebugRenderType.Albedo,"DEBUG_ALBEDO"},
+        { DebugRenderType.AO,"DEBUG_AO"},
         { DebugRenderType.Depth,"DEBUG_DEPTH"},
         { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
         { DebugRenderType.DiffuseRender,"DEBUG_DIFFUSE_RENDER"},

@@ -21,7 +21,8 @@
       "RenderTargets": [
         "_ScreenColor0",
         "_ScreenColor1",
-        "_ScreenColor2"
+        "_ScreenColor2",
+        "_ScreenColor3"
       ]
     },
     {
@@ -198,7 +199,8 @@
             "Metallic",
             "Roughness",
             "Emissive",
-            "Specular"
+            "Specular",
+            "AO"
           ]
         }
       ],
@@ -228,6 +230,7 @@
           "Datas": [
             "Camera",
             "CameraInvert",
+            "CameraInfo",
             "CameraPosition",
             "IndirectMultiplier",
             "FogColor",
@@ -243,7 +246,11 @@
             "DirectionalLight",
             "PointLights4Cull",
             "GIVolumePosition",
-            "GIVolumeSize"
+            "AODistance",
+            "GIVolumeSize",
+            "AOLimit",
+            "AORaySampleCount",
+            "RandomI"
           ]
         }
       ],
@@ -574,6 +581,14 @@
       "Type": "float",
       "Step": "0.01"
     },
+    "AO": {
+      "Name": "遮蔽",
+      "Type": "sliderFloat",
+      "Step": "0.01",
+      "Default": "1",
+      "Min": "0",
+      "Max": "1"
+    },
     "CastShadow": {
       "Name": "投射阴影",
       "Type": "bool",
@@ -681,6 +696,32 @@
       "Name": "雾结束距离",
       "Type": "float",
       "Default": "100000"
+    },
+    "EnableSSAO": {
+      "Name": "启用SSAO",
+      "Type": "bool",
+      "Default": "false"
+    },
+    "AODistance": {
+      "Name": "AO距离",
+      "Type": "float",
+      "Default": "3",
+      "Step": "0.1",
+      "Min": "0.1"
+    },
+    "AOLimit": {
+      "Name": "AO限制",
+      "Type": "float",
+      "Default": "4",
+      "Step": "0.1",
+      "Min": "0.1"
+    },
+    "AORaySampleCount": {
+      "Name": "AO光线采样次数",
+      "Type": "int",
+      "Default": "32",
+      "Min": "1",
+      "Max": "256"
     },
     "EnableVolumetricLighting": {
       "Name": "启用体积光",

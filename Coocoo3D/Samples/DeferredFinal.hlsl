@@ -1,5 +1,28 @@
 #include "PBR.hlsli"
 #include "SH.hlsli"
+#include "Random.hlsli"
+
+float Pow2(float x)
+{
+	return x * x;
+}
+
+float3x3 GetTangentBasis(float3 TangentZ)
+{
+	const float Sign = TangentZ.z >= 0 ? 1 : -1;
+	const float a = -rcp(Sign + TangentZ.z);
+	const float b = TangentZ.x * TangentZ.y * a;
+
+	float3 TangentX = { 1 + Sign * a * Pow2(TangentZ.x), Sign * b, -Sign * TangentZ.x };
+	float3 TangentY = { b,  Sign + a * Pow2(TangentZ.y), -TangentZ.y };
+
+	return float3x3(TangentX, TangentY, TangentZ);
+}
+
+float3 TangentToWorld(float3 Vec, float3 TangentZ)
+{
+	return mul(Vec, GetTangentBasis(TangentZ));
+}
 
 struct LightInfo
 {
@@ -20,6 +43,10 @@ cbuffer cb0 : register(b0)
 {
 	float4x4 g_mWorldToProj;
 	float4x4 g_mProjToWorld;
+	float g_cameraFarClip;
+	float g_cameraNearClip;
+	float g_cameraFOV;
+	float g_cameraAspectRatio;
 	float3   g_camPos;
 	float g_skyBoxMultiple;
 	float3 _fogColor;
@@ -37,7 +64,11 @@ cbuffer cb0 : register(b0)
 	PointLightInfo PointLights[POINT_LIGHT_COUNT];
 #endif
 	float3 g_GIVolumePosition;
+	float g_AODistance;
 	float3 g_GIVolumeSize;
+	float g_AOLimit;
+	int g_AORaySampleCount;
+	int g_RandomI;
 };
 Texture2D gbuffer0 :register(t0);
 Texture2D gbuffer1 :register(t1);
@@ -97,6 +128,53 @@ PSIn vsmain(VSIn input)
 #undef ENABLE_EMISSIVE
 #endif
 
+float getLinearDepth(float z)
+{
+	float far = g_cameraFarClip;
+	float near = g_cameraNearClip;
+	return near * far / (far + near - z * (far - near));
+}
+
+#if ENABLE_DIRECTIONAL_LIGHT
+bool pointInLightRange(int index, float3 position)
+{
+	float4 sPos;
+	float4 pos1 = float4(position, 1);
+	sPos = mul(pos1, LightMapVP);
+	sPos = sPos / sPos.w;
+	if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+		return true;
+	sPos = mul(pos1, LightMapVP1);
+	sPos = sPos / sPos.w;
+	if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+		return true;
+	return false;
+}
+
+float pointInLight(int index, float3 position)
+{
+	float inShadow = 1;
+	float4 sPos;
+	float2 shadowTexCoords;
+	float4 pos1 = float4(position, 1);
+	sPos = mul(pos1, LightMapVP);
+	sPos = sPos / sPos.w;
+	shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+	shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+	if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+		inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1), sPos.z).r;
+	else
+	{
+		sPos = mul(pos1, LightMapVP1);
+		sPos = sPos / sPos.w;
+		shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
+		shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
+		if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+			inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
+	}
+	return inShadow;
+}
+#endif
 float4 psmain(PSIn input) : SV_TARGET
 {
 	float2 uv = input.uv * 0.5 + 0.5;
@@ -106,7 +184,7 @@ float4 psmain(PSIn input) : SV_TARGET
 	float4 buffer0Color = gbuffer0.SampleLevel(s3, uv, 0);
 	float4 buffer1Color = gbuffer1.SampleLevel(s3, uv, 0);
 	float4 buffer2Color = gbuffer2.SampleLevel(s3, uv, 0);
-	//float4 buffer3Color = gbuffer3.SampleLevel(s3, uv, 0);
+	float4 buffer3Color = gbuffer3.SampleLevel(s3, uv, 0);
 
 
 	float4 wPos = mul(float4(input.uv, depth1, 1), g_mProjToWorld);
@@ -121,6 +199,47 @@ float4 psmain(PSIn input) : SV_TARGET
 	if (depth1 != 1.0)
 	{
 		float3 N = normalize(NormalDecode(buffer1Color.rg));
+		int2 sx = uv * _widthHeight;
+		uint randomState = RNG::RandomSeed(sx.x + sx.y * 2048 + g_RandomI);
+		float AO = 1;
+		float AOFactor = buffer3Color.r;
+#if ENABLE_SSAO
+#if ENABLE_DIRECTIONAL_LIGHT
+		if (AOFactor != 0 && pointInLightRange(0, wPos.xyz))
+#else
+		if (AOFactor != 0)
+#endif
+			for (int i = 0; i < g_AORaySampleCount; i++)
+			{
+				float2 E = Hammersley(i, g_AORaySampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
+				float3 vec1 = TangentToWorld(N, UniformSampleHemisphere(E));
+				const int sampleCountPerRay = 8;
+				for (int j = 0; j < sampleCountPerRay; j++)
+				{
+					float4 samplePos = wPos + float4(vec1, 0) * (j + 0.5) / sampleCountPerRay * g_AODistance;
+					float4 d1 = mul(samplePos, g_mWorldToProj);
+					float3 _a1 = d1.xyz / d1.w;
+					float2 _uv;
+					_uv.x = _a1.x * 0.5 + 0.5;
+					_uv.y = 0.5 - _a1.y * 0.5;
+					float aoDepth = getLinearDepth(gbufferDepth.SampleLevel(s3, _uv, 0).r);
+					float lz = getLinearDepth(_a1.z);
+					float factor = (1 - j / (float)sampleCountPerRay) * AOFactor;
+					if (lz > aoDepth + 0.01 && lz < aoDepth + g_AOLimit)
+					{
+#if ENABLE_DIRECTIONAL_LIGHT
+						AO -= 1.0f / g_AORaySampleCount * (1 - pointInLight(0, samplePos.xyz)) * factor;
+#else
+						AO -= 1.0f / g_AORaySampleCount * factor;
+#endif
+						break;
+					}
+				}
+			}
+#endif
+#if DEBUG_AO
+		return float4(AO, AO, AO, 1);
+#endif
 		float NdotV = saturate(dot(N, V));
 		float roughness = buffer1Color.b;
 		float alpha = roughness * roughness;
@@ -133,7 +252,7 @@ float4 psmain(PSIn input) : SV_TARGET
 #if ENABLE_DIFFUSE
 		float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple;
 #ifndef ENABLE_GI
-		outputColor += skyLight * c_diffuse;
+		outputColor += skyLight * c_diffuse * AO;
 #else
 		float3 giSamplePos = (((wPos.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
 		int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
@@ -184,13 +303,12 @@ float4 psmain(PSIn input) : SV_TARGET
 		weights = max(weights, 1e-3);
 		shDiffuse /= weights;
 
-		outputColor += shDiffuse.rgb * c_diffuse;
-
+		outputColor += shDiffuse.rgb * c_diffuse * AO;
 #endif
 #endif
 #if ENABLE_SPECULR
 #ifndef RAY_TRACING
-		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF;
+		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF * AO;
 #endif
 #endif
 #ifdef ENABLE_EMISSIVE
@@ -231,33 +349,15 @@ float4 psmain(PSIn input) : SV_TARGET
 			{
 				float inShadow = 1.0f;
 				float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
-				if (i == 0)
-				{
-					float4 sPos;
-					float2 shadowTexCoords;
-					sPos = mul(wPos, LightMapVP);
-					sPos = sPos / sPos.w;
-					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
-					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1), sPos.z).r;
-					else
-					{
-						sPos = mul(wPos, LightMapVP1);
-						sPos = sPos / sPos.w;
-						shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
-						shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-						if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-							inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
-					}
-				}
-
 				float3 L = normalize(Lightings[i].LightDir);
 				float3 H = normalize(L + V);
 
 				float3 NdotL = saturate(dot(N, L));
 				float3 LdotH = saturate(dot(L, H));
 				float3 NdotH = saturate(dot(N, H));
+
+				inShadow = pointInLight(0, wPos.xyz);
+
 
 #if ENABLE_DIFFUSE
 				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);

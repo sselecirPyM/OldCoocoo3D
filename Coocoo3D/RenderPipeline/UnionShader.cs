@@ -238,6 +238,12 @@ namespace Coocoo3D.RenderPipeline
                     case "Camera":
                         writer.Write(camera.vpMatrix);
                         break;
+                    case "CameraInfo":
+                        writer.Write(camera.far);
+                        writer.Write(camera.near);
+                        writer.Write(camera.Fov);
+                        writer.Write(camera.AspectRatio);
+                        break;
                     case "CameraInvert":
                         writer.Write(camera.pvMatrix);
                         break;

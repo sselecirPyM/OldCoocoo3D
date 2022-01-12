@@ -19,6 +19,8 @@ namespace Coocoo3D.Present
         public float Fov;
         public float AspectRatio;
         public Vector3 Position;
+        public float far;
+        public float near;
     }
     public class Camera
     {
@@ -27,7 +29,7 @@ namespace Coocoo3D.Present
         public Vector3 Angle;
         public float Fov = MathF.PI / 6;
         public float AspectRatio = 1;
-        public float farClip = 5000.0f;
+        public float farClip = 3000.0f;
         public float nearClip = 2.0f;
         public CameraMotion cameraMotion = new CameraMotion();
         public bool CameraMotionOn = false;
@@ -58,7 +60,9 @@ namespace Coocoo3D.Present
             var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
             Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos, LookAtPoint, up);
             float nearClip1 = MathF.Max(nearClip, 0.001f);
-            Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(Math.Clamp(Fov, 1e-3f, MathF.PI - 1e-3f), AspectRatio, nearClip1, MathF.Max(MathF.Max(farClip, nearClip1 + 1e-1f), 0.002f));
+            float farClip1 = MathF.Max(farClip, nearClip1 + 1e-1f);
+            float fov1 = Math.Clamp(Fov, 1e-3f, MathF.PI - 1e-3f);
+            Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(fov1, AspectRatio, nearClip1, farClip1);
             Matrix4x4 vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
             Matrix4x4.Invert(vpMatrix, out Matrix4x4 pvMatrix);
             return new CameraData()
@@ -73,6 +77,8 @@ namespace Coocoo3D.Present
                 pMatrix = pMatrix,
                 vpMatrix = vpMatrix,
                 pvMatrix = pvMatrix,
+                far = farClip1,
+                near = nearClip1,
             };
         }
     }

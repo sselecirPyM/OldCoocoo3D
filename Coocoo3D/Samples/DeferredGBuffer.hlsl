@@ -16,6 +16,7 @@ cbuffer cb1 : register(b1)
 	float _Roughness;
 	float _Emissive;
 	float _Specular;
+	float _AO;
 }
 
 struct PSSkinnedIn
@@ -64,7 +65,7 @@ struct MRTOutput
 	float4 color0 : COLOR0;
 	float4 color1 : COLOR1;
 	float4 color2 : COLOR2;
-	//float4 color3 : COLOR3;
+	float4 color3 : COLOR3;
 };
 
 MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
@@ -86,6 +87,6 @@ MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 	output.color0 = float4(c_diffuse, c_specular.r);
 	output.color1 = float4(encodedNormal, _Roughness, c_specular.g);
 	output.color2 = float4(emissive, c_specular.b);
-	//output.color3 = float4(emissive, 1);
+	output.color3 = float4(_AO, 0, 0, 1);
 	return output;
 }

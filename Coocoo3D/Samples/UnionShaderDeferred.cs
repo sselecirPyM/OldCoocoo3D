@@ -8,6 +8,7 @@ public static class UnionShaderDeferred
     static Dictionary<DebugRenderType, string> debugKeywords = new Dictionary<DebugRenderType, string>()
     {
         { DebugRenderType.Albedo,"DEBUG_ALBEDO"},
+        { DebugRenderType.AO,"DEBUG_AO"},
         { DebugRenderType.Depth,"DEBUG_DEPTH"},
         { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
         { DebugRenderType.DiffuseProbes,"DEBUG_DIFFUSE_PROBES"},
@@ -59,8 +60,6 @@ public static class UnionShaderDeferred
                         param.SetSRVs(param.pass.SRVs, material);
                         if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                             graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-                        else
-                            Console.WriteLine("gbuffer pass error");
                     }
                 }
                 break;
@@ -74,6 +73,8 @@ public static class UnionShaderDeferred
                         keywords.Add("ENABLE_GI");
                     if ((bool)param.GetSettingsValue("EnableFog"))
                         keywords.Add("ENABLE_FOG");
+                    if ((bool)param.GetSettingsValue("EnableSSAO"))
+                        keywords.Add("ENABLE_SSAO");
 
                     if (directionalLights.Count != 0)
                     {
@@ -94,8 +95,6 @@ public static class UnionShaderDeferred
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                         graphicsContext.DrawIndexed(6, 0, 0);
-                    else
-                        Console.WriteLine("final render pass error");
                 }
                 break;
             case "DenoisePass":
@@ -116,8 +115,6 @@ public static class UnionShaderDeferred
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                         graphicsContext.DrawIndexed(6, 0, 0);
-                    else
-                        Console.WriteLine("denoise pass error");
                 }
                 break;
             default:
