@@ -48,7 +48,19 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, object> customValue = new Dictionary<string, object>();
         public Dictionary<string, object> gpuValueOverride = new Dictionary<string, object>();
 
-        public Dictionary<string, int> customValueIntPersistent { get => rp.customDataInt; }
+        public T GetPersistentValue<T>(string name, T defaultValue)
+        {
+            if (rp.customData.TryGetValue(name, out object val) && val is T val1)
+            {
+                return val1;
+            }
+            return defaultValue;
+        }
+
+        public void SetPersistentValue<T>(string name, T value)
+        {
+            rp.customData[name] = value;
+        }
 
         public double deltaTime { get => rp.dynamicContextRead.DeltaTime; }
         public double realDeltaTime { get => rp.dynamicContextRead.RealDeltaTime; }
@@ -124,11 +136,12 @@ namespace Coocoo3D.RenderPipeline
 
             Texture2D tex2D;
             if (passSetting.RenderTargets.ContainsKey(name))
-                tex2D = rp._GetTex2DByName(visualChannel.GetTexName(name));
+            {
+                tex2D = rp._GetTex2DByName(_getTextureName(name));
+            }
             else
             {
                 name = passSetting.GetAliases(name);
-
                 tex2D = rp._GetTex2DByName(name);
             }
             return tex2D;
@@ -140,8 +153,10 @@ namespace Coocoo3D.RenderPipeline
                 return null;
 
             TextureCube tex2D;
-            if (passSetting.RenderTargetCubes.ContainsKey(name))
-                tex2D = rp._GetTexCubeByName(visualChannel.GetTexName(name));
+            if (passSetting.RenderTargetCubes.TryGetValue(name, out var renderTarget))
+            {
+                tex2D = rp._GetTexCubeByName(visualChannel.GetTexName(name, renderTarget));
+            }
             else
             {
                 name = passSetting.GetAliases(name);
@@ -155,8 +170,8 @@ namespace Coocoo3D.RenderPipeline
         {
             if (string.IsNullOrEmpty(name))
                 return name;
-            if (passSetting.DynamicBuffers.ContainsKey(name))
-                return visualChannel.GetTexName(name);
+            if (passSetting.DynamicBuffers.TryGetValue(name, out var renderTarget))
+                return visualChannel.GetTexName(name, renderTarget);
             else
                 return name;
         }
@@ -165,8 +180,8 @@ namespace Coocoo3D.RenderPipeline
         {
             if (string.IsNullOrEmpty(name))
                 return name;
-            if (passSetting.RenderTargets.ContainsKey(name))
-                return visualChannel.GetTexName(name);
+            if (passSetting.RenderTargets.TryGetValue(name, out var renderTarget))
+                return visualChannel.GetTexName(name, renderTarget);
             else
                 return name;
         }

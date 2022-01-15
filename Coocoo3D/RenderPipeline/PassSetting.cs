@@ -117,11 +117,18 @@ namespace Coocoo3D.RenderPipeline
         public List<SlotRes> SRVs;
         public List<SlotRes> UAVs;
     }
+    [Flags]
+    public enum RenderTargetFlag
+    {
+        None = 0,
+        Shared = 1,
+    }
 
     public class RenderTarget
     {
         public VarSize Size;
         public Format Format;
+        public RenderTargetFlag flag;
     }
     public class VarSize
     {

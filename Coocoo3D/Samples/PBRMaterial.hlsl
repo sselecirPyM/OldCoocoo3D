@@ -122,7 +122,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
 
 	float3 outputColor = float3(0,0,0);
-	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
+	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
 	float3 emissive = Emissive.Sample(s1, input.TexCoord) * _Emissive;

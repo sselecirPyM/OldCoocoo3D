@@ -2,6 +2,10 @@
   "Name": "前向渲染",
   "RenderSequence": [
     {
+      "Name": "PreprocessBRDF",
+      "Type": "DrawScreen"
+    },
+    {
       "Name": "DrawSkyBoxPass",
       "Type": "DrawScreen",
       "ClearDepth": "true",
@@ -64,9 +68,39 @@
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_Float"
+    },
+    "_BRDFLUT": {
+      "Size": {
+        "X": 256,
+        "Y": 256
+      },
+      "Flag": "Shared",
+      "Format": "R16G16B16A16_Float"
     }
   },
   "Passes": {
+    "PreprocessBRDF": {
+      "UnionShader": "UnionShaderPreprocess.cs",
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "TextureCube",
+          "Resource": "_SkyBoxReflect"
+        }
+      ],
+      "UAVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        }
+      ],
+      "CBVs": [
+        {
+          "Index": "0"
+        }
+      ]
+    },
     "ShadowMapPass0": {
       "Properties": {
         "ShadowMap": ""
@@ -214,7 +248,8 @@
   "UnionShaders": {
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
-    "UnionShaderBloom.cs": "UnionShaderBloom.cs"
+    "UnionShaderBloom.cs": "UnionShaderBloom.cs",
+    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs"
   },
   "Dispatcher": "Dispatcher.cs",
   "ShowTextures": {
@@ -224,7 +259,6 @@
   "ShowSettingTextures": {
   },
   "Texture2Ds": {
-    "_BRDFLUT": "brdflut.png"
   },
   "ShowParameters": {
     "Metallic": {

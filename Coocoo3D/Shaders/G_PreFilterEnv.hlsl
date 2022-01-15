@@ -187,11 +187,11 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 	float Weight = 0;
 
 	uint NumSamples = 256;
-	if (Roughness < 0.5)
+	if (Roughness < 0.5625)
 		NumSamples = 32;
 	if (Roughness < 0.25)
 		NumSamples = 16;
-	if (Roughness < 0.125)
+	if (Roughness < 0.0625)
 		NumSamples = 8;
 	for (uint i = 0; i < NumSamples; i++)
 	{

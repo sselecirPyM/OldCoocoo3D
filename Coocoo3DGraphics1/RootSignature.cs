@@ -58,6 +58,9 @@ namespace Coocoo3DGraphics
                     ShaderRegister = 0,
                 };
                 samplerDescription[1] = samplerDescription[0];
+                samplerDescription[1].AddressU = TextureAddressMode.Wrap;
+                samplerDescription[1].AddressV = TextureAddressMode.Wrap;
+                samplerDescription[1].AddressW = TextureAddressMode.Wrap;
                 samplerDescription[2] = samplerDescription[0];
                 samplerDescription[3] = samplerDescription[0];
 

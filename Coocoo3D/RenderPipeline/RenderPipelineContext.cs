@@ -64,7 +64,7 @@ namespace Coocoo3D.RenderPipeline
         private Dictionary<string, TextureCube> RTCs = new Dictionary<string, TextureCube>();
         private Dictionary<string, GPUBuffer> dynamicBuffers = new Dictionary<string, GPUBuffer>();
 
-        public Dictionary<string, int> customDataInt = new Dictionary<string, int>();
+        public Dictionary<string, object> customData = new Dictionary<string, object>();
 
         public bool RequireResize;
         public Vector2 NewSize;
@@ -333,7 +333,7 @@ namespace Coocoo3D.RenderPipeline
             var outputSize = visualChannel.outputSize;
             foreach (var rt1 in passSetting.RenderTargets)
             {
-                string rtName = visualChannel.GetTexName(rt1.Key);
+                string rtName = visualChannel.GetTexName(rt1.Key, rt1.Value);
                 var rt = rt1.Value;
                 if (!RTs.TryGetValue(rtName, out var tex2d))
                 {
@@ -371,7 +371,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 foreach (var rt1 in passSetting.RenderTargetCubes)
                 {
-                    string rtName = visualChannel.GetTexName(rt1.Key);
+                    string rtName = visualChannel.GetTexName(rt1.Key, rt1.Value);
                     var rt = rt1.Value;
                     if (!RTCs.TryGetValue(rtName, out var texCube))
                     {
@@ -410,7 +410,7 @@ namespace Coocoo3D.RenderPipeline
             {
                 foreach (var rt1 in passSetting.DynamicBuffers)
                 {
-                    string rtName = visualChannel.GetTexName(rt1.Key);
+                    string rtName = visualChannel.GetTexName(rt1.Key, rt1.Value);
                     var rt = rt1.Value;
                     if (!dynamicBuffers.TryGetValue(rtName, out var buffer))
                     {

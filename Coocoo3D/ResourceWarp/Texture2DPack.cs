@@ -93,8 +93,17 @@ namespace Coocoo3D.ResourceWarp
             Image image0 = Image.Load(stream);
             Image<Rgba32> image = (Image<Rgba32>)image0;
             var frame0 = image.Frames[0];
-            width = frame0.Width;
-            height = frame0.Height;
+            int width1 = frame0.Width;
+            int height1 = frame0.Height;
+            if (width1 % 128 != 0 || height1 % 128 != 0)
+            {
+                width1 = (width1 + 127) / 128 * 128;
+                height1 = (height1 + 127) / 128 * 128;
+                image.Mutate(x => x.Resize(width1, height1, KnownResamplers.Box));
+            }
+            width = width1;
+            height = height1;
+
             bitPerPixel = image0.PixelType.BitsPerPixel;
             frame0.TryGetSinglePixelSpan(out Span<Rgba32> span1);
 
@@ -105,8 +114,6 @@ namespace Coocoo3D.ResourceWarp
             castToByte.CopyTo(bytes);
 
             int totalCount = castToByte.Length;
-            int width1 = width;
-            int height1 = height;
             int d = castToByte.Length;
             while (width1 > 64 && height1 > 64)
             {

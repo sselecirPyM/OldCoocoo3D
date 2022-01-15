@@ -38,5 +38,13 @@ namespace Coocoo3D.RenderPipeline
         {
             return string.Format("SceneView/{0}/{1}", Name, texName);
         }
+
+        public string GetTexName(string texName, RenderTarget renderTarget)
+        {
+            if (renderTarget.flag.HasFlag(RenderTargetFlag.Shared))
+                return "shared/" + texName;
+            else
+                return string.Format("SceneView/{0}/{1}", Name, texName);
+        }
     }
 }

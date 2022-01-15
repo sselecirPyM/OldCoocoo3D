@@ -85,6 +85,7 @@ namespace Coocoo3D.UI
                         break;
                     case ".png":
                     case ".jpg":
+                    case ".jpeg":
                     case ".hdr":
                     case ".exr":
                     case ".tif":

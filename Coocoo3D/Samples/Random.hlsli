@@ -69,6 +69,13 @@ float2 Hammersley(uint Index, uint NumSamples, uint2 Random)
 	return float2(E1, E2);
 }
 
+float2 Hammersley(uint Index, uint NumSamples)
+{
+	float E1 = (float)Index / NumSamples;
+	float E2 = reversebits(Index) * 2.3283064365386963e-10;
+	return float2(E1, E2);
+}
+
 float3 HemisphereSampleCos(float2 Xi)
 {
 	float phi = 2 * RNG::RANDOM_NUMBER_PI * Xi.x;

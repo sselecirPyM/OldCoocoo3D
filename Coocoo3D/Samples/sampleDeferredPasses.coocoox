@@ -2,6 +2,10 @@
   "Name": "延迟渲染",
   "RenderSequence": [
     {
+      "Name": "PreprocessBRDF",
+      "Type": "DrawScreen"
+    },
+    {
       "Name": "ShadowMapPass0",
       "ClearDepth": "true",
       "DepthBias": "3000",
@@ -117,6 +121,14 @@
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_Float"
+    },
+    "_BRDFLUT": {
+      "Size": {
+        "X": 256,
+        "Y": 256
+      },
+      "Flag": "Shared",
+      "Format": "R16G16B16A16_Float"
     }
   },
   "RenderTargetCubes": {
@@ -141,8 +153,8 @@
     }
   },
   "Passes": {
-    "TestComputePass": {
-      "UnionShader": "UnionShaderComputeTest.cs",
+    "PreprocessBRDF": {
+      "UnionShader": "UnionShaderPreprocess.cs",
       "SRVs": [
         {
           "Index": "0",
@@ -153,8 +165,13 @@
       "UAVs": [
         {
           "Index": "0",
-          "ResourceType": "Buffer",
-          "Resource": "GIBuffer"
+          "ResourceType": "Texture2D",
+          "Resource": "_BRDFLUT"
+        }
+      ],
+      "CBVs": [
+        {
+          "Index": "0"
         }
       ]
     },
@@ -537,7 +554,7 @@
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs",
     "UnionShaderRayTracing.cs": "UnionShaderRayTracing.cs",
-    "UnionShaderComputeTest.cs": "UnionShaderComputeTest.cs"
+    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs"
   },
   "RayTracingShaders": {
     "RayTracing.json": "RayTracing.json"
@@ -550,7 +567,6 @@
   "ShowSettingTextures": {
   },
   "Texture2Ds": {
-    "_BRDFLUT": "brdflut.png"
   },
   "ShowParameters": {
     "Metallic": {

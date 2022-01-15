@@ -13,7 +13,9 @@ namespace Coocoo3D.RenderPipeline
     {
         public static void Process(RenderPipelineContext rp, GPUWriter gpuWriter)
         {
-            rp.customDataInt.TryGetValue("CurrentSkyBoxQuality", out int currentQuality);
+            int currentQuality = 0;
+            if (rp.customData.TryGetValue("CurrentSkyBoxQuality", out object o1) && o1 is int a0)
+                currentQuality = a0;
 
             if (rp.SkyBoxChanged || currentQuality < rp.dynamicContextRead.settings.SkyBoxMaxQuality)
             {
@@ -87,7 +89,7 @@ namespace Coocoo3D.RenderPipeline
                         graphicsContext.Dispatch((int)(texReflect.width + 7) / 8 / pow2a, (int)(texReflect.height + 7) / 8 / pow2a, 6);
                     }
                 }
-                rp.customDataInt["CurrentSkyBoxQuality"] = currentQuality + 1;
+                rp.customData["CurrentSkyBoxQuality"] = currentQuality + 1;
             }
         }
     }

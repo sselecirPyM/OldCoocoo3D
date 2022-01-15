@@ -160,7 +160,7 @@ void rayGen()
 	float roughness = buffer1Color.b;
 	float alpha = roughness * roughness;
 	float3 c_specular = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a);
-	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
+	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
 	uint randomState = RNG::RandomSeed(DispatchRaysIndex().x + DispatchRaysIndex().y * 8192 + g_RandomI);
@@ -169,9 +169,10 @@ void rayGen()
 	float weight = 0;
 	if (g_RayTracingReflectionThreshold > roughness)
 	{
+		uint2 rnd1 = uint2(RNG::Random(randomState), RNG::Random(randomState));
 		for (int i = 0; i < sampleCount; i++)
 		{
-			float2 E = Hammersley(i, sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
+			float2 E = Hammersley(i, sampleCount, rnd1);
 			float3 H = TangentToWorld(ImportanceSampleGGX(E, Pow4(roughness)).xyz, N);
 			float3 L = 2 * dot(V, H) * H - V;
 
@@ -251,7 +252,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 	float3 V = -payload.direction;
 
 	float NdotV = saturate(dot(N, V));
-	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
+	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
 	//payload.color += (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse).rgb;
@@ -385,10 +386,11 @@ void rayGenGI()
 
 
 	const int c_sampleCount = 128;
+	uint2 rnd1 = uint2(RNG::Random(randomState), RNG::Random(randomState));
 	for (int k = 0; k < c_sampleCount; k++)
 	{
 
-		float2 E = Hammersley(k, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
+		float2 E = Hammersley(k, c_sampleCount, rnd1);
 		float3 vec1 = UniformSampleSphere(E);
 
 		RayDesc ray;

@@ -204,11 +204,7 @@ float4 psmain(PSIn input) : SV_TARGET
 		float AO = 1;
 		float AOFactor = buffer3Color.r;
 #if ENABLE_SSAO
-#if ENABLE_DIRECTIONAL_LIGHT
-		if (AOFactor != 0 && pointInLightRange(0, wPos.xyz))
-#else
 		if (AOFactor != 0)
-#endif
 			for (int i = 0; i < g_AORaySampleCount; i++)
 			{
 				float2 E = Hammersley(i, g_AORaySampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
@@ -227,11 +223,7 @@ float4 psmain(PSIn input) : SV_TARGET
 					float factor = (1 - j / (float)sampleCountPerRay) * AOFactor;
 					if (lz > aoDepth + 0.01 && lz < aoDepth + g_AOLimit)
 					{
-#if ENABLE_DIRECTIONAL_LIGHT
-						AO -= 1.0f / g_AORaySampleCount * (1 - pointInLight(0, samplePos.xyz)) * factor;
-#else
 						AO -= 1.0f / g_AORaySampleCount * factor;
-#endif
 						break;
 					}
 				}
@@ -245,7 +237,7 @@ float4 psmain(PSIn input) : SV_TARGET
 		float alpha = roughness * roughness;
 		float3 c_diffuse = buffer0Color.rgb;
 		float3 c_specular = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a);
-		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, 1 - roughness), 0).rg;
+		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
 		float3 emissive = buffer2Color.rgb * 16;
 
@@ -306,10 +298,8 @@ float4 psmain(PSIn input) : SV_TARGET
 		outputColor += shDiffuse.rgb * c_diffuse * AO;
 #endif
 #endif
-#if ENABLE_SPECULR
-#ifndef RAY_TRACING
+#if ENABLE_SPECULR & !RAY_TRACING
 		outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF * AO;
-#endif
 #endif
 #ifdef ENABLE_EMISSIVE
 		outputColor += emissive;

@@ -3,7 +3,7 @@ using Coocoo3D.RenderPipeline;
 using Coocoo3DGraphics;
 using System.IO;
 using System.Collections.Generic;
-public static class UnionShaderComputeTest
+public static class UnionShaderPreprocess
 {
     static Dictionary<DebugRenderType, string> debugKeywords = new Dictionary<DebugRenderType, string>()
     {
@@ -21,6 +21,15 @@ public static class UnionShaderComputeTest
     };
     public static bool UnionShader(UnionShaderParam param)
     {
+        var brdfTex = param.GetTex2D("_BRDFLUT");
+        if (param.GetPersistentValue("preprocess_brdflut", 0) == brdfTex.width)
+        {
+            return true;
+        }
+        else
+        {
+            param.SetPersistentValue("preprocess_brdflut", brdfTex.width);
+        }
         var mainCaches = param.mainCaches;
         PSO pso = null;
         var material = param.material;
@@ -32,9 +41,15 @@ public static class UnionShaderComputeTest
 
         param.SetSRVs(param.pass.SRVs, material);
         param.SetUAVs(param.pass.UAVs, material);
-        var computeShader = mainCaches.GetComputeShader(Path.GetFullPath("TestComputeShader.hlsl", param.relativePath));
+
+        var writer = param.GPUWriter;
+        writer.Write(brdfTex.width);
+        writer.Write(brdfTex.height);
+        writer.SetBufferImmediately(graphicsContext, false, 0);
+
+        var computeShader = mainCaches.GetComputeShader(Path.GetFullPath("BRDFLUT.hlsl", param.relativePath));
         if (computeShader != null && graphicsContext.SetPSO(computeShader))
-            graphicsContext.Dispatch(1, 1, 1);
+            graphicsContext.Dispatch(brdfTex.width / 16, brdfTex.height / 16, 1);
         return true;
     }
 }
