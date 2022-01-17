@@ -26,6 +26,7 @@ namespace Coocoo3D.RenderPipeline
         Roughness,
         Specular,
         SpecularRender,
+        TAA,
         UV,
     }
 }

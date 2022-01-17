@@ -10,7 +10,7 @@
       "Type": "DrawScreen",
       "ClearDepth": "true",
       "RenderTargets": [
-        "_Output0"
+        "_Result"
       ]
     },
     {
@@ -31,7 +31,7 @@
       "ClearDepth": "true",
       "DepthStencil": "_ScreenDepth0",
       "RenderTargets": [
-        "_Output0"
+        "_Result"
       ]
     },
     {
@@ -43,6 +43,13 @@
     },
     {
       "Name": "BloomBlur2",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Result"
+      ]
+    },
+    {
+      "Name": "PostProcessingPass",
       "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
@@ -65,6 +72,12 @@
     "_Blur0": {
       "Size": {
         "Multiplier": "0.5",
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_Float"
+    },
+    "_Result": {
+      "Size": {
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_Float"
@@ -224,7 +237,7 @@
         {
           "Index": "0",
           "ResourceType": "Texture2D",
-          "Resource": "_Output0"
+          "Resource": "_Result"
         }
       ]
     },
@@ -243,13 +256,29 @@
           "Resource": "_Blur0"
         }
       ]
+    },
+    "PostProcessingPass": {
+      "UnionShader": "UnionShaderPostProcessing.cs",
+      "CBVs": [
+        {
+          "Index": "0"
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Result"
+        }
+      ]
     }
   },
   "UnionShaders": {
     "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs",
-    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs"
+    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs",
+    "UnionShaderPostProcessing.cs": "UnionShaderPostProcessing.cs"
   },
   "Dispatcher": "Dispatcher.cs",
   "ShowTextures": {

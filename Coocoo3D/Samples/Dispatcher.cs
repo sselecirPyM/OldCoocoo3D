@@ -21,30 +21,11 @@ public class Dispatcher : IPassDispatcher
         var graphicsContext = param.graphicsContext;
         var renderers = param.renderers;
 
-        bool rayTracing = false;
-
-        foreach (var renderSequence in passSetting.RenderSequence)
-        {
-            if (renderSequence.Type == "RayTracing" && param.graphicsDevice.IsRayTracingSupport())
-            {
-                rayTracing = true;
-            }
-        }
-        if ((bool?)param.GetSettingsValue("EnableRayTracing") != true)
-            rayTracing = false;
-        param.customValue["RayTracing"] = rayTracing;
         param.customValue["Skinning"] = !param.rp.CPUSkinning;
-        if (rayTracing)
-            param.rp.CPUSkinning = true;
-        else
-            param.rp.CPUSkinning = false;
+        param.rp.CPUSkinning = false;
 
         foreach (var renderSequence in passSetting.RenderSequence)
         {
-            if (renderSequence.Type == "RayTracing" && !rayTracing)
-            {
-                continue;
-            }
             param.renderSequence = renderSequence;
             var Pass = passSetting.Passes[renderSequence.Name];
 

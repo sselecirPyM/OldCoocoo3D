@@ -17,7 +17,6 @@ namespace Coocoo3D.RenderPipeline
         public Int2 outputSize = new Int2(100, 100);
         public Int2 sceneViewSize = new Int2(100, 100);
         public GraphicsContext graphicsContext;
-        public Texture2D FinalOutput = new Texture2D();
         public Texture2D OutputRTV = new Texture2D();
         public Dictionary<string, object> CustomValue = new Dictionary<string, object>();
 
@@ -30,7 +29,6 @@ namespace Coocoo3D.RenderPipeline
 
         public void Dispose()
         {
-            FinalOutput.Dispose();
             OutputRTV.Dispose();
         }
 

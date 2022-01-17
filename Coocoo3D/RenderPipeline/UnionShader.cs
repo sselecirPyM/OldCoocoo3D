@@ -48,6 +48,20 @@ namespace Coocoo3D.RenderPipeline
         public Dictionary<string, object> customValue = new Dictionary<string, object>();
         public Dictionary<string, object> gpuValueOverride = new Dictionary<string, object>();
 
+        public T GetCustomValue<T>(string name, T defaultValue)
+        {
+            if (customValue.TryGetValue(name, out object val) && val is T val1)
+            {
+                return val1;
+            }
+            return defaultValue;
+        }
+
+        public void SetCustomValue<T>(string name, T value)
+        {
+            customValue[name] = value;
+        }
+
         public T GetPersistentValue<T>(string name, T defaultValue)
         {
             if (rp.customData.TryGetValue(name, out object val) && val is T val1)

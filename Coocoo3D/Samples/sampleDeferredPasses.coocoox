@@ -47,14 +47,14 @@
       "Name": "DeferredFinalPass",
       "Type": "DrawScreen",
       "RenderTargets": [
-        "_Output0"
+        "_Result"
       ]
     },
     {
       "Name": "DrawTransparentPass",
       "DepthStencil": "_ScreenDepth0",
       "RenderTargets": [
-        "_Output0"
+        "_Result"
       ]
     },
     {
@@ -66,6 +66,20 @@
     },
     {
       "Name": "BloomBlur2",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Result"
+      ]
+    },
+    {
+      "Name": "TAAPass",
+      "Type": "DrawScreen",
+      "RenderTargets": [
+        "_Output0"
+      ]
+    },
+    {
+      "Name": "PostProcessingPass",
       "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
@@ -89,31 +103,31 @@
       "Size": {
         "Source": "OutputSize"
       },
-      "Format": "R16G16B16A16_UNorm"
+      "Format": "R16G16B16A16_Float"
     },
     "_ScreenColor1": {
       "Size": {
         "Source": "OutputSize"
       },
-      "Format": "R16G16B16A16_UNorm"
+      "Format": "R16G16B16A16_Float"
     },
     "_ScreenColor2": {
       "Size": {
         "Source": "OutputSize"
       },
-      "Format": "R16G16B16A16_UNorm"
+      "Format": "R16G16B16A16_Float"
     },
     "_ScreenColor3": {
       "Size": {
         "Source": "OutputSize"
       },
-      "Format": "R16G16B16A16_UNorm"
+      "Format": "R16G16B16A16_Float"
     },
     "_RayTracing0": {
       "Size": {
         "Source": "OutputSize"
       },
-      "Format": "R16G16B16A16_UNorm"
+      "Format": "R16G16B16A16_Float"
     },
     "_Blur0": {
       "Size": {
@@ -121,6 +135,24 @@
         "Source": "OutputSize"
       },
       "Format": "R16G16B16A16_Float"
+    },
+    "_Result": {
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_Float"
+    },
+    "_PreviousResult": {
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "R16G16B16A16_Float"
+    },
+    "_PreviousScreenDepth0": {
+      "Size": {
+        "Source": "OutputSize"
+      },
+      "Format": "D32_Float"
     },
     "_BRDFLUT": {
       "Size": {
@@ -134,8 +166,8 @@
   "RenderTargetCubes": {
     "_EnvironmentCapture": {
       "Size": {
-        "X": 512,
-        "Y": 512
+        "X": 64,
+        "Y": 64
       },
       "Format": "R16G16B16A16_UNorm"
     }
@@ -437,7 +469,7 @@
         {
           "Index": "0",
           "ResourceType": "Texture2D",
-          "Resource": "_Output0"
+          "Resource": "_Result"
         }
       ]
     },
@@ -454,6 +486,68 @@
           "Index": "0",
           "ResourceType": "Texture2D",
           "Resource": "_Blur0"
+        }
+      ]
+    },
+    "TAAPass": {
+      "UnionShader": "UnionShaderPostProcessing.cs",
+      "CBVs": [
+        {
+          "Index": "0"
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenDepth0"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_PreviousResult"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_PreviousScreenDepth0"
+        }
+      ],
+      "UAVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Result"
+        }
+      ]
+    },
+    "PostProcessingPass": {
+      "UnionShader": "UnionShaderPostProcessing.cs",
+      "CBVs": [
+        {
+          "Index": "0"
+        }
+      ],
+      "SRVs": [
+        {
+          "Index": "0",
+          "ResourceType": "Texture2D",
+          "Resource": "_Result"
+        },
+        {
+          "Index": "1",
+          "ResourceType": "Texture2D",
+          "Resource": "_ScreenDepth0"
+        },
+        {
+          "Index": "2",
+          "ResourceType": "Texture2D",
+          "Resource": "_PreviousResult"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "Texture2D",
+          "Resource": "_PreviousScreenDepth0"
         }
       ]
     },
@@ -554,7 +648,8 @@
     "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
     "UnionShaderBloom.cs": "UnionShaderBloom.cs",
     "UnionShaderRayTracing.cs": "UnionShaderRayTracing.cs",
-    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs"
+    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs",
+    "UnionShaderPostProcessing.cs": "UnionShaderPostProcessing.cs"
   },
   "RayTracingShaders": {
     "RayTracing.json": "RayTracing.json"
@@ -762,6 +857,18 @@
       "Default": "0.0001",
       "Step": "0.00001",
       "Format": "%.5f"
+    },
+    "EnableTAA": {
+      "Name": "启用TAA抗锯齿",
+      "Type": "bool",
+      "Default": "false"
+    },
+    "TAAFrameFactor": {
+      "Name": "TAA当前帧因子",
+      "Type": "float",
+      "Default": "0.33",
+      "Step": "0.01",
+      "Min": "0.001"
     }
   }
 }

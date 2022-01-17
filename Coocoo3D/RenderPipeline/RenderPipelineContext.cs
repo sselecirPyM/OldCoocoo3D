@@ -87,7 +87,8 @@ namespace Coocoo3D.RenderPipeline
 
         public ProcessingList processingList = new ProcessingList();
 
-        public Format outputFormat = Format.R16G16B16A16_Float;
+        //public Format outputFormat = Format.R16G16B16A16_Float;
+        public Format outputFormat = Format.R8G8B8A8_UNorm;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
 
         public string currentPassSetting1 = "Samples\\samplePasses.coocoox";
@@ -309,15 +310,15 @@ namespace Coocoo3D.RenderPipeline
             foreach (var visualChannel1 in visualChannels.Values)
             {
                 var outputSize = visualChannel1.outputSize;
-                if (outputSize.X != visualChannel1.FinalOutput.width || outputSize.Y != visualChannel1.FinalOutput.height)
+                if (outputSize.X != visualChannel1.OutputRTV.width || outputSize.Y != visualChannel1.OutputRTV.height)
                 {
                     visualChannel1.OutputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
                     mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
 
-                    visualChannel1.FinalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
-                    graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
-                    mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
+                    //visualChannel1.FinalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
+                    //graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
+                    //mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
                 }
             }
             ConfigPassSettings(dynamicContextRead.currentPassSetting);

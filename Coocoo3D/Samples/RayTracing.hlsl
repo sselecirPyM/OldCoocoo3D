@@ -139,7 +139,6 @@ void rayGen()
 	uint3 launchIndex = DispatchRaysIndex();
 	uint3 launchDim = DispatchRaysDimensions();
 
-
 	float2 xy = launchIndex.xy + 0.5f; // center in the middle of the pixel.
 	float2 uv = xy / launchDim.xy;
 	float2 screenPos = uv * 2.0 - 1.0;
@@ -389,7 +388,6 @@ void rayGenGI()
 	uint2 rnd1 = uint2(RNG::Random(randomState), RNG::Random(randomState));
 	for (int k = 0; k < c_sampleCount; k++)
 	{
-
 		float2 E = Hammersley(k, c_sampleCount, rnd1);
 		float3 vec1 = UniformSampleSphere(E);
 
@@ -411,7 +409,6 @@ void rayGenGI()
 			0 /* Miss index */,
 			ray,
 			payload);
-
 
 		for (int i = 0; i < sampleCountX; i++)
 			for (int j = 0; j < sampleCountY; j++)
@@ -439,4 +436,82 @@ void rayGenGI()
 		}
 
 	giResult[shIndex] = shResult;
+}
+
+
+[shader("raygeneration")]
+void rayGenPathTracing()
+{
+	uint3 launchIndex = DispatchRaysIndex();
+	uint3 launchDim = DispatchRaysDimensions();
+
+	float2 xy = launchIndex.xy + 0.5f; // center in the middle of the pixel.
+	float2 uv = xy / launchDim.xy;
+	float2 screenPos = uv * 2.0 - 1.0;
+	screenPos.y = -screenPos.y;
+	float depth = gbufferDepth.SampleLevel(s3, uv, 0).r;
+
+	if (depth == 1.0) return;
+	float4 buffer0Color = gbuffer0.SampleLevel(s3, uv, 0);
+	float4 buffer1Color = gbuffer1.SampleLevel(s3, uv, 0);
+	float4 buffer2Color = gbuffer2.SampleLevel(s3, uv, 0);
+
+	float4 world = mul(float4(screenPos, depth, 1), g_mProjToWorld);
+	world /= world.w;
+
+	float3 V = normalize(g_camPos - world.xyz);
+	float3 N = normalize(NormalDecode(buffer1Color.rg));
+	float NdotV = saturate(dot(N, V));
+	float roughness = buffer1Color.b;
+	float alpha = roughness * roughness;
+	float3 c_specular = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a);
+	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
+	float3 GF = c_specular * AB.x + AB.y;
+
+	uint randomState = RNG::RandomSeed(DispatchRaysIndex().x + DispatchRaysIndex().y * 8192 + g_RandomI);
+	int sampleCount = 1 + (int)(roughness * 256 * g_RayTracingReflectionQuality * GF);
+	float3 specReflectColor = float3(0, 0, 0);
+	float weight = 0;
+	if (g_RayTracingReflectionThreshold > roughness)
+	{
+		uint2 rnd1 = uint2(RNG::Random(randomState), RNG::Random(randomState));
+		for (int i = 0; i < sampleCount; i++)
+		{
+			float2 E = Hammersley(i, sampleCount, rnd1);
+			float3 H = TangentToWorld(ImportanceSampleGGX(E, Pow4(roughness)).xyz, N);
+			float3 L = 2 * dot(V, H) * H - V;
+
+			float NdotL = saturate(dot(N, L));
+			L = normalize(L);
+
+			if (NdotL > 0)
+			{
+				RayDesc ray;
+				ray.Origin = world.xyz;
+				ray.Direction = L;
+				ray.TMin = 0.01;
+				ray.TMax = 10000;
+
+				RayPayload payload;
+				payload.color = float3(0, 0, 0);
+				payload.direction = L;
+				TraceRay(gRtScene,
+					RAY_FLAG_NONE /*rayFlags*/,
+					0xFF,
+					0 /* ray index*/,
+					0 /* Multiplies */,
+					0 /* Miss index */,
+					ray,
+					payload);
+				specReflectColor += payload.color * NdotL;
+				weight += NdotL;
+			}
+		}
+		specReflectColor = specReflectColor / max(weight, 1e-4) * GF;
+		gOutput[launchIndex.xy] = float4(specReflectColor, 0);
+	}
+	else
+	{
+		gOutput[launchIndex.xy] = float4(EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF, 0);
+	}
 }

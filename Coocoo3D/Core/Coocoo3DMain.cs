@@ -83,7 +83,6 @@ namespace Coocoo3D.Core
         #region Rendering
         HybirdRenderPipeline hybridRenderPipeline = new HybirdRenderPipeline();
 
-        public PostProcess postProcess = new PostProcess();
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         public ImguiInput imguiInput = new ImguiInput();
 
@@ -214,7 +213,6 @@ namespace Coocoo3D.Core
                     foreach (var visualChannel in RPContext.visualChannels.Values)
                     {
                         hybridRenderPipeline.RenderCamera(RPContext, visualChannel);
-                        postProcess.RenderCamera(RPContext, visualChannel);
                     }
                     hybridRenderPipeline.EndFrame(RPContext);
                 }

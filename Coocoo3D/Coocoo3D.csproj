@@ -23,6 +23,7 @@
     <Compile Remove="Samples\UnionShaderShadowMap.cs" />
     <Compile Remove="Samples\UnionShaderRayTracing.cs" />
     <Compile Remove="Samples\UnionShaderPreprocess.cs" />
+    <Compile Remove="Samples\UnionShaderPostProcessing.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Samples\Dispatcher.cs">
@@ -47,6 +48,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Samples\UnionShaderPreprocess.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Samples\UnionShaderPostProcessing.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -81,6 +85,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\BRDFLUT.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Samples\PostProcessing.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\RayTracingDenoise.hlsl">
@@ -123,6 +130,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Samples\SkyBox.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Samples\TAA.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\G_ClearTexture2DArray.hlsl">

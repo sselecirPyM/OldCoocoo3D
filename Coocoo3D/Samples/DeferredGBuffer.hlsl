@@ -55,7 +55,7 @@ Texture2D texture0 :register(t0);
 Texture2D Emissive :register(t1);
 float2 NormalEncode(float3 n)
 {
-	float2 enc = normalize(n.xy) * (sqrt(-n.z * 0.5 + 0.5));
+	float2 enc = normalize(n.xy + float2(1e-6, 0)) * (sqrt(-n.z * 0.5 + 0.5));
 	enc = enc * 0.5 + 0.5;
 	return enc;
 }
@@ -82,7 +82,7 @@ MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 
 	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
-	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive / 16;
+	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive;
 
 	output.color0 = float4(c_diffuse, c_specular.r);
 	output.color1 = float4(encodedNormal, _Roughness, c_specular.g);

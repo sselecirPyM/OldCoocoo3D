@@ -1,0 +1,104 @@
+﻿using System;
+using Coocoo3D.RenderPipeline;
+using Coocoo3DGraphics;
+using System.IO;
+using System.Collections.Generic;
+using System.Numerics;
+public static class UnionShaderPostProcessing
+{
+    public static bool UnionShader(UnionShaderParam param)
+    {
+        var graphicsContext = param.graphicsContext;
+        var mainCaches = param.mainCaches;
+        var psoDesc = param.GetPSODesc();
+
+        PSO pso = null;
+        string matName = param.visualChannel.Name + "previousCamera";
+        string matInvName = param.visualChannel.Name + "previousCamera1";
+        //var camera = param.visualChannel.cameraData;
+        var camera = param.visualChannel.camera.GetCameraData();
+        var mat = camera.vpMatrix;
+        var matInv = camera.pvMatrix;
+        switch (param.passName)
+        {
+            case "TAAPass":
+                {
+                    if ((bool?)param.GetSettingsValue("EnableTAA") != true)
+                        return true;
+                    var mat2 = param.GetPersistentValue(matName, mat);
+
+                    var matInv2 = param.GetPersistentValue(matInvName, matInv);
+
+                    Texture2D renderTarget = param.renderTargets[0];
+                    var writer = param.GPUWriter;
+                    writer.Write(mat);
+                    writer.Write(matInv);
+                    writer.Write(mat2);
+                    writer.Write(matInv2);
+                    writer.Write(renderTarget.width);
+                    writer.Write(renderTarget.height);
+                    writer.Write(camera.far);
+                    writer.Write(camera.near);
+                    writer.Write((float)param.GetSettingsValue("TAAFrameFactor"));
+                    writer.SetBufferImmediately(graphicsContext, false, 0);
+
+                    List<string> keywords = new List<string>();
+                    keywords.Add("ENABLE_TAA");
+                    if (param.settings.DebugRenderType == DebugRenderType.TAA)
+                    {
+                        keywords.Add("DEBUG_TAA");
+                    }
+                    var computeShader = mainCaches.GetComputeShaderWithKeywords(keywords, Path.GetFullPath("TAA.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs);
+                    param.SetUAVs(param.pass.UAVs);
+                    if (computeShader != null && graphicsContext.SetPSO(computeShader))
+                        graphicsContext.Dispatch((renderTarget.width + 7) / 8, (renderTarget.height + 7) / 8, 1);
+                }
+                break;
+            case "PostProcessingPass":
+                {
+                    var mat2 = param.GetPersistentValue(matName, mat);
+                    param.SetPersistentValue(matName, mat);
+
+                    var matInv2 = param.GetPersistentValue(matInvName, matInv);
+                    param.SetPersistentValue(matInvName, matInv);
+
+                    Texture2D renderTarget = param.renderTargets[0];
+                    var writer = param.GPUWriter;
+                    writer.Write(mat);
+                    writer.Write(matInv);
+                    writer.Write(mat2);
+                    writer.Write(matInv2);
+                    writer.Write(renderTarget.width);
+                    writer.Write(renderTarget.height);
+                    writer.Write(camera.far);
+                    writer.Write(camera.near);
+
+                    writer.SetBufferImmediately(graphicsContext, false, 0);
+
+                    List<string> keywords = new List<string>();
+                    //if ((bool?)param.GetSettingsValue("EnableTAA") == true)
+                    //{
+                    //    keywords.Add("ENABLE_TAA");
+                    //    if (param.settings.DebugRenderType == DebugRenderType.TAA)
+                    //    {
+                    //        keywords.Add("DEBUG_TAA");
+                    //    }
+                    //}
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PostProcessing.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs);
+                    if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                        graphicsContext.DrawIndexed(6, 0, 0);
+                    if (param.pass.SRVs.Count > 3)
+                    {
+                        param.SwapTexture("_Result", "_PreviousResult");
+                        param.SwapTexture("_ScreenDepth0", "_PreviousScreenDepth0");
+                    }
+                }
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+}

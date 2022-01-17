@@ -55,6 +55,10 @@ namespace Coocoo3D.Present
         }
         public CameraData GetCameraData()
         {
+            return GetCameraData(new Vector2());
+        }
+        public CameraData GetCameraData(Vector2 offset)
+        {
             Matrix4x4 rotateMatrix = Matrix4x4.CreateFromYawPitchRoll(-Angle.Y, -Angle.X, -Angle.Z);
             var pos = Vector3.Transform(Vector3.UnitZ * Distance, rotateMatrix * Matrix4x4.CreateTranslation(LookAtPoint));
             var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
@@ -63,6 +67,8 @@ namespace Coocoo3D.Present
             float farClip1 = MathF.Max(farClip, nearClip1 + 1e-1f);
             float fov1 = Math.Clamp(Fov, 1e-3f, MathF.PI - 1e-3f);
             Matrix4x4 pMatrix = Matrix4x4.CreatePerspectiveFieldOfView(fov1, AspectRatio, nearClip1, farClip1);
+            pMatrix.M31 += offset.X;
+            pMatrix.M32 += offset.Y;
             Matrix4x4 vpMatrix = Matrix4x4.Multiply(vMatrix, pMatrix);
             Matrix4x4.Invert(vpMatrix, out Matrix4x4 pvMatrix);
             return new CameraData()

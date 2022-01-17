@@ -432,7 +432,7 @@ namespace Coocoo3D.RenderPipeline
             }
             if (string.IsNullOrEmpty(path)) return null;
             if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
-            return GetT(ComputeShaders, path, xPath, file =>
+            return GetT(ComputeShaders, xPath, path, file =>
             {
                 DxcDefine[] dxcDefines = null;
                 if (keywords != null)

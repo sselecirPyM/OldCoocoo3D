@@ -239,7 +239,7 @@ float4 psmain(PSIn input) : SV_TARGET
 		float3 c_specular = float3(buffer0Color.a, buffer1Color.a, buffer2Color.a);
 		float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 		float3 GF = c_specular * AB.x + AB.y;
-		float3 emissive = buffer2Color.rgb * 16;
+		float3 emissive = buffer2Color.rgb;
 
 #if ENABLE_DIFFUSE
 		float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple;
@@ -410,13 +410,16 @@ float4 psmain(PSIn input) : SV_TARGET
 
 		for (int i = 0; i < 1; i++)
 		{
+			int2 sx = uv * _widthHeight;
+			uint randomState = RNG::RandomSeed(sx.x + sx.y * 2048 + g_RandomI);
+			
 			if (!any(Lightings[i].LightColor))continue;
 			if (Lightings[i].LightType == 0)
 			{
 				float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
 				float volumeLightIterStep = volumeLightMaxDistance / volumeLightIterCount;
 				volumeLightIterStep /= sqrt(clamp(1 - pow2(dot(Lightings[i].LightDir, -V)), 0.04, 1));
-				float offset = ((uv.x * _widthHeight.x * 9323 + (uv.y * _widthHeight.y - 0.5f) * 10501) % 34739 / 34739) * volumeLightIterStep;
+				float offset = RNG::Random01(randomState) * volumeLightIterStep;
 				float3 samplePos1 = g_camPos;
 				for (int j = 0; j < volumeLightIterCount; j++)
 				{

@@ -94,7 +94,7 @@ namespace Coocoo3D.Core
                     graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
                 }
 
-                graphicsContext.CopyTexture(ReadBackTexture2D, visualchannel.FinalOutput, index1);
+                graphicsContext.CopyTexture(ReadBackTexture2D, visualchannel.OutputRTV, index1);
                 if (RecordCount >= c_frameCount)
                 {
                     if (packs[exIndex] == null)
