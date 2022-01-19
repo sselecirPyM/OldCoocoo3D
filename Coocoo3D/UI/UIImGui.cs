@@ -498,6 +498,12 @@ namespace Coocoo3D.UI
                             }
                             break;
                     }
+                    if (val.Tooltip != null && ImGui.IsItemHovered())
+                    {
+                        ImGui.BeginTooltip();
+                        ImGui.Text(val.Tooltip);
+                        ImGui.EndTooltip();
+                    }
                 }
             }
         }

@@ -159,6 +159,7 @@ namespace Coocoo3D.RenderPipeline
         public string Step;
         public string Format;
         public bool IsHidden;
+        public string Tooltip;
         [NonSerialized]
         public object defaultValue;
         [NonSerialized]

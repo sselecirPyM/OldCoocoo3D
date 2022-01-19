@@ -48,7 +48,7 @@ void csmain(uint3 dtid : SV_DispatchThreadID)
 	float maxz = 0;
 	float minz1 = 1;
 	float maxz1 = 0;
-	float threshold = 0.05 + _pow2(depth2);
+	float threshold = (100 + _pow2(depth2) * 800 + g_cameraNearClip*10) / _widthHeight.y;
 	for (int x = -1; x <= 1; x++)
 		for (int y = -1; y <= 1; y++)
 		{

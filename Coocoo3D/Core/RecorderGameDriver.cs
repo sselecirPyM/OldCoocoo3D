@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using System.Runtime.InteropServices;
 
 namespace Coocoo3D.Core
 {
@@ -97,22 +96,20 @@ namespace Coocoo3D.Core
                 graphicsContext.CopyTexture(ReadBackTexture2D, visualchannel.OutputRTV, index1);
                 if (RecordCount >= c_frameCount)
                 {
+                    int width = ReadBackTexture2D.GetWidth();
+                    int height = ReadBackTexture2D.GetHeight();
                     if (packs[exIndex] == null)
-                    {
-                        int width = ReadBackTexture2D.GetWidth();
-                        int height = ReadBackTexture2D.GetHeight();
-                        packs[exIndex] = new Pack1()
-                        {
-                            saveFolder = saveFolder,
-                            width = width,
-                            height = height,
-                            imageData = new byte[width * height * 4],
-                        };
-                    }
+                        packs[exIndex] = new Pack1();
                     else if (!packs[exIndex].runningTask.IsCompleted)
                     {
                         packs[exIndex].runningTask.Wait();
                     }
+                    var pack = packs[exIndex];
+                    pack.width = width;
+                    pack.height = height;
+                    pack.saveFolder = saveFolder;
+                    if (pack.imageData == null || pack.imageData.Length != width * height * 4)
+                        pack.imageData = new byte[width * height * 4];
 
                     ReadBackTexture2D.GetRaw<byte>(index1, packs[exIndex].imageData);
 

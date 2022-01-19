@@ -156,8 +156,8 @@
     },
     "_BRDFLUT": {
       "Size": {
-        "X": 256,
-        "Y": 256
+        "X": 512,
+        "Y": 512
       },
       "Flag": "Shared",
       "Format": "R16G16B16A16_Float"
@@ -643,13 +643,6 @@
     }
   },
   "UnionShaders": {
-    "UnionShaderDeferred.cs": "UnionShaderDeferred.cs",
-    "UnionShaderPBRForward.cs": "UnionShaderPBRForward.cs",
-    "UnionShaderShadowMap.cs": "UnionShaderShadowMap.cs",
-    "UnionShaderBloom.cs": "UnionShaderBloom.cs",
-    "UnionShaderRayTracing.cs": "UnionShaderRayTracing.cs",
-    "UnionShaderPreprocess.cs": "UnionShaderPreprocess.cs",
-    "UnionShaderPostProcessing.cs": "UnionShaderPostProcessing.cs"
   },
   "RayTracingShaders": {
     "RayTracing.json": "RayTracing.json"
@@ -861,7 +854,8 @@
     "EnableTAA": {
       "Name": "启用TAA抗锯齿",
       "Type": "bool",
-      "Default": "false"
+      "Default": "false",
+      "Tooltip": "与bloom共用会导致性能降低"
     },
     "TAAFrameFactor": {
       "Name": "TAA当前帧因子",

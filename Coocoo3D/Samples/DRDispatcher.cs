@@ -21,8 +21,9 @@ public class DRDispatcher : IPassDispatcher
         var graphicsContext = param.graphicsContext;
         var renderers = param.renderers;
 
-        bool rayTracing = false;
+        param.customValue["Skinning"] = !param.rp.CPUSkinning;
 
+        bool rayTracing = false;
         foreach (var renderSequence in passSetting.RenderSequence)
             if (renderSequence.Type == "RayTracing" && param.graphicsDevice.IsRayTracingSupport())
                 rayTracing = true;
@@ -30,7 +31,6 @@ public class DRDispatcher : IPassDispatcher
         if ((bool?)param.GetSettingsValue("EnableRayTracing") != true)
             rayTracing = false;
         param.customValue["RayTracing"] = rayTracing;
-        param.customValue["Skinning"] = !param.rp.CPUSkinning;
         param.rp.CPUSkinning = rayTracing;
         var random = param.random;
         if ((bool?)param.GetSettingsValue("EnableTAA") == true)
@@ -39,7 +39,6 @@ public class DRDispatcher : IPassDispatcher
             int index1 = param.rp.frameRenderCount;
             Vector2 jitterVector = new Vector2((float)(random.NextDouble() * 2 - 1) / outputTex.width, (float)(random.NextDouble() * 2 - 1) / outputTex.height);
             param.visualChannel.cameraData = param.visualChannel.camera.GetCameraData(jitterVector);
-            //param.visualChannel.cameraData = param.visualChannel.camera.GetCameraData(new Vector2((float)(index1 / 64 % 2.0f - 1) / outputTex.width, (float)(index1 / 8 % 2.0f - 1) / outputTex.height));
         }
 
         foreach (var renderSequence in passSetting.RenderSequence)

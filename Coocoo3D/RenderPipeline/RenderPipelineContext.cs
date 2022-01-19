@@ -451,6 +451,12 @@ namespace Coocoo3D.RenderPipeline
                 foreach (var shader in passSetting.UnionShaders)
                     passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
 
+            foreach (var pass in passSetting.Passes)
+            {
+                if (!passSetting.aliases.ContainsKey(pass.Value.UnionShader))
+                    passSetting.aliases[pass.Value.UnionShader] = Path.GetFullPath(pass.Value.UnionShader, path1);
+            }
+
             if (passSetting.Texture2Ds != null)
                 foreach (var texture in passSetting.Texture2Ds)
                     passSetting.aliases[texture.Key] = Path.GetFullPath(texture.Value, path1);

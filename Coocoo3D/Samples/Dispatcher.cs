@@ -24,6 +24,15 @@ public class Dispatcher : IPassDispatcher
         param.customValue["Skinning"] = !param.rp.CPUSkinning;
         param.rp.CPUSkinning = false;
 
+        var random = param.random;
+        if ((bool?)param.GetSettingsValue("EnableTAA") == true)
+        {
+            var outputTex = param.GetTex2D("_Output0");
+            int index1 = param.rp.frameRenderCount;
+            Vector2 jitterVector = new Vector2((float)(random.NextDouble() * 2 - 1) / outputTex.width, (float)(random.NextDouble() * 2 - 1) / outputTex.height);
+            param.visualChannel.cameraData = param.visualChannel.camera.GetCameraData(jitterVector);
+        }
+
         foreach (var renderSequence in passSetting.RenderSequence)
         {
             param.renderSequence = renderSequence;
