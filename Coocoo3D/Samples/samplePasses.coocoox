@@ -21,12 +21,6 @@
       "DepthStencil": "_ShadowMap0"
     },
     {
-      "Name": "ShadowMapPass1",
-      "DepthBias": "3000",
-      "SlopeScaledDepthBias": "1.0",
-      "DepthStencil": "_ShadowMap0"
-    },
-    {
       "Name": "DrawObjectPass",
       "ClearDepth": "true",
       "DepthStencil": "_ScreenDepth0",
@@ -145,20 +139,19 @@
             "World",
             "DirectionalLightMatrix0"
           ]
-        }
-      ]
-    },
-    "ShadowMapPass1": {
-      "Properties": {
-        "ShadowMap": ""
-      },
-      "UnionShader": "UnionShaderShadowMap.cs",
-      "CBVs": [
+        },
         {
           "Index": "1",
           "Datas": [
             "World",
             "DirectionalLightMatrix1"
+          ]
+        },
+        {
+          "Index": "1",
+          "Datas": [
+            "World",
+            "_PointLightMatrix"
           ]
         }
       ]
@@ -211,7 +204,8 @@
             "FogColor",
             "FogDensity",
             "FogStartDistance",
-            "FogEndDistance"
+            "FogEndDistance",
+            "LightMapSplit"
 
           ]
         }

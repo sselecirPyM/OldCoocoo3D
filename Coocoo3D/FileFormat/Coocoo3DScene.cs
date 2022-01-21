@@ -37,6 +37,7 @@ namespace Coocoo3D.FileFormat
     {
         public Vector3 color;
         public float range;
+        public LightingType type;
     }
     public class _cooMaterial
     {
@@ -126,6 +127,7 @@ namespace Coocoo3D.FileFormat
                     sceneObject.lighting = new CooSceneObjectLighting();
                     sceneObject.lighting.color = lighting.Color;
                     sceneObject.lighting.range = lighting.Range;
+                    sceneObject.lighting.type = lighting.LightingType;
                     scene.objects.Add(sceneObject);
                 }
             }
@@ -200,6 +202,7 @@ namespace Coocoo3D.FileFormat
                     {
                         lightingComponent.Color = obj.lighting.color;
                         lightingComponent.Range = obj.lighting.range;
+                        lightingComponent.LightingType = obj.lighting.type;
                     }
 
                     main.CurrentScene.AddGameObject(lighting);

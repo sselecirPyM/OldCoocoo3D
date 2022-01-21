@@ -23,7 +23,7 @@ namespace Coocoo3D.Core
             BackgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             Wireframe = false,
             SkyBoxMaxQuality = 256,
-            ShadowMapResolution = 2048,
+            ShadowMapResolution = 4096,
         };
 
         public List<GameObject> gameObjects = new List<GameObject>();

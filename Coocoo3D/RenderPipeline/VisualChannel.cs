@@ -18,13 +18,11 @@ namespace Coocoo3D.RenderPipeline
         public Int2 sceneViewSize = new Int2(100, 100);
         public GraphicsContext graphicsContext;
         public Texture2D OutputRTV = new Texture2D();
-        public Dictionary<string, object> CustomValue = new Dictionary<string, object>();
 
         public void Onframe(RenderPipelineContext RPContext)
         {
             if (camera.CameraMotionOn) camera.SetCameraMotion((float)RPContext.gameDriverContext.PlayTime);
             cameraData = camera.GetCameraData();
-            CustomValue.Clear();
         }
 
         public void Dispose()

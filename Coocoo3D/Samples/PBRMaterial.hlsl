@@ -15,10 +15,10 @@ struct LightInfo
 };
 struct PointLightInfo
 {
-	float3 LightDir;
+	float3 LightPos;
 	uint LightType;
 	float3 LightColor;
-	float useless;
+	float LightRange;
 };
 #define POINT_LIGHT_COUNT 4
 cbuffer cb1 : register(b1)
@@ -45,6 +45,7 @@ cbuffer cb2 : register(b2)
 	float _fogDensity;
 	float _startDistance;
 	float _endDistance;
+	int  g_lightMapSplit;
 	float3 g_GIVolumePosition;
 	float3 g_GIVolumeSize;
 }
@@ -52,6 +53,7 @@ cbuffer cb2 : register(b2)
 SamplerState s0 : register(s0);
 SamplerState s1 : register(s1);
 SamplerComparisonState sampleShadowMap0 : register(s2);
+SamplerState s3 : register(s3);
 Texture2D texture0 : register(t0);
 Texture2D Emissive : register(t1);
 Texture2D ShadowMap0 : register(t2);
@@ -99,6 +101,11 @@ PSSkinnedIn vsmain(VSSkinnedIn input)
 #undef ENABLE_SPECULR
 #undef ENABLE_EMISSIVE
 #endif
+
+float getDepth(float z, float near, float far)
+{
+	return (far - (far / z) * near) / (far - near);
+}
 
 float4 psmain(PSSkinnedIn input) : SV_TARGET
 {
@@ -225,7 +232,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5 ,1), sPos.z).r;
+					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5 ,0.5), sPos.z).r;
 				else
 				{
 					sPos = mul(wPos, LightMapVP1);
@@ -233,7 +240,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5) + float2(0.5, 0), sPos.z).r;
 				}
 #endif
 			}
@@ -259,19 +266,71 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	}
 #endif //ENABLE_DIRECTIONAL_LIGHT
 #if ENABLE_POINT_LIGHT
-	for (int i = 0; i < 4; i++)
+	int shadowmapIndex = 0;
+	for (int i = 0; i < POINT_LIGHT_COUNT; i++, shadowmapIndex += 6)
 	{
 		if (PointLights[i].LightType == 1)
 		{
 			float inShadow = 1.0f;
-			float3 lightStrength = PointLights[i].LightColor.rgb / pow(distance(PointLights[i].LightDir, wPos), 2);
+			float lightDistance = distance(PointLights[i].LightPos, wPos);
+			float lightRange = PointLights[i].LightRange;
+			if (lightRange < lightDistance)
+				continue;
+			float3 lightStrength = PointLights[i].LightColor.rgb / pow(lightDistance, 2);
 
-			float3 L = normalize(PointLights[i].LightDir - wPos);
+			float3 vl = PointLights[i].LightPos - wPos;
+
+			float3 L = normalize(vl);
 			float3 H = normalize(L + V);
 
 			float3 NdotL = saturate(dot(N, L));
 			float3 LdotH = saturate(dot(L, H));
 			float3 NdotH = saturate(dot(N, H));
+
+			float3 absL = abs(L);
+
+
+			if (absL.x > absL.y && absL.x > absL.z)
+			{
+				float2 samplePos = L.zy / L.x * 0.5 + 0.5;
+				int mapindex = shadowmapIndex;
+				if (L.x < 0)
+					samplePos.x = 1 - samplePos.x;
+				if (L.x > 0)
+					mapindex++;
+				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
+				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
+				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
+				inShadow = (shadowDepth) > getDepth(abs(vl.x), lightRange * 0.001f, lightRange) ? 1 : 0;
+			}
+			else if (absL.y > absL.z)
+			{
+				float2 samplePos = L.xz / L.y * 0.5 + 0.5;
+				int mapindex = shadowmapIndex + 2;
+				if (L.y < 0)
+					samplePos.x = 1 - samplePos.x;
+				if (L.y > 0)
+					mapindex++;
+				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
+				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
+				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
+				inShadow = (shadowDepth) > getDepth(abs(vl.y), lightRange * 0.001f, lightRange) ? 1 : 0;
+			}
+			else
+			{
+				float2 samplePos = L.yx / L.z * 0.5 + 0.5;
+				int mapindex = shadowmapIndex + 4;
+				if (L.z < 0)
+					samplePos.x = 1 - samplePos.x;
+				if (L.z > 0)
+					mapindex++;
+				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
+				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
+				if (samplePos.x < 0 || samplePos.x>1 || samplePos.y < 0 || samplePos.y>1)
+					return float4(1, 0, 1, 1);
+				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
+				inShadow = (shadowDepth) > getDepth(abs(vl.z), lightRange * 0.001f, lightRange) ? 1 : 0;
+			}
 
 #if ENABLE_DIFFUSE
 			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
@@ -283,7 +342,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #else
 			float3 specular_factor = 0;
 #endif
-			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
+			outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
 		}
 	}
 #endif //ENABLE_POINT_LIGHT

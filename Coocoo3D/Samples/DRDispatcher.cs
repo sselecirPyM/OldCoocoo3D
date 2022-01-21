@@ -40,6 +40,11 @@ public class DRDispatcher : IPassDispatcher
             Vector2 jitterVector = new Vector2((float)(random.NextDouble() * 2 - 1) / outputTex.width, (float)(random.NextDouble() * 2 - 1) / outputTex.height);
             param.visualChannel.cameraData = param.visualChannel.camera.GetCameraData(jitterVector);
         }
+        int pointLightSplit = 2;
+        for (int i = 4; i * i < param.pointLights.Count * 12; i *= 2)
+            pointLightSplit = i;
+        pointLightSplit *= 2;
+        param.SetGPUValueOverride("LightMapSplit", pointLightSplit);
 
         foreach (var renderSequence in passSetting.RenderSequence)
         {
@@ -50,13 +55,6 @@ public class DRDispatcher : IPassDispatcher
             param.renderSequence = renderSequence;
             var Pass = passSetting.Passes[renderSequence.Name];
 
-            if (Pass.Properties != null && Pass.Properties.ContainsKey("ShadowMap"))
-            {
-                if (!(param.directionalLights.Count > 0))
-                {
-                    continue;
-                }
-            }
             HybirdRenderPipeline.DispatchPass(param);
         }
     }

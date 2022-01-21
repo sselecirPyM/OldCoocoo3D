@@ -51,9 +51,7 @@ namespace Coocoo3D.RenderPipeline
         public T GetCustomValue<T>(string name, T defaultValue)
         {
             if (customValue.TryGetValue(name, out object val) && val is T val1)
-            {
                 return val1;
-            }
             return defaultValue;
         }
 
@@ -65,15 +63,25 @@ namespace Coocoo3D.RenderPipeline
         public T GetPersistentValue<T>(string name, T defaultValue)
         {
             if (rp.customData.TryGetValue(name, out object val) && val is T val1)
-            {
                 return val1;
-            }
             return defaultValue;
         }
 
         public void SetPersistentValue<T>(string name, T value)
         {
             rp.customData[name] = value;
+        }
+
+        public T GetGPUValueOverride<T>(string name, T defaultValue)
+        {
+            if (gpuValueOverride.TryGetValue(name, out object val) && val is T val1)
+                return val1;
+            return defaultValue;
+        }
+
+        public void SetGPUValueOverride<T>(string name, T value)
+        {
+            gpuValueOverride[name] = value;
         }
 
         public double deltaTime { get => rp.dynamicContextRead.DeltaTime; }
@@ -350,32 +358,13 @@ namespace Coocoo3D.RenderPipeline
                             var pointLights = drp.pointLights;
                             const int lightCount = 4;
                             int count = 0;
-                            if (material != null)
+                            for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
                             {
-                                for (int i = 0; i < pointLights.Count; i++)
-                                {
-                                    Vortice.Mathematics.BoundingSphere boundingSphere = new Vortice.Mathematics.BoundingSphere(pointLights[i].Position, pointLights[i].Range);
-                                    if (material.boundingBox.Contains(boundingSphere) != Vortice.Mathematics.ContainmentType.Disjoint)
-                                    {
-                                        writer.Write(pointLights[i].Position);
-                                        writer.Write((int)1);
-                                        writer.Write(pointLights[i].Color);
-                                        writer.Write((int)1);
-                                        count++;
-                                        if (count >= lightCount) break;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
-                                {
-                                    writer.Write(pointLights[i].Position);
-                                    writer.Write((int)1);
-                                    writer.Write(pointLights[i].Color);
-                                    writer.Write((int)1);
-                                    count++;
-                                }
+                                writer.Write(pointLights[i].Position);
+                                writer.Write((int)1);
+                                writer.Write(pointLights[i].Color);
+                                writer.Write(pointLights[i].Range);
+                                count++;
                             }
                             for (int i = 0; i < lightCount - count; i++)
                             {
@@ -390,32 +379,13 @@ namespace Coocoo3D.RenderPipeline
                             const int lightCount = 4;
                             int count = 0;
                             if (pointLights.Count == 0) continue;
-                            if (material != null)
+                            for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
                             {
-                                for (int i = 0; i < pointLights.Count; i++)
-                                {
-                                    Vortice.Mathematics.BoundingSphere boundingSphere = new Vortice.Mathematics.BoundingSphere(pointLights[i].Position, pointLights[i].Range);
-                                    if (material.boundingBox.Contains(boundingSphere) != Vortice.Mathematics.ContainmentType.Disjoint)
-                                    {
-                                        writer.Write(pointLights[i].Position);
-                                        writer.Write((int)1);
-                                        writer.Write(pointLights[i].Color);
-                                        writer.Write((int)1);
-                                        count++;
-                                        if (count >= lightCount) break;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
-                                {
-                                    writer.Write(pointLights[i].Position);
-                                    writer.Write((int)1);
-                                    writer.Write(pointLights[i].Color);
-                                    writer.Write((int)1);
-                                    count++;
-                                }
+                                writer.Write(pointLights[i].Position);
+                                writer.Write((int)1);
+                                writer.Write(pointLights[i].Color);
+                                writer.Write(pointLights[i].Range);
+                                count++;
                             }
                             for (int i = 0; i < lightCount - count; i++)
                             {

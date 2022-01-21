@@ -315,10 +315,6 @@ namespace Coocoo3D.RenderPipeline
                     visualChannel1.OutputRTV.ReloadAsRTVUAV(outputSize.X, outputSize.Y, outputFormat);
                     graphicsContext.UpdateRenderTexture(visualChannel1.OutputRTV);
                     mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
-
-                    //visualChannel1.FinalOutput.ReloadAsRTVUAV(outputSize.X, outputSize.Y, swapChainFormat);
-                    //graphicsContext.UpdateRenderTexture(visualChannel1.FinalOutput);
-                    //mainCaches.SetTexture(visualChannel1.GetTexName("FinalOutput"), visualChannel1.FinalOutput);
                 }
             }
             ConfigPassSettings(dynamicContextRead.currentPassSetting);
@@ -359,7 +355,7 @@ namespace Coocoo3D.RenderPipeline
                     x = rt.Size.x;
                     y = rt.Size.y;
                 }
-                if (tex2d.width != x || tex2d.height != y)
+                if (tex2d.width != x || tex2d.height != y || tex2d.GetFormat() != rt.Format)
                 {
                     if (rt.Format == Format.D16_UNorm || rt.Format == Format.D24_UNorm_S8_UInt || rt.Format == Format.D32_Float)
                         tex2d.ReloadAsDepthStencil(x, y, rt.Format);

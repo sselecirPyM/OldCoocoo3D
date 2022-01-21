@@ -3,9 +3,92 @@ using Coocoo3D.RenderPipeline;
 using Coocoo3DGraphics;
 using System.IO;
 using System.Collections.Generic;
+using System.Numerics;
 public static class UnionShaderShadowMap
 {
     public static bool UnionShader(UnionShaderParam param)
+    {
+        var graphicsContext = param.graphicsContext;
+        int width = param.depthStencil.width;
+        int height = param.depthStencil.height;
+        if (param.directionalLights.Count > 0)
+        {
+            if (param.pass.CBVs.Count < 2)
+                return false;
+            graphicsContext.RSSetScissorRectAndViewport(0, 0, width / 2, height / 2);
+            Render1(param, 0);
+            graphicsContext.RSSetScissorRectAndViewport(width / 2, 0, width, height / 2);
+            Render1(param, 1);
+        }
+        int pointLightIndex = 0;
+        int shadowIndex = 0;
+        int split = param.GetGPUValueOverride("LightMapSplit", 1);
+        foreach (var pointLight in param.pointLights)
+        {
+            if (param.pass.CBVs.Count < 3)
+                return false;
+            if (pointLightIndex >= 4)
+                break;
+
+            float lightRange = pointLight.Range;
+            Vector3 lightPos = pointLight.Position;
+
+            SetViewport(param, width, height, shadowIndex, split);
+            SetMatrix(param, lightPos, new Vector3(1, 0, 0), new Vector3(0, -1, 0), lightRange * 0.001f, lightRange);
+            Render1(param, 2);
+            shadowIndex++;
+
+            SetViewport(param, width, height, shadowIndex, split);
+            SetMatrix(param, pointLight.Position, new Vector3(-1, 0, 0), new Vector3(0, 1, 0), lightRange * 0.001f, lightRange);
+            Render1(param, 2);
+            shadowIndex++;
+
+            SetViewport(param, width, height, shadowIndex, split);
+            SetMatrix(param, lightPos, new Vector3(0, 1, 0), new Vector3(0, 0, -1), lightRange * 0.001f, lightRange);
+            Render1(param, 2);
+            shadowIndex++;
+
+            SetViewport(param, width, height, shadowIndex, split);
+            SetMatrix(param, lightPos, new Vector3(0, -1, 0), new Vector3(0, 0, 1), lightRange * 0.001f, lightRange);
+            Render1(param, 2);
+            shadowIndex++;
+
+            SetViewport(param, width, height, shadowIndex, split);
+            SetMatrix(param, lightPos, new Vector3(0, 0, 1), new Vector3(-1, 0, 0), lightRange * 0.001f, lightRange);
+            Render1(param, 2);
+            shadowIndex++;
+
+            SetViewport(param, width, height, shadowIndex, split);
+            SetMatrix(param, lightPos, new Vector3(0, 0, -1), new Vector3(1, 0, 0), lightRange * 0.001f, lightRange);
+            Render1(param, 2);
+            shadowIndex++;
+
+            pointLightIndex++;
+        }
+        return true;
+    }
+
+    static void SetMatrix(UnionShaderParam param, Vector3 pos, Vector3 dir, Vector3 up, float near, float far)
+    {
+        param.SetGPUValueOverride("_PointLightMatrix", Matrix4x4.CreateLookAt(pos, pos + dir, up)
+            * Matrix4x4.CreatePerspectiveFieldOfView(1.57079632679f, 1, near, far));
+    }
+
+    static void SetViewport(UnionShaderParam param, int width, int height, int shadowIndex, int split)
+    {
+        var graphicsContext = param.graphicsContext;
+        float xOffset = (float)(shadowIndex % split) / split;
+        float yOffset = (float)(shadowIndex / split) / split;
+        float size = 1.0f / split;
+
+        int xin = (int)(width * xOffset);
+        int yin = (int)(height * (yOffset + 0.5f));
+        int sizeX1 = (int)(width * size);
+        int sizeY1 = (int)(height * size);
+        graphicsContext.RSSetScissorRectAndViewport(xin, yin, xin + sizeX1, yin + sizeY1);
+    }
+
+    static void Render1(UnionShaderParam param, int cbvIndex)
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
@@ -15,10 +98,7 @@ public static class UnionShaderShadowMap
 
         int width = param.depthStencil.width;
         int height = param.depthStencil.height;
-        if (param.passName == "ShadowMapPass0")
-            graphicsContext.RSSetScissorRectAndViewport(0, 0, width / 2, height);
-        if (param.passName == "ShadowMapPass1")
-            graphicsContext.RSSetScissorRectAndViewport(width / 2, 0, width, height);
+
         foreach (var renderer in param.renderers)
         {
             param.SetMesh(graphicsContext, renderer);
@@ -31,17 +111,14 @@ public static class UnionShaderShadowMap
 
                 if ((bool)param.GetSettingsValue(material, "CastShadow"))
                 {
-                    if (!param.visualChannel.CustomValue.ContainsKey(param.passName))
-                    {
-                        param.visualChannel.CustomValue[param.passName] = 0;
-                    }
                     List<string> keywords = new List<string>();
                     if (param.renderer.skinning && skinning)
                         keywords.Add("SKINNING");
-                    foreach (var cbv in param.pass.CBVs)
-                    {
-                        param.WriteCBV(cbv);
-                    }
+                    param.WriteCBV(param.pass.CBVs[cbvIndex]);
+                    //foreach (var cbv in param.pass.CBVs)
+                    //{
+                    //    param.WriteCBV(cbv);
+                    //}
                     var pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("ShadowMap.hlsl", param.relativePath), true, false);
                     param.SetSRVs(param.pass.SRVs, material);
                     if (graphicsContext.SetPSO(pso, psoDesc))
@@ -52,6 +129,5 @@ public static class UnionShaderShadowMap
                 }
             }
         }
-        return true;
     }
 }

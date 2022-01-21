@@ -8,13 +8,7 @@
     {
       "Name": "ShadowMapPass0",
       "ClearDepth": "true",
-      "DepthBias": "3000",
-      "SlopeScaledDepthBias": "1.0",
-      "DepthStencil": "_ShadowMap0"
-    },
-    {
-      "Name": "ShadowMapPass1",
-      "DepthBias": "3000",
+      "DepthBias": "2000",
       "SlopeScaledDepthBias": "1.0",
       "DepthStencil": "_ShadowMap0"
     },
@@ -156,8 +150,8 @@
     },
     "_BRDFLUT": {
       "Size": {
-        "X": 512,
-        "Y": 512
+        "X": 256,
+        "Y": 256
       },
       "Flag": "Shared",
       "Format": "R16G16B16A16_Float"
@@ -219,20 +213,19 @@
             "World",
             "DirectionalLightMatrix0"
           ]
-        }
-      ]
-    },
-    "ShadowMapPass1": {
-      "Properties": {
-        "ShadowMap": ""
-      },
-      "UnionShader": "UnionShaderShadowMap.cs",
-      "CBVs": [
+        },
         {
           "Index": "1",
           "Datas": [
             "World",
             "DirectionalLightMatrix1"
+          ]
+        },
+        {
+          "Index": "1",
+          "Datas": [
+            "World",
+            "_PointLightMatrix"
           ]
         }
       ]
@@ -299,7 +292,8 @@
             "GIVolumeSize",
             "AOLimit",
             "AORaySampleCount",
-            "RandomI"
+            "RandomI",
+            "LightMapSplit"
           ]
         }
       ],
@@ -418,9 +412,9 @@
             "FogDensity",
             "FogStartDistance",
             "FogEndDistance",
+            "LightMapSplit",
             "GIVolumePosition",
             "GIVolumeSize"
-
           ]
         }
       ],

@@ -32,7 +32,7 @@ namespace Coocoo3D.Components
             {
                 Position = Position,
                 Color = Color,
-                Range = Range,
+                Range = Math.Max(Range, 1e-4f),
             };
         }
     }
