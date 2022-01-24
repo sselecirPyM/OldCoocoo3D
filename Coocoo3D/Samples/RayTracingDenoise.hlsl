@@ -54,5 +54,5 @@ float4 psmain(PSIn input) : SV_TARGET
 	float3 outputColor = float3(0, 0, 0);
 
 	outputColor = rayTracingResult.SampleLevel(s3, uv, 0).rgb;
-	return float4(outputColor / 16, 0);
+	return float4(outputColor, 0);
 }
