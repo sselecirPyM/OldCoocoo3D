@@ -244,7 +244,6 @@ namespace Coocoo3DGraphics
                                     SetSRVTSlot(tex2d, srvOffset);
                                 else
                                     SetSRVTSlotLinear(tex2d, srvOffset);
-
                             }
                             else if (srv0 is TextureCube texCube)
                                 SetSRVTSlot(texCube, srvOffset);
@@ -450,11 +449,6 @@ namespace Coocoo3DGraphics
         {
             commandList.ResourceBarrierTransition(buffer.resource, ResourceStates.GenericRead, ResourceStates.CopyDestination);
 
-            //int size1 = Marshal.SizeOf(typeof(T));
-            //IntPtr ptr = graphicsDevice.superRingBuffer.Upload(m_commandList, Math.Min(buffer.size, size1 * data.Length), buffer.resource);
-            //var range = new Span<T>(ptr.ToPointer(), data.Length);
-            //data.CopyTo(range);
-
             graphicsDevice.superRingBuffer.Upload<T>(m_commandList, data, buffer.resource);
 
             commandList.ResourceBarrierTransition(buffer.resource, ResourceStates.CopyDestination, ResourceStates.GenericRead);
@@ -465,7 +459,7 @@ namespace Coocoo3DGraphics
             graphicsDevice.superRingBuffer.Upload(data, out buffer.gpuRefAddress);
         }
 
-        unsafe public void UploadMesh(MMDMesh mesh)
+        unsafe public void UploadMesh(Mesh mesh)
         {
             foreach (var vtBuf in mesh.vtBuffers)
             {
@@ -522,12 +516,12 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public void BeginUpdateMesh(MMDMesh mesh)
+        public void BeginUpdateMesh(Mesh mesh)
         {
 
         }
 
-        unsafe public void UpdateMesh<T>(MMDMesh mesh, Span<T> data, int slot) where T : unmanaged
+        unsafe public void UpdateMesh<T>(Mesh mesh, Span<T> data, int slot) where T : unmanaged
         {
             int size1 = Marshal.SizeOf(typeof(T));
             int sizeInBytes = data.Length * size1;
@@ -564,7 +558,7 @@ namespace Coocoo3DGraphics
             vtBuf.vertexBufferView.SizeInBytes = sizeInBytes;
         }
 
-        public void EndUpdateMesh(MMDMesh mesh)
+        public void EndUpdateMesh(Mesh mesh)
         {
             foreach (var vtBuf in mesh.vtBuffersDisposed)
                 vtBuf.vertex.Release();
@@ -786,7 +780,7 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public void SetMesh(MMDMesh mesh)
+        public void SetMesh(Mesh mesh)
         {
             m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             foreach (var vtBuf in mesh.vtBuffers)
@@ -798,7 +792,7 @@ namespace Coocoo3DGraphics
             InReference(mesh.indexBuffer);
         }
 
-        public void SetMesh(MMDMesh mesh, MMDMesh meshOverride)
+        public void SetMesh(Mesh mesh, Mesh meshOverride)
         {
             m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
             foreach (var vtBuf in mesh.vtBuffers)
@@ -818,7 +812,7 @@ namespace Coocoo3DGraphics
             InReference(mesh.indexBuffer);
         }
 
-        //public void SetMeshVertex(MMDMesh mesh)
+        //public void SetMeshVertex(Mesh mesh)
         //{
         //    m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         //    foreach (var vtBuf in mesh.vtBuffers)
@@ -828,7 +822,7 @@ namespace Coocoo3DGraphics
         //    }
         //}
 
-        //public void SetMeshIndex(MMDMesh mesh)
+        //public void SetMeshIndex(Mesh mesh)
         //{
         //    m_commandList.IASetIndexBuffer(mesh.indexBufferView);
         //    InReference(mesh.indexBuffer);
@@ -997,7 +991,7 @@ namespace Coocoo3DGraphics
 
         public void SetRenderTargetScreen(Vector4 color, bool clearScreen)
         {
-            var size = graphicsDevice.m_d3dRenderTargetSize;
+            var size = graphicsDevice.m_outputSize;
 
             m_commandList.RSSetScissorRect((int)size.X, (int)size.Y);
             m_commandList.RSSetViewport(0, 0, (int)size.X, (int)size.Y);
@@ -1300,6 +1294,7 @@ namespace Coocoo3DGraphics
 
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
             graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
+            InReference(texture.resource);
             return gpuDescriptorHandle;
         }
         GpuDescriptorHandle GetSRVHandleWithMip(TextureCube texture, int mips)
@@ -1314,6 +1309,7 @@ namespace Coocoo3DGraphics
 
             graphicsDevice.cbvsrvuavHeap.GetTempHandle(out var cpuDescriptorHandle, out var gpuDescriptorHandle);
             graphicsDevice.device.CreateShaderResourceView(texture.resource, srvDesc, cpuDescriptorHandle);
+            InReference(texture.resource);
             return gpuDescriptorHandle;
         }
         void InReference(ID3D12Object iD3D12Object)

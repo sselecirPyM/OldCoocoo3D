@@ -47,6 +47,8 @@ public static class UnionShaderDeferred
                         List<string> keywords = new List<string>();
                         if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                             keywords.Add(debugKeyword);
+                        if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
+                            keywords.Add("USE_NORMAL_MAP");
                         if (param.renderer.skinning && skinning)
                         {
                             keywords.Add("SKINNING");

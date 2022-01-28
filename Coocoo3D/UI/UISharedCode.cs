@@ -16,14 +16,17 @@ namespace Coocoo3D.UI
 {
     public static class UISharedCode
     {
-        public static void LoadEntityIntoScene(Coocoo3DMain appBody, Scene scene, FileInfo pmxFile, DirectoryInfo storageFolder)
+        public static void LoadEntityIntoScene(Coocoo3DMain appBody, Scene scene, FileInfo pmxFile)
         {
             string pmxPath = pmxFile.FullName;
             ModelPack modelPack = appBody.mainCaches.GetModel(pmxPath);
-            PreloadTextures(appBody, storageFolder.FullName, modelPack.pmx);
-            GameObject gameObject = new GameObject();
-            gameObject.Reload2(modelPack);
-            scene.AddGameObject(gameObject);
+            if (modelPack.pmx != null)
+            {
+                PreloadTextures(appBody, modelPack);
+                GameObject gameObject = new GameObject();
+                gameObject.Reload2(modelPack);
+                scene.AddGameObject(gameObject);
+            }
 
             appBody.RequireRender();
         }
@@ -53,14 +56,10 @@ namespace Coocoo3D.UI
             appBody.RequireRender();
         }
 
-        public static void PreloadTextures(Coocoo3DMain appBody, string storageFolder, PMXFormat pmx)
+        public static void PreloadTextures(Coocoo3DMain appBody, ModelPack model)
         {
-            foreach (var vTex in pmx.Textures)
-            {
-                string relativePath = vTex.TexturePath.Replace("//", "\\").Replace('/', '\\');
-                string texPath = Path.GetFullPath(relativePath, storageFolder);
-                appBody.mainCaches.Texture(texPath);
-            }
+            foreach (var tex in model.textures)
+                appBody.mainCaches.Texture(tex);
         }
 
         public static BinaryReader OpenReader(FileInfo file) => new BinaryReader(file.OpenRead());

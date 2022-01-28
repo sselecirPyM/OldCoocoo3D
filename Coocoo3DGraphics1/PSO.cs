@@ -121,14 +121,14 @@ namespace Coocoo3DGraphics
             new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0, 2),
             new InputElementDescription("BONES", 0, Format.R16G16B16A16_UInt, 0, 3),
             new InputElementDescription("WEIGHTS", 0, Format.R32G32B32A32_Float, 0, 4),
-            new InputElementDescription("TANGENT", 0, Format.R32G32B32_Float, 0, 5)
+            new InputElementDescription("TANGENT", 0, Format.R32G32B32A32_Float, 0, 5)
             );
 
         static readonly InputLayoutDescription inputLayoutSkinned = new InputLayoutDescription(
             new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0),
             new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 0),
             new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0),
-            new InputElementDescription("TANGENT", 0, Format.R32G32B32_Float, 0),
+            new InputElementDescription("TANGENT", 0, Format.R32G32B32A32_Float, 0),
             new InputElementDescription("EDGESCALE", 0, Format.R32_Float, 0)
             );
         static readonly InputLayoutDescription inputLayoutPosOnly = new InputLayoutDescription(

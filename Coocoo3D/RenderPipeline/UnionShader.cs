@@ -88,8 +88,8 @@ namespace Coocoo3D.RenderPipeline
         public double realDeltaTime { get => rp.dynamicContextRead.RealDeltaTime; }
         public double time { get => rp.dynamicContextRead.Time; }
 
-        public MMDMesh mesh { get => rp.GetMesh(renderer.meshPath); }
-        public MMDMesh meshOverride { get => rp.meshOverride[renderer]; }
+        public Mesh mesh { get => rp.GetMesh(renderer.meshPath); }
+        public Mesh meshOverride { get => rp.meshOverride[renderer]; }
 
         public Random _random;
 

@@ -40,14 +40,12 @@ namespace Coocoo3D.RenderPipeline.Wrap
             binaryWriter.Seek(0, SeekOrigin.Begin);
         }
 
-        public CBuffer GetBuffer(GraphicsDevice device, GraphicsContext context, bool isCBuffer)
+        public CBuffer GetBuffer(GraphicsContext context)
         {
             if (cBuffer == null)
                 cBuffer = new CBuffer();
-            if (cBuffer.size < memoryStream.Position)
-            {
-                device.InitializeCBuffer(cBuffer, (int)memoryStream.Position);
-            }
+            cBuffer.Mutable = true;
+
             context.UpdateResource(cBuffer, new Span<byte>(memoryStream.GetBuffer(), 0, (int)memoryStream.Position));
             binaryWriter.Seek(0, SeekOrigin.Begin);
             return cBuffer;

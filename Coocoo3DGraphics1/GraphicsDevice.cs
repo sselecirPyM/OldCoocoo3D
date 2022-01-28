@@ -58,11 +58,8 @@ namespace Coocoo3DGraphics
         public uint executeIndex = 0;
         public ulong executeCount = 3;
 
-        public Vector2 m_d3dRenderTargetSize;
         public Vector2 m_outputSize;
         public Vector2 m_logicalSize;
-        public Vector2 m_nativeOrientation;
-        public Vector2 m_currentOrientation;
 
         public static uint BitsPerPixel(Format format)
         {
@@ -213,9 +210,9 @@ namespace Coocoo3DGraphics
 
         public Vector2 GetOutputSize() => m_outputSize;
 
-        public GraphicsDevice()
+        public GraphicsDevice(Format backBufferFormat = Format.R8G8B8A8_UNorm)
         {
-            m_backBufferFormat = Format.R8G8B8A8_UNorm;
+            m_backBufferFormat = backBufferFormat;
             CreateDeviceResource();
         }
 
@@ -232,7 +229,7 @@ namespace Coocoo3DGraphics
             {
                 adapter?.Dispose();
                 var hr = m_dxgiFactory.EnumAdapters(index1, out adapter);
-                if (hr == SharpGen.Runtime.Result.Ok)
+                if (hr == Result.Ok)
                 {
                     break;
                 }
@@ -351,8 +348,8 @@ namespace Coocoo3DGraphics
 
             UpdateRenderTargetSize();
 
-            int backBufferWidth = (int)Math.Round(m_d3dRenderTargetSize.X);
-            int backBufferHeight = (int)Math.Round(m_d3dRenderTargetSize.Y);
+            int backBufferWidth = (int)Math.Round(m_outputSize.X);
+            int backBufferHeight = (int)Math.Round(m_outputSize.Y);
             if (m_swapChain != null)
             {
                 // 如果交换链已存在，请调整其大小。
@@ -407,7 +404,6 @@ namespace Coocoo3DGraphics
                 CreateWindowSizeDependentResources();
             }
         }
-
 
         internal void Present(bool vsync)
         {
@@ -488,8 +484,6 @@ namespace Coocoo3DGraphics
             m_outputSize.X = Math.Max(m_outputSize.X, 1);
             m_outputSize.Y = Math.Max(m_outputSize.Y, 1);
 
-            m_d3dRenderTargetSize.X = m_outputSize.X;
-            m_d3dRenderTargetSize.Y = m_outputSize.Y;
         }
 
         public bool IsRayTracingSupport()
@@ -528,27 +522,27 @@ namespace Coocoo3DGraphics
 
         public ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
 
-        public void InitializeCBuffer(CBuffer cBuffer, int size)
-        {
-            cBuffer.size = (size + 255) & ~255;
-            cBuffer.Mutable = true;
-        }
+        //public void InitializeCBuffer(CBuffer cBuffer, int size)
+        //{
+        //    //cBuffer.size = (size + 255) & ~255;
+        //    cBuffer.Mutable = true;
+        //}
 
-        public void InitializeSBuffer(CBuffer sBuffer, int size)
-        {
-            sBuffer.size = (size + 255) & ~255;
+        //public void InitializeSBuffer(CBuffer sBuffer, int size)
+        //{
+        //    sBuffer.size = (size + 255) & ~255;
 
-            var d3dDevice = device;
-            ResourceDelayRecycle(sBuffer.resource);
-            ThrowIfFailed(d3dDevice.CreateCommittedResource(
-                new HeapProperties(HeapType.Default),
-                HeapFlags.None,
-                ResourceDescription.Buffer((ulong)sBuffer.size),
-                ResourceStates.GenericRead,
-                null,
-                out sBuffer.resource));
-            sBuffer.resource.Name = "sbuffer";
-            sBuffer.Mutable = false;
-        }
+        //    var d3dDevice = device;
+        //    ResourceDelayRecycle(sBuffer.resource);
+        //    ThrowIfFailed(d3dDevice.CreateCommittedResource(
+        //        new HeapProperties(HeapType.Default),
+        //        HeapFlags.None,
+        //        ResourceDescription.Buffer((ulong)sBuffer.size),
+        //        ResourceStates.GenericRead,
+        //        null,
+        //        out sBuffer.resource));
+        //    sBuffer.resource.Name = "sbuffer";
+        //    sBuffer.Mutable = false;
+        //}
     }
 }

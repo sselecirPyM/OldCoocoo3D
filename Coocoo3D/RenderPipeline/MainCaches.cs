@@ -42,13 +42,15 @@ namespace Coocoo3D.RenderPipeline
         public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new DictionaryWithModifiyIndex<string, Assembly>();
         public DictionaryWithModifiyIndex<string, RootSignature> RootSignatures = new DictionaryWithModifiyIndex<string, RootSignature>();
 
+        public ConcurrentQueue<Texture2DUploadPack> TextureReadyToUpload = new ConcurrentQueue<Texture2DUploadPack>();
+        public ConcurrentQueue<Mesh> MeshReadyToUpload = new ConcurrentQueue<Mesh>();
+
         public MainCaches()
         {
             KnownFolders.TryAdd(Environment.CurrentDirectory, new DirectoryInfo(Environment.CurrentDirectory));
             KnownFolders.TryAdd("Assets", new DirectoryInfo(Path.GetFullPath("Assets")));
         }
 
-        public ProcessingList processingList;
         public Action _RequireRender;
 
         public bool ReloadTextures1 = false;
@@ -152,7 +154,7 @@ namespace Coocoo3D.RenderPipeline
                     if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
                     {
                         tex1.texture2D.Name = tex1.fullPath;
-                        processingList.AddObject(tex1.texture2D, uploader);
+                        TextureReadyToUpload.Enqueue(new Texture2DUploadPack(tex1.texture2D, uploader));
                     }
                     TextureOnDemand.Remove(loadCompleted.Key);
                 }
@@ -232,10 +234,17 @@ namespace Coocoo3D.RenderPipeline
                     var modelPack = new ModelPack();
                     modelPack.fullPath = path;
 
-                    BinaryReader reader = new BinaryReader(file.OpenRead());
-                    modelPack.Reload(reader, Path.GetDirectoryName(path));
-                    reader.Dispose();
-                    processingList.AddObject(modelPack.GetMesh());
+                    if (".pmx".Equals(file.Extension, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        BinaryReader reader = new BinaryReader(file.OpenRead());
+                        modelPack.LoadPMX(reader, path);
+                        reader.Dispose();
+                    }
+                    else
+                    {
+                        modelPack.LoadModel(path);
+                    }
+                    MeshReadyToUpload.Enqueue(modelPack.GetMesh());
                     return modelPack;
                 });
         }

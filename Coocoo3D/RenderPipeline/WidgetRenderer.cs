@@ -16,7 +16,7 @@ namespace Coocoo3D.RenderPipeline
 {
     public class WidgetRenderer
     {
-        public MMDMesh imguiMesh = new MMDMesh();
+        public Mesh imguiMesh = new Mesh();
         GPUWriter GPUWriter = new GPUWriter();
 
         public void Reload(RenderPipelineContext context)
@@ -38,27 +38,25 @@ namespace Coocoo3D.RenderPipeline
             var texture2D = new Texture2D();
             io.Fonts.TexID = caches.GetPtr("imgui_font");
             caches.SetTexture("imgui_font", texture2D);
-            context.processingList.AddObject(texture2D, uploader);
-            Ready = true;
+            caches.TextureReadyToUpload.Enqueue(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
         }
 
         public void Render(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
 
-            Texture2D texLoading = context.mainCaches.GetTexture("Assets/Textures/loading.png");
-            Texture2D texError = context.mainCaches.GetTexture("Assets/Textures/error.png");
+            Texture2D texLoading = context.mainCaches.GetTextureLoaded("Assets/Textures/loading.png", graphicsContext);
+            Texture2D texError = context.mainCaches.GetTextureLoaded("Assets/Textures/error.png", graphicsContext);
             Texture2D _Tex(Texture2D _tex)
             {
                 return TextureStatusSelect(_tex, texLoading, texError, texError);
             }
 
-            var rpAssets = context.RPAssetsManager;
             var caches = context.mainCaches;
-            var rsPP = context.mainCaches.GetRootSignature("CCs");
+            var rs = context.mainCaches.GetRootSignature("CCs");
 
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.BackgroundColor, true);
 
-            graphicsContext.SetRootSignature(rsPP);
+            graphicsContext.SetRootSignature(rs);
 
             PSODesc desc;
 
@@ -80,7 +78,8 @@ namespace Coocoo3D.RenderPipeline
             desc.renderTargetCount = 1;
             desc.wireFrame = false;
             desc.inputLayout = InputLayout.imgui;
-            graphicsContext.SetPSO(rpAssets.PSOs["ImGui"], desc);
+            var pso = caches.GetPSOWithKeywords(null, System.IO.Path.GetFullPath("Shaders/ImGui.hlsl"));
+            graphicsContext.SetPSO(pso, desc);
             Matrix4x4 matrix = new Matrix4x4(
                 2.0f / (R - L), 0.0f, 0.0f, (R + L) / (L - R),
                 0.0f, 2.0f / (T - B), 0.0f, (T + B) / (B - T),
@@ -137,8 +136,6 @@ namespace Coocoo3D.RenderPipeline
 
             }
         }
-
-        public volatile bool Ready;
 
         protected Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
         {

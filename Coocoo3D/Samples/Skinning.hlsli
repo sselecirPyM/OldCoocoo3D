@@ -19,7 +19,7 @@ struct VSSkinnedIn
 	uint4  Bones : BONES;			//Bone indices
 	float3 Norm : NORMAL;			//Normal
 	float2 Tex	: TEXCOORD;		    //Texture coordinate
-	float3 Tan : TANGENT;		    //Normalized Tangent vector
+	float4 Tan : TANGENT;		    //Normalized Tangent vector
 };
 
 SkinnedInfo SkinVert(VSSkinnedIn Input, float4x4 transforms[MAX_BONE_MATRICES])
@@ -50,7 +50,7 @@ struct VSSkinnedIn
 	float3 Pos	: POSITION0;		//Position
 	float3 Norm : NORMAL;			//Normal
 	float2 Tex	: TEXCOORD;		    //Texture coordinate
-	float3 Tan : TANGENT;		    //Normalized Tangent vector
+	float4 Tan : TANGENT;		    //Normalized Tangent vector
 };
 
 SkinnedInfo SkinVert(VSSkinnedIn Input, float4x4 transforms[0])

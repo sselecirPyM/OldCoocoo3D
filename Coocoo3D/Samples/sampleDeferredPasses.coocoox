@@ -8,7 +8,7 @@
     {
       "Name": "ShadowMapPass0",
       "ClearDepth": "true",
-      "DepthBias": "2000",
+      "DepthBias": "3000",
       "SlopeScaledDepthBias": "1.0",
       "DepthStencil": "_ShadowMap0"
     },
@@ -260,7 +260,8 @@
         {
           "Index": "2",
           "ResourceType": "Texture2D",
-          "Resource": "_ShadowMap0"
+          "Resource": "_Normal",
+          "Flags": "Linear"
         }
       ]
     },
@@ -447,6 +448,12 @@
         },
         {
           "Index": "5",
+          "ResourceType": "Texture2D",
+          "Resource": "_Normal",
+          "Flags": "Linear"
+        },
+        {
+          "Index": "6",
           "ResourceType": "Buffer",
           "Resource": "GIBuffer"
         }
@@ -644,7 +651,8 @@
   "Dispatcher": "DRDispatcher.cs",
   "ShowTextures": {
     "_Albedo": "",
-    "_Emissive": ""
+    "_Emissive": "",
+    "_Normal": ""
   },
   "ShowSettingTextures": {
   },
@@ -696,6 +704,11 @@
       "Name": "接收阴影",
       "Type": "bool",
       "Default": "true"
+    },
+    "UseNormalMap": {
+      "Name": "使用法线贴图",
+      "Type": "bool",
+      "Default": "false"
     }
   },
   "ShowSettingParameters": {

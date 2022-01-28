@@ -16,8 +16,8 @@ namespace Coocoo3DGraphics
         public bool initialized = false;
         public int startIndex;
         public int indexCount;
-        public MMDMesh mesh;
-        public MMDMesh meshOverride;
+        public Mesh mesh;
+        public Mesh meshOverride;
         public ID3D12Resource resource;
         internal int size;
     }

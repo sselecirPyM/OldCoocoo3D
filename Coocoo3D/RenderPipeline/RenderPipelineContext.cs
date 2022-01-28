@@ -73,11 +73,10 @@ namespace Coocoo3D.RenderPipeline
         public string skyBoxName = "_SkyBox";
         public string skyBoxOriTex = "Assets/Textures/adams_place_bridge_2k.jpg";
 
-        public MMDMesh quadMesh = new MMDMesh();
+        public Mesh quadMesh = new Mesh();
         public int frameRenderCount;
 
-        public RPAssetsManager RPAssetsManager = new RPAssetsManager();
-        public GraphicsDevice graphicsDevice = new GraphicsDevice();
+        public GraphicsDevice graphicsDevice;
         public GraphicsContext graphicsContext = new GraphicsContext();
 
         public RenderPipelineDynamicContext dynamicContextRead = new RenderPipelineDynamicContext();
@@ -85,9 +84,6 @@ namespace Coocoo3D.RenderPipeline
 
         public List<CBuffer> CBs_Bone = new List<CBuffer>();
 
-        public ProcessingList processingList = new ProcessingList();
-
-        //public Format outputFormat = Format.R16G16B16A16_Float;
         public Format outputFormat = Format.R8G8B8A8_UNorm;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
 
@@ -113,13 +109,14 @@ namespace Coocoo3D.RenderPipeline
 
         public void Reload()
         {
+            graphicsDevice = new GraphicsDevice(swapChainFormat);
             graphicsContext.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
 
             SkyBoxChanged = true;
 
             quadMesh.ReloadNDCQuad();
-            processingList.AddObject(quadMesh);
+            mainCaches.MeshReadyToUpload.Enqueue(quadMesh);
             mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
             mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
             currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
@@ -172,8 +169,8 @@ namespace Coocoo3D.RenderPipeline
             return CBs_Bone[dynamicContextRead.findRenderer[rendererComponent]];
         }
 
-        LinearPool<MMDMesh> meshPool = new LinearPool<MMDMesh>();
-        public Dictionary<MMDRendererComponent, MMDMesh> meshOverride = new Dictionary<MMDRendererComponent, MMDMesh>();
+        LinearPool<Mesh> meshPool = new LinearPool<Mesh>();
+        public Dictionary<MMDRendererComponent, Mesh> meshOverride = new Dictionary<MMDRendererComponent, Mesh>();
         public byte[] bigBuffer = new byte[0];
         public void UpdateGPUResource()
         {
@@ -184,7 +181,8 @@ namespace Coocoo3D.RenderPipeline
             while (CBs_Bone.Count < count)
             {
                 CBuffer constantBuffer = new CBuffer();
-                graphicsDevice.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
+                constantBuffer.Mutable = true;
+                //graphicsDevice.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }
 
@@ -204,7 +202,7 @@ namespace Coocoo3D.RenderPipeline
                 var renderer = dynamicContextRead.renderers[i];
                 var mesh = meshPool.Get(() =>
                 {
-                    var mesh1 = new MMDMesh();
+                    var mesh1 = new Mesh();
                     return mesh1;
                 });
                 var originModel = GetModelPack(renderer.meshPath);
@@ -424,15 +422,6 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void ReloadDefalutResources()
-        {
-            RPAssetsManager.LoadAssets();
-            foreach (var tex2dDef in RPAssetsManager.defaultResource.texture2Ds)
-            {
-                mainCaches.Texture(tex2dDef.Path, false);
-            }
-        }
-
         public bool ConfigPassSettings(PassSetting passSetting)
         {
             if (passSetting.configured) return true;
@@ -510,7 +499,7 @@ namespace Coocoo3D.RenderPipeline
 
         }
 
-        public MMDMesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
+        public Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
         public ModelPack GetModelPack(string path) => mainCaches.GetModel(path);
 
         public Texture2D _GetTex2DByName(string name)
@@ -586,7 +575,6 @@ namespace Coocoo3D.RenderPipeline
             foreach (var rt in RTs)
                 rt.Value.Dispose();
             RTs.Clear();
-            RPAssetsManager.Dispose();
         }
     }
 }

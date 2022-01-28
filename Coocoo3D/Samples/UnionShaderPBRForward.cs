@@ -53,6 +53,8 @@ public static class UnionShaderPBRForward
                             keywords.Add(debugKeyword);
                         if ((bool)param.GetSettingsValue("EnableFog"))
                             keywords.Add("ENABLE_FOG");
+                        if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
+                            keywords.Add("USE_NORMAL_MAP");
 
                         if ((bool?)param.GetSettingsValue("UseGI") == true)
                             keywords.Add("ENABLE_GI");

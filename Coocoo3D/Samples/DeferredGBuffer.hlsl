@@ -26,6 +26,7 @@ struct PSSkinnedIn
 	float3 Norm : NORMAL;			//Normal
 	float2 Tex	: TEXCOORD;		    //Texture coordinate
 	float3 Tangent : TANGENT;		//Normalized Tangent vector
+	float3 Bitangent : BITANGENT;
 };
 
 PSSkinnedIn vsmain(VSSkinnedIn input)
@@ -36,11 +37,8 @@ PSSkinnedIn vsmain(VSSkinnedIn input)
 	float3 pos = mul(vSkinned.Pos, g_mWorld);
 	output.Norm = normalize(mul(vSkinned.Norm, (float3x3)g_mWorld));
 	output.Tangent = normalize(mul(vSkinned.Tan, (float3x3)g_mWorld));
+	output.Bitangent = cross(output.Norm, output.Tangent) * input.Tan.w;
 	output.Tex = input.Tex;
-	//float3 pos = input.Pos;
-	//output.Norm = input.Norm;
-	//output.Tangent = input.Tan;
-	//output.Tex = input.Tex;
 
 	output.Pos = mul(float4(pos, 1), g_mWorldToProj);
 	output.wPos = float4(pos, 1);
@@ -53,6 +51,7 @@ SamplerState s1 : register(s1);
 
 Texture2D texture0 :register(t0);
 Texture2D Emissive :register(t1);
+Texture2D NormalMap :register(t2);
 float2 NormalEncode(float3 n)
 {
 	float2 enc = normalize(n.xy + float2(1e-6, 0)) * (sqrt(-n.z * 0.5 + 0.5));
@@ -70,7 +69,13 @@ struct MRTOutput
 
 MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 {
+#if !USE_NORMAL_MAP
 	float3 N = normalize(input.Norm);
+#else
+	float3x3 tbn = float3x3(normalize(input.Tangent), normalize(input.Bitangent), normalize(input.Norm));
+	float3 dn = NormalMap.Sample(s1, input.Tex) * 2 - 1;
+	float3 N = normalize(mul(dn, tbn));
+#endif
 	float2 encodedNormal = NormalEncode(N);
 	MRTOutput output;
 	float4 color = texture0.Sample(s1, input.Tex);

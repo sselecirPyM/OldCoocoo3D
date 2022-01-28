@@ -1,7 +1,7 @@
 ﻿此文件夹包含程序所使用的Shader文件和渲染管线脚本。
 在github上提issue。https://github.com/sselecirPyM/Coocoo3D
 
-一些帮助(2022/01/21)：
+一些帮助(2022/01/26)：
 
 
     public class UnionShaderParam
@@ -51,8 +51,8 @@
         public double deltaTime { get => rp.dynamicContextRead.DeltaTime; }
         public double realDeltaTime { get => rp.dynamicContextRead.RealDeltaTime; }
         public double time { get => rp.dynamicContextRead.Time; }
-        public MMDMesh mesh { get; }
-        public MMDMesh meshOverride { get; }
+        public Mesh mesh { get; }
+        public Mesh meshOverride { get; }
 
         public object GetSettingsValue(string name);
         public object GetSettingsValue(RuntimeMaterial material, string name);

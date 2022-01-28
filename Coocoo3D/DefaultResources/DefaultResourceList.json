@@ -1,22 +1,12 @@
 ﻿{
   "vertexShaders": [
     {
-      "name": "VSPostProcess",
-      "path": "Shaders/PostProcess.hlsl",
-      "entryPoint": "vsmain"
-    },
-    {
       "name": "ImGui_VS",
       "path": "Shaders/ImGui.hlsl",
       "entryPoint": "vsmain"
     }
   ],
   "pixelShaders": [
-    {
-      "name": "PSPostProcess",
-      "path": "Shaders/PostProcess.hlsl",
-      "entryPoint": "psmain"
-    },
     {
       "name": "ImGui_PS",
       "path": "Shaders/ImGui.hlsl",
@@ -25,24 +15,9 @@
   ],
   "pipelineStates": [
     {
-      "name": "PostProcess",
-      "vertexShader": "VSPostProcess",
-      "pixelShader": "PSPostProcess"
-    },
-    {
       "name": "ImGui",
       "vertexShader": "ImGui_VS",
       "pixelShader": "ImGui_PS"
-    }
-  ],
-  "texture2Ds": [
-    {
-      "name": "_ERROR",
-      "path": "Assets/Textures/error.png"
-    },
-    {
-      "name": "_LOADING",
-      "path": "Assets/Textures/loading.png"
     }
   ]
 }

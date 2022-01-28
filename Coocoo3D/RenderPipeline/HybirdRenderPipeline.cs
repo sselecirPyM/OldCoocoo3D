@@ -22,6 +22,10 @@ namespace Coocoo3D.RenderPipeline
             var passSetting = drp.currentPassSetting;
             var mainCaches = context.mainCaches;
             var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
+            while(mainCaches.TextureReadyToUpload.TryDequeue(out var uploadPack))
+                context.graphicsContext.UploadTexture(uploadPack.texture, uploadPack.uploader);
+            while(mainCaches.MeshReadyToUpload.TryDequeue(out var mesh))
+                context.graphicsContext.UploadMesh(mesh);
             dispatcher?.FrameBegin(context);
 
             context.writerReuse.Clear();
@@ -43,8 +47,8 @@ namespace Coocoo3D.RenderPipeline
             var mainCaches = context.mainCaches;
             var passSetting = drp.currentPassSetting;
 
-            Texture2D texLoading = mainCaches.GetTexture("Assets/Textures/loading.png");
-            Texture2D texError = mainCaches.GetTexture("Assets/Textures/error.png");
+            //Texture2D texLoading = mainCaches.GetTexture("Assets/Textures/loading.png");
+            //Texture2D texError = mainCaches.GetTexture("Assets/Textures/error.png");
             context.writerReuse.Clear();
             UnionShaderParam unionShaderParam = new UnionShaderParam()
             {
@@ -55,8 +59,8 @@ namespace Coocoo3D.RenderPipeline
                 GPUWriter = context.writerReuse,
                 settings = settings,
                 relativePath = System.IO.Path.GetDirectoryName(passSetting.path),
-                texLoading = texLoading,
-                texError = texError,
+                //texLoading = texLoading,
+                //texError = texError,
                 renderers = drp.renderers,
                 directionalLights = drp.directionalLights,
                 pointLights = drp.pointLights,

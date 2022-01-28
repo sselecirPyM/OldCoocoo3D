@@ -236,6 +236,12 @@
           "ResourceType": "Texture2D",
           "Resource": "_BRDFLUT",
           "Flags": "Linear"
+        },
+        {
+          "Index": "5",
+          "ResourceType": "Texture2D",
+          "Resource": "_Normal",
+          "Flags": "Linear"
         }
       ]
     },
@@ -338,7 +344,8 @@
   "Dispatcher": "Dispatcher.cs",
   "ShowTextures": {
     "_Albedo": "",
-    "_Emissive": ""
+    "_Emissive": "",
+    "_Normal": ""
   },
   "ShowSettingTextures": {
   },
@@ -382,6 +389,11 @@
       "Name": "接收阴影",
       "Type": "bool",
       "Default": "true"
+    },
+    "UseNormalMap": {
+      "Name": "使用法线贴图",
+      "Type": "bool",
+      "Default": "false"
     }
   },
   "ShowSettingParameters": {

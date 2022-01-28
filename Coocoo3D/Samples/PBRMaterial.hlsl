@@ -59,7 +59,8 @@ Texture2D Emissive : register(t1);
 Texture2D ShadowMap0 : register(t2);
 TextureCube EnvCube : register (t3);
 Texture2D BRDFLut : register(t4);
-StructuredBuffer<SH9C> giBuffer : register(t5);
+Texture2D NormalMap : register(t5);
+StructuredBuffer<SH9C> giBuffer : register(t6);
 cbuffer cbAnimMatrices : register(b0)
 {
 	float4x4 g_mConstBoneWorld[MAX_BONE_MATRICES];
@@ -70,8 +71,9 @@ struct PSSkinnedIn
 	float4 Pos	: SV_POSITION;		//Position
 	float4 wPos	: POSITION;			//world space Pos
 	float3 Norm : NORMAL;			//Normal
-	float2 TexCoord	: TEXCOORD;		//Texture coordinate
+	float2 Tex	: TEXCOORD;		//Texture coordinate
 	float3 Tangent : TANGENT;		//Normalized Tangent vector
+	float3 Bitangent : BITANGENT;
 };
 
 PSSkinnedIn vsmain(VSSkinnedIn input)
@@ -81,7 +83,8 @@ PSSkinnedIn vsmain(VSSkinnedIn input)
 	float3 pos = mul(vSkinned.Pos, g_mWorld);
 	output.Norm = normalize(mul(vSkinned.Norm, (float3x3)g_mWorld));
 	output.Tangent = normalize(mul(vSkinned.Tan, (float3x3)g_mWorld));
-	output.TexCoord = input.Tex;
+	output.Bitangent = cross(output.Norm, output.Tangent) * input.Tan.w;
+	output.Tex = input.Tex;
 
 	output.Pos = mul(float4(pos, 1), g_mWorldToProj);
 	output.wPos = float4(pos, 1);
@@ -109,16 +112,21 @@ float getDepth(float z, float near, float far)
 
 float4 psmain(PSSkinnedIn input) : SV_TARGET
 {
-	float4 texColor = texture0.Sample(s1, input.TexCoord);
+	float4 texColor = texture0.Sample(s1, input.Tex);
 	clip(texColor.a - 0.01f);
 
 	float4 wPos = input.wPos;
 	float3 cam2Surf = g_camPos - wPos;
 	float camDist = length(cam2Surf);
 	float3 V = normalize(cam2Surf);
+#if !USE_NORMAL_MAP
 	float3 N = normalize(input.Norm);
+#else
+	float3x3 tbn = float3x3(normalize(input.Tangent), normalize(input.Bitangent), normalize(input.Norm));
+	float3 dn = NormalMap.Sample(s1, input.Tex) * 2 - 1;
+	float3 N = normalize(mul(dn, tbn));
+#endif
 	float NdotV = saturate(dot(N, V));
-
 	// Burley roughness bias
 	float roughness = max(_Roughness,0.002);
 	float alpha = roughness * roughness;
@@ -132,7 +140,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
-	float3 emissive = Emissive.Sample(s1, input.TexCoord) * _Emissive;
+	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive;
 
 #if ENABLE_DIFFUSE
 	float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple;
@@ -212,7 +220,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	return float4(c_specular,1);
 #endif
 #if DEBUG_UV
-	return float4(input.TexCoord,0,1);
+	return float4(input.Tex,0,1);
 #endif
 #if ENABLE_DIRECTIONAL_LIGHT
 	for (int i = 0; i < 1; i++)

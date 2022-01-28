@@ -51,7 +51,6 @@ namespace Coocoo3D.Core
         {
             RPContext.Reload();
             GameDriver = _GeneralGameDriver;
-            mainCaches.processingList = ProcessingList;
             mainCaches._RequireRender = RequireRender;
 
 
@@ -75,7 +74,6 @@ namespace Coocoo3D.Core
             renderWorkThread.IsBackground = true;
             renderWorkThread.Start();
 
-            RPContext.ReloadDefalutResources();
             widgetRenderer.Reload(RPContext);
 
             RequireRender();
@@ -95,8 +93,6 @@ namespace Coocoo3D.Core
             GameDriverContext.RequireRender();
         }
 
-        public ProcessingList ProcessingList { get => RPContext.processingList; }
-        ProcessingList _processingList = new ProcessingList();
         public RenderPipelineContext RPContext = new RenderPipelineContext();
 
         public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
@@ -120,11 +116,12 @@ namespace Coocoo3D.Core
                 fpsPreviousUpdate = now;
             }
             #region Scene Simulation
+            var gdc = RPContext.gameDriverContext;
 
-            RPContext.BeginDynamicContext(RPContext.gameDriverContext.EnableDisplay, CurrentScene);
+            RPContext.BeginDynamicContext(gdc.EnableDisplay, CurrentScene);
             LatestRenderTime = now;
-            RPContext.dynamicContextWrite.Time = RPContext.gameDriverContext.PlayTime;
-            RPContext.dynamicContextWrite.DeltaTime = RPContext.gameDriverContext.Playing ? RPContext.gameDriverContext.DeltaTime : 0;
+            RPContext.dynamicContextWrite.Time = gdc.PlayTime;
+            RPContext.dynamicContextWrite.DeltaTime = gdc.Playing ? gdc.DeltaTime : 0;
             RPContext.dynamicContextWrite.RealDeltaTime = deltaTime1;
 
             CurrentScene.DealProcessList();
@@ -141,13 +138,12 @@ namespace Coocoo3D.Core
             {
                 var gameObject = gameObjects[i];
                 if (gameObject.Position != gameObject.PositionNextFrame || gameObject.Rotation != gameObject.RotationNextFrame)
-                    RPContext.gameDriverContext.RequireResetPhysics = true;
+                    gdc.RequireResetPhysics = true;
             }
-
-            if (RPContext.gameDriverContext.Playing || RPContext.gameDriverContext.RequireResetPhysics)
+            if (gdc.Playing || gdc.RequireResetPhysics)
             {
-                CurrentScene.Simulation(RPContext.gameDriverContext.PlayTime, RPContext.gameDriverContext.DeltaTime, rendererComponents, mainCaches, RPContext.gameDriverContext.RequireResetPhysics);
-                RPContext.gameDriverContext.RequireResetPhysics = false;
+                CurrentScene.Simulation(gdc.PlayTime, gdc.DeltaTime, rendererComponents, mainCaches, gdc.RequireResetPhysics);
+                gdc.RequireResetPhysics = false;
             }
             for (int i = 0; i < rendererComponents.Count; i++)
             {
@@ -156,7 +152,6 @@ namespace Coocoo3D.Core
 
             #endregion
             if (RenderTask1 != null && RenderTask1.Status != TaskStatus.RanToCompletion) RenderTask1.Wait();
-            #region Render preparing
             var temp1 = RPContext.dynamicContextWrite;
             RPContext.dynamicContextWrite = RPContext.dynamicContextRead;
             RPContext.dynamicContextRead = temp1;
@@ -170,41 +165,24 @@ namespace Coocoo3D.Core
                 mainCaches.OnFrame();
             RPContext.PreConfig();
 
-            ProcessingList.MoveToAnother(_processingList);
-            if (!_processingList.IsEmpty())
-            {
-                GraphicsContext.BeginAlloctor(graphicsDevice);
-                graphicsContext.Begin();
-                _processingList._DealStep1(graphicsContext);
-                graphicsContext.EndCommand();
-                graphicsContext.Execute();
-                graphicsDevice.RenderComplete();
-            }
-            #endregion
-
             foreach (var visualChannel in RPContext.visualChannels.Values)
             {
                 visualChannel.Onframe(RPContext);
             }
-
-            bool thisFrameReady = widgetRenderer.Ready;
-            if (thisFrameReady)
+            imguiInput.Update();
+            UI.UIImGui.GUI(this);
+            GraphicsContext.BeginAlloctor(graphicsDevice);
+            graphicsContext.Begin();
+            if (RPContext.dynamicContextRead.EnableDisplay)
             {
-                imguiInput.Update();
-                UI.UIImGui.GUI(this);
-                GraphicsContext.BeginAlloctor(graphicsDevice);
-                graphicsContext.Begin();
-                if (RPContext.dynamicContextRead.EnableDisplay)
-                {
-                    hybridRenderPipeline.BeginFrame(RPContext);
-                }
-                RPContext.UpdateGPUResource();
-
-                if (performanceSettings.MultiThreadRendering)
-                    RenderTask1 = Task.Run(_RenderFunction);
-                else
-                    _RenderFunction();
+                hybridRenderPipeline.BeginFrame(RPContext);
             }
+            RPContext.UpdateGPUResource();
+
+            if (performanceSettings.MultiThreadRendering)
+                RenderTask1 = Task.Run(_RenderFunction);
+            else
+                _RenderFunction();
 
             void _RenderFunction()
             {

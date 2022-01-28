@@ -48,9 +48,10 @@ namespace Coocoo3D.UI
                 switch (ext)
                 {
                     case ".pmx":
+                    case ".gltf":
                         try
                         {
-                            UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file, folder);
+                            UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file);
                         }
                         catch (Exception exception)
                         {

@@ -21,6 +21,9 @@ public class Dispatcher : IPassDispatcher
         var graphicsContext = param.graphicsContext;
         var renderers = param.renderers;
 
+        var mainCaches = param.mainCaches;
+        param.texLoading = mainCaches.GetTextureLoaded(Path.GetFullPath("loading.png", param.relativePath), graphicsContext);
+        param.texError = mainCaches.GetTextureLoaded(Path.GetFullPath("error.png", param.relativePath), graphicsContext);
         param.customValue["Skinning"] = !param.rp.CPUSkinning;
         param.rp.CPUSkinning = false;
 
