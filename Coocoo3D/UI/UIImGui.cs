@@ -16,12 +16,13 @@ namespace Coocoo3D.UI
     {
         public static void GUI(Coocoo3DMain appBody)
         {
-            var io = ImGui.GetIO();
             if (!initialized)
             {
+                InitTex(appBody);
                 InitKeyMap();
                 initialized = true;
             }
+            var io = ImGui.GetIO();
             Vector2 mouseMoveDelta = new Vector2();
             while (ImguiInput.mouseMoveDelta.TryDequeue(out var moveDelta))
             {
@@ -514,14 +515,6 @@ namespace Coocoo3D.UI
                 foreach (var texSlot in showTextures)
                 {
                     string key = "imgui/" + texSlot.Key;
-                    if (textures.TryGetValue(texSlot.Key, out var texture0) && appBody.mainCaches.TryGetTexture(texture0, out var texture))
-                    {
-                        appBody.mainCaches.SetTexture(key, texture);
-                    }
-                    else
-                    {
-                        appBody.mainCaches.SetTexture(key, null);
-                    }
                     Vector2 imageSize = new Vector2(120, 120);
                     IntPtr imageId = appBody.mainCaches.GetPtr(key);
                     ImGui.Text(texSlot.Key);
@@ -530,6 +523,20 @@ namespace Coocoo3D.UI
                         requireOpenSelectResource = true;
                         stringValues["fileOpen"] = id;
                         stringValues["material"] = texSlot.Key;
+                    }
+                    if (textures.TryGetValue(texSlot.Key, out var texture0) && appBody.mainCaches.TryGetTexture(texture0, out var texture))
+                    {
+                        appBody.mainCaches.SetTexture(key, texture);
+                        if (ImGui.IsItemHovered())
+                        {
+                            ImGui.BeginTooltip();
+                            ImGui.Text(texture0);
+                            ImGui.EndTooltip();
+                        }
+                    }
+                    else
+                    {
+                        appBody.mainCaches.SetTexture(key, null);
                     }
                 }
             if (filePropSelect != null && stringValues.GetOrCreate("fileOpen", (string a) => "") == id)
@@ -748,7 +755,38 @@ vmd格式动作");
 
 
             ImGui.InvisibleButton("X", imageSize, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.MouseButtonMiddle);
-            ImGui.GetWindowDrawList().AddImage(imageId, pos, pos + imageSize);
+            var drawList = ImGui.GetWindowDrawList();
+            drawList.AddImage(imageId, pos, pos + imageSize);
+            var vpMatrix = channel.cameraData.vpMatrix;
+            foreach (var light in appBody.RPContext.dynamicContextRead.pointLights)
+            {
+                Vector4 p1 = Vector4.Transform(new Vector4(light.Position, 1), vpMatrix);
+                p1 /= p1.W;
+                p1.Y = -p1.Y;
+                Vector2 basePos = pos + (new Vector2(p1.X, p1.Y) * 0.5f + new Vector2(0.5f, 0.5f)) * imageSize;
+                if (p1.X > -1 && p1.X < 1 && p1.Y > -1 && p1.Y < 1)
+                    drawList.AddTriangle(basePos + new Vector2(-0.8660254f, -0.5f) * 10, basePos + new Vector2(0, 1) * 10, basePos + new Vector2(0.8660254f, -0.5f) * 10, 0xffffffff, 2);
+            }
+            int hoveredIndex = -1;
+            string toolTipMessage = "";
+            Vector2 mousePos = ImGui.GetMousePos();
+            for (int i = 0; i < appBody.RPContext.dynamicContextRead.gameObjects.Count; i++)
+            {
+                Present.GameObject obj = appBody.RPContext.dynamicContextRead.gameObjects[i];
+                Vector4 p1 = Vector4.Transform(new Vector4(obj.Position, 1), vpMatrix);
+                p1 /= p1.W;
+                p1.Y = -p1.Y;
+                Vector2 basePos = pos + (new Vector2(p1.X, p1.Y) * 0.5f + new Vector2(0.5f, 0.5f)) * imageSize;
+                Vector2 p2 = Vector2.Abs(basePos - mousePos);
+                if (p2.X < 10 && p2.Y < 10)
+                {
+                    toolTipMessage += obj.Name + "\n";
+                    hoveredIndex = i;
+                    drawList.AddNgon(basePos, 10, 0xffffffff, 4);
+                }
+                if (gameObjectSelectIndex == i)
+                    drawList.AddNgon(basePos, 10, 0xffffff77, 4);
+            }
             if (ImGui.IsItemActive())
             {
                 if (io.MouseDown[1])
@@ -760,12 +798,16 @@ vmd格式动作");
             if (ImGui.IsItemHovered())
             {
                 channel.camera.Distance += mouseWheelDelta * 6.0f;
-                //    Vector2 uv0 = (io.MousePos - pos) / imageSize - new Vector2(100, 100) / new Vector2(tex.GetWidth(), tex.GetHeight());
-                //    Vector2 uv1 = uv0 + new Vector2(200, 200) / new Vector2(tex.GetWidth(), tex.GetHeight());
-
-                //    ImGui.BeginTooltip();
-                //    ImGui.Image(imageId, new Vector2(100, 100), uv0, uv1);
-                //    ImGui.EndTooltip();
+                if (io.MouseReleased[0] && ImGui.IsItemFocused())
+                {
+                    gameObjectSelectIndex = hoveredIndex;
+                }
+            }
+            if (!string.IsNullOrEmpty(toolTipMessage))
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text(toolTipMessage);
+                ImGui.EndTooltip();
             }
         }
 
@@ -844,6 +886,28 @@ vmd格式动作");
             result.Y = (float)Math.Atan2(2.0 * (ej + ik), 1 - 2.0 * (ii + jj));
             result.Z = (float)Math.Atan2(2.0 * (ek + ij), 1 - 2.0 * (ii + kk));
             return result;
+        }
+
+        static void InitTex(Coocoo3DMain appbody)
+        {
+            var caches = appbody.mainCaches;
+            ImGui.SetCurrentContext(ImGui.CreateContext());
+            Coocoo3DGraphics.Uploader uploader = new Coocoo3DGraphics.Uploader();
+            var io = ImGui.GetIO();
+            io.Fonts.AddFontFromFileTTF("c:\\Windows\\Fonts\\SIMHEI.ttf", 14, null, io.Fonts.GetGlyphRangesChineseFull());
+            unsafe
+            {
+                byte* data;
+                io.Fonts.GetTexDataAsRGBA32(out data, out int width, out int height, out int bytesPerPixel);
+                int size = width * height * bytesPerPixel;
+                Span<byte> spanByte1 = new Span<byte>(data, size);
+
+                uploader.Texture2DRaw(spanByte1, Vortice.DXGI.Format.R8G8B8A8_UNorm, width, height);
+            }
+            var texture2D = new Coocoo3DGraphics.Texture2D();
+            io.Fonts.TexID = caches.GetPtr("imgui_font");
+            caches.SetTexture("imgui_font", texture2D);
+            caches.TextureReadyToUpload.Enqueue(new(texture2D, uploader));
         }
 
         static void InitKeyMap()

@@ -68,12 +68,6 @@ namespace Coocoo3D.ResourceWarp
             }
         }
 
-        private void GetImageData(Stream stream, Uploader uploader)
-        {
-            byte[] data = GetImageData(stream, out int width, out int height, out _);
-            uploader.Texture2DRaw(data, Format.R8G8B8A8_UNorm_SRgb, width, height);
-        }
-
         public static byte[] GetImageData(Stream stream, out int width, out int height, out int bitPerPixel)
         {
             Image image0 = Image.Load(stream);
@@ -95,10 +89,18 @@ namespace Coocoo3D.ResourceWarp
             var frame0 = image.Frames[0];
             int width1 = frame0.Width;
             int height1 = frame0.Height;
-            if (width1 % 128 != 0 || height1 % 128 != 0)
+            int sizex = 32;
+            for (sizex = 64; sizex < 8192; sizex <<= 1)
+                if (sizex >= width1 * 0.95)
+                    break;
+            int sizey = 32;
+            for (sizey = 64; sizey < 8192; sizey <<= 1)
+                if (sizey >= height1 * 0.95)
+                    break;
+            if (width1 != sizex || height1 != sizey)
             {
-                width1 = (width1 + 127) / 128 * 128;
-                height1 = (height1 + 127) / 128 * 128;
+                width1 = (width1 + sizex - 1) / sizex * sizex;
+                height1 = (height1 + sizey - 1) / sizey * sizey;
                 image.Mutate(x => x.Resize(width1, height1, KnownResamplers.Box));
             }
             width = width1;
@@ -115,11 +117,12 @@ namespace Coocoo3D.ResourceWarp
 
             int totalCount = castToByte.Length;
             int d = castToByte.Length;
+            int bytePerPixel = d / (width1 * height1);
             while (width1 > 64 && height1 > 64)
             {
                 width1 /= 2;
                 height1 /= 2;
-                d /= 4;
+                d = bytePerPixel * width1 * height1;
                 image.Mutate(x => x.Resize(width1, height1, KnownResamplers.Box));
                 var frame1 = image.Frames[0];
                 frame1.TryGetSinglePixelSpan(out Span<Rgba32> span2);
@@ -133,13 +136,14 @@ namespace Coocoo3D.ResourceWarp
         public static int GetTotalSize(int size, int width, int height, out int level)
         {
             int d = size;
+            int bytePerPixel = d / (width * height);
             int totalCount = size;
             level = 1;
             while (width > 64 && height > 64)
             {
                 width /= 2;
                 height /= 2;
-                d /= 4;
+                d = bytePerPixel * width * height;
                 totalCount += d;
                 level++;
             }

@@ -19,39 +19,17 @@ namespace Coocoo3D.RenderPipeline
         public Mesh imguiMesh = new Mesh();
         GPUWriter GPUWriter = new GPUWriter();
 
-        public void Reload(RenderPipelineContext context)
-        {
-            var caches = context.mainCaches;
-            ImGui.SetCurrentContext(ImGui.CreateContext());
-            Uploader uploader = new Uploader();
-            var io = ImGui.GetIO();
-            io.Fonts.AddFontFromFileTTF("c:\\Windows\\Fonts\\SIMHEI.ttf", 14, null, io.Fonts.GetGlyphRangesChineseFull());
-            unsafe
-            {
-                byte* data;
-                io.Fonts.GetTexDataAsRGBA32(out data, out int width, out int height, out int bytesPerPixel);
-                int size = width * height * bytesPerPixel;
-                Span<byte> spanByte1 = new Span<byte>(data, size);
-
-                uploader.Texture2DRaw(spanByte1, Format.R8G8B8A8_UNorm, width, height);
-            }
-            var texture2D = new Texture2D();
-            io.Fonts.TexID = caches.GetPtr("imgui_font");
-            caches.SetTexture("imgui_font", texture2D);
-            caches.TextureReadyToUpload.Enqueue(new ResourceWarp.Texture2DUploadPack(texture2D, uploader));
-        }
-
         public void Render(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
+            var caches = context.mainCaches;
 
-            Texture2D texLoading = context.mainCaches.GetTextureLoaded("Assets/Textures/loading.png", graphicsContext);
-            Texture2D texError = context.mainCaches.GetTextureLoaded("Assets/Textures/error.png", graphicsContext);
+            Texture2D texLoading = caches.GetTextureLoaded("Assets/Textures/loading.png", graphicsContext);
+            Texture2D texError = caches.GetTextureLoaded("Assets/Textures/error.png", graphicsContext);
             Texture2D _Tex(Texture2D _tex)
             {
                 return TextureStatusSelect(_tex, texLoading, texError, texError);
             }
 
-            var caches = context.mainCaches;
             var rs = context.mainCaches.GetRootSignature("CCs");
 
             graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.BackgroundColor, true);
@@ -137,7 +115,7 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        protected Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
+        Texture2D TextureStatusSelect(Texture2D texture, Texture2D loading, Texture2D unload, Texture2D error)
         {
             if (texture == null) return error;
             if (texture.Status == GraphicsObjectStatus.loaded)

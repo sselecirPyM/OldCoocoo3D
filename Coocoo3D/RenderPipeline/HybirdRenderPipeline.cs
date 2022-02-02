@@ -18,14 +18,14 @@ namespace Coocoo3D.RenderPipeline
     {
         public void BeginFrame(RenderPipelineContext context)
         {
-            var drp = context.dynamicContextRead;
-            var passSetting = drp.currentPassSetting;
             var mainCaches = context.mainCaches;
-            var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
             while(mainCaches.TextureReadyToUpload.TryDequeue(out var uploadPack))
-                context.graphicsContext.UploadTexture(uploadPack.texture, uploadPack.uploader);
+                context.graphicsContext.UploadTexture(uploadPack.Item1, uploadPack.Item2);
             while(mainCaches.MeshReadyToUpload.TryDequeue(out var mesh))
                 context.graphicsContext.UploadMesh(mesh);
+
+            var passSetting = context.dynamicContextRead.currentPassSetting;
+            var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
             dispatcher?.FrameBegin(context);
 
             context.writerReuse.Clear();

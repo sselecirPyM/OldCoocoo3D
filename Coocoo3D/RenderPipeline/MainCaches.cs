@@ -42,7 +42,7 @@ namespace Coocoo3D.RenderPipeline
         public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new DictionaryWithModifiyIndex<string, Assembly>();
         public DictionaryWithModifiyIndex<string, RootSignature> RootSignatures = new DictionaryWithModifiyIndex<string, RootSignature>();
 
-        public ConcurrentQueue<Texture2DUploadPack> TextureReadyToUpload = new ConcurrentQueue<Texture2DUploadPack>();
+        public ConcurrentQueue<ValueTuple<Texture2D,Uploader>> TextureReadyToUpload = new ConcurrentQueue<ValueTuple<Texture2D, Uploader>>();
         public ConcurrentQueue<Mesh> MeshReadyToUpload = new ConcurrentQueue<Mesh>();
 
         public MainCaches()
@@ -154,7 +154,7 @@ namespace Coocoo3D.RenderPipeline
                     if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
                     {
                         tex1.texture2D.Name = tex1.fullPath;
-                        TextureReadyToUpload.Enqueue(new Texture2DUploadPack(tex1.texture2D, uploader));
+                        TextureReadyToUpload.Enqueue(new (tex1.texture2D, uploader));
                     }
                     TextureOnDemand.Remove(loadCompleted.Key);
                 }

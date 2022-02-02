@@ -74,8 +74,6 @@ namespace Coocoo3D.Core
             renderWorkThread.IsBackground = true;
             renderWorkThread.Start();
 
-            widgetRenderer.Reload(RPContext);
-
             RequireRender();
         }
         #region Rendering
@@ -103,15 +101,16 @@ namespace Coocoo3D.Core
         {
             long now = stopwatch1.ElapsedTicks;
             var deltaTime = now - LatestRenderTime;
-            deltaTime1 = deltaTime / (double)System.Diagnostics.Stopwatch.Frequency;
+            long stopwatchFrequency = System.Diagnostics.Stopwatch.Frequency;
+            deltaTime1 = deltaTime / (double)stopwatchFrequency;
             if (!GameDriver.Next(RPContext, now))
             {
                 return false;
             }
             fpsRenderCount++;
-            if (now - fpsPreviousUpdate > System.Diagnostics.Stopwatch.Frequency)
+            if (now - fpsPreviousUpdate > stopwatchFrequency)
             {
-                framePerSecond = fpsRenderCount * (float)System.Diagnostics.Stopwatch.Frequency / (float)(now - fpsPreviousUpdate);
+                framePerSecond = fpsRenderCount * (float)stopwatchFrequency / (float)(now - fpsPreviousUpdate);
                 fpsRenderCount = 0;
                 fpsPreviousUpdate = now;
             }
