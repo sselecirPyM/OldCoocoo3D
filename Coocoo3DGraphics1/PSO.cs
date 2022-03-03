@@ -173,18 +173,6 @@ namespace Coocoo3DGraphics
             this.pixelShader = pixelShader;
         }
 
-        public PSO(VertexShader vertexShader, GeometryShader geometryShader, PixelShader pixelShader)
-        {
-            Initialize(vertexShader, geometryShader, pixelShader);
-        }
-
-        public void Initialize(VertexShader vertexShader, GeometryShader geometryShader, PixelShader pixelShader)
-        {
-            this.vertexShader = vertexShader?.compiledCode;
-            this.geometryShader = geometryShader?.compiledCode;
-            this.pixelShader = pixelShader?.compiledCode;
-        }
-
         public void Dispose()
         {
             foreach (var combine in m_pipelineStates)

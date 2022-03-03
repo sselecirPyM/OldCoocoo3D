@@ -25,6 +25,8 @@ namespace Coocoo3DGraphics
 
         public RTPSO currentRTPSO;
         public PSO currentPSO;
+        public PSODesc currentPSODesc;
+        //public bool psoChange;
 
         public Dictionary<int, ulong> currentCBVs = new Dictionary<int, ulong>();
         public Dictionary<int, ulong> currentSRVs = new Dictionary<int, ulong>();
@@ -64,6 +66,7 @@ namespace Coocoo3DGraphics
                 InReference(pso.m_pipelineStates[variantIndex]);
                 currentPSO = pso;
                 currentPSODesc = desc;
+                //psoChange = true;
                 return true;
             }
             return false;
@@ -463,31 +466,32 @@ namespace Coocoo3DGraphics
         {
             foreach (var vtBuf in mesh.vtBuffers)
             {
-                int dataLength = vtBuf.Value.data.Length;
+                var mesh1 = vtBuf.Value;
+                int dataLength = mesh1.data.Length;
                 int index1 = mesh.vtBuffersDisposed.FindIndex(u => u.actualLength >= dataLength && u.actualLength <= dataLength * 2 + 256);
                 if (index1 != -1)
                 {
-                    vtBuf.Value.vertex = mesh.vtBuffersDisposed[index1].vertex;
-                    vtBuf.Value.actualLength = mesh.vtBuffersDisposed[index1].actualLength;
-                    m_commandList.ResourceBarrierTransition(vtBuf.Value.vertex, ResourceStates.GenericRead, ResourceStates.CopyDestination);
+                    mesh1.vertex = mesh.vtBuffersDisposed[index1].vertex;
+                    mesh1.actualLength = mesh.vtBuffersDisposed[index1].actualLength;
+                    m_commandList.ResourceBarrierTransition(mesh1.vertex, ResourceStates.GenericRead, ResourceStates.CopyDestination);
 
                     mesh.vtBuffersDisposed.RemoveAt(index1);
                 }
                 else
                 {
-                    CreateBuffer(dataLength + 256, ref vtBuf.Value.vertex);
-                    vtBuf.Value.actualLength = dataLength + 256;
+                    CreateBuffer(dataLength + 256, ref mesh1.vertex);
+                    mesh1.actualLength = dataLength + 256;
                 }
 
-                vtBuf.Value.vertex.Name = "vertex buffer" + vtBuf.Key;
+                mesh1.vertex.Name = "vertex buffer" + vtBuf.Key;
 
-                graphicsDevice.superRingBuffer.Upload<byte>(m_commandList, vtBuf.Value.data, vtBuf.Value.vertex);
-                m_commandList.ResourceBarrierTransition(vtBuf.Value.vertex, ResourceStates.CopyDestination, ResourceStates.GenericRead);
-                InReference(vtBuf.Value.vertex);
+                graphicsDevice.superRingBuffer.Upload<byte>(m_commandList, mesh1.data, mesh1.vertex);
+                m_commandList.ResourceBarrierTransition(mesh1.vertex, ResourceStates.CopyDestination, ResourceStates.GenericRead);
+                InReference(mesh1.vertex);
 
-                vtBuf.Value.vertexBufferView.BufferLocation = vtBuf.Value.vertex.GPUVirtualAddress;
-                vtBuf.Value.vertexBufferView.StrideInBytes = dataLength / mesh.m_vertexCount;
-                vtBuf.Value.vertexBufferView.SizeInBytes = dataLength;
+                mesh1.vertexBufferView.BufferLocation = mesh1.vertex.GPUVirtualAddress;
+                mesh1.vertexBufferView.StrideInBytes = dataLength / mesh.m_vertexCount;
+                mesh1.vertexBufferView.SizeInBytes = dataLength;
             }
 
             foreach (var vtBuf in mesh.vtBuffersDisposed)
@@ -496,22 +500,23 @@ namespace Coocoo3DGraphics
 
             if (mesh.m_indexCount > 0)
             {
-                if (mesh.indexActualLength < mesh.m_indexCount * 4)
+                int indexBufferLength = mesh.m_indexCount * 4;
+                if (mesh.indexBufferCapacity < indexBufferLength)
                 {
-                    CreateBuffer(mesh.m_indexCount * 4, ref mesh.indexBuffer);
-                    mesh.indexActualLength = mesh.m_indexCount * 4;
+                    CreateBuffer(indexBufferLength, ref mesh.indexBuffer);
+                    mesh.indexBufferCapacity = indexBufferLength;
                     mesh.indexBuffer.Name = "index buffer";
                 }
                 else
                 {
                     m_commandList.ResourceBarrierTransition(mesh.indexBuffer, ResourceStates.GenericRead, ResourceStates.CopyDestination);
                 }
-                graphicsDevice.superRingBuffer.Upload<byte>(m_commandList, mesh.m_indexData, mesh.indexBuffer);
+                graphicsDevice.superRingBuffer.Upload<byte>(m_commandList, new Span<byte>(mesh.m_indexData, 0, indexBufferLength), mesh.indexBuffer);
 
                 m_commandList.ResourceBarrierTransition(mesh.indexBuffer, ResourceStates.CopyDestination, ResourceStates.GenericRead);
                 InReference(mesh.indexBuffer);
                 mesh.indexBufferView.BufferLocation = mesh.indexBuffer.GPUVirtualAddress;
-                mesh.indexBufferView.SizeInBytes = mesh.m_indexCount * 4;
+                mesh.indexBufferView.SizeInBytes = indexBufferLength;
                 mesh.indexBufferView.Format = Format.R32_UInt;
             }
         }
@@ -810,6 +815,39 @@ namespace Coocoo3DGraphics
             }
             m_commandList.IASetIndexBuffer(mesh.indexBufferView);
             InReference(mesh.indexBuffer);
+        }
+
+        public void SetMesh(GPUBuffer mesh, Span<byte> vertexData, Span<byte> indexData, int vertexCount, int indexCount)
+        {
+            m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+            int alignedVertSize = align_to(vertexData.Length, 256);
+            int alignedIdxSize = align_to(indexData.Length, 256);
+            int totalSize = alignedVertSize + alignedIdxSize;
+            if (mesh.size < totalSize)
+            {
+                int newSize = totalSize + 65536;
+                CreateBuffer(newSize, ref mesh.resource, ResourceStates.CopyDestination);
+                mesh.resourceStates = ResourceStates.CopyDestination;
+                mesh.size = newSize;
+            }
+            mesh.StateChange(m_commandList, ResourceStates.CopyDestination);
+            graphicsDevice.superRingBuffer.Upload<byte>(m_commandList, vertexData, mesh.resource, 0);
+            graphicsDevice.superRingBuffer.Upload<byte>(m_commandList, indexData, mesh.resource, alignedVertSize);
+            mesh.StateChange(m_commandList, ResourceStates.GenericRead);
+
+            VertexBufferView vertexBufferView;
+            vertexBufferView.BufferLocation = mesh.resource.GPUVirtualAddress;
+            vertexBufferView.SizeInBytes = vertexData.Length;
+            vertexBufferView.StrideInBytes = vertexData.Length / vertexCount;
+
+            IndexBufferView indexBufferView;
+            indexBufferView.BufferLocation = mesh.resource.GPUVirtualAddress + (ulong)alignedVertSize;
+            indexBufferView.SizeInBytes = indexData.Length;
+            indexBufferView.Format = (indexData.Length / indexCount) == 2 ? Format.R16_UInt : Format.R32_UInt;
+
+            m_commandList.IASetVertexBuffers(0, vertexBufferView);
+            m_commandList.IASetIndexBuffer(indexBufferView);
+            InReference(mesh.resource);
         }
 
         //public void SetMeshVertex(Mesh mesh)
@@ -1123,6 +1161,17 @@ namespace Coocoo3DGraphics
                     uavOffset++;
                 }
             }
+            //if (psoChange)
+            //{
+            //    psoChange = false;
+
+            //    int variantIndex = currentPSO.GetVariantIndex(graphicsDevice, currentRootSignature, currentPSODesc);
+            //    if (variantIndex != -1)
+            //    {
+            //        m_commandList.SetPipelineState(currentPSO.m_pipelineStates[variantIndex]);
+            //        InReference(currentPSO.m_pipelineStates[variantIndex]);
+            //    }
+            //}
         }
 
         public void Dispatch(int x, int y, int z)
@@ -1325,7 +1374,6 @@ namespace Coocoo3DGraphics
         }
         public HashSet<ID3D12Object> referenceThisCommand = new HashSet<ID3D12Object>();
 
-        public PSODesc currentPSODesc;
         public UnnamedInputLayout currentInputLayout;
 
         public bool present;

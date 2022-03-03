@@ -521,28 +521,5 @@ namespace Coocoo3DGraphics
         }
 
         public ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
-
-        //public void InitializeCBuffer(CBuffer cBuffer, int size)
-        //{
-        //    //cBuffer.size = (size + 255) & ~255;
-        //    cBuffer.Mutable = true;
-        //}
-
-        //public void InitializeSBuffer(CBuffer sBuffer, int size)
-        //{
-        //    sBuffer.size = (size + 255) & ~255;
-
-        //    var d3dDevice = device;
-        //    ResourceDelayRecycle(sBuffer.resource);
-        //    ThrowIfFailed(d3dDevice.CreateCommittedResource(
-        //        new HeapProperties(HeapType.Default),
-        //        HeapFlags.None,
-        //        ResourceDescription.Buffer((ulong)sBuffer.size),
-        //        ResourceStates.GenericRead,
-        //        null,
-        //        out sBuffer.resource));
-        //    sBuffer.resource.Name = "sbuffer";
-        //    sBuffer.Mutable = false;
-        //}
     }
 }

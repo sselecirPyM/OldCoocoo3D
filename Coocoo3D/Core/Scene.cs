@@ -22,7 +22,7 @@ namespace Coocoo3D.Core
         {
             BackgroundColor = new Vector4(0, 0.3f, 0.3f, 0.0f),
             Wireframe = false,
-            SkyBoxMaxQuality = 256,
+            SkyBoxMaxQuality = 1024,
             ShadowMapResolution = 4096,
         };
 

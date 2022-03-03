@@ -27,9 +27,6 @@ namespace Coocoo3D.RenderPipeline
 
         public DictionaryWithModifiyIndex<string, ModelPack> ModelPackCaches = new DictionaryWithModifiyIndex<string, ModelPack>();
         public DictionaryWithModifiyIndex<string, MMDMotion> Motions = new DictionaryWithModifiyIndex<string, MMDMotion>();
-        public DictionaryWithModifiyIndex<string, VertexShader> VertexShaders = new DictionaryWithModifiyIndex<string, VertexShader>();
-        public DictionaryWithModifiyIndex<string, PixelShader> PixelShaders = new DictionaryWithModifiyIndex<string, PixelShader>();
-        public DictionaryWithModifiyIndex<string, GeometryShader> GeometryShaders = new DictionaryWithModifiyIndex<string, GeometryShader>();
         public DictionaryWithModifiyIndex<string, ComputeShader> ComputeShaders = new DictionaryWithModifiyIndex<string, ComputeShader>();
 
         public DictionaryWithModifiyIndex<string, PassSetting> PassSettings = new DictionaryWithModifiyIndex<string, PassSetting>();
@@ -283,51 +280,6 @@ namespace Coocoo3D.RenderPipeline
             return passSetting;
         }
 
-        public VertexShader GetVertexShader(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
-            return GetT(VertexShaders, path, file =>
-            {
-                VertexShader vertexShader = new VertexShader();
-                if (Path.GetExtension(path) == ".hlsl")
-                    vertexShader.Initialize(LoadShader(DxcShaderStage.Vertex, File.ReadAllText(path), "vsmain", path));
-                else
-                    vertexShader.Initialize(File.ReadAllBytes(path));
-                return vertexShader;
-            });
-        }
-
-        public PixelShader GetPixelShader(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
-            return GetT(PixelShaders, path, file =>
-            {
-                PixelShader pixelShader = new PixelShader();
-                if (Path.GetExtension(path) == ".hlsl")
-                    pixelShader.Initialize(LoadShader(DxcShaderStage.Pixel, File.ReadAllText(path), "psmain", path));
-                else
-                    pixelShader.Initialize(File.ReadAllBytes(path));
-                return pixelShader;
-            });
-        }
-
-        public GeometryShader GetGeometryShader(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            if (!Path.IsPathRooted(path)) path = Path.GetFullPath(path);
-            return GetT(GeometryShaders, path, file =>
-            {
-                GeometryShader geometryShader = new GeometryShader();
-                if (Path.GetExtension(path) == ".hlsl")
-                    geometryShader.Initialize(LoadShader(DxcShaderStage.Geometry, File.ReadAllText(path), "gsmain", path));
-                else
-                    geometryShader.Initialize(File.ReadAllBytes(path));
-                return geometryShader;
-            });
-        }
-
         public UnionShader GetUnionShader(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
@@ -341,7 +293,6 @@ namespace Coocoo3D.RenderPipeline
                 Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
                 var info = type.GetMethod("UnionShader");
                 var unionShader = (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
-                UnionShaders[path] = unionShader;
                 return unionShader;
             });
         }
@@ -359,7 +310,6 @@ namespace Coocoo3D.RenderPipeline
                 Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
                 var inst = Activator.CreateInstance(type);
                 var dispatcher = (IPassDispatcher)inst;
-                PassDispatchers[path] = dispatcher;
                 return dispatcher;
             });
         }

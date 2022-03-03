@@ -40,7 +40,7 @@ const static float InvPIE = 1 / COO_PI;
 float2 ComputeSphereCoord(float3 normal)
 {
 	normal = clamp(normal, -1.0, 1.0);
-	float2 coord = float2((atan2(normal.x, normal.z) * InvPIE * 0.5f + 0.5f), acos(normal.y) * InvPIE);
+	float2 coord = float2((atan2(-normal.x, normal.z) * InvPIE * 0.5f + 0.5f), acos(normal.y) * InvPIE);
 	return coord;
 }
 RWTexture2DArray<float4> CubeMap : register(u0);

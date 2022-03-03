@@ -78,6 +78,7 @@ cbuffer cb0 : register(b0)
 	int quality;
 	uint batch;
 	float roughness1;
+	int face;
 }
 const static float4x4 _xproj =
 { 0,0,-1,0,
@@ -188,11 +189,11 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 
 	uint NumSamples = 256;
 	if (Roughness < 0.5625)
-		NumSamples = 32;
+		NumSamples = 64;
 	if (Roughness < 0.25)
-		NumSamples = 16;
-	if (Roughness < 0.0625)
 		NumSamples = 8;
+	if (Roughness < 0.0625)
+		NumSamples = 2;
 	for (uint i = 0; i < NumSamples; i++)
 	{
 		float2 E = RNG::Hammersley(i, NumSamples, Random);
@@ -212,34 +213,36 @@ float3 PrefilterEnvMap(uint2 Random, float Roughness, float3 R)
 
 
 
-[numthreads(8, 8, 1)]
+[numthreads(4, 4, 1)]
 void csmain(uint3 dtid : SV_DispatchThreadID)
 {
 	float3 N = float4(0, 0, 0, 0);
 	uint2 size1 = imageSize;
-	uint randomState = RNG::RandomSeed(dtid.x + dtid.y * 2048 + dtid.z * 4194304 + batch * 67108864);
+	//int __face = dtid.z;
+	int __face = face;
+	uint randomState = RNG::RandomSeed(dtid.x + dtid.y * 2048 + __face * 4194304 + batch * 67108864);
 	float2 screenPos = ((float2)dtid.xy + 0.5f) / (float2)size1 * 2 - 1;
 	if (dtid.x > size1.x || dtid.y > size1.y)
 	{
 		return;
 	}
-	if (dtid.z == 0)
+	if (__face == 0)
 	{
 		N = mul(float4(screenPos, 0, 1), _xproj);
 	}
-	else if (dtid.z == 1)
+	else if (__face == 1)
 	{
 		N = mul(float4(screenPos, 0, 1), _nxproj);
 	}
-	else if (dtid.z == 2)
+	else if (__face == 2)
 	{
 		N = mul(float4(screenPos, 0, 1), _yproj);
 	}
-	else if (dtid.z == 3)
+	else if (__face == 3)
 	{
 		N = mul(float4(screenPos, 0, 1), _nyproj);
 	}
-	else if (dtid.z == 4)
+	else if (__face == 4)
 	{
 		N = mul(float4(screenPos, 0, 1), _zproj);
 	}
@@ -250,5 +253,5 @@ void csmain(uint3 dtid : SV_DispatchThreadID)
 	N = normalize(N);
 	float xd0 = 1 / (float)(quality + 1);
 	float xd1 = quality / (float)(quality + 1);
-	EnvMap[dtid] = float4(PrefilterEnvMap(uint2(RNG::Random(randomState), RNG::Random(randomState)), roughness1, N) * xd0 + EnvMap[dtid].rgb * xd1, 1);
+	EnvMap[uint3(dtid.xy, __face)] = float4(PrefilterEnvMap(uint2(RNG::Random(randomState), RNG::Random(randomState)), roughness1, N) * xd0 + EnvMap[uint3(dtid.xy, __face)].rgb * xd1, 1);
 }

@@ -39,7 +39,7 @@ namespace Coocoo3DGraphics
         public int m_vertexCount;
 
         public IndexBufferView indexBufferView;
-        public int indexActualLength;
+        public int indexBufferCapacity;
 
         public byte[] m_indexData;
 
@@ -50,7 +50,6 @@ namespace Coocoo3DGraphics
             dat.CopyTo(verticeData1);
             var bufDef = new _mesh1();
             bufDef.data = verticeData1;
-
             vtBuffers.Add(slot, bufDef);
         }
         internal _mesh1 AddBuffer(int slot)
@@ -58,23 +57,6 @@ namespace Coocoo3DGraphics
             var bufDef = new _mesh1();
             vtBuffers.Add(slot, bufDef);
             return bufDef;
-        }
-
-        public void ReloadDontCopy(byte[] verticeData, byte[] indexData, int vertexStride)
-        {
-            vtBuffersDisposed.AddRange(vtBuffers.Values);
-            vtBuffers.Clear();
-            this.m_vertexCount = verticeData.Length / vertexStride;
-
-            var bufDef = new _mesh1();
-            bufDef.data = verticeData;
-            vtBuffers.Add(0, bufDef);
-
-            if (indexData != null)
-            {
-                this.m_indexData = indexData;
-                m_indexCount = indexData.Length / 2;
-            }
         }
 
         public void ReloadIndex<T>(int vertexCount, Span<T> indexData) where T : unmanaged

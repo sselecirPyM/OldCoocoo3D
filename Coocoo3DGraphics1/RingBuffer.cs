@@ -16,23 +16,23 @@ namespace Coocoo3DGraphics
             mapped = resource.Map(0);
         }
 
-        IntPtr Upload(ID3D12GraphicsCommandList commandList, int size, ID3D12Resource target)
+        IntPtr Upload(ID3D12GraphicsCommandList commandList, int size, ID3D12Resource target, int offset)
         {
             if (currentPosition + size > this.size)
             {
                 currentPosition = 0;
             }
             IntPtr result = mapped + currentPosition;
-            commandList.CopyBufferRegion(target, 0, resource, (ulong)currentPosition, (ulong)size);
+            commandList.CopyBufferRegion(target, (ulong)offset, resource, (ulong)currentPosition, (ulong)size);
             currentPosition = ((currentPosition + size + 255) & ~255) % this.size;
 
             return result;
         }
 
-        public unsafe void Upload<T>(ID3D12GraphicsCommandList commandList, Span<T> data, ID3D12Resource target) where T : unmanaged
+        public unsafe void Upload<T>(ID3D12GraphicsCommandList commandList, Span<T> data, ID3D12Resource target, int offset = 0) where T : unmanaged
         {
             int size1 = Marshal.SizeOf(typeof(T)) * data.Length;
-            IntPtr ptr = Upload(commandList, size1, target);
+            IntPtr ptr = Upload(commandList, size1, target, offset);
             var range = new Span<T>(ptr.ToPointer(), data.Length);
             data.CopyTo(range);
         }

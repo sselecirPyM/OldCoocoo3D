@@ -57,22 +57,7 @@ namespace Coocoo3D.UI
             if (demoWindowOpen)
                 ImGui.ShowDemoWindow(ref demoWindowOpen);
 
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0, 0));
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
-            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
-            var viewPort = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewPort.WorkPos, ImGuiCond.Always);
-            ImGui.SetNextWindowSize(viewPort.Size, ImGuiCond.Always);
-            ImGui.SetNextWindowViewport(viewPort.ID);
-            if (ImGui.Begin("Dockspace", window_flags))
-            {
-                DockSpace(appBody);
-            }
-            ImGui.End();
-            ImGui.PopStyleVar(3);
-
+            DockSpace(appBody);
             ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("常用"))
@@ -269,9 +254,7 @@ namespace Coocoo3D.UI
             ImGui.Checkbox("垂直同步", ref appBody.performanceSettings.VSync);
             ImGui.Checkbox("节省CPU", ref appBody.performanceSettings.SaveCpuPower);
             ImGui.Checkbox("多线程渲染", ref appBody.performanceSettings.MultiThreadRendering);
-            float a = (float)(1.0 / appBody.GameDriverContext.FrameInterval);
-            if (!(a == a))
-                a = 2000;
+            float a = (float)(1.0 / Math.Clamp(appBody.GameDriverContext.FrameInterval, 1e-4, 1));
             if (ImGui.DragFloat("帧率限制", ref a, 10, 1, 5000))
             {
                 if (a == a)
@@ -281,7 +264,7 @@ namespace Coocoo3D.UI
             ref Settings settings = ref scene.settings;
             ImGui.Checkbox("线框", ref settings.Wireframe);
             ImGui.DragInt("阴影分辨率", ref settings.ShadowMapResolution, 128, 512, 8192);
-            ImGui.SliderInt("天空盒最高质量", ref settings.SkyBoxMaxQuality, 64, 512);//大于256时fp16下会有可观测的精度损失(亮度降低)
+            ImGui.SliderInt("天空盒最高质量", ref settings.SkyBoxMaxQuality, 256, 2048);//大于1512时fp16下会有可观测的精度损失(亮度降低)
 
             ComboBox("调试渲染", ref scene.settings.DebugRenderType);
 
@@ -550,12 +533,26 @@ namespace Coocoo3D.UI
 
         static void DockSpace(Coocoo3DMain appBody)
         {
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoBackground;
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(0, 0));
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
             var viewPort = ImGui.GetMainViewport();
-            string texName = appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("Output");
-            ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
-            IntPtr imageId = appBody.mainCaches.GetPtr(texName);
-            ImGui.GetWindowDrawList().AddImage(imageId, viewPort.WorkPos, viewPort.WorkPos + viewPort.WorkSize);
-            ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
+            ImGui.SetNextWindowPos(viewPort.WorkPos, ImGuiCond.Always);
+            ImGui.SetNextWindowSize(viewPort.Size, ImGuiCond.Always);
+            ImGui.SetNextWindowViewport(viewPort.ID);
+
+            if (ImGui.Begin("Dockspace", window_flags))
+            {
+                string texName = appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("Output");
+                ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
+                IntPtr imageId = appBody.mainCaches.GetPtr(texName);
+                ImGui.GetWindowDrawList().AddImage(imageId, viewPort.WorkPos, viewPort.WorkPos + viewPort.WorkSize);
+                ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
+            }
+            ImGui.End();
+            ImGui.PopStyleVar(3);
         }
 
         static _openRequest Resources(Coocoo3DMain appBody)
@@ -758,6 +755,7 @@ vmd格式动作");
             var drawList = ImGui.GetWindowDrawList();
             drawList.AddImage(imageId, pos, pos + imageSize);
             var vpMatrix = channel.cameraData.vpMatrix;
+            ImGui.PushClipRect(pos, pos + imageSize, true);
             foreach (var light in appBody.RPContext.dynamicContextRead.pointLights)
             {
                 Vector4 p1 = Vector4.Transform(new Vector4(light.Position, 1), vpMatrix);
@@ -787,6 +785,7 @@ vmd格式动作");
                 if (gameObjectSelectIndex == i)
                     drawList.AddNgon(basePos, 10, 0xffffff77, 4);
             }
+            ImGui.PopClipRect();
             if (ImGui.IsItemActive())
             {
                 if (io.MouseDown[1])

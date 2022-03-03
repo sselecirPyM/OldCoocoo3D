@@ -92,6 +92,8 @@ cbuffer cb0 : register(b0)
 	uint2 imageSize;
 	int quality;
 	uint batch;
+	int notUse;
+	int face;
 }
 
 
@@ -180,34 +182,36 @@ float3 TangentToWorld(float3 Vec, float3 TangentZ)
 RWTexture2DArray<float4> IrradianceMap : register(u0);
 TextureCube Image : register(t0);
 SamplerState s0 : register(s0);
-[numthreads(8, 8, 1)]
+[numthreads(4, 4, 1)]
 void csmain(uint3 dtid : SV_DispatchThreadID)
 {
 	float3 N = float3(0, 0, 0);
 	float4 dir1 = float4(0, 0, 0, 0);
-	uint randomState = RNG::RandomSeed(dtid.x + dtid.y * 2048 + dtid.z * 4194304 + batch * 67108864);
+	//int __face = dtid.z;
+	int __face = face;
+	uint randomState = RNG::RandomSeed(dtid.x + dtid.y * 2048 + __face * 4194304 + batch * 67108864);
 	float2 screenPos = ((float2)dtid.xy + 0.5f) / (float2)imageSize * 2 - 1;
 	if (dtid.x > imageSize.x || dtid.y > imageSize.y)
 	{
 		return;
 	}
-	if (dtid.z == 0)
+	if (__face == 0)
 	{
 		dir1 = mul(float4(screenPos, 0, 1), _xproj);
 	}
-	else if (dtid.z == 1)
+	else if (__face == 1)
 	{
 		dir1 = mul(float4(screenPos, 0, 1), _nxproj);
 	}
-	else if (dtid.z == 2)
+	else if (__face == 2)
 	{
 		dir1 = mul(float4(screenPos, 0, 1), _yproj);
 	}
-	else if (dtid.z == 3)
+	else if (__face == 3)
 	{
 		dir1 = mul(float4(screenPos, 0, 1), _nyproj);
 	}
-	else if (dtid.z == 4)
+	else if (__face == 4)
 	{
 		dir1 = mul(float4(screenPos, 0, 1), _zproj);
 	}
@@ -224,9 +228,9 @@ void csmain(uint3 dtid : SV_DispatchThreadID)
 		float3 vec1 = TangentToWorld(N, RNG::UniformSampleHemisphere(E));
 
 		float NdotL = dot(vec1, N);
-		col1 += Image.SampleLevel(s0, vec1, 10) * NdotL;
+		col1 += Image.SampleLevel(s0, vec1, 5) * NdotL;
 	}
 	float xd0 = 1 / (float)(quality + 1);
 	float xd1 = quality / (float)(quality + 1);
-	IrradianceMap[dtid] = float4(col1 / c_sampleCount / 3.14159265359f * xd0 + IrradianceMap[dtid].rgb * xd1, 1);
+	IrradianceMap[uint3(dtid.xy, __face)] = float4(col1 / c_sampleCount / 3.14159265359f * xd0 + IrradianceMap[uint3(dtid.xy, __face)].rgb * xd1, 1);
 }
