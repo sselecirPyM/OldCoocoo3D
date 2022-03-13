@@ -21,7 +21,6 @@ namespace Coocoo3D.Core
                 context.NeedRender -= 1;
                 return false;
             }
-            context.EnableDisplay = true;
             context.NeedRender -= 1;
             foreach (var visualChannel in rpContext.visualChannels.Values)
             {

@@ -22,24 +22,22 @@ public class DRDispatcher : IPassDispatcher
         var renderers = param.renderers;
 
         var mainCaches = param.mainCaches;
-        param.texLoading = mainCaches.GetTextureLoaded(Path.GetFullPath("loading.png",param.relativePath), graphicsContext);
+        param.texLoading = mainCaches.GetTextureLoaded(Path.GetFullPath("loading.png", param.relativePath), graphicsContext);
         param.texError = mainCaches.GetTextureLoaded(Path.GetFullPath("error.png", param.relativePath), graphicsContext);
-        param.customValue["Skinning"] = !param.rp.CPUSkinning;
 
         bool rayTracing = false;
         foreach (var renderSequence in passSetting.RenderSequence)
-            if (renderSequence.Type == "RayTracing" && param.graphicsDevice.IsRayTracingSupport())
+            if (renderSequence.Type == "RayTracing" && param.IsRayTracingSupport)
                 rayTracing = true;
 
         if ((bool?)param.GetSettingsValue("EnableRayTracing") != true)
             rayTracing = false;
-        param.customValue["RayTracing"] = rayTracing;
-        param.rp.CPUSkinning = rayTracing;
+        param.SetCustomValue("RayTracing", rayTracing);
+        param.CPUSkinning = rayTracing;
         var random = param.random;
         if ((bool?)param.GetSettingsValue("EnableTAA") == true)
         {
             var outputTex = param.GetTex2D("_Output0");
-            int index1 = param.rp.frameRenderCount;
             Vector2 jitterVector = new Vector2((float)(random.NextDouble() * 2 - 1) / outputTex.width, (float)(random.NextDouble() * 2 - 1) / outputTex.height);
             param.visualChannel.cameraData = param.visualChannel.camera.GetCameraData(jitterVector);
         }

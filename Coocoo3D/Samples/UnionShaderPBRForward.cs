@@ -27,62 +27,57 @@ public static class UnionShaderPBRForward
 
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
-        bool skinning = true;
-        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
-            skinning = bSkinning;
 
         switch (param.passName)
         {
             case "DrawObjectPass":
             case "DrawTransparentPass":
                 param.WriteCBV(param.pass.CBVs[1]);
-                foreach (var renderer in param.renderers)
+                foreach (var renderable in param.MeshRenderables())
                 {
-                    param.SetMesh(graphicsContext, renderer);
-                    param.renderer = renderer;
+                    var material = renderable.material;
+                    if (param.passName == "DrawTransparentPass" && !material.Transparent) continue;
 
-                    foreach (var material in renderer.Materials)
+                    var psoDesc = param.GetPSODesc();
+                    bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
+
+                    List<ValueTuple<string, string>> keywords = new();
+                    if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
+                        keywords.Add(new(debugKeyword,"1"));
+                    if ((bool)param.GetSettingsValue("EnableFog"))
+                        keywords.Add(new("ENABLE_FOG", "1"));
+                    if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
+                        keywords.Add(new("USE_NORMAL_MAP", "1"));
+
+                    if ((bool?)param.GetSettingsValue("UseGI") == true)
+                        keywords.Add(new("ENABLE_GI", "1"));
+                    if (renderable.gpuSkinning)
                     {
-                        if (param.passName == "DrawTransparentPass" && !material.Transparent) continue;
-                        param.material = material;
-                        var psoDesc = param.GetPSODesc();
-                        bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
-
-                        List<string> keywords = new List<string>();
-                        if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
-                            keywords.Add(debugKeyword);
-                        if ((bool)param.GetSettingsValue("EnableFog"))
-                            keywords.Add("ENABLE_FOG");
-                        if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
-                            keywords.Add("USE_NORMAL_MAP");
-
-                        if ((bool?)param.GetSettingsValue("UseGI") == true)
-                            keywords.Add("ENABLE_GI");
-                        if (param.renderer.skinning && skinning)
-                        {
-                            graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
-                            keywords.Add("SKINNING");
-                        }
-
-                        if (directionalLights.Count != 0)
-                        {
-                            if (!receiveShadow)
-                                keywords.Add("DISBLE_SHADOW_RECEIVE");
-                            keywords.Add("ENABLE_DIRECTIONAL_LIGHT");
-                        }
-                        if (pointLights.Count != 0)
-                            keywords.Add("ENABLE_POINT_LIGHT");
-
-                        //foreach (var cbv in param.pass.CBVs)
-                        //{
-                        //    param.WriteCBV(cbv);
-                        //}
-                        param.WriteCBV(param.pass.CBVs[0]);
-                        pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PBRMaterial.hlsl", param.relativePath));
-                        param.SetSRVs(param.pass.SRVs, material);
-                        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+                        keywords.Add(new("SKINNING", "1"));
+                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
                     }
+
+                    if (directionalLights.Count != 0)
+                    {
+                        if (!receiveShadow)
+                            keywords.Add(new("DISBLE_SHADOW_RECEIVE", "1"));
+                        keywords.Add(new("ENABLE_DIRECTIONAL_LIGHT", "1"));
+                    }
+                    if (pointLights.Count != 0)
+                    {
+                        keywords.Add(new("ENABLE_POINT_LIGHT", "1"));
+                        keywords.Add(new("POINT_LIGHT_COUNT", pointLights.Count.ToString()));
+                    }
+
+                    //foreach (var cbv in param.pass.CBVs)
+                    //{
+                    //    param.WriteCBV(cbv);
+                    //}
+                    param.WriteCBV(param.pass.CBVs[0]);
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PBRMaterial.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs, material);
+                    if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, 0);
                 }
                 break;
             case "DrawSkyBoxPass":

@@ -850,22 +850,6 @@ namespace Coocoo3DGraphics
             InReference(mesh.resource);
         }
 
-        //public void SetMeshVertex(Mesh mesh)
-        //{
-        //    m_commandList.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-        //    foreach (var vtBuf in mesh.vtBuffers)
-        //    {
-        //        m_commandList.IASetVertexBuffers(vtBuf.Key, vtBuf.Value.vertexBufferView);
-        //        InReference(vtBuf.Value.vertex);
-        //    }
-        //}
-
-        //public void SetMeshIndex(Mesh mesh)
-        //{
-        //    m_commandList.IASetIndexBuffer(mesh.indexBufferView);
-        //    InReference(mesh.indexBuffer);
-        //}
-
         public void CopyTexture(ReadBackTexture2D target, Texture2D texture2D, int index)
         {
             var backBuffer = texture2D.resource;

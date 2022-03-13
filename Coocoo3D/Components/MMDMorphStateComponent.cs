@@ -1,6 +1,4 @@
-﻿using Coocoo3D.Components;
-using Coocoo3D.MMDSupport;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -11,22 +9,21 @@ namespace Coocoo3D.Components
 {
     public class MMDMorphStateComponent
     {
-        public List<MorphDesc> morphs = new List<MorphDesc>();
-        public WeightGroup Weights = new WeightGroup();
+        public List<MorphDesc> morphs = new();
+        public WeightGroup Weights = new ();
 
         public const float c_frameInterval = 1 / 30.0f;
-        public Dictionary<string, int> stringMorphIndexMap = new Dictionary<string, int>();
+        public Dictionary<string, int> stringToMorphIndex = new();
         public void SetPose(MMDMotion motionComponent, float time)
         {
-            float currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
-            foreach (var pair in stringMorphIndexMap)
+            foreach (var pair in stringToMorphIndex)
             {
                 Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time);
             }
         }
         public void SetPoseDefault()
         {
-            foreach (var pair in stringMorphIndexMap)
+            foreach (var pair in stringToMorphIndex)
             {
                 Weights.Origin[pair.Value] = 0;
             }
@@ -34,11 +31,12 @@ namespace Coocoo3D.Components
 
         public void ComputeWeight()
         {
-            ComputeWeight1(morphs, Weights);
+            ComputeWeight1();
         }
 
-        private static void ComputeWeight1(IReadOnlyList<MorphDesc> morphs, WeightGroup weightGroup)
+        void ComputeWeight1()
         {
+            WeightGroup weightGroup = Weights;
             for (int i = 0; i < morphs.Count; i++)
             {
                 weightGroup.ComputedPrev[i] = weightGroup.Computed[i];
@@ -53,7 +51,7 @@ namespace Coocoo3D.Components
                     weightGroup.Computed[i] += weightGroup.Origin[i];
             }
         }
-        private static void ComputeWeightGroup(IReadOnlyList<MorphDesc> morphs, MorphDesc morph, float rate, float[] computedWeights)
+        void ComputeWeightGroup(IReadOnlyList<MorphDesc> morphs, MorphDesc morph, float rate, float[] computedWeights)
         {
             for (int i = 0; i < morph.SubMorphs.Length; i++)
             {
@@ -65,6 +63,10 @@ namespace Coocoo3D.Components
                     computedWeights[subMorphStruct.GroupIndex] += rate * subMorphStruct.Rate;
             }
         }
+        public bool IsWeightChanged(int index)
+        {
+            return Weights.Computed[index] != Weights.ComputedPrev[index];
+        }
     }
 
     public class WeightGroup
@@ -72,10 +74,11 @@ namespace Coocoo3D.Components
         public float[] Origin;
         public float[] Computed;
         public float[] ComputedPrev;
-
-        public bool ComputedWeightNotEqualsPrev(int index)
+        public void Load(int count)
         {
-            return Computed[index] != ComputedPrev[index];
+            Origin = new float[count];
+            Computed = new float[count];
+            ComputedPrev = new float[count];
         }
     }
 
@@ -97,6 +100,10 @@ namespace Coocoo3D.Components
     {
         public int GroupIndex;
         public float Rate;
+        public override string ToString()
+        {
+            return string.Format("{0},{1}", GroupIndex, Rate);
+        }
     }
     public struct MorphMaterialDesc
     {
@@ -133,142 +140,6 @@ namespace Coocoo3D.Components
         public override string ToString()
         {
             return string.Format("{0}", Name);
-        }
-    }
-}
-namespace Coocoo3D.FileFormat
-{
-    public static partial class PMXFormatExtension
-    {
-        public static MorphSubMorphDesc GetMorphSubMorphDesc(PMX_MorphSubMorphDesc desc)
-        {
-            return new MorphSubMorphDesc()
-            {
-                GroupIndex = desc.GroupIndex,
-                Rate = desc.Rate,
-            };
-        }
-        public static MorphMaterialDesc GetMorphMaterialDesc(PMX_MorphMaterialDesc desc)
-        {
-            return new MorphMaterialDesc()
-            {
-                Ambient = desc.Ambient,
-                Diffuse = desc.Diffuse,
-                EdgeColor = desc.EdgeColor,
-                EdgeSize = desc.EdgeSize,
-                MaterialIndex = desc.MaterialIndex,
-                MorphMethon = (MorphMaterialMethon)desc.MorphMethon,
-                Specular = desc.Specular,
-                SubTexture = desc.SubTexture,
-                Texture = desc.Texture,
-                ToonTexture = desc.ToonTexture,
-            };
-        }
-        public static MorphVertexDesc GetMorphVertexDesc(PMX_MorphVertexDesc desc)
-        {
-            return new MorphVertexDesc()
-            {
-                Offset = desc.Offset,
-                VertexIndex = desc.VertexIndex,
-            };
-        }
-        public static MorphUVDesc GetMorphUVDesc(PMX_MorphUVDesc desc)
-        {
-            return new MorphUVDesc()
-            {
-                Offset = desc.Offset,
-                VertexIndex = desc.VertexIndex,
-            };
-        }
-        public static MorphBoneDesc GetMorphBoneDesc(PMX_MorphBoneDesc desc)
-        {
-            return new MorphBoneDesc()
-            {
-                BoneIndex = desc.BoneIndex,
-                Rotation = desc.Rotation,
-                Translation = desc.Translation,
-            };
-        }
-
-        public static MorphDesc GetMorphDesc(PMX_Morph desc)
-        {
-            MorphSubMorphDesc[] subMorphDescs = null;
-            if (desc.SubMorphs != null)
-            {
-                subMorphDescs = new MorphSubMorphDesc[desc.SubMorphs.Length];
-                for (int i = 0; i < desc.SubMorphs.Length; i++)
-                    subMorphDescs[i] = GetMorphSubMorphDesc(desc.SubMorphs[i]);
-            }
-
-            MorphMaterialDesc[] morphMaterialDescs = null;
-            if (desc.MorphMaterials != null)
-            {
-                morphMaterialDescs = new MorphMaterialDesc[desc.MorphMaterials.Length];
-                for (int i = 0; i < desc.MorphMaterials.Length; i++)
-                    morphMaterialDescs[i] = GetMorphMaterialDesc(desc.MorphMaterials[i]);
-            }
-            MorphVertexDesc[] morphVertexDescs = null;
-            if (desc.MorphVertexs != null)
-            {
-                morphVertexDescs = new MorphVertexDesc[desc.MorphVertexs.Length];
-                for (int i = 0; i < desc.MorphVertexs.Length; i++)
-                    morphVertexDescs[i] = GetMorphVertexDesc(desc.MorphVertexs[i]);
-            }
-            MorphUVDesc[] morphUVDescs = null;
-            if (desc.MorphUVs != null)
-            {
-                morphUVDescs = new MorphUVDesc[desc.MorphUVs.Length];
-                for (int i = 0; i < desc.MorphUVs.Length; i++)
-                    morphUVDescs[i] = GetMorphUVDesc(desc.MorphUVs[i]);
-            }
-            MorphBoneDesc[] morphBoneDescs = null;
-            if (desc.MorphBones != null)
-            {
-                morphBoneDescs = new MorphBoneDesc[desc.MorphBones.Length];
-                for (int i = 0; i < desc.MorphBones.Length; i++)
-                    morphBoneDescs[i] = GetMorphBoneDesc(desc.MorphBones[i]);
-            }
-
-            return new MorphDesc()
-            {
-                Name = desc.Name,
-                NameEN = desc.NameEN,
-                Category = (MorphCategory)desc.Category,
-                Type = (MorphType)desc.Type,
-                MorphBones = morphBoneDescs,
-                MorphMaterials = morphMaterialDescs,
-                MorphUVs = morphUVDescs,
-                MorphVertexs = morphVertexDescs,
-                SubMorphs = subMorphDescs,
-            };
-        }
-        public static MMDMorphStateComponent LoadMorphStateComponent(PMXFormat pmx)
-        {
-            MMDMorphStateComponent component = new MMDMorphStateComponent();
-            component.Reload(pmx);
-            return component;
-        }
-        public static void Reload(this MMDMorphStateComponent component, PMXFormat pmx)
-        {
-            component.stringMorphIndexMap.Clear();
-            component.morphs.Clear();
-            int morphCount = pmx.Morphs.Count;
-            for (int i = 0; i < pmx.Morphs.Count; i++)
-            {
-                component.morphs.Add(GetMorphDesc(pmx.Morphs[i]));
-            }
-
-            void newWeightGroup(WeightGroup weightGroup)
-            {
-                weightGroup.Origin = new float[morphCount];
-                weightGroup.Computed = new float[morphCount];
-                weightGroup.ComputedPrev = new float[morphCount];
-            }
-            newWeightGroup(component.Weights);
-            for (int i = 0; i < morphCount; i++)
-            {
-                component.stringMorphIndexMap.Add(pmx.Morphs[i].Name, i);
-            }
         }
     }
 }

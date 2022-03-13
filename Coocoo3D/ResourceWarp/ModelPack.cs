@@ -1,7 +1,6 @@
 ﻿using Coocoo3D.Components;
 using Coocoo3D.FileFormat;
 using Coocoo3D.Utility;
-using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +18,9 @@ namespace Coocoo3D.ResourceWarp
 
         public string fullPath;
 
+        public string name;
+        public string description;
+
         public Vector3[] position;
         public Vector3[] normal;
         public Vector4[] tangent;
@@ -31,10 +33,13 @@ namespace Coocoo3D.ResourceWarp
         public bool skinning;
         public List<string> textures;
 
-        public List<RuntimeMaterial> Materials = new List<RuntimeMaterial>();
+        public List<RenderMaterial> Materials = new List<RenderMaterial>();
 
         public List<RigidBodyDesc> rigidBodyDescs = new List<RigidBodyDesc>();
         public List<JointDesc> jointDescs = new List<JointDesc>();
+
+        public List<BoneEntity> bones;
+        public List<MorphDesc> morphs;
 
         public static RigidBodyDesc GetRigidBodyDesc(PMX_RigidBody rigidBody)
         {
@@ -91,13 +96,15 @@ namespace Coocoo3D.ResourceWarp
         }
         public void LoadPMX(BinaryReader reader, string fileName)
         {
-            string storageFolder = Path.GetDirectoryName(fileName);
+            string folder = Path.GetDirectoryName(fileName);
             pmx.Reload(reader);
+            name = string.Format("{0} {1}", pmx.Name, pmx.NameEN);
+            description = string.Format("{0}\n{1}", pmx.Description, pmx.DescriptionEN);
             textures = new List<string>();
             foreach (var tex in pmx.Textures)
             {
                 string relativePath = tex.TexturePath.Replace("//", "\\").Replace('/', '\\');
-                string texPath = Path.GetFullPath(relativePath, storageFolder);
+                string texPath = Path.GetFullPath(relativePath, folder);
                 textures.Add(texPath);
             }
             skinning = true;
@@ -136,7 +143,7 @@ namespace Coocoo3D.ResourceWarp
             {
                 var mmdMat = pmx.Materials[i];
 
-                RuntimeMaterial mat = new RuntimeMaterial
+                RenderMaterial mat = new RenderMaterial
                 {
                     Name = mmdMat.Name,
                     indexCount = mmdMat.TriangeIndexNum,
@@ -165,7 +172,7 @@ namespace Coocoo3D.ResourceWarp
                 if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)
                 {
                     string relativePath = pmx.Textures[mmdMat.TextureIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
-                    string texPath = Path.GetFullPath(relativePath, storageFolder);
+                    string texPath = Path.GetFullPath(relativePath, folder);
 
                     mat.textures["_Albedo"] = texPath;
                 }
@@ -244,6 +251,114 @@ namespace Coocoo3D.ResourceWarp
                     tangent[i] = new Vector4(Vector3.Normalize(t1) * factor, factor);
                 }
             }
+
+            {
+                bones = new List<BoneEntity>();
+                var _bones = pmx.Bones;
+                for (int i = 0; i < _bones.Count; i++)
+                {
+                    var _bone = _bones[i];
+                    BoneEntity boneEntity = new();
+                    boneEntity.ParentIndex = (_bone.ParentIndex >= 0 && _bone.ParentIndex < _bones.Count) ? _bone.ParentIndex : -1;
+                    boneEntity.staticPosition = _bone.Position;
+                    boneEntity.rotation = Quaternion.Identity;
+                    boneEntity.index = i;
+
+                    boneEntity.Name = _bone.Name;
+                    boneEntity.NameEN = _bone.NameEN;
+                    boneEntity.Flags = (BoneFlags)_bone.Flags;
+
+                    if (boneEntity.Flags.HasFlag(BoneFlags.HasIK))
+                    {
+                        boneEntity.IKTargetIndex = _bone.boneIK.IKTargetIndex;
+                        boneEntity.CCDIterateLimit = _bone.boneIK.CCDIterateLimit;
+                        boneEntity.CCDAngleLimit = _bone.boneIK.CCDAngleLimit;
+                        boneEntity.boneIKLinks = new BoneEntity.IKLink[_bone.boneIK.IKLinks.Length];
+                        for (int j = 0; j < boneEntity.boneIKLinks.Length; j++)
+                        {
+                            boneEntity.boneIKLinks[j] = IKLink(_bone.boneIK.IKLinks[j]);
+                        }
+                    }
+                    if (_bone.AppendBoneIndex >= 0 && _bone.AppendBoneIndex < _bones.Count)
+                    {
+                        boneEntity.AppendParentIndex = _bone.AppendBoneIndex;
+                        boneEntity.AppendRatio = _bone.AppendBoneRatio;
+                        boneEntity.IsAppendRotation = boneEntity.Flags.HasFlag(BoneFlags.AcquireRotate);
+                        boneEntity.IsAppendTranslation = boneEntity.Flags.HasFlag(BoneFlags.AcquireTranslate);
+                    }
+                    else
+                    {
+                        boneEntity.AppendParentIndex = -1;
+                        boneEntity.AppendRatio = 0;
+                        boneEntity.IsAppendRotation = false;
+                        boneEntity.IsAppendTranslation = false;
+                    }
+                    bones.Add(boneEntity);
+                }
+                morphs = new();
+                for (int i = 0; i < pmx.Morphs.Count; i++)
+                {
+                    morphs.Add(PMXFormatExtension.Translate(pmx.Morphs[i]));
+                }
+            }
+        }
+
+        static BoneEntity.IKLink IKLink(in PMX_BoneIKLink ikLink1)
+        {
+            var ikLink = new BoneEntity.IKLink();
+
+            ikLink.HasLimit = ikLink1.HasLimit;
+            ikLink.LimitMax = ikLink1.LimitMax;
+            ikLink.LimitMin = ikLink1.LimitMin;
+            ikLink.LinkedIndex = ikLink1.LinkedIndex;
+
+            Vector3 tempMin = ikLink.LimitMin;
+            Vector3 tempMax = ikLink.LimitMax;
+            ikLink.LimitMin = Vector3.Min(tempMin, tempMax);
+            ikLink.LimitMax = Vector3.Max(tempMin, tempMax);
+
+            if (ikLink.LimitMin.X > -Math.PI * 0.5 && ikLink.LimitMax.X < Math.PI * 0.5)
+                ikLink.TransformOrder = IKTransformOrder.Zxy;
+            else if (ikLink.LimitMin.Y > -Math.PI * 0.5 && ikLink.LimitMax.Y < Math.PI * 0.5)
+                ikLink.TransformOrder = IKTransformOrder.Xyz;
+            else
+                ikLink.TransformOrder = IKTransformOrder.Yzx;
+
+            const float epsilon = 1e-6f;
+            if (ikLink.HasLimit)
+            {
+                if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                    Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                    Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                    Math.Abs(ikLink.LimitMax.Y) < epsilon &&
+                    Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                    Math.Abs(ikLink.LimitMax.Z) < epsilon)
+                {
+                    ikLink.FixTypes = AxisFixType.FixAll;
+                }
+                else if (Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                         Math.Abs(ikLink.LimitMax.Y) < epsilon &&
+                         Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                         Math.Abs(ikLink.LimitMax.Z) < epsilon)
+                {
+                    ikLink.FixTypes = AxisFixType.FixX;
+                }
+                else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                         Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                         Math.Abs(ikLink.LimitMin.Z) < epsilon &&
+                         Math.Abs(ikLink.LimitMax.Z) < epsilon)
+                {
+                    ikLink.FixTypes = AxisFixType.FixY;
+                }
+                else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
+                         Math.Abs(ikLink.LimitMax.X) < epsilon &&
+                         Math.Abs(ikLink.LimitMin.Y) < epsilon &&
+                         Math.Abs(ikLink.LimitMax.Y) < epsilon)
+                {
+                    ikLink.FixTypes = AxisFixType.FixZ;
+                }
+            }
+            return ikLink;
         }
 
         public Mesh GetMesh()

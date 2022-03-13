@@ -184,7 +184,7 @@
           "Index": "1",
           "Datas": [
             "World",
-            "PointLights4Cull",
+            "PointLights",
             "Metallic",
             "Roughness",
             "Emissive",

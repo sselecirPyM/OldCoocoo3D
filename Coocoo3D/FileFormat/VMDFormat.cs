@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Numerics;
-using Coocoo3D.MMDSupport;
+using Coocoo3D.Present;
 
 namespace Coocoo3D.FileFormat
 {

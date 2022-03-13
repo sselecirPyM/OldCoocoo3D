@@ -5,14 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Numerics;
-using Coocoo3D.MMDSupport;
+using Coocoo3D.Present;
 
 namespace Coocoo3D.FileFormat
 {
     public class VPDFormat
     {
         public string Name;
-        public Dictionary<string, BoneKeyFrame> bonePose = new Dictionary<string, BoneKeyFrame>();
+        public Dictionary<string, BoneKeyFrame> bonePose = new();
         public static VPDFormat Load(TextReader reader)
         {
             VPDFormat vmd = new VPDFormat();
@@ -23,22 +23,21 @@ namespace Coocoo3D.FileFormat
         public void Reload(TextReader reader)
         {
             bonePose.Clear();
-            int debugLineCount = 0;
-            ReadNotCommentLine(reader, ref debugLineCount);
-            Name = ReadNotCommentLine(reader, ref debugLineCount);
-            ReadNotCommentLine(reader, ref debugLineCount);
+            ReadNotCommentLine(reader);
+            Name = ReadNotCommentLine(reader);
+            ReadNotCommentLine(reader);
             while (true)
             {
-                ReadLine(reader, ref debugLineCount);
-                string l = ReadLine(reader, ref debugLineCount);
+                ReadLine(reader);
+                string l = ReadLine(reader);
                 if (string.IsNullOrEmpty(l))
                 {
                     return;
                 }
                 if (!l.Contains('{')) return;
-                string t = ReadLine(reader, ref debugLineCount);
-                string r = ReadLine(reader, ref debugLineCount);
-                string eu = ReadLine(reader, ref debugLineCount);
+                string t = ReadLine(reader);
+                string r = ReadLine(reader);
+                string eu = ReadLine(reader);
                 if (!eu.Contains('}')) return;
                 string boneName = l.Substring(l.IndexOf('{'));
                 BoneKeyFrame boneKeyFrame = new BoneKeyFrame();
@@ -48,12 +47,11 @@ namespace Coocoo3D.FileFormat
             }
         }
 
-        private string ReadLine(TextReader reader, ref int debugLineCount)
+        private string ReadLine(TextReader reader)
         {
             while (true)
             {
                 string x = reader.ReadLine();
-                debugLineCount++;
                 int i = 0;
                 while (char.IsSeparator(x[i]) && i < x.Length)
                 {
@@ -71,12 +69,11 @@ namespace Coocoo3D.FileFormat
             }
         }
 
-        private string ReadNotCommentLine(TextReader reader, ref int debugLineCount)
+        private string ReadNotCommentLine(TextReader reader)
         {
             while (true)
             {
                 string x = reader.ReadLine();
-                debugLineCount++;
                 int index = x.IndexOf("//");
                 if (index != -1)
                     x = x.Remove(index);

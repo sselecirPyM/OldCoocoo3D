@@ -13,20 +13,18 @@ namespace Coocoo3D.RenderPipeline
     {
         public static void Process(RenderPipelineContext rp, GPUWriter gpuWriter)
         {
-            int currentQuality = 0;
-            if (rp.customData.TryGetValue("CurrentSkyBoxQuality", out object o1) && o1 is int a0)
-                currentQuality = a0;
+            int currentQuality = rp.GetPersistentValue("CurrentSkyBoxQuality", 0);
 
             if (rp.SkyBoxChanged || currentQuality < rp.dynamicContextRead.settings.SkyBoxMaxQuality)
             {
                 var mainCaches = rp.mainCaches;
                 GraphicsContext graphicsContext = rp.graphicsContext;
 
-                Texture2D texOri = rp.mainCaches.GetTextureLoaded(rp.skyBoxOriTex, rp.graphicsContext);
-                rp.mainCaches.GetSkyBox(rp.skyBoxName, rp.graphicsContext, out var texSkyBox, out var texReflect);
+                Texture2D texOri = mainCaches.GetTextureLoaded(rp.skyBoxTex, rp.graphicsContext);
+                mainCaches.GetSkyBox(rp.skyBoxName, rp.graphicsContext, out var texSkyBox, out var texReflect);
                 int roughnessLevel = 5;
 
-                var rootSignature = rp.mainCaches.GetRootSignature("Csu");
+                var rootSignature = mainCaches.GetRootSignature("Csu");
 
                 graphicsContext.SetRootSignature(rootSignature);
 
@@ -83,7 +81,7 @@ namespace Coocoo3D.RenderPipeline
                     graphicsContext.SetUAVTSlot(texReflect, mipLevel, 0);
                     graphicsContext.Dispatch((int)(texReflect.width + 3) / 4 / pow2a, (int)(texReflect.height + 3) / 4 / pow2a, 1);
                 }
-                rp.customData["CurrentSkyBoxQuality"] = currentQuality + 1;
+                rp.SetPersistentValue("CurrentSkyBoxQuality", currentQuality + 1);
             }
         }
     }

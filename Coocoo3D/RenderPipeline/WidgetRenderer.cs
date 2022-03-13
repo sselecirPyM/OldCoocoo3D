@@ -17,6 +17,7 @@ namespace Coocoo3D.RenderPipeline
     {
         GPUBuffer imguiMesh = new GPUBuffer();
         GPUWriter GPUWriter = new GPUWriter();
+        string workDir = System.Environment.CurrentDirectory;
 
         public void Render(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
@@ -31,8 +32,6 @@ namespace Coocoo3D.RenderPipeline
 
             graphicsContext.SetRootSignature(rs);
 
-            PSODesc desc;
-
             var data = ImGui.GetDrawData();
             if (data.CmdListsCount == 0) return;
             float L = data.DisplayPos.X;
@@ -42,6 +41,8 @@ namespace Coocoo3D.RenderPipeline
 
             Vector2 displayPosition = data.DisplayPos;
 
+
+            PSODesc desc;
             desc.blendState = BlendState.alpha;
             desc.cullMode = CullMode.None;
             desc.depthBias = 0;
@@ -52,9 +53,9 @@ namespace Coocoo3D.RenderPipeline
             desc.renderTargetCount = 1;
             desc.wireFrame = false;
             desc.inputLayout = InputLayout.imgui;
-            var pso = caches.GetPSOWithKeywords(null, System.IO.Path.GetFullPath("Shaders/ImGui.hlsl"));
+            var pso = caches.GetPSOWithKeywords(null, System.IO.Path.GetFullPath("Shaders/ImGui.hlsl", workDir));
             graphicsContext.SetPSO(pso, desc);
-            Matrix4x4 matrix = new Matrix4x4(
+            Matrix4x4 matrix = new(
                 2.0f / (R - L), 0.0f, 0.0f, (R + L) / (L - R),
                 0.0f, 2.0f / (T - B), 0.0f, (T + B) / (B - T),
                 0.0f, 0.0f, 0.5f, 0.5f,

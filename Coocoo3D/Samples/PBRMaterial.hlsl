@@ -20,7 +20,6 @@ struct PointLightInfo
 	float3 LightColor;
 	float LightRange;
 };
-#define POINT_LIGHT_COUNT 4
 cbuffer cb1 : register(b1)
 {
 	float4x4 g_mWorld;
@@ -79,6 +78,7 @@ struct PSSkinnedIn
 PSSkinnedIn vsmain(VSSkinnedIn input)
 {
 	PSSkinnedIn output;
+
 	SkinnedInfo vSkinned = SkinVert(input, g_mConstBoneWorld);
 	float3 pos = mul(vSkinned.Pos, g_mWorld);
 	output.Norm = normalize(mul(vSkinned.Norm, (float3x3)g_mWorld));
@@ -277,81 +277,78 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	int shadowmapIndex = 0;
 	for (int i = 0; i < POINT_LIGHT_COUNT; i++, shadowmapIndex += 6)
 	{
-		if (PointLights[i].LightType == 1)
+		float inShadow = 1.0f;
+		float lightDistance = distance(PointLights[i].LightPos, wPos);
+		float lightRange = PointLights[i].LightRange;
+		if (lightRange < lightDistance)
+			continue;
+		float3 lightStrength = PointLights[i].LightColor.rgb / pow(lightDistance, 2);
+
+		float3 vl = PointLights[i].LightPos - wPos;
+
+		float3 L = normalize(vl);
+		float3 H = normalize(L + V);
+
+		float3 NdotL = saturate(dot(N, L));
+		float3 LdotH = saturate(dot(L, H));
+		float3 NdotH = saturate(dot(N, H));
+
+		float3 absL = abs(L);
+
+
+		if (absL.x > absL.y && absL.x > absL.z)
 		{
-			float inShadow = 1.0f;
-			float lightDistance = distance(PointLights[i].LightPos, wPos);
-			float lightRange = PointLights[i].LightRange;
-			if (lightRange < lightDistance)
-				continue;
-			float3 lightStrength = PointLights[i].LightColor.rgb / pow(lightDistance, 2);
-
-			float3 vl = PointLights[i].LightPos - wPos;
-
-			float3 L = normalize(vl);
-			float3 H = normalize(L + V);
-
-			float3 NdotL = saturate(dot(N, L));
-			float3 LdotH = saturate(dot(L, H));
-			float3 NdotH = saturate(dot(N, H));
-
-			float3 absL = abs(L);
-
-
-			if (absL.x > absL.y && absL.x > absL.z)
-			{
-				float2 samplePos = L.zy / L.x * 0.5 + 0.5;
-				int mapindex = shadowmapIndex;
-				if (L.x < 0)
-					samplePos.x = 1 - samplePos.x;
-				if (L.x > 0)
-					mapindex++;
-				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
-				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
-				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
-				inShadow = (shadowDepth) > getDepth(abs(vl.x), lightRange * 0.001f, lightRange) ? 1 : 0;
-			}
-			else if (absL.y > absL.z)
-			{
-				float2 samplePos = L.xz / L.y * 0.5 + 0.5;
-				int mapindex = shadowmapIndex + 2;
-				if (L.y < 0)
-					samplePos.x = 1 - samplePos.x;
-				if (L.y > 0)
-					mapindex++;
-				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
-				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
-				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
-				inShadow = (shadowDepth) > getDepth(abs(vl.y), lightRange * 0.001f, lightRange) ? 1 : 0;
-			}
-			else
-			{
-				float2 samplePos = L.yx / L.z * 0.5 + 0.5;
-				int mapindex = shadowmapIndex + 4;
-				if (L.z < 0)
-					samplePos.x = 1 - samplePos.x;
-				if (L.z > 0)
-					mapindex++;
-				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
-				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
-				if (samplePos.x < 0 || samplePos.x>1 || samplePos.y < 0 || samplePos.y>1)
-					return float4(1, 0, 1, 1);
-				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
-				inShadow = (shadowDepth) > getDepth(abs(vl.z), lightRange * 0.001f, lightRange) ? 1 : 0;
-			}
+			float2 samplePos = L.zy / L.x * 0.5 + 0.5;
+			int mapindex = shadowmapIndex;
+			if (L.x < 0)
+				samplePos.x = 1 - samplePos.x;
+			if (L.x > 0)
+				mapindex++;
+			float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
+			float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
+			float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
+			inShadow = (shadowDepth) > getDepth(abs(vl.x), lightRange * 0.001f, lightRange) ? 1 : 0;
+		}
+		else if (absL.y > absL.z)
+		{
+			float2 samplePos = L.xz / L.y * 0.5 + 0.5;
+			int mapindex = shadowmapIndex + 2;
+			if (L.y < 0)
+				samplePos.x = 1 - samplePos.x;
+			if (L.y > 0)
+				mapindex++;
+			float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
+			float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
+			float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
+			inShadow = (shadowDepth) > getDepth(abs(vl.y), lightRange * 0.001f, lightRange) ? 1 : 0;
+		}
+		else
+		{
+			float2 samplePos = L.yx / L.z * 0.5 + 0.5;
+			int mapindex = shadowmapIndex + 4;
+			if (L.z < 0)
+				samplePos.x = 1 - samplePos.x;
+			if (L.z > 0)
+				mapindex++;
+			float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
+			float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
+			if (samplePos.x < 0 || samplePos.x>1 || samplePos.y < 0 || samplePos.y>1)
+				return float4(1, 0, 1, 1);
+			float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
+			inShadow = (shadowDepth) > getDepth(abs(vl.z), lightRange * 0.001f, lightRange) ? 1 : 0;
+		}
 
 #if ENABLE_DIFFUSE
-			float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
+		float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);
 #else
-			float diffuse_factor = 0;
+		float diffuse_factor = 0;
 #endif
 #if ENABLE_SPECULR
-			float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
+		float3 specular_factor = Specular_BRDF(alpha, c_specular, NdotV, NdotL, LdotH, NdotH);
 #else
-			float3 specular_factor = 0;
+		float3 specular_factor = 0;
 #endif
-			outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
-		}
+		outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
 	}
 #endif //ENABLE_POINT_LIGHT
 #if ENABLE_FOG

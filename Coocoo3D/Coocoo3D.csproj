@@ -58,11 +58,11 @@
   <ItemGroup>
     <PackageReference Include="BulletSharp.x64" Version="0.12.0" />
     <PackageReference Include="ImGui.NET" Version="1.86.0" />
-    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="9.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="10.0.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="ppy.SDL2-CS" Version="1.0.82" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.0.0" />
     <PackageReference Include="Vortice.Dxc" Version="1.9.143" />
     <PackageReference Include="Vortice.DXGI" Version="1.9.143" />
   </ItemGroup>

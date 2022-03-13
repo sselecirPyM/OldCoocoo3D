@@ -46,11 +46,6 @@ namespace Coocoo3D.Core
             context.PlayTime = FrameIntervalF * RenderCount;
             RenderCount++;
 
-            if (context.PlayTime >= StartTime || rpContext.RequireResize)
-                context.EnableDisplay = true;
-            else
-                context.EnableDisplay = false;
-
             return true;
         }
         class Pack1
@@ -61,7 +56,7 @@ namespace Coocoo3D.Core
             public byte[] imageData;
             public int width;
             public int height;
-            public void task1()
+            public void EncodeTask()
             {
                 Image<Rgba32> image = Image.WrapMemory<Rgba32>(imageData, width, height);
 
@@ -111,10 +106,10 @@ namespace Coocoo3D.Core
                     if (pack.imageData == null || pack.imageData.Length != width * height * 4)
                         pack.imageData = new byte[width * height * 4];
 
-                    ReadBackTexture2D.GetRaw<byte>(index1, packs[exIndex].imageData);
+                    ReadBackTexture2D.GetRaw<byte>(index1, pack.imageData);
 
-                    packs[exIndex].renderIndex = RecordCount - c_frameCount;
-                    packs[exIndex].runningTask = Task.Run(packs[exIndex].task1);
+                    pack.renderIndex = RecordCount - c_frameCount;
+                    pack.runningTask = Task.Run(pack.EncodeTask);
                     exIndex = (exIndex + 1) % packs.Length;
                 }
                 RecordCount++;

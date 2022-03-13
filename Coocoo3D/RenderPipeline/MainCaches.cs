@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Vortice.Dxc;
 
@@ -19,28 +20,28 @@ namespace Coocoo3D.RenderPipeline
 {
     public class MainCaches : IDisposable
     {
-        public Dictionary<string, KnownFile> KnownFiles = new Dictionary<string, KnownFile>();
-        public ConcurrentDictionary<string, DirectoryInfo> KnownFolders = new ConcurrentDictionary<string, DirectoryInfo>();
+        public Dictionary<string, KnownFile> KnownFiles = new();
+        public ConcurrentDictionary<string, DirectoryInfo> KnownFolders = new();
 
-        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureCaches = new DictionaryWithModifiyIndex<string, Texture2DPack>();
-        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureOnDemand = new DictionaryWithModifiyIndex<string, Texture2DPack>();
+        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureCaches = new();
+        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureOnDemand = new();
 
-        public DictionaryWithModifiyIndex<string, ModelPack> ModelPackCaches = new DictionaryWithModifiyIndex<string, ModelPack>();
-        public DictionaryWithModifiyIndex<string, MMDMotion> Motions = new DictionaryWithModifiyIndex<string, MMDMotion>();
-        public DictionaryWithModifiyIndex<string, ComputeShader> ComputeShaders = new DictionaryWithModifiyIndex<string, ComputeShader>();
+        public DictionaryWithModifiyIndex<string, ModelPack> ModelPackCaches = new();
+        public DictionaryWithModifiyIndex<string, MMDMotion> Motions = new();
+        public DictionaryWithModifiyIndex<string, ComputeShader> ComputeShaders = new();
 
-        public DictionaryWithModifiyIndex<string, PassSetting> PassSettings = new DictionaryWithModifiyIndex<string, PassSetting>();
-        public DictionaryWithModifiyIndex<string, RayTracingShader> RayTracingShaders = new DictionaryWithModifiyIndex<string, RayTracingShader>();
-        public DictionaryWithModifiyIndex<string, PSO> PipelineStateObjects = new DictionaryWithModifiyIndex<string, PSO>();
-        public DictionaryWithModifiyIndex<string, RTPSO> RTPSOs = new DictionaryWithModifiyIndex<string, RTPSO>();
-        public DictionaryWithModifiyIndex<string, TextureCube> TextureCubes = new DictionaryWithModifiyIndex<string, TextureCube>();
-        public DictionaryWithModifiyIndex<string, UnionShader> UnionShaders = new DictionaryWithModifiyIndex<string, UnionShader>();
-        public DictionaryWithModifiyIndex<string, IPassDispatcher> PassDispatchers = new DictionaryWithModifiyIndex<string, IPassDispatcher>();
-        public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new DictionaryWithModifiyIndex<string, Assembly>();
-        public DictionaryWithModifiyIndex<string, RootSignature> RootSignatures = new DictionaryWithModifiyIndex<string, RootSignature>();
+        public DictionaryWithModifiyIndex<string, PassSetting> PassSettings = new();
+        public DictionaryWithModifiyIndex<string, RayTracingShader> RayTracingShaders = new();
+        public DictionaryWithModifiyIndex<string, PSO> PipelineStateObjects = new();
+        public DictionaryWithModifiyIndex<string, RTPSO> RTPSOs = new();
+        public DictionaryWithModifiyIndex<string, TextureCube> TextureCubes = new();
+        public DictionaryWithModifiyIndex<string, UnionShader> UnionShaders = new();
+        public DictionaryWithModifiyIndex<string, IPassDispatcher> PassDispatchers = new();
+        public DictionaryWithModifiyIndex<string, Assembly> Assemblies = new();
+        public DictionaryWithModifiyIndex<string, RootSignature> RootSignatures = new();
 
-        public ConcurrentQueue<ValueTuple<Texture2D,Uploader>> TextureReadyToUpload = new ConcurrentQueue<ValueTuple<Texture2D, Uploader>>();
-        public ConcurrentQueue<Mesh> MeshReadyToUpload = new ConcurrentQueue<Mesh>();
+        public ConcurrentQueue<ValueTuple<Texture2D, Uploader>> TextureReadyToUpload = new();
+        public ConcurrentQueue<Mesh> MeshReadyToUpload = new();
 
         public MainCaches()
         {
@@ -66,7 +67,7 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        ConcurrentDictionary<Texture2DPack, Uploader> uploaders = new ConcurrentDictionary<Texture2DPack, Uploader>();
+        ConcurrentDictionary<Texture2DPack, Uploader> uploaders = new();
         public void OnFrame()
         {
             if (ReloadShaders.SetFalse())
@@ -97,7 +98,7 @@ namespace Coocoo3D.RenderPipeline
                 var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
                 tex1.Mark(GraphicsObjectStatus.loading);
                 InitFolder(Path.GetDirectoryName(notLoad.Value.fullPath));
-                Dictionary<string, object> taskParam = new Dictionary<string, object>();
+                Dictionary<string, object> taskParam = new();
                 taskParam["pack"] = notLoad.Value;
                 taskParam["knownFile"] = KnownFiles.GetOrCreate(notLoad.Value.fullPath, (string path) => new KnownFile()
                 {
@@ -110,32 +111,13 @@ namespace Coocoo3D.RenderPipeline
                     Texture2DPack texturePack1 = (Texture2DPack)taskParam1["pack"];
                     var knownFile = (KnownFile)taskParam1["knownFile"];
 
-                    try
-                    {
-                        var folder = KnownFolders[Path.GetDirectoryName(knownFile.fullPath)];
+                    var folder = KnownFolders[Path.GetDirectoryName(knownFile.fullPath)];
 
-                        if (knownFile.IsModified(folder.GetFiles()))
-                        {
-                            Uploader uploader = new Uploader();
-                            if (texturePack1.ReloadTexture(knownFile.file, uploader))
-                            {
-                                texturePack1.Mark(GraphicsObjectStatus.loaded);
-                                uploaders[texturePack1] = uploader;
-                            }
-                            else
-                                texturePack1.Mark(GraphicsObjectStatus.error);
-                        }
-                        else
-                            texturePack1.Mark(GraphicsObjectStatus.loaded);
-                    }
-                    catch
-                    {
+                    if (LoadTexture(folder, texturePack1, knownFile))
+                        texturePack1.Mark(GraphicsObjectStatus.loaded);
+                    else
                         texturePack1.Mark(GraphicsObjectStatus.error);
-                    }
-                    finally
-                    {
-                        _RequireRender();
-                    }
+                    _RequireRender();
                 }, taskParam);
             }
             foreach (var loadCompleted in TextureOnDemand.Where(u => { return u.Value.loadTask != null && u.Value.loadTask.IsCompleted; }).ToArray())
@@ -151,10 +133,29 @@ namespace Coocoo3D.RenderPipeline
                     if (uploaders.TryRemove(loadCompleted.Value, out Uploader uploader))
                     {
                         tex1.texture2D.Name = tex1.fullPath;
-                        TextureReadyToUpload.Enqueue(new (tex1.texture2D, uploader));
+                        TextureReadyToUpload.Enqueue(new(tex1.texture2D, uploader));
                     }
                     TextureOnDemand.Remove(loadCompleted.Key);
                 }
+            }
+        }
+
+        bool LoadTexture(DirectoryInfo folder, Texture2DPack texturePack1, KnownFile knownFile)
+        {
+            try
+            {
+                if (!knownFile.IsModified(folder.GetFiles())) return true;
+                Uploader uploader = new Uploader();
+                if (texturePack1.ReloadTexture(knownFile.file, uploader))
+                {
+                    uploaders[texturePack1] = uploader;
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -277,6 +278,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 return passes;
             });
+            passSetting.path = path;
             return passSetting;
         }
 
@@ -349,7 +351,8 @@ namespace Coocoo3D.RenderPipeline
                     MetadataReference.CreateFromFile (typeof (SharpGen.Runtime.CppObject).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (SharpGen.Runtime.ComObject).Assembly.Location),
                 };
-                refs.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(u => u.GetName().Name.Contains("netstandard") || u.GetName().Name.Contains("System")).Select(u => MetadataReference.CreateFromFile(u.Location)));
+                refs.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(u => u.GetName().Name.Contains("netstandard") ||
+                    u.GetName().Name.Contains("System")).Select(u => MetadataReference.CreateFromFile(u.Location)));
                 var compilation = CSharpCompilation.Create(Path.GetFileName(path), new[] { syntaxTree }, refs, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
                 var result = compilation.Emit(memoryStream);
                 if (!result.Success)
@@ -377,13 +380,20 @@ namespace Coocoo3D.RenderPipeline
             });
         }
 
-        public ComputeShader GetComputeShaderWithKeywords(List<string> keywords, string path)
+        public ComputeShader GetComputeShaderWithKeywords(List<ValueTuple<string, string>> keywords, string path)
         {
             string xPath;
             if (keywords != null)
             {
-                keywords.Sort();
-                xPath = path + string.Concat(keywords);
+                keywords.Sort((x, y) => x.CompareTo(y));
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(path);
+                foreach (var keyword in keywords)
+                {
+                    stringBuilder.Append(keyword.Item1);
+                    stringBuilder.Append(keyword.Item2);
+                }
+                xPath = stringBuilder.ToString();
             }
             else
             {
@@ -399,7 +409,7 @@ namespace Coocoo3D.RenderPipeline
                     dxcDefines = new DxcDefine[keywords.Count];
                     for (int i = 0; i < keywords.Count; i++)
                     {
-                        dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                        dxcDefines[i] = new DxcDefine() { Name = keywords[i].Item1, Value = keywords[i].Item2 };
                     }
                 }
                 ComputeShader computeShader = new ComputeShader();
@@ -418,13 +428,20 @@ namespace Coocoo3D.RenderPipeline
             return rayTracingShader;
         }
 
-        public RTPSO GetRTPSO(List<string> keywords, RayTracingShader shader, string path)
+        public RTPSO GetRTPSO(List<ValueTuple<string, string>> keywords, RayTracingShader shader, string path)
         {
             string xPath;
             if (keywords != null)
             {
-                keywords.Sort();
-                xPath = path + string.Concat(keywords);
+                keywords.Sort((x, y) => x.CompareTo(y));
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(path);
+                foreach (var keyword in keywords)
+                {
+                    stringBuilder.Append(keyword.Item1);
+                    stringBuilder.Append(keyword.Item2);
+                }
+                xPath = stringBuilder.ToString();
             }
             else
             {
@@ -441,7 +458,7 @@ namespace Coocoo3D.RenderPipeline
                         dxcDefines = new DxcDefine[keywords.Count];
                         for (int i = 0; i < keywords.Count; i++)
                         {
-                            dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                            dxcDefines[i] = new DxcDefine() { Name = keywords[i].Item1, Value = keywords[i].Item2 };
                         }
                     }
                     byte[] result = LoadShader(DxcShaderStage.Library, source, "", path, dxcDefines);
@@ -469,7 +486,7 @@ namespace Coocoo3D.RenderPipeline
                         rtpso.missShaders = new RayTracingShaderDescription[0];
 
                     rtpso.exports = shader.GetExports();
-                    List<ResourceAccessType> ShaderAccessTypes = new List<ResourceAccessType>();
+                    List<ResourceAccessType> ShaderAccessTypes = new();
                     ShaderAccessTypes.Add(ResourceAccessType.SRV);
                     if (shader.CBVs != null)
                         for (int i = 0; i < shader.CBVs.Count; i++)
@@ -497,19 +514,27 @@ namespace Coocoo3D.RenderPipeline
                 }
                 catch (Exception e)
                 {
+                    Console.WriteLine(path);
                     Console.WriteLine(e);
                     return null;
                 }
             });
         }
 
-        public PSO GetPSOWithKeywords(List<string> keywords, string path, bool enableVS = true, bool enablePS = true, bool enableGS = false)
+        public PSO GetPSOWithKeywords(List<ValueTuple<string, string>> keywords, string path, bool enableVS = true, bool enablePS = true, bool enableGS = false)
         {
             string xPath;
             if (keywords != null)
             {
-                keywords.Sort();
-                xPath = path + string.Concat(keywords);
+                keywords.Sort((x, y) => x.CompareTo(y));
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append(path);
+                foreach (var keyword in keywords)
+                {
+                    stringBuilder.Append(keyword.Item1);
+                    stringBuilder.Append(keyword.Item2);
+                }
+                xPath = stringBuilder.ToString();
             }
             else
             {
@@ -526,7 +551,7 @@ namespace Coocoo3D.RenderPipeline
                         dxcDefines = new DxcDefine[keywords.Count];
                         for (int i = 0; i < keywords.Count; i++)
                         {
-                            dxcDefines[i] = new DxcDefine() { Name = keywords[i], Value = "1" };
+                            dxcDefines[i] = new DxcDefine() { Name = keywords[i].Item1, Value = keywords[i].Item2 };
                         }
                     }
                     byte[] vs = enableVS ? LoadShader(DxcShaderStage.Vertex, source, "vsmain", path, dxcDefines) : null;
@@ -537,6 +562,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 catch (Exception e)
                 {
+                    Console.WriteLine(path);
                     Console.WriteLine(e);
                     return null;
                 }
@@ -557,8 +583,8 @@ namespace Coocoo3D.RenderPipeline
             return resultData;
         }
 
-        public Dictionary<IntPtr, string> ptr2string = new Dictionary<IntPtr, string>();
-        public Dictionary<string, IntPtr> string2Ptr = new Dictionary<string, IntPtr>();
+        public Dictionary<IntPtr, string> ptr2string = new();
+        public Dictionary<string, IntPtr> string2Ptr = new();
         long ptrCount = 0;
         public IntPtr GetPtr(string s)
         {
@@ -653,7 +679,6 @@ namespace Coocoo3D.RenderPipeline
                         break;
                     default:
                         throw new NotImplementedException("error root signature desc.");
-                        break;
                 }
             }
             return desc;
@@ -720,10 +745,8 @@ namespace Coocoo3D.RenderPipeline
         {
             JsonSerializer jsonSerializer = new JsonSerializer();
             jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
-            using (StreamReader reader1 = new StreamReader(stream))
-            {
-                return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
-            }
+            using StreamReader reader1 = new StreamReader(stream);
+            return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
         }
 
         public void Dispose()

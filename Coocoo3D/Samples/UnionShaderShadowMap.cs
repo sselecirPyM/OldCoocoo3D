@@ -27,8 +27,6 @@ public static class UnionShaderShadowMap
         {
             if (param.pass.CBVs.Count < 3)
                 return false;
-            if (pointLightIndex >= 4)
-                break;
 
             float lightRange = pointLight.Range;
             Vector3 lightPos = pointLight.Position;
@@ -39,7 +37,7 @@ public static class UnionShaderShadowMap
             shadowIndex++;
 
             SetViewport(param, width, height, shadowIndex, split);
-            SetMatrix(param, pointLight.Position, new Vector3(-1, 0, 0), new Vector3(0, 1, 0), lightRange * 0.001f, lightRange);
+            SetMatrix(param, lightPos, new Vector3(-1, 0, 0), new Vector3(0, 1, 0), lightRange * 0.001f, lightRange);
             Render1(param, 2);
             shadowIndex++;
 
@@ -81,52 +79,42 @@ public static class UnionShaderShadowMap
         float yOffset = (float)(shadowIndex / split) / split;
         float size = 1.0f / split;
 
-        int xin = (int)(width * xOffset);
-        int yin = (int)(height * (yOffset + 0.5f));
+        int x = (int)(width * xOffset);
+        int y = (int)(height * (yOffset + 0.5f));
         int sizeX1 = (int)(width * size);
         int sizeY1 = (int)(height * size);
-        graphicsContext.RSSetScissorRectAndViewport(xin, yin, xin + sizeX1, yin + sizeY1);
+        graphicsContext.RSSetScissorRectAndViewport(x, y, x + sizeX1, y + sizeY1);
     }
 
     static void Render1(UnionShaderParam param, int cbvIndex)
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
-        bool skinning = true;
-        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
-            skinning = bSkinning;
 
         int width = param.depthStencil.width;
         int height = param.depthStencil.height;
 
-        foreach (var renderer in param.renderers)
+        foreach (var renderable in param.MeshRenderables())
         {
-            param.SetMesh(graphicsContext, renderer);
-            param.renderer = renderer;
+            var material = renderable.material;
+            var psoDesc = param.GetPSODesc();
 
-            foreach (var material in renderer.Materials)
+            if (!(bool)param.GetSettingsValue(material, "CastShadow")) continue;
+
+            List<ValueTuple<string, string>> keywords = new();
+            if (renderable.gpuSkinning)
+                keywords.Add(new("SKINNING","1"));
+            param.WriteCBV(param.pass.CBVs[cbvIndex]);
+            //foreach (var cbv in param.pass.CBVs)
+            //{
+            //    param.WriteCBV(cbv);
+            //}
+            var pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("ShadowMap.hlsl", param.relativePath), true, false);
+            param.SetSRVs(param.pass.SRVs, material);
+            if (graphicsContext.SetPSO(pso, psoDesc))
             {
-                param.material = material;
-                var psoDesc = param.GetPSODesc();
-
-                if ((bool)param.GetSettingsValue(material, "CastShadow"))
-                {
-                    List<string> keywords = new List<string>();
-                    if (param.renderer.skinning && skinning)
-                        keywords.Add("SKINNING");
-                    param.WriteCBV(param.pass.CBVs[cbvIndex]);
-                    //foreach (var cbv in param.pass.CBVs)
-                    //{
-                    //    param.WriteCBV(cbv);
-                    //}
-                    var pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("ShadowMap.hlsl", param.relativePath), true, false);
-                    param.SetSRVs(param.pass.SRVs, material);
-                    if (graphicsContext.SetPSO(pso, psoDesc))
-                    {
-                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
-                        graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
-                    }
-                }
+                graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
             }
         }
     }

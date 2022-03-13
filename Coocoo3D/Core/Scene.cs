@@ -8,13 +8,14 @@ using Coocoo3D.Components;
 using Coocoo3D.Base;
 using System.Numerics;
 using Coocoo3D.RenderPipeline;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.Core
 {
     public class _physicsObjects
     {
-        public List<Physics3DRigidBody1> rigidbodies = new List<Physics3DRigidBody1>();
-        public List<Physics3DJoint1> joints = new List<Physics3DJoint1>();
+        public List<Physics3DRigidBody> rigidbodies = new();
+        public List<Physics3DJoint> joints = new();
     }
     public class Scene
     {
@@ -26,17 +27,19 @@ namespace Coocoo3D.Core
             ShadowMapResolution = 4096,
         };
 
-        public List<GameObject> gameObjects = new List<GameObject>();
-        public List<GameObject> gameObjectLoadList = new List<GameObject>();
-        public List<GameObject> gameObjectRemoveList = new List<GameObject>();
-        public Physics3DScene1 physics3DScene = new Physics3DScene1();
+        public List<GameObject> gameObjects = new();
+        public List<GameObject> gameObjectLoadList = new();
+        public List<GameObject> gameObjectRemoveList = new();
+        public Physics3DScene physics3DScene = new();
 
-        public Dictionary<MMDRendererComponent, _physicsObjects> physicsObjects = new Dictionary<MMDRendererComponent, _physicsObjects>();
+        public Dictionary<GameObject, Transform> setTransform = new();
+
+        public Dictionary<MMDRendererComponent, _physicsObjects> physicsObjects = new();
+
+        public MainCaches mainCaches;
 
         public void AddGameObject(GameObject gameObject)
         {
-            gameObject.PositionNextFrame = gameObject.Position;
-            gameObject.RotationNextFrame = gameObject.Rotation;
             lock (this)
             {
                 gameObjectLoadList.Add(gameObject);
@@ -105,28 +108,30 @@ namespace Coocoo3D.Core
             if (!physicsObjects.TryGetValue(r, out var _PhysicsObjects))
             {
                 _PhysicsObjects = new _physicsObjects();
-                AddPhysics(r, _PhysicsObjects.rigidbodies, _PhysicsObjects.joints);
+                AddPhysics(r, _PhysicsObjects);
                 physicsObjects[r] = _PhysicsObjects;
             }
             return _PhysicsObjects;
         }
 
-        void AddPhysics(MMDRendererComponent r, List<Physics3DRigidBody1> rigidbodies, List<Physics3DJoint1> joints)
+        void AddPhysics(MMDRendererComponent r, _physicsObjects _physicsObjects)
         {
+            var rigidbodies = _physicsObjects.rigidbodies;
+            var joints = _physicsObjects.joints;
             for (int j = 0; j < r.rigidBodyDescs.Count; j++)
             {
-                rigidbodies.Add(new Physics3DRigidBody1());
+                rigidbodies.Add(new Physics3DRigidBody());
                 var desc = r.rigidBodyDescs[j];
                 physics3DScene.AddRigidBody(rigidbodies[j], desc);
             }
             for (int j = 0; j < r.jointDescs.Count; j++)
             {
-                joints.Add(new Physics3DJoint1());
+                joints.Add(new Physics3DJoint());
                 var desc = r.jointDescs[j];
                 physics3DScene.AddJoint(joints[j], rigidbodies[desc.AssociatedRigidBodyIndex1], rigidbodies[desc.AssociatedRigidBodyIndex2], desc);
             }
         }
-        void RemovePhysics(MMDRendererComponent r, List<Physics3DRigidBody1> rigidbodies, List<Physics3DJoint1> joints)
+        void RemovePhysics(MMDRendererComponent r, List<Physics3DRigidBody> rigidbodies, List<Physics3DJoint> joints)
         {
             for (int j = 0; j < rigidbodies.Count; j++)
             {
@@ -139,7 +144,7 @@ namespace Coocoo3D.Core
             rigidbodies.Clear();
             joints.Clear();
         }
-        void PrePhysicsSync(MMDRendererComponent r, List<Physics3DRigidBody1> rigidbodies)
+        void PrePhysicsSync(MMDRendererComponent r, List<Physics3DRigidBody> rigidbodies)
         {
             for (int i = 0; i < r.rigidBodyDescs.Count; i++)
             {
@@ -147,46 +152,43 @@ namespace Coocoo3D.Core
                 if (desc.Type != 0) continue;
                 int index = desc.AssociatedBoneIndex;
 
-                Matrix4x4 mat2 = Matrix4x4.CreateFromQuaternion(desc.Rotation) * Matrix4x4.CreateTranslation(desc.Position) * r.bones[index].GeneratedTransform * r.LocalToWorld;
+                Matrix4x4 mat2 = MatrixExt.Transform(desc.Position, desc.Rotation) * r.bones[index].GeneratedTransform * r.LocalToWorld;
                 physics3DScene.MoveRigidBody(rigidbodies[i], mat2);
             }
         }
 
-        void PhysicsSyncBack(MMDRendererComponent r, List<Physics3DRigidBody1> rigidbodies, List<Physics3DJoint1> joints)
+        void PhysicsSyncBack(MMDRendererComponent r, List<Physics3DRigidBody> rigidbodies, List<Physics3DJoint> joints)
         {
-            Matrix4x4.Decompose(r.WorldToLocal, out _, out var q1, out var t1);
             for (int i = 0; i < r.rigidBodyDescs.Count; i++)
             {
                 var desc = r.rigidBodyDescs[i];
                 if (desc.Type == 0) continue;
                 int index = desc.AssociatedBoneIndex;
                 if (index == -1) continue;
-                r.bones[index]._generatedTransform = Matrix4x4.CreateTranslation(-desc.Position) * Matrix4x4.CreateFromQuaternion(rigidbodies[i].GetRotation() / desc.Rotation * q1)
-                    * Matrix4x4.CreateTranslation(Vector3.Transform(rigidbodies[i].GetPosition(), r.WorldToLocal));
+                r.bones[index]._generatedTransform = MatrixExt.InverseTransform(desc.Position, desc.Rotation) *
+                    rigidbodies[i].GetTransform() * r.WorldToLocal;
             }
             r.UpdateMatrices(r.PhysicsNeedUpdateMatrixIndexs);
 
             r.UpdateAppendBones();
         }
 
-        public void TransformToNew(MMDRendererComponent r, Vector3 position, Quaternion rotation, List<Physics3DRigidBody1> rigidbodies)
+        public void TransformToNew(MMDRendererComponent r, List<Physics3DRigidBody> rigidbodies)
         {
-            //r.LocalToWorld = Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position);
-            //Matrix4x4.Invert(r.LocalToWorld, out r.WorldToLocal);
             for (int i = 0; i < r.rigidBodyDescs.Count; i++)
             {
                 var desc = r.rigidBodyDescs[i];
                 if (desc.Type != RigidBodyType.Kinematic) continue;
                 int index = desc.AssociatedBoneIndex;
                 var bone = r.bones[index];
-                Matrix4x4 mat2 = Matrix4x4.CreateFromQuaternion(desc.Rotation) * Matrix4x4.CreateTranslation(desc.Position) * r.bones[index].GeneratedTransform * r.LocalToWorld;
+                Matrix4x4 mat2 = MatrixExt.Transform(desc.Position, desc.Rotation) * bone.GeneratedTransform * r.LocalToWorld;
                 physics3DScene.MoveRigidBody(rigidbodies[i], mat2);
             }
         }
 
-        void _BoneUpdate(double playTime, float deltaTime, IList<MMDRendererComponent> rendererComponents, RenderPipeline.MainCaches caches)
+        void BoneUpdate(double playTime, float deltaTime, IList<MMDRendererComponent> rendererComponents)
         {
-            UpdateGameObjects((float)playTime, rendererComponents, caches);
+            UpdateGameObjects((float)playTime, rendererComponents);
 
             float t1 = Math.Clamp(deltaTime, -0.17f, 0.17f);
             for (int i = 0; i < rendererComponents.Count; i++)
@@ -204,49 +206,48 @@ namespace Coocoo3D.Core
                 PhysicsSyncBack(r, _PhysicsObjects.rigidbodies, _PhysicsObjects.joints);
             }
         }
-        void UpdateGameObjects(float playTime1, IList<MMDRendererComponent> rendererComponents, RenderPipeline.MainCaches caches)
+        void UpdateGameObjects(float playTime, IList<MMDRendererComponent> rendererComponents)
         {
-            void UpdateGameObjects1(MMDRendererComponent rendererComponent)
+            void UpdateGameObject1(MMDRendererComponent rendererComponent)
             {
-                rendererComponent?.SetMotionTime(playTime1, caches.GetMotion(rendererComponent.motionPath));
+                rendererComponent?.ComputeMotion(playTime, mainCaches.GetMotion(rendererComponent.motionPath));
+                rendererComponent?.ComputeVertexMorph();
             }
-            int threshold = 1;
-            if (gameObjects.Count > threshold)
-            {
-                Parallel.ForEach(rendererComponents, UpdateGameObjects1);
-            }
-            else foreach (MMDRendererComponent rendererComponent in rendererComponents)
-                {
-                    UpdateGameObjects1(rendererComponent);
-                }
+            Parallel.ForEach(rendererComponents, UpdateGameObject1);
         }
 
-        public void Simulation(double playTime, double deltaTime, IList<MMDRendererComponent> rendererComponents, RenderPipeline.MainCaches caches, bool resetPhysics)
+        public void Simulation(double playTime, double deltaTime, bool resetPhysics)
         {
+            var rendererComponents = new List<MMDRendererComponent>();
             for (int i = 0; i < gameObjects.Count; i++)
             {
                 var gameObject = gameObjects[i];
-                if (gameObject.Position != gameObject.PositionNextFrame || gameObject.Rotation != gameObject.RotationNextFrame)
+
+                var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
+                if (renderComponent != null)
                 {
-                    gameObject.Position = gameObject.PositionNextFrame;
-                    gameObject.Rotation = gameObject.RotationNextFrame;
-                    var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
+                    rendererComponents.Add(renderComponent);
+                }
+                if (setTransform.TryGetValue(gameObject, out var transform))
+                {
+                    gameObject.Transform = transform;
                     if (renderComponent != null)
                     {
+                        renderComponent.SetTransform( transform);
                         var phyObj = GetOrCreatePhysics(renderComponent);
-                        TransformToNew(renderComponent, gameObject.Position, gameObject.Rotation, phyObj.rigidbodies);
+                        TransformToNew(renderComponent, phyObj.rigidbodies);
                         resetPhysics = true;
                     }
-
                 }
             }
+            setTransform.Clear();
             if (resetPhysics)
             {
                 _ResetPhysics(rendererComponents);
-                _BoneUpdate(playTime, (float)deltaTime, rendererComponents, caches);
+                BoneUpdate(playTime, (float)deltaTime, rendererComponents);
                 _ResetPhysics(rendererComponents);
             }
-            _BoneUpdate(playTime, (float)deltaTime, rendererComponents, caches);
+            BoneUpdate(playTime, (float)deltaTime, rendererComponents);
         }
     }
 
@@ -260,10 +261,10 @@ namespace Coocoo3D.Core
         public int ShadowMapResolution;
 
         [NonSerialized]
-        public Dictionary<string, object> Parameters = new Dictionary<string, object>();
+        public Dictionary<string, object> Parameters = new();
 
         [NonSerialized]
-        public Dictionary<string, int> ParametersModifyIndex = new Dictionary<string, int>();
+        public Dictionary<string, int> ParametersModifyIndex = new();
 
         public Dictionary<string, bool> bValue;
         public Dictionary<string, int> iValue;
@@ -272,7 +273,7 @@ namespace Coocoo3D.Core
         public Dictionary<string, Vector3> f3Value;
         public Dictionary<string, Vector4> f4Value;
 
-        public Dictionary<string, string> textures = new Dictionary<string, string>();
+        public Dictionary<string, string> textures = new();
 
         public Settings GetClone()
         {

@@ -10,7 +10,6 @@ using System.Numerics;
 
 namespace Coocoo3D.RenderPipeline
 {
-    //readonly when rendering
     public class RenderPipelineDynamicContext
     {
         public RenderPipelineDynamicContext()
@@ -20,20 +19,21 @@ namespace Coocoo3D.RenderPipeline
         }
 
         public Settings settings;
-        public List<GameObject> gameObjects = new List<GameObject>();
-        public List<MMDRendererComponent> renderers = new List<MMDRendererComponent>();
-        public List<VolumeComponent> volumes = new List<VolumeComponent>();
+        public List<GameObject> gameObjects = new();
+        public List<MMDRendererComponent> renderers = new();
+        public List<VolumeComponent> volumes = new();
+        public List<ParticleEffectComponent> particleEffects = new();
 
-        public List<DirectionalLightData> directionalLights = new List<DirectionalLightData>();
-        public List<PointLightData> pointLights = new List<PointLightData>();
+        public List<DirectionalLightData> directionalLights = new();
+        public List<PointLightData> pointLights = new();
 
-        public Dictionary<MMDRendererComponent, int> findRenderer = new Dictionary<MMDRendererComponent, int>();
+        public Dictionary<MMDRendererComponent, int> findRenderer = new();
         public PassSetting currentPassSetting;
         public int frameRenderIndex;
         public double Time;
         public double DeltaTime;
         public double RealDeltaTime;
-        public bool EnableDisplay;
+        public bool CPUSkinning;
 
         List<Dictionary<Matrix4x4, Matrix4x4>> lightMatrixCaches = new List<Dictionary<Matrix4x4, Matrix4x4>>();
 
@@ -58,34 +58,32 @@ namespace Coocoo3D.RenderPipeline
 
         public void Preprocess()
         {
-            int rendererCount = 0;
             foreach (GameObject gameObject in gameObjects)
             {
                 LightingComponent lightingComponent = gameObject.GetComponent<LightingComponent>();
                 if (lightingComponent != null)
                 {
-                    lightingComponent.Position = gameObject.Position;
-                    lightingComponent.Rotation = gameObject.Rotation;
-
                     if (lightingComponent.LightingType == LightingType.Directional)
-                        directionalLights.Add(lightingComponent.GetDirectionalLightData());
+                        directionalLights.Add(lightingComponent.GetDirectionalLightData(gameObject.Transform.rotation));
                     if (lightingComponent.LightingType == LightingType.Point)
-                        pointLights.Add(lightingComponent.GetPointLightData());
+                        pointLights.Add(lightingComponent.GetPointLightData(gameObject.Transform.position));
                 }
                 VolumeComponent volume = gameObject.GetComponent<VolumeComponent>();
                 if (volume != null)
                 {
-                    volume.Position = gameObject.Position;
+                    volume.Position = gameObject.Transform.position;
                     volumes.Add(volume);
                 }
                 MMDRendererComponent rendererComponent = gameObject.GetComponent<MMDRendererComponent>();
                 if (rendererComponent != null)
                 {
-                    rendererComponent.position = gameObject.Position;
-                    rendererComponent.rotation = gameObject.Rotation;
                     renderers.Add(rendererComponent);
-                    findRenderer[rendererComponent] = rendererCount;
-                    rendererCount++;
+                    findRenderer[rendererComponent] = renderers.Count - 1;
+                }
+                ParticleEffectComponent particleEffectComponent = gameObject.GetComponent<ParticleEffectComponent>();
+                if (particleEffectComponent != null)
+                {
+                    particleEffects.Add(particleEffectComponent);
                 }
             }
         }
@@ -102,6 +100,7 @@ namespace Coocoo3D.RenderPipeline
             volumes.Clear();
             renderers.Clear();
             findRenderer.Clear();
+            particleEffects.Clear();
         }
     }
 }

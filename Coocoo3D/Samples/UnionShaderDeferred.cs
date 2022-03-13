@@ -28,66 +28,60 @@ public static class UnionShaderDeferred
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
         PSO pso = null;
-        bool skinning = true;
-        if (param.customValue.TryGetValue("Skinning", out object oSkinning) && oSkinning is bool bSkinning)
-            skinning = bSkinning;
         switch (param.passName)
         {
             case "GBufferPass":
-                foreach (var renderer in param.renderers)
+                foreach (var renderable in param.MeshRenderables())
                 {
-                    param.SetMesh(graphicsContext, renderer);
-                    param.renderer = renderer;
-
-                    foreach (var material in renderer.Materials)
+                    List<ValueTuple<string, string>> keywords = new();
+                    var material = renderable.material;
+                    if (material.Transparent) continue;
+                    var psoDesc = param.GetPSODesc();
+                    if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
+                        keywords.Add(new(debugKeyword, "1"));
+                    if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
+                        keywords.Add(new("USE_NORMAL_MAP", "1"));
+                    if (renderable.gpuSkinning)
                     {
-                        if (material.Transparent) continue;
-                        param.material = material;
-                        var psoDesc = param.GetPSODesc();
-                        List<string> keywords = new List<string>();
-                        if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
-                            keywords.Add(debugKeyword);
-                        if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
-                            keywords.Add("USE_NORMAL_MAP");
-                        if (param.renderer.skinning && skinning)
-                        {
-                            keywords.Add("SKINNING");
-                            graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
-                        }
-                        foreach (var cbv in param.pass.CBVs)
-                        {
-                            param.WriteCBV(cbv);
-                        }
-                        pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
-                        param.SetSRVs(param.pass.SRVs, material);
-                        if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                            graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+                        keywords.Add(new("SKINNING", "1"));
                     }
+                    graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                    foreach (var cbv in param.pass.CBVs)
+                    {
+                        param.WriteCBV(cbv);
+                    }
+                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
+                    param.SetSRVs(param.pass.SRVs, material);
+                    if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
+                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, 0);
                 }
                 break;
             case "DeferredFinalPass":
                 {
+                    List<ValueTuple<string, string>> keywords = new();
                     var psoDesc = param.GetPSODesc();
-                    List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
-                        keywords.Add(debugKeyword);
+                        keywords.Add(new(debugKeyword, "1"));
                     if ((bool)param.GetSettingsValue("UseGI"))
-                        keywords.Add("ENABLE_GI");
+                        keywords.Add(new("ENABLE_GI", "1"));
                     if ((bool)param.GetSettingsValue("EnableFog"))
-                        keywords.Add("ENABLE_FOG");
+                        keywords.Add(new("ENABLE_FOG", "1"));
                     if ((bool)param.GetSettingsValue("EnableSSAO"))
-                        keywords.Add("ENABLE_SSAO");
+                        keywords.Add(new("ENABLE_SSAO", "1"));
 
                     if (directionalLights.Count != 0)
                     {
-                        keywords.Add("ENABLE_DIRECTIONAL_LIGHT");
+                        keywords.Add(new("ENABLE_DIRECTIONAL_LIGHT", "1"));
                         if ((bool)param.GetSettingsValue("EnableVolumetricLighting"))
-                            keywords.Add("ENABLE_VOLUME_LIGHTING");
+                            keywords.Add(new("ENABLE_VOLUME_LIGHTING", "1"));
                     }
                     if (pointLights.Count != 0)
-                        keywords.Add("ENABLE_POINT_LIGHT");
-                    if (param.customValue.TryGetValue("RayTracing", out object oIsRayTracing) && oIsRayTracing is bool bIsRayTracing && bIsRayTracing)
-                        keywords.Add("RAY_TRACING");
+                    {
+                        keywords.Add(new("ENABLE_POINT_LIGHT", "1"));
+                        keywords.Add(new("POINT_LIGHT_COUNT", pointLights.Count.ToString()));
+                    }
+                    if (param.GetCustomValue("RayTracing", false))
+                        keywords.Add(new("RAY_TRACING", "1"));
 
                     foreach (var cbv in param.pass.CBVs)
                     {
@@ -101,13 +95,13 @@ public static class UnionShaderDeferred
                 break;
             case "DenoisePass":
                 {
-                    if (!(param.customValue.TryGetValue("RayTracing", out object oIsRayTracing) && oIsRayTracing is bool bIsRayTracing && bIsRayTracing))
+                    List<ValueTuple<string, string>> keywords = new();
+                    if (!param.GetCustomValue("RayTracing", false))
                         return true;
 
                     var psoDesc = param.GetPSODesc();
-                    List<string> keywords = new List<string>();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
-                        keywords.Add(debugKeyword);
+                        keywords.Add(new(debugKeyword, "1"));
 
                     foreach (var cbv in param.pass.CBVs)
                     {

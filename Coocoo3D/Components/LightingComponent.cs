@@ -11,26 +11,24 @@ namespace Coocoo3D.Components
     public class LightingComponent : Component
     {
         public LightingType LightingType;
-        public Vector3 Position;
-        public Quaternion Rotation;
         public Vector3 Color;
         public float Range;
 
-        public DirectionalLightData GetDirectionalLightData()
+        public DirectionalLightData GetDirectionalLightData(Quaternion rotation)
         {
             return new DirectionalLightData
             {
-                Rotation = Rotation,
-                Direction = Vector3.Transform(-Vector3.UnitZ, Rotation),
+                Rotation = rotation,
+                Direction = Vector3.Transform(-Vector3.UnitZ, rotation),
                 Color = Color,
             };
         }
 
-        public PointLightData GetPointLightData()
+        public PointLightData GetPointLightData(Vector3 position)
         {
             return new PointLightData
             {
-                Position = Position,
+                Position = position,
                 Color = Color,
                 Range = Math.Max(Range, 1e-4f),
             };

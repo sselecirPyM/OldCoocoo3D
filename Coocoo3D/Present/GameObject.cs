@@ -14,11 +14,7 @@ namespace Coocoo3D.Present
         public string Description = string.Empty;
         public int layoutMask;
 
-        public Vector3 Position;
-        public Quaternion Rotation = Quaternion.Identity;
-
-        public Vector3 PositionNextFrame;
-        public Quaternion RotationNextFrame = Quaternion.Identity;
+        public Transform Transform;
 
         public override string ToString()
         {

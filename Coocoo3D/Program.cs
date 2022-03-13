@@ -20,59 +20,11 @@ namespace Coocoo3D
             SDL_SysWMinfo info = new SDL_SysWMinfo();
             SDL_GetWindowWMInfo(window, ref info);
             IntPtr hwnd = info.info.win.window;
-            coocoo3DMain.graphicsDevice.SetSwapChainPanel(hwnd, Width, Height);
-            #region key map
-            Dictionary<uint, int> sdlMouse2ImguiMouse = new Dictionary<uint, int>();
-            sdlMouse2ImguiMouse[SDL_BUTTON_LEFT] = 0;
-            sdlMouse2ImguiMouse[SDL_BUTTON_MIDDLE] = 2;
-            sdlMouse2ImguiMouse[SDL_BUTTON_RIGHT] = 1;
-            sdlMouse2ImguiMouse[SDL_BUTTON_X1] = 3;
-            sdlMouse2ImguiMouse[SDL_BUTTON_X2] = 4;
-            Dictionary<SDL_Keycode, int> sdlKeycode2ImguiKey = new Dictionary<SDL_Keycode, int>();
-            for (int i = 'a'; i <= 'z'; i++)
-                sdlKeycode2ImguiKey[(SDL_Keycode)i] = i - 32;
-            for (int i = '0'; i <= '9'; i++)
-                sdlKeycode2ImguiKey[(SDL_Keycode)i] = i;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_BACKSPACE] = (int)ImGuiKey.Backspace;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_DELETE] = (int)ImGuiKey.Delete;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_RETURN] = (int)ImGuiKey.Enter;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_RETURN2] = (int)ImGuiKey.Enter;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_KP_ENTER] = (int)ImGuiKey.KeyPadEnter;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_ESCAPE] = (int)ImGuiKey.Escape;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_TAB] = (int)ImGuiKey.Tab;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_KP_TAB] = (int)ImGuiKey.Tab;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_PAGEDOWN] = (int)ImGuiKey.PageDown;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_PAGEUP] = (int)ImGuiKey.PageUp;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_AC_HOME] = (int)ImGuiKey.Home;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_HOME] = (int)ImGuiKey.Home;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_END] = (int)ImGuiKey.End;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_SPACE] = (int)ImGuiKey.Space;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_UP] = (int)ImGuiKey.UpArrow;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_DOWN] = (int)ImGuiKey.DownArrow;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_LEFT] = (int)ImGuiKey.LeftArrow;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_RIGHT] = (int)ImGuiKey.RightArrow;
-            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_INSERT] = (int)ImGuiKey.Insert;
-            #endregion
-            #region cursors
-            Dictionary<ImGuiMouseCursor, IntPtr> cursors = new Dictionary<ImGuiMouseCursor, IntPtr>();
-            void createCursor(SDL_SystemCursor systemCursor, ImGuiMouseCursor imguiMouseCursor)
-            {
-                cursors[imguiMouseCursor] = SDL_CreateSystemCursor(systemCursor);
-            }
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW, ImGuiMouseCursor.Arrow);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM, ImGuiMouseCursor.TextInput);
-            //createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_WAIT);
-            //createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_CROSSHAIR);
-            //createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_WAITARROW);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE, ImGuiMouseCursor.ResizeNWSE);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW, ImGuiMouseCursor.ResizeNESW);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE, ImGuiMouseCursor.ResizeEW);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS, ImGuiMouseCursor.ResizeNS);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL, ImGuiMouseCursor.ResizeAll);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO, ImGuiMouseCursor.NotAllowed);
-            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND, ImGuiMouseCursor.Hand);
-            createCursor(SDL_SystemCursor.SDL_NUM_SYSTEM_CURSORS, ImGuiMouseCursor.COUNT);
-            #endregion
+            coocoo3DMain.SetWindow(hwnd, Width, Height);
+
+            Dictionary<SDL_Keycode, int> sdlKeycode2ImguiKey = SDLKey();
+            Dictionary<ImGuiMouseCursor, IntPtr> cursors = CreateSDLCursor();
+
             var imguiInput = coocoo3DMain.imguiInput;
             while (!quitRequested)
             {
@@ -89,8 +41,8 @@ namespace Coocoo3D
                             {
                                 Width = sdlEvent.window.data1;
                                 Height = sdlEvent.window.data2;
-                                coocoo3DMain.RPContext.RequireResize = true;
-                                coocoo3DMain.RPContext.NewSize = new Vector2(Width, Height);
+                                coocoo3DMain.RequireResize = true;
+                                coocoo3DMain.NewSize = new Vector2(Width, Height);
                             }
                             break;
                         case SDL_EventType.SDL_KEYDOWN:
@@ -117,14 +69,14 @@ namespace Coocoo3D
                                 break;
                             }
                         case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                            imguiInput.mouseDown[sdlMouse2ImguiMouse[sdlEvent.button.button]] = true;
+                            imguiInput.mouseDown[SDLMouse2ImguiMouse(sdlEvent.button.button)] = true;
                             if (sdlEvent.button.button == SDL_BUTTON_LEFT)
                             {
 
                             }
                             break;
                         case SDL_EventType.SDL_MOUSEBUTTONUP:
-                            imguiInput.mouseDown[sdlMouse2ImguiMouse[sdlEvent.button.button]] = false;
+                            imguiInput.mouseDown[SDLMouse2ImguiMouse(sdlEvent.button.button)] = false;
                             if (sdlEvent.button.button == SDL_BUTTON_LEFT)
                             {
 
@@ -166,6 +118,77 @@ namespace Coocoo3D
                 {
                     SDL_ShowSimpleMessageBox(SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "error", e.Message + "\n" + e.StackTrace, window);
                 }
+            }
+        }
+
+        static Dictionary<SDL_Keycode, int> SDLKey()
+        {
+            Dictionary<SDL_Keycode, int> sdlKeycode2ImguiKey = new Dictionary<SDL_Keycode, int>();
+            for (int i = 'a'; i <= 'z'; i++)
+                sdlKeycode2ImguiKey[(SDL_Keycode)i] = i - 32;
+            for (int i = '0'; i <= '9'; i++)
+                sdlKeycode2ImguiKey[(SDL_Keycode)i] = i;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_BACKSPACE] = (int)ImGuiKey.Backspace;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_DELETE] = (int)ImGuiKey.Delete;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_RETURN] = (int)ImGuiKey.Enter;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_RETURN2] = (int)ImGuiKey.Enter;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_KP_ENTER] = (int)ImGuiKey.KeyPadEnter;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_ESCAPE] = (int)ImGuiKey.Escape;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_TAB] = (int)ImGuiKey.Tab;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_KP_TAB] = (int)ImGuiKey.Tab;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_PAGEDOWN] = (int)ImGuiKey.PageDown;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_PAGEUP] = (int)ImGuiKey.PageUp;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_AC_HOME] = (int)ImGuiKey.Home;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_HOME] = (int)ImGuiKey.Home;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_END] = (int)ImGuiKey.End;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_SPACE] = (int)ImGuiKey.Space;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_UP] = (int)ImGuiKey.UpArrow;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_DOWN] = (int)ImGuiKey.DownArrow;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_LEFT] = (int)ImGuiKey.LeftArrow;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_RIGHT] = (int)ImGuiKey.RightArrow;
+            sdlKeycode2ImguiKey[SDL_Keycode.SDLK_INSERT] = (int)ImGuiKey.Insert;
+            return sdlKeycode2ImguiKey;
+        }
+
+        static Dictionary<ImGuiMouseCursor, IntPtr> CreateSDLCursor()
+        {
+            Dictionary<ImGuiMouseCursor, IntPtr> cursors = new Dictionary<ImGuiMouseCursor, IntPtr>();
+            void createCursor(SDL_SystemCursor systemCursor, ImGuiMouseCursor imguiMouseCursor)
+            {
+                cursors[imguiMouseCursor] = SDL_CreateSystemCursor(systemCursor);
+            }
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_ARROW, ImGuiMouseCursor.Arrow);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_IBEAM, ImGuiMouseCursor.TextInput);
+            //createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_WAIT);
+            //createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_CROSSHAIR);
+            //createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_WAITARROW);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENWSE, ImGuiMouseCursor.ResizeNWSE);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENESW, ImGuiMouseCursor.ResizeNESW);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEWE, ImGuiMouseCursor.ResizeEW);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZENS, ImGuiMouseCursor.ResizeNS);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_SIZEALL, ImGuiMouseCursor.ResizeAll);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_NO, ImGuiMouseCursor.NotAllowed);
+            createCursor(SDL_SystemCursor.SDL_SYSTEM_CURSOR_HAND, ImGuiMouseCursor.Hand);
+            createCursor(SDL_SystemCursor.SDL_NUM_SYSTEM_CURSORS, ImGuiMouseCursor.COUNT);
+            return cursors;
+        }
+
+        static int SDLMouse2ImguiMouse(uint sdlMouse)
+        {
+            switch (sdlMouse)
+            {
+                case SDL_BUTTON_LEFT:
+                    return 0;
+                case SDL_BUTTON_MIDDLE:
+                    return 2;
+                case SDL_BUTTON_RIGHT:
+                    return 1;
+                case SDL_BUTTON_X1:
+                    return 3;
+                case SDL_BUTTON_X2:
+                    return 4;
+                default:
+                    return -1;
             }
         }
     }

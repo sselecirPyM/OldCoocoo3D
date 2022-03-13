@@ -20,8 +20,8 @@ namespace Coocoo3D.FileFormat
         public CooSceneObject(GameObject obj)
         {
             name = obj.Name;
-            position = obj.Position;
-            rotation = obj.Rotation;
+            position = obj.Transform.position;
+            rotation = obj.Transform.rotation;
         }
         public string type;
         public string path;
@@ -32,18 +32,32 @@ namespace Coocoo3D.FileFormat
         public Dictionary<string, string> properties;
         public Dictionary<string, _cooMaterial> materials;
         public CooSceneObjectLighting lighting;
+        public CooSceneObjectParticle particle;
     }
     public class CooSceneObjectLighting
     {
         public Vector3 color;
         public float range;
         public LightingType type;
+        public CooSceneObjectLighting()
+        {
+
+        }
+        public CooSceneObjectLighting(LightingComponent lighting)
+        {
+            color = lighting.Color;
+            range = lighting.Range;
+            type = lighting.LightingType;
+        }
+    }
+    public class CooSceneObjectParticle
+    {
+        public string file;
+        public int count;
     }
     public class _cooMaterial
     {
         public Dictionary<string, string> textures;
-        public string unionShader;
-        //public bool skinning;
         public bool transparent;
 
         public Dictionary<string, bool> bValue;
@@ -74,7 +88,7 @@ namespace Coocoo3D.FileFormat
         {
             Coocoo3DScene scene = new Coocoo3DScene();
             scene.sceneProperties = new Dictionary<string, string>();
-            scene.sceneProperties.Add("skyBox", main.RPContext.skyBoxOriTex);
+            scene.sceneProperties.Add("skyBox", main.RPContext.skyBoxTex);
             scene.objects = new List<CooSceneObject>();
             scene.settings = main.CurrentScene.settings.GetClone();
             foreach (var customValue in scene.settings.Parameters)
@@ -101,7 +115,6 @@ namespace Coocoo3D.FileFormat
                     foreach (var material in renderer.Materials)
                     {
                         _cooMaterial material1 = new _cooMaterial();
-                        //material1.skinning = material.Skinning;
                         material1.transparent = material.Transparent;
                         material1.textures = new Dictionary<string, string>(material.textures);
 
@@ -124,11 +137,16 @@ namespace Coocoo3D.FileFormat
                 {
                     CooSceneObject sceneObject = new CooSceneObject(obj);
                     sceneObject.type = "lighting";
-                    sceneObject.lighting = new CooSceneObjectLighting();
-                    sceneObject.lighting.color = lighting.Color;
-                    sceneObject.lighting.range = lighting.Range;
-                    sceneObject.lighting.type = lighting.LightingType;
+                    sceneObject.lighting = new CooSceneObjectLighting(lighting);
                     scene.objects.Add(sceneObject);
+                }
+                var particle = obj.GetComponent<ParticleEffectComponent>();
+                if(particle != null)
+                {
+                    CooSceneObject particleObject = new CooSceneObject(obj);
+                    particleObject.type = "particle";
+                    particleObject.particle = new CooSceneObjectParticle();
+                    
                 }
             }
 
@@ -155,23 +173,17 @@ namespace Coocoo3D.FileFormat
             }
             if (sceneProperties.TryGetValue("skyBox", out string skyBox))
             {
-                main.RPContext.skyBoxOriTex = skyBox;
-                main.RPContext.SkyBoxChanged = true;
+                main.RPContext.SetSkyBox(skyBox);
             }
             foreach (var obj in objects)
             {
+                GameObject gameObject = GetGameObject(obj);
                 if (obj.type == "mmdModel")
                 {
                     string pmxPath = obj.path;
                     ModelPack modelPack = main.mainCaches.GetModel(pmxPath);
 
-                    GameObject gameObject = new GameObject();
-                    gameObject.Reload2(modelPack);
-                    gameObject.Name = obj.name ?? string.Empty;
-                    gameObject.RotationNextFrame = obj.rotation;
-                    gameObject.PositionNextFrame = obj.position;
-                    gameObject.Rotation = obj.rotation;
-                    gameObject.Position = obj.position;
+                    gameObject.LoadPmx(modelPack);
                     var renderer = gameObject.GetComponent<MMDRendererComponent>();
                     if (obj.skinning != null)
                         renderer.skinning = (bool)obj.skinning;
@@ -190,14 +202,8 @@ namespace Coocoo3D.FileFormat
                 }
                 else if (obj.type == "lighting")
                 {
-                    GameObject lighting = new GameObject();
                     LightingComponent lightingComponent = new LightingComponent();
-                    lighting.AddComponent(lightingComponent);
-                    lighting.Name = obj.name ?? string.Empty;
-                    lighting.Rotation = obj.rotation;
-                    lighting.Position = obj.position;
-                    lightingComponent.Color = new Vector3(3, 3, 3);
-                    lightingComponent.Range = 10;
+                    gameObject.AddComponent(lightingComponent);
                     if (obj.lighting != null)
                     {
                         lightingComponent.Color = obj.lighting.color;
@@ -205,37 +211,53 @@ namespace Coocoo3D.FileFormat
                         lightingComponent.LightingType = obj.lighting.type;
                     }
 
-                    main.CurrentScene.AddGameObject(lighting);
+                    main.CurrentScene.AddGameObject(gameObject);
+                }
+                else if (obj.type == "particle")
+                {
+                    ParticleEffectComponent particleEffectComponent = new ParticleEffectComponent();
+                    gameObject.AddComponent(particleEffectComponent);
+                    if (obj.particle != null)
+                    {
+                        particleEffectComponent.particleCount = obj.particle.count;
+                        particleEffectComponent.particleFile = obj.particle.file;
+                    }
                 }
             }
-            main.RPContext.gameDriverContext.RequireResetPhysics = true;
+            main.GameDriverContext.RequireResetPhysics = true;
         }
         void Mat2Mat(Dictionary<string, _cooMaterial> materials, MMDRendererComponent renderer, Coocoo3DMain main)
         {
             foreach (var mat in renderer.Materials)
             {
-                if (materials.TryGetValue(mat.Name, out _cooMaterial mat1))
+                if (!materials.TryGetValue(mat.Name, out _cooMaterial mat1)) continue;
+
+                mat.Transparent = mat1.transparent;
+
+                _func2(mat1.fValue, mat.Parameters);
+                _func2(mat1.f2Value, mat.Parameters);
+                _func2(mat1.f3Value, mat.Parameters);
+                _func2(mat1.f4Value, mat.Parameters);
+                _func2(mat1.iValue, mat.Parameters);
+                _func2(mat1.bValue, mat.Parameters);
+
+                if (mat1.textures != null)
                 {
-                    //mat.Skinning = mat1.skinning;
-                    mat.Transparent = mat1.transparent;
-
-                    _func2(mat1.fValue, mat.Parameters);
-                    _func2(mat1.f2Value, mat.Parameters);
-                    _func2(mat1.f3Value, mat.Parameters);
-                    _func2(mat1.f4Value, mat.Parameters);
-                    _func2(mat1.iValue, mat.Parameters);
-                    _func2(mat1.bValue, mat.Parameters);
-
-                    if (mat1.textures != null)
+                    mat.textures = new Dictionary<string, string>(mat1.textures);
+                    foreach (var tex in mat.textures)
                     {
-                        mat.textures = new Dictionary<string, string>(mat1.textures);
-                        foreach (var tex in mat.textures)
-                        {
-                            main.mainCaches.Texture(tex.Value);
-                        }
+                        main.mainCaches.Texture(tex.Value);
                     }
                 }
             }
+        }
+        GameObject GetGameObject(CooSceneObject obj)
+        {
+            GameObject gameObject = new GameObject();
+
+            gameObject.Name = obj.name ?? string.Empty;
+            gameObject.Transform = new(obj.position, obj.rotation);
+            return gameObject;
         }
     }
 }

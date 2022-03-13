@@ -1,6 +1,4 @@
-﻿using Coocoo3D.Components;
-using Coocoo3D.FileFormat;
-using Coocoo3D.MMDSupport;
+﻿using Coocoo3D.Present;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,8 +11,8 @@ namespace Coocoo3D.Components
 {
     public class MMDMotion
     {
-        public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, List<BoneKeyFrame>>();
-        public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, List<MorphKeyFrame>>();
+        public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new ();
+        public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new ();
 
         const float c_framePerSecond = 30;
         public BoneKeyFrame GetBoneMotion(string key, float time)
@@ -25,26 +23,19 @@ namespace Coocoo3D.Components
             }
             if (keyframeSet.Count == 0) return new BoneKeyFrame() { Rotation = Quaternion.Identity };
             float frame = Math.Max(time * c_framePerSecond, 0);
-            BoneKeyFrame ComputeKeyFrame(BoneKeyFrame _Left, BoneKeyFrame _Right)
+            BoneKeyFrame ComputeKeyFrame(in BoneKeyFrame _Left, in BoneKeyFrame _Right)
             {
-                float _getAmount(Interpolator interpolator, float _a)
-                {
-                    if (interpolator.ax == interpolator.ay && interpolator.bx == interpolator.by)
-                        return _a;
-                    var _curve = Utility.CubicBezierCurve.Load(interpolator.ax, interpolator.ay, interpolator.bx, interpolator.by);
-                    return _curve.Sample(_a);
-                }
                 float t = (frame - _Left.Frame) / (_Right.Frame - _Left.Frame);
-                float amountR = _getAmount(_Right.rInterpolator, t);
-                float amountX = _getAmount(_Right.xInterpolator, t);
-                float amountY = _getAmount(_Right.yInterpolator, t);
-                float amountZ = _getAmount(_Right.zInterpolator, t);
+                float amountR = GetAmount(_Right.rInterpolator, t);
+                float amountX = GetAmount(_Right.xInterpolator, t);
+                float amountY = GetAmount(_Right.yInterpolator, t);
+                float amountZ = GetAmount(_Right.zInterpolator, t);
 
 
                 BoneKeyFrame newKeyFrame = new BoneKeyFrame();
                 newKeyFrame.Frame = (int)MathF.Round(frame);
                 newKeyFrame.rotation = Quaternion.Slerp(_Left.rotation, _Right.rotation, amountR);
-                newKeyFrame.translation = new Vector3(amountX, amountY, amountZ) * _Right.translation + new Vector3(1 - amountX, 1 - amountY, 1 - amountZ) * _Left.translation;
+                newKeyFrame.translation = Lerp(_Left.translation, _Right.translation, new Vector3(amountX, amountY, amountZ));
 
                 return newKeyFrame;
             }
@@ -75,11 +66,6 @@ namespace Coocoo3D.Components
             int right = keyframeSet.Count - 1;
             float indexFrame = Math.Max(time * c_framePerSecond, 0);
 
-            float ComputeKeyFrame(MorphKeyFrame _left, MorphKeyFrame _right, float frame)
-            {
-                float amount = (float)(frame - _left.Frame) / (_right.Frame - _left.Frame);
-                return (1 - amount) * _left.Weight + amount * _right.Weight;
-            }
 
             if (keyframeSet.Count == 1)
             {
@@ -102,42 +88,33 @@ namespace Coocoo3D.Components
             MorphKeyFrame keyFrameLeft = keyframeSet[left];
             MorphKeyFrame keyFrameRight = keyframeSet[right];
 
-
             return ComputeKeyFrame(keyFrameLeft, keyFrameRight, indexFrame);
         }
-    }
-}
-
-
-namespace Coocoo3D.FileFormat
-{
-    public static partial class VMDFormatExtension
-    {
-        public static void ReloadEmpty(this MMDMotion motionComponent)
+        static float ComputeKeyFrame(MorphKeyFrame _left, MorphKeyFrame _right, float frame)
         {
-            lock (motionComponent)
-            {
-                motionComponent.BoneKeyFrameSet.Clear();
-                motionComponent.MorphKeyFrameSet.Clear();
-            }
+            float amount = (float)(frame - _left.Frame) / (_right.Frame - _left.Frame);
+            return Lerp(_left.Weight, _right.Weight, amount);
+        }
+        static float Lerp(float x, float y, float s)
+        {
+            return x * (1 - s) + y * s;
+        }
+        static Vector3 Lerp(Vector3 x, Vector3 y, float s)
+        {
+            return Vector3.Lerp(x, y, s);
+        }
+        static Vector3 Lerp(Vector3 x, Vector3 y, Vector3 s)
+        {
+            return x * (Vector3.One - s) + y * s;
         }
 
-        public static void Reload(this MMDMotion motionComponent, VMDFormat vmd)
+        static float GetAmount(Interpolator interpolator, float _a)
         {
-            lock (motionComponent)
-            {
-                motionComponent.BoneKeyFrameSet.Clear();
-                motionComponent.MorphKeyFrameSet.Clear();
-
-                foreach (var pair in vmd.BoneKeyFrameSet)
-                {
-                    motionComponent.BoneKeyFrameSet.Add(pair.Key, new List<BoneKeyFrame>(pair.Value));
-                }
-                foreach (var pair in vmd.MorphKeyFrameSet)
-                {
-                    motionComponent.MorphKeyFrameSet.Add(pair.Key, new List<MorphKeyFrame>(pair.Value));
-                }
-            }
+            if (interpolator.ax == interpolator.ay && interpolator.bx == interpolator.by)
+                return _a;
+            var _curve = Utility.CubicBezierCurve.Load(interpolator.ax, interpolator.ay, interpolator.bx, interpolator.by);
+            return _curve.Sample(_a);
         }
     }
 }
+

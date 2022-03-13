@@ -19,6 +19,7 @@ public static class UnionShaderPostProcessing
         var camera = param.visualChannel.camera.GetCameraData();
         var mat = camera.vpMatrix;
         var matInv = camera.pvMatrix;
+        List<ValueTuple<string, string>> keywords = new();
         switch (param.passName)
         {
             case "TAAPass":
@@ -42,11 +43,10 @@ public static class UnionShaderPostProcessing
                     writer.Write((float)param.GetSettingsValue("TAAFrameFactor"));
                     writer.SetBufferImmediately(graphicsContext, false, 0);
 
-                    List<string> keywords = new List<string>();
-                    keywords.Add("ENABLE_TAA");
+                    keywords.Add(new("ENABLE_TAA", "1"));
                     if (param.settings.DebugRenderType == DebugRenderType.TAA)
                     {
-                        keywords.Add("DEBUG_TAA");
+                        keywords.Add(new("DEBUG_TAA", "1"));
                     }
                     var computeShader = mainCaches.GetComputeShaderWithKeywords(keywords, Path.GetFullPath("TAA.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs);
@@ -76,15 +76,6 @@ public static class UnionShaderPostProcessing
 
                     writer.SetBufferImmediately(graphicsContext, false, 0);
 
-                    List<string> keywords = new List<string>();
-                    //if ((bool?)param.GetSettingsValue("EnableTAA") == true)
-                    //{
-                    //    keywords.Add("ENABLE_TAA");
-                    //    if (param.settings.DebugRenderType == DebugRenderType.TAA)
-                    //    {
-                    //        keywords.Add("DEBUG_TAA");
-                    //    }
-                    //}
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PostProcessing.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))

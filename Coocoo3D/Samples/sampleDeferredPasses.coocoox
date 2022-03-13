@@ -287,7 +287,6 @@
             "DirectionalLightMatrix0",
             "DirectionalLightMatrix1",
             "DirectionalLight",
-            "PointLights4Cull",
             "GIVolumePosition",
             "AODistance",
             "GIVolumeSize",
@@ -295,6 +294,12 @@
             "AORaySampleCount",
             "RandomI",
             "LightMapSplit"
+          ]
+        },
+        {
+          "Index": "1",
+          "Datas": [
+            "PointLights"
           ]
         }
       ],
@@ -393,7 +398,7 @@
           "Index": "1",
           "Datas": [
             "World",
-            "PointLights4Cull",
+            "PointLights",
             "Metallic",
             "Roughness",
             "Emissive",

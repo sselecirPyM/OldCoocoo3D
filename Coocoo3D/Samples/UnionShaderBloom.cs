@@ -21,19 +21,18 @@ public static class UnionShaderBloom
         writer.SetBufferImmediately(graphicsContext, false, 0);
 
         PSO pso = null;
+        List<ValueTuple<string, string>> keywords = new();
         switch (param.passName)
         {
             case "BloomBlur1":
                 {
-                    List<string> keywords = new List<string>();
-                    keywords.Add("BLOOM_1");
+                    keywords.Add(new("BLOOM_1", "1"));
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
                 }
                 break;
             case "BloomBlur2":
                 {
-                    List<string> keywords = new List<string>();
-                    keywords.Add("BLOOM_2");
+                    keywords.Add(new("BLOOM_2", "1"));
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("Bloom.hlsl", param.relativePath));
                 }
                 break;

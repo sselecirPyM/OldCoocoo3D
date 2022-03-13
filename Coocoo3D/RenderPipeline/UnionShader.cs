@@ -15,7 +15,7 @@ namespace Coocoo3D.RenderPipeline
     public class UnionShaderParam
     {
         public RenderPipelineContext rp;
-        public RuntimeMaterial material;
+        public RenderMaterial material;
         public MMDRendererComponent renderer;
         public PassSetting passSetting;
 
@@ -45,8 +45,8 @@ namespace Coocoo3D.RenderPipeline
 
         public GraphicsDevice graphicsDevice { get => rp.graphicsDevice; }
 
-        public Dictionary<string, object> customValue = new Dictionary<string, object>();
-        public Dictionary<string, object> gpuValueOverride = new Dictionary<string, object>();
+        internal Dictionary<string, object> customValue = new Dictionary<string, object>();
+        internal Dictionary<string, object> gpuValueOverride = new Dictionary<string, object>();
 
         public T GetCustomValue<T>(string name, T defaultValue)
         {
@@ -62,14 +62,12 @@ namespace Coocoo3D.RenderPipeline
 
         public T GetPersistentValue<T>(string name, T defaultValue)
         {
-            if (rp.customData.TryGetValue(name, out object val) && val is T val1)
-                return val1;
-            return defaultValue;
+            return rp.GetPersistentValue<T>(name, defaultValue);
         }
 
         public void SetPersistentValue<T>(string name, T value)
         {
-            rp.customData[name] = value;
+            rp.SetPersistentValue(name, value);
         }
 
         public T GetGPUValueOverride<T>(string name, T defaultValue)
@@ -88,12 +86,17 @@ namespace Coocoo3D.RenderPipeline
         public double realDeltaTime { get => rp.dynamicContextRead.RealDeltaTime; }
         public double time { get => rp.dynamicContextRead.Time; }
 
-        public Mesh mesh { get => rp.GetMesh(renderer.meshPath); }
-        public Mesh meshOverride { get => rp.meshOverride[renderer]; }
+        public Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
+        internal Mesh mesh { get => GetMesh(renderer.meshPath); }
+        internal Mesh meshOverride { get => rp.meshOverride[renderer]; }
 
         public Random _random;
 
         public Random random { get => _random ??= new Random(rp.frameRenderCount); }
+
+        public bool CPUSkinning { get => rp.CPUSkinning; set => rp.CPUSkinning = value; }
+
+        public bool IsRayTracingSupport { get => graphicsDevice.IsRayTracingSupport(); }
 
         public object GetSettingsValue(string name)
         {
@@ -104,7 +107,7 @@ namespace Coocoo3D.RenderPipeline
             return parameter.defaultValue;
         }
 
-        public object GetSettingsValue(RuntimeMaterial material, string name)
+        public object GetSettingsValue(RenderMaterial material, string name)
         {
             if (!passSetting.ShowParameters.TryGetValue(name, out var parameter))
                 return null;
@@ -135,7 +138,7 @@ namespace Coocoo3D.RenderPipeline
             return rp.GetBoneBuffer(rendererComponent);
         }
 
-        public Texture2D GetTex2D(string name, RuntimeMaterial material = null)
+        public Texture2D GetTex2D(string name, RenderMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
                 return null;
@@ -169,7 +172,7 @@ namespace Coocoo3D.RenderPipeline
             return tex2D;
         }
 
-        public TextureCube GetTexCube(string name, RuntimeMaterial material = null)
+        public TextureCube GetTexCube(string name, RenderMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
                 return null;
@@ -188,7 +191,7 @@ namespace Coocoo3D.RenderPipeline
             return tex2D;
         }
 
-        public string _getBufferName(string name, RuntimeMaterial material = null)
+        public string _getBufferName(string name, RenderMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
                 return name;
@@ -198,7 +201,7 @@ namespace Coocoo3D.RenderPipeline
                 return name;
         }
 
-        public string _getTextureName(string name, RuntimeMaterial material = null)
+        public string _getTextureName(string name, RenderMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
                 return name;
@@ -208,7 +211,7 @@ namespace Coocoo3D.RenderPipeline
                 return name;
         }
 
-        public GPUBuffer GetBuffer(string name, RuntimeMaterial material = null)
+        public GPUBuffer GetBuffer(string name, RenderMaterial material = null)
         {
             if (string.IsNullOrEmpty(name))
                 return null;
@@ -229,7 +232,7 @@ namespace Coocoo3D.RenderPipeline
 
         public void SetMesh(GraphicsContext graphicsContext, MMDRendererComponent renderer)
         {
-            graphicsContext.SetMesh(rp.GetMesh(renderer.meshPath), rp.meshOverride[renderer]);
+            graphicsContext.SetMesh(GetMesh(renderer.meshPath), rp.meshOverride[renderer]);
         }
 
         public void WriteGPU(List<string> datas, GPUWriter writer)
@@ -353,44 +356,15 @@ namespace Coocoo3D.RenderPipeline
                             }
                             break;
                         }
-                    case "PointLights4":
+                    case "PointLights":
                         {
                             var pointLights = drp.pointLights;
-                            const int lightCount = 4;
-                            int count = 0;
-                            for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
+                            for (int i = 0; i < pointLights.Count; i++)
                             {
                                 writer.Write(pointLights[i].Position);
                                 writer.Write((int)1);
                                 writer.Write(pointLights[i].Color);
                                 writer.Write(pointLights[i].Range);
-                                count++;
-                            }
-                            for (int i = 0; i < lightCount - count; i++)
-                            {
-                                writer.Write(new Vector4());
-                                writer.Write(new Vector4());
-                            }
-                        }
-                        break;
-                    case "PointLights4Cull":
-                        {
-                            var pointLights = drp.pointLights;
-                            const int lightCount = 4;
-                            int count = 0;
-                            if (pointLights.Count == 0) continue;
-                            for (int i = 0; i < Math.Min(lightCount, pointLights.Count); i++)
-                            {
-                                writer.Write(pointLights[i].Position);
-                                writer.Write((int)1);
-                                writer.Write(pointLights[i].Color);
-                                writer.Write(pointLights[i].Range);
-                                count++;
-                            }
-                            for (int i = 0; i < lightCount - count; i++)
-                            {
-                                writer.Write(new Vector4());
-                                writer.Write(new Vector4());
                             }
                         }
                         break;
@@ -434,7 +408,45 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void SetSRVs(List<SlotRes> SRVs, RuntimeMaterial material = null)
+        public IEnumerable<MeshRenderable> MeshRenderables(bool setmesh = true)
+        {
+            var drp = rp.dynamicContextRead;
+            foreach (var renderer in renderers)
+            {
+                if (setmesh)
+                    SetMesh(graphicsContext, renderer);
+                this.renderer = renderer;
+                foreach (var material in renderer.Materials)
+                {
+                    this.material = material;
+
+                    yield return new MeshRenderable()
+                    {
+                        indexCount = material.indexCount,
+                        indexStart = material.indexOffset,
+                        material = material,
+                        mesh = mesh,
+                        meshOverride = meshOverride,
+                        transform = renderer.LocalToWorld,
+                        gpuSkinning = renderer.skinning && !drp.CPUSkinning,
+                    };
+                }
+            }
+        }
+
+        public IEnumerable<MeshRenderable> EffectRenderables()
+        {
+            yield break;
+            foreach (var effect in rp.dynamicContextRead.particleEffects)
+            {
+                yield return new MeshRenderable()
+                {
+                    type = RenderableType.Particle
+                };
+            }
+        }
+
+        public void SetSRVs(List<SlotRes> SRVs, RenderMaterial material = null)
         {
             if (SRVs == null) return;
             foreach (var resd in SRVs)
@@ -457,7 +469,7 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void SetUAVs(List<SlotRes> UAVs, RuntimeMaterial material = null)
+        public void SetUAVs(List<SlotRes> UAVs, RenderMaterial material = null)
         {
             if (UAVs == null) return;
             foreach (var resd in UAVs)
@@ -480,7 +492,7 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void SRVUAVs(List<SlotRes> SRVUAV, Dictionary<int, object> dict, Dictionary<int, int> flags = null, RuntimeMaterial material = null)
+        public void SRVUAVs(List<SlotRes> SRVUAV, Dictionary<int, object> dict, Dictionary<int, int> flags = null, RenderMaterial material = null)
         {
             if (SRVUAV == null) return;
             foreach (var resd in SRVUAV)

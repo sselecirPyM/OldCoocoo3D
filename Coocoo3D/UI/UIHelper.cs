@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Coocoo3D.Core;
 using Coocoo3D.FileFormat;
+using Coocoo3D.Present;
+using Coocoo3D.ResourceWarp;
 using Coocoo3D.Utility;
 using Newtonsoft.Json;
 
@@ -49,39 +51,26 @@ namespace Coocoo3D.UI
                 {
                     case ".pmx":
                     case ".gltf":
-                        try
-                        {
-                            UI.UISharedCode.LoadEntityIntoScene(appBody, appBody.CurrentScene, file);
-                        }
-                        catch (Exception exception)
-                        {
-                            throw;
-                        }
+                        LoadEntityIntoScene(appBody, appBody.CurrentScene, file);
                         break;
                     case ".vmd":
-                        try
+                        BinaryReader reader = new BinaryReader(file.OpenRead());
+                        VMDFormat motionSet = VMDFormat.Load(reader);
+                        if (motionSet.CameraKeyFrames.Count != 0)
                         {
-                            BinaryReader reader = new BinaryReader(file.OpenRead());
-                            VMDFormat motionSet = VMDFormat.Load(reader);
-                            if (motionSet.CameraKeyFrames.Count != 0)
-                            {
-                                appBody.RPContext.currentChannel.camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
-                                appBody.RPContext.currentChannel.camera.CameraMotionOn = true;
-                            }
-                            else
-                            {
-                                foreach (var gameObject in appBody.SelectedGameObjects)
-                                {
-                                    var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
-                                    if (renderer != null) { renderer.motionPath = file.FullName; }
-                                }
-
-                                appBody.GameDriverContext.RequireResetPhysics = true;
-                            }
+                            var camera = appBody.RPContext.currentChannel.camera;
+                            camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
+                            camera.CameraMotionOn = true;
                         }
-                        catch (Exception exception)
+                        else
                         {
-                            throw;
+                            foreach (var gameObject in appBody.SelectedGameObjects)
+                            {
+                                var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
+                                if (renderer != null) { renderer.motionPath = file.FullName; }
+                            }
+
+                            appBody.GameDriverContext.RequireResetPhysics = true;
                         }
                         break;
                     case ".png":
@@ -93,9 +82,7 @@ namespace Coocoo3D.UI
                     case ".tiff":
                     case ".tga":
                     case ".dds":
-                        appBody.RPContext.skyBoxOriTex = file.FullName;
-                        appBody.RPContext.SkyBoxChanged = true;
-
+                        appBody.RPContext.SetSkyBox(file.FullName);
                         break;
                     case ".coocoo3dscene":
                         var scene = ReadJsonStream<Coocoo3DScene>(file.OpenRead());
@@ -151,20 +138,16 @@ namespace Coocoo3D.UI
         {
             JsonSerializer jsonSerializer = new JsonSerializer();
             jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
-            using (StreamReader reader1 = new StreamReader(stream))
-            {
-                return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
-            }
+            using StreamReader reader1 = new StreamReader(stream);
+            return jsonSerializer.Deserialize<T>(new JsonTextReader(reader1));
         }
 
         public static void SaveJsonStream<T>(Stream stream, T val)
         {
             JsonSerializer jsonSerializer = new JsonSerializer();
             jsonSerializer.NullValueHandling = NullValueHandling.Ignore;
-            using (StreamWriter writer = new StreamWriter(stream))
-            {
-                jsonSerializer.Serialize(writer, val);
-            }
+            using StreamWriter writer = new StreamWriter(stream);
+            jsonSerializer.Serialize(writer, val);
         }
 
         public static string OpenResourceFile(string filter)
@@ -211,20 +194,41 @@ namespace Coocoo3D.UI
             }
         }
 
-        [DllImport("Comdlg32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
-        public static extern bool GetOpenFileName([In, Out] FileOpenDialog ofn);
+        public static void LoadEntityIntoScene(Coocoo3DMain main, Scene scene, FileInfo pmxFile)
+        {
+            string pmxPath = pmxFile.FullName;
+            ModelPack modelPack = main.mainCaches.GetModel(pmxPath);
+            if (modelPack.pmx != null)
+            {
+                PreloadTextures(main, modelPack);
+                GameObject gameObject = new GameObject();
+                gameObject.LoadPmx(modelPack);
+                scene.AddGameObject(gameObject);
+            }
+
+            main.RequireRender();
+        }
+
+        public static void PreloadTextures(Coocoo3DMain main, ModelPack model)
+        {
+            foreach (var tex in model.textures)
+                main.mainCaches.Texture(tex);
+        }
 
         [DllImport("Comdlg32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
-        public static extern bool GetSaveFileName([In, Out] FileOpenDialog ofn);
+        internal static extern bool GetOpenFileName([In, Out] FileOpenDialog ofn);
+
+        [DllImport("Comdlg32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
+        internal static extern bool GetSaveFileName([In, Out] FileOpenDialog ofn);
 
         [DllImport("shell32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
-        public static extern IntPtr SHBrowseForFolder([In, Out] OpenDialogDir ofn);
+        internal static extern IntPtr SHBrowseForFolder([In, Out] OpenDialogDir ofn);
 
         [DllImport("shell32.dll", SetLastError = true, ThrowOnUnmappableChar = true, CharSet = CharSet.Auto)]
-        public static extern bool SHGetPathFromIDList([In] IntPtr pidl, [In, Out] char[] fileName);
+        internal static extern bool SHGetPathFromIDList([In] IntPtr pidl, [In, Out] char[] fileName);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public class FileOpenDialog
+        internal class FileOpenDialog
         {
             public int structSize = 0;
             public IntPtr dlgOwner = IntPtr.Zero;
@@ -251,7 +255,7 @@ namespace Coocoo3D.UI
             public int flagsEx = 0;
         }
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public class OpenDialogDir
+        internal class OpenDialogDir
         {
             public IntPtr hwndOwner = IntPtr.Zero;
             public IntPtr pidlRoot = IntPtr.Zero;

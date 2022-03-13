@@ -1,7 +1,6 @@
 ﻿using Coocoo3D.Components;
 using Coocoo3D.Core;
 using Coocoo3D.Numerics;
-using Coocoo3D.Present;
 using Coocoo3D.ResourceWarp;
 using Coocoo3DGraphics;
 using System;
@@ -17,7 +16,7 @@ using System.Runtime.InteropServices;
 
 namespace Coocoo3D.RenderPipeline
 {
-    public struct RecordSettings
+    public class RecordSettings
     {
         public float FPS;
         public float StartTime;
@@ -28,7 +27,6 @@ namespace Coocoo3D.RenderPipeline
     public class GameDriverContext
     {
         public int NeedRender;
-        public volatile bool EnableDisplay;
         public bool Playing;
         public double PlayTime;
         public double DeltaTime;
@@ -52,26 +50,29 @@ namespace Coocoo3D.RenderPipeline
 
     public class RenderPipelineContext : IDisposable
     {
-        const int c_entityDataBufferSize = 65536;
-
         public MainCaches mainCaches = new MainCaches();
 
-        public Dictionary<string, VisualChannel> visualChannels = new Dictionary<string, VisualChannel>();
+        public Dictionary<string, VisualChannel> visualChannels = new();
 
         public VisualChannel currentChannel;
 
-        private Dictionary<string, Texture2D> RTs = new Dictionary<string, Texture2D>();
-        private Dictionary<string, TextureCube> RTCs = new Dictionary<string, TextureCube>();
-        private Dictionary<string, GPUBuffer> dynamicBuffers = new Dictionary<string, GPUBuffer>();
+        private Dictionary<string, Texture2D> RTs = new();
+        private Dictionary<string, TextureCube> RTCs = new();
+        private Dictionary<string, GPUBuffer> dynamicBuffers = new();
 
-        public Dictionary<string, object> customData = new Dictionary<string, object>();
+        public Dictionary<string, object> customData = new();
 
-        public bool RequireResize;
-        public Vector2 NewSize;
         public bool SkyBoxChanged = false;
 
         public string skyBoxName = "_SkyBox";
-        public string skyBoxOriTex = "Assets/Textures/adams_place_bridge_2k.jpg";
+        public string skyBoxTex = "Assets/Textures/adams_place_bridge_2k.jpg";
+
+        public void SetSkyBox(string path)
+        {
+            if (skyBoxTex == path) return;
+            skyBoxTex = path;
+            SkyBoxChanged = true;
+        }
 
         public Mesh quadMesh = new Mesh();
         public int frameRenderCount;
@@ -79,10 +80,10 @@ namespace Coocoo3D.RenderPipeline
         public GraphicsDevice graphicsDevice;
         public GraphicsContext graphicsContext = new GraphicsContext();
 
-        public RenderPipelineDynamicContext dynamicContextRead = new RenderPipelineDynamicContext();
-        public RenderPipelineDynamicContext dynamicContextWrite = new RenderPipelineDynamicContext();
+        public RenderPipelineDynamicContext dynamicContextRead = new();
+        public RenderPipelineDynamicContext dynamicContextWrite = new();
 
-        public List<CBuffer> CBs_Bone = new List<CBuffer>();
+        public List<CBuffer> CBs_Bone = new();
 
         public Format outputFormat = Format.R8G8B8A8_UNorm;
         public Format swapChainFormat = Format.R8G8B8A8_UNorm;
@@ -107,7 +108,7 @@ namespace Coocoo3D.RenderPipeline
 
         public bool CPUSkinning = false;
 
-        public void Reload()
+        public void Load()
         {
             graphicsDevice = new GraphicsDevice(swapChainFormat);
             graphicsContext.Reload(graphicsDevice);
@@ -122,8 +123,8 @@ namespace Coocoo3D.RenderPipeline
             currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
         }
 
-        Queue<string> delayAddVisualChannel = new Queue<string>();
-        Queue<string> delayRemoveVisualChannel = new Queue<string>();
+        Queue<string> delayAddVisualChannel = new();
+        Queue<string> delayRemoveVisualChannel = new();
         public void DelayAddVisualChannel(string name)
         {
             delayAddVisualChannel.Enqueue(name);
@@ -144,23 +145,23 @@ namespace Coocoo3D.RenderPipeline
 
         public void RemoveVisualChannel(string name)
         {
-            var vc = visualChannels[name];
-            if (vc == currentChannel)
-                currentChannel = visualChannels["main"];
-            vc.Dispose();
-            visualChannels.Remove(name);
+            if (visualChannels.Remove(name, out var vc))
+            {
+                if (vc == currentChannel)
+                    currentChannel = visualChannels["main"];
+                vc.Dispose();
+            }
         }
 
-        public void BeginDynamicContext(bool enableDisplay, Scene scene)
+        public void BeginDynamicContext(Scene scene)
         {
             dynamicContextWrite.FrameBegin();
-            dynamicContextWrite.EnableDisplay = enableDisplay;
             dynamicContextWrite.settings = scene.settings.GetClone();
 
             dynamicContextWrite.currentPassSetting = mainCaches.GetPassSetting(currentPassSetting1);
-            dynamicContextWrite.currentPassSetting.path = currentPassSetting1;
 
             dynamicContextWrite.frameRenderIndex = frameRenderCount;
+            dynamicContextWrite.CPUSkinning = CPUSkinning;
             frameRenderCount++;
         }
 
@@ -169,8 +170,8 @@ namespace Coocoo3D.RenderPipeline
             return CBs_Bone[dynamicContextRead.findRenderer[rendererComponent]];
         }
 
-        LinearPool<Mesh> meshPool = new LinearPool<Mesh>();
-        public Dictionary<MMDRendererComponent, Mesh> meshOverride = new Dictionary<MMDRendererComponent, Mesh>();
+        LinearPool<Mesh> meshPool = new();
+        public Dictionary<MMDRendererComponent, Mesh> meshOverride = new();
         public byte[] bigBuffer = new byte[0];
         public void UpdateGPUResource()
         {
@@ -182,7 +183,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 CBuffer constantBuffer = new CBuffer();
                 constantBuffer.Mutable = true;
-                //graphicsDevice.InitializeCBuffer(constantBuffer, c_entityDataBufferSize);
                 CBs_Bone.Add(constantBuffer);
             }
 
@@ -191,7 +191,8 @@ namespace Coocoo3D.RenderPipeline
                 int bufferSize = 0;
                 foreach (var renderer in dynamicContextRead.renderers)
                 {
-                    bufferSize = Math.Max(GetModelPack(renderer.meshPath).vertexCount, bufferSize);
+                    if (renderer.skinning)
+                        bufferSize = Math.Max(GetModelPack(renderer.meshPath).vertexCount, bufferSize);
                 }
                 bufferSize *= 12;
                 if (bufferSize > bigBuffer.Length)
@@ -200,13 +201,9 @@ namespace Coocoo3D.RenderPipeline
             for (int i = 0; i < count; i++)
             {
                 var renderer = dynamicContextRead.renderers[i];
-                var mesh = meshPool.Get(() =>
-                {
-                    var mesh1 = new Mesh();
-                    return mesh1;
-                });
-                var originModel = GetModelPack(renderer.meshPath);
-                mesh.ReloadIndex<int>(originModel.vertexCount, null);
+                var model = GetModelPack(renderer.meshPath);
+                var mesh = meshPool.Get(() => new Mesh());
+                mesh.ReloadIndex<int>(model.vertexCount, null);
                 meshOverride[renderer] = mesh;
                 if (!renderer.skinning) continue;
 
@@ -215,11 +212,11 @@ namespace Coocoo3D.RenderPipeline
                 {
                     const int parallelSize = 1024;
                     Span<Vector3> d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
-                    Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
+                    Parallel.For(0, (model.vertexCount + parallelSize - 1) / parallelSize, u =>
                     {
                         Span<Vector3> _d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
                         int from = u * parallelSize;
-                        int to = Math.Min(from + parallelSize, originModel.vertexCount);
+                        int to = Math.Min(from + parallelSize, model.vertexCount);
                         for (int j = from; j < to; j++)
                         {
                             Vector3 pos0 = renderer.meshPosData1[j];
@@ -227,10 +224,10 @@ namespace Coocoo3D.RenderPipeline
                             int a = 0;
                             for (int k = 0; k < 4; k++)
                             {
-                                int boneId = originModel.boneId[j * 4 + k];
+                                int boneId = model.boneId[j * 4 + k];
                                 if (boneId >= renderer.bones.Count) break;
                                 Matrix4x4 trans = renderer.boneMatricesData[boneId];
-                                float weight = originModel.boneWeights[j * 4 + k];
+                                float weight = model.boneWeights[j * 4 + k];
                                 pos1 += Vector3.Transform(pos0, trans) * weight;
                                 a++;
                             }
@@ -241,24 +238,24 @@ namespace Coocoo3D.RenderPipeline
                         }
                     });
                     graphicsContext.BeginUpdateMesh(mesh);
-                    graphicsContext.UpdateMesh<Vector3>(mesh, d3.Slice(0, originModel.vertexCount), 0);
+                    graphicsContext.UpdateMesh(mesh, d3.Slice(0, model.vertexCount), 0);
 
-                    Parallel.For(0, (originModel.vertexCount + parallelSize - 1) / parallelSize, u =>
+                    Parallel.For(0, (model.vertexCount + parallelSize - 1) / parallelSize, u =>
                     {
                         Span<Vector3> _d3 = MemoryMarshal.Cast<byte, Vector3>(new Span<byte>(bigBuffer, 0, bigBuffer.Length / 12 * 12));
                         int from = u * parallelSize;
-                        int to = Math.Min(from + parallelSize, originModel.vertexCount);
+                        int to = Math.Min(from + parallelSize, model.vertexCount);
                         for (int j = from; j < to; j++)
                         {
-                            Vector3 norm0 = originModel.normal[j];
+                            Vector3 norm0 = model.normal[j];
                             Vector3 norm1 = Vector3.Zero;
                             int a = 0;
                             for (int k = 0; k < 4; k++)
                             {
-                                int boneId = originModel.boneId[j * 4 + k];
+                                int boneId = model.boneId[j * 4 + k];
                                 if (boneId >= renderer.bones.Count) break;
                                 Matrix4x4 trans = renderer.boneMatricesData[boneId];
-                                float weight = originModel.boneWeights[j * 4 + k];
+                                float weight = model.boneWeights[j * 4 + k];
                                 norm1 += Vector3.TransformNormal(norm0, trans) * weight;
                                 a++;
                             }
@@ -269,7 +266,7 @@ namespace Coocoo3D.RenderPipeline
                         }
                     });
 
-                    graphicsContext.UpdateMesh<Vector3>(mesh, d3.Slice(0, originModel.vertexCount), 1);
+                    graphicsContext.UpdateMesh(mesh, d3.Slice(0, model.vertexCount), 1);
 
                     graphicsContext.EndUpdateMesh(mesh);
                     for (int k = 0; k < renderer.boneMatricesData.Length; k++)
@@ -499,7 +496,6 @@ namespace Coocoo3D.RenderPipeline
 
         }
 
-        public Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
         public ModelPack GetModelPack(string path) => mainCaches.GetModel(path);
 
         public Texture2D _GetTex2DByName(string name)
@@ -568,6 +564,18 @@ namespace Coocoo3D.RenderPipeline
             {
                 return false;
             }
+        }
+
+        public T GetPersistentValue<T>(string name, T defaultValue)
+        {
+            if (customData.TryGetValue(name, out object val) && val is T val1)
+                return val1;
+            return defaultValue;
+        }
+
+        public void SetPersistentValue<T>(string name, T value)
+        {
+            customData[name] = value;
         }
 
         public void Dispose()

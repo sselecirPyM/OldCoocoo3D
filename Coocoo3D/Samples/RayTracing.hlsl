@@ -310,7 +310,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1), sPos.z).r;
+					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5), sPos.z).r;
 				else
 				{
 					sPos = mul(float4(position, 1), LightMapVP1);
@@ -318,7 +318,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
 					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
+						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5) + float2(0.5, 0), sPos.z).r;
 				}
 			}
 			float3 L = normalize(Lightings[i].LightDir);

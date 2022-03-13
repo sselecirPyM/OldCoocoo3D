@@ -7,7 +7,7 @@ using BulletSharp;
 
 namespace Coocoo3D.Base
 {
-    public class Physics3DJoint1
+    public class Physics3DJoint
     {
         public Generic6DofSpringConstraint constraint;
     }

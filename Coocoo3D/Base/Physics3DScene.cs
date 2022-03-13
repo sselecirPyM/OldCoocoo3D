@@ -5,10 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Numerics;
 using BulletSharp;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.Base
 {
-    public class Physics3DScene1
+    public class Physics3DScene
     {
         DefaultCollisionConfiguration defaultCollisionConfiguration = new DefaultCollisionConfiguration();
         DbvtBroadphase broadphase = new DbvtBroadphase();
@@ -27,10 +28,10 @@ namespace Coocoo3D.Base
             BulletSharp.Math.Vector3 gravity = GetVector3(g);
             world.SetGravity(ref gravity);
         }
-        public void AddRigidBody(Physics3DRigidBody1 rb, Components.RigidBodyDesc desc)
+        public void AddRigidBody(Physics3DRigidBody rb, Components.RigidBodyDesc desc)
         {
             MotionState motionState;
-            Matrix4x4 mat = Matrix4x4.CreateFromQuaternion(desc.Rotation) * Matrix4x4.CreateTranslation(desc.Position);
+            Matrix4x4 mat = MatrixExt.Transform(desc.Position, desc.Rotation);
             rb.defaultPosition = desc.Position;
             rb.defaultRotation = desc.Rotation;
 
@@ -72,15 +73,15 @@ namespace Coocoo3D.Base
             world.AddRigidBody(rb.rigidBody, 1 << desc.CollisionGroup, desc.CollisionMask);
         }
 
-        public void AddJoint(Physics3DJoint1 joint, Physics3DRigidBody1 r1, Physics3DRigidBody1 r2, Components.JointDesc desc)
+        public void AddJoint(Physics3DJoint joint, Physics3DRigidBody r1, Physics3DRigidBody r2, Components.JointDesc desc)
         {
 
-            var t0 = Matrix4x4.CreateFromQuaternion(ToQuaternion(desc.Rotation)) * Matrix4x4.CreateTranslation(desc.Position);
+            var t0 = MatrixExt.Transform(desc.Position, ToQuaternion(desc.Rotation));
             Matrix4x4.Invert(t0, out var res);
-            Matrix4x4.Invert(Matrix4x4.CreateFromQuaternion(r1.defaultRotation) * Matrix4x4.CreateTranslation(r1.defaultPosition), out var t1);
-            Matrix4x4.Invert(Matrix4x4.CreateFromQuaternion(r2.defaultRotation) * Matrix4x4.CreateTranslation(r2.defaultPosition), out var t2);
-            t1 = t0*t1;
-            t2 = t0*t2;
+            Matrix4x4.Invert(MatrixExt.Transform(r1.defaultPosition, r1.defaultRotation), out var t1);
+            Matrix4x4.Invert(MatrixExt.Transform(r2.defaultPosition, r2.defaultRotation), out var t2);
+            t1 = t0 * t1;
+            t2 = t0 * t2;
 
             var j = new Generic6DofSpringConstraint(r1.rigidBody, r2.rigidBody, GetMatrix(t1), GetMatrix(t2), true);
             joint.constraint = j;
@@ -116,9 +117,9 @@ namespace Coocoo3D.Base
             world.StepSimulation(time);
         }
 
-        public void ResetRigidBody(Physics3DRigidBody1 rb, Vector3 position, Quaternion rotation)
+        public void ResetRigidBody(Physics3DRigidBody rb, Vector3 position, Quaternion rotation)
         {
-            var worldTransform = GetMatrix(Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(position));
+            var worldTransform = GetMatrix(MatrixExt.Transform(position, rotation));
             var rigidBody = rb.rigidBody;
             rigidBody.MotionState.SetWorldTransform(ref worldTransform);
             rigidBody.CenterOfMassTransform = worldTransform;
@@ -131,7 +132,7 @@ namespace Coocoo3D.Base
             rigidBody.ClearForces();
         }
 
-        public void ResetRigidBody(Physics3DRigidBody1 rb, Matrix4x4 mat)
+        public void ResetRigidBody(Physics3DRigidBody rb, Matrix4x4 mat)
         {
             var worldTransform = GetMatrix(mat);
             var rigidBody = rb.rigidBody;
@@ -146,18 +147,18 @@ namespace Coocoo3D.Base
             rigidBody.ClearForces();
         }
 
-        public void MoveRigidBody(Physics3DRigidBody1 rb, Matrix4x4 mat)
+        public void MoveRigidBody(Physics3DRigidBody rb, Matrix4x4 mat)
         {
             rb.rigidBody.MotionState.WorldTransform = GetMatrix(mat);
         }
 
-        public void RemoveRigidBody(Physics3DRigidBody1 rb)
+        public void RemoveRigidBody(Physics3DRigidBody rb)
         {
             world.RemoveRigidBody(rb.rigidBody);
             rb.rigidBody.Dispose();
         }
 
-        public void RemoveJoint(Physics3DJoint1 joint)
+        public void RemoveJoint(Physics3DJoint joint)
         {
             world.RemoveConstraint(joint.constraint);
             joint.constraint.Dispose();

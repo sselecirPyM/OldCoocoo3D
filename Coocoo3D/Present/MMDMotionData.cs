@@ -5,9 +5,8 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Coocoo3D.MMDSupport
+namespace Coocoo3D.Present
 {
-
     public struct BoneKeyFrame : IComparable<BoneKeyFrame>
     {
         public int Frame { get; set; }

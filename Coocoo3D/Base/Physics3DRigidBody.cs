@@ -8,7 +8,7 @@ using System.Numerics;
 
 namespace Coocoo3D.Base
 {
-    public class Physics3DRigidBody1
+    public class Physics3DRigidBody
     {
         public RigidBody rigidBody;
         public Vector3 defaultPosition;
