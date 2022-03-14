@@ -10,6 +10,20 @@
 * 加载vmd动作
 * 播放动画
 * 录制图像序列
+
+全局光照：关
+![屏幕截图 2022-03-14 213422](https://user-images.githubusercontent.com/63526047/158182829-b817ec09-e5fa-4f30-9753-3fd5f0d1a6bc.png)
+
+全局光照：开
+![屏幕截图 2022-03-14 213438](https://user-images.githubusercontent.com/63526047/158182978-0b84d0bf-99cd-489d-8522-6684d9cf48d7.png)
+
+体积光：开
+![屏幕截图 2022-03-14 213644](https://user-images.githubusercontent.com/63526047/158183360-0465767c-e416-4d1b-b342-56b2b14dcc4e.png)
+
+光线追踪：开 镜面反射
+![屏幕截图 2022-03-14 213859](https://user-images.githubusercontent.com/63526047/158183752-837d9481-96b8-4097-ae7a-1c15477a217e.png)
+
+
 ## 图形功能
 * 可编程渲染管线
 * 烘焙天空盒
