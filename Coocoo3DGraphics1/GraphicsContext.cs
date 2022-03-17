@@ -148,9 +148,9 @@ namespace Coocoo3DGraphics
                     {
                         ulong pos;
                         if (meshOverride != null && meshOverride.vtBuffers.TryGetValue(0, out var v0))
-                            pos = v0.vertex.GPUVirtualAddress;
+                            pos = v0.vertex.GPUVirtualAddress + (ulong)btas.vertexStart * 12;
                         else
-                            pos = mesh.vtBuffers[0].vertex.GPUVirtualAddress;
+                            pos = mesh.vtBuffers[0].vertex.GPUVirtualAddress + (ulong)btas.vertexStart * 12;
                         BuildRaytracingAccelerationStructureInputs inputs = new BuildRaytracingAccelerationStructureInputs();
                         inputs.Type = RaytracingAccelerationStructureType.BottomLevel;
                         inputs.Layout = ElementsLayout.Array;
@@ -158,9 +158,9 @@ namespace Coocoo3DGraphics
                         {
                             new RaytracingGeometryDescription(new RaytracingGeometryTrianglesDescription(new GpuVirtualAddressAndStride(pos, 12),
                             Format.R32G32B32_Float,
-                            mesh.m_vertexCount,
+                            btas.vertexCount,
                             0,
-                            mesh.indexBuffer.GPUVirtualAddress + (ulong)btas.startIndex * 4,
+                            mesh.indexBuffer.GPUVirtualAddress + (ulong)btas.indexStart * 4,
                             Format.R32_UInt,
                             btas.indexCount)),
                         };
@@ -297,16 +297,17 @@ namespace Coocoo3DGraphics
                     var mesh = inst.accelerationStruct.mesh;
                     var meshOverride = inst.accelerationStruct.meshOverride;
                     memcpy(data, pRtsoProps.GetShaderIdentifier(inst.hitGroupName).ToPointer(), D3D12ShaderIdentifierSizeInBytes);
+                    int vertexStart = inst.accelerationStruct.vertexStart;
                     writer.Write(data);
-                    writer.Write(mesh.indexBuffer.GPUVirtualAddress + (ulong)inst.accelerationStruct.startIndex * 4);
+                    writer.Write(mesh.indexBuffer.GPUVirtualAddress + (ulong)inst.accelerationStruct.indexStart * 4);
                     for (int i = 0; i < 3; i++)
                     {
                         if (meshOverride != null && meshOverride.vtBuffers.TryGetValue(i, out var meshX1))
                         {
-                            writer.Write(meshX1.vertex.GPUVirtualAddress);
+                            writer.Write(meshX1.vertex.GPUVirtualAddress + (ulong)(meshX1.vertexBufferView.StrideInBytes * vertexStart));
                         }
                         else
-                            writer.Write(mesh.vtBuffers[i].vertex.GPUVirtualAddress);
+                            writer.Write(mesh.vtBuffers[i].vertex.GPUVirtualAddress + (ulong)(mesh.vtBuffers[i].vertexBufferView.StrideInBytes * vertexStart));
                     }
                     int cbvOffset = 0;
                     int srvOffset = 0;

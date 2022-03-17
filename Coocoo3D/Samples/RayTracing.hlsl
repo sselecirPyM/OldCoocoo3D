@@ -222,6 +222,7 @@ StructuredBuffer<float3> Normals : register(t2, space1);
 StructuredBuffer<float2> UVs : register(t3, space1);
 Texture2D<float4> Albedo : register(t4, space1);
 Texture2D<float4> Emissive : register(t5, space1);
+Texture2D<float4> MetallicRoughness : register(t6, space1);
 
 [shader("closesthit")]
 void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
@@ -243,56 +244,29 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 	float4 albedo = Albedo.SampleLevel(s1, uv, 0);
 	float3 emissive = Emissive.SampleLevel(s1, uv, 0) * _Emissive;
 
-	float roughness = max(_Roughness, 0.002);
+	float4 metallicRoughness = MetallicRoughness.SampleLevel(s1, uv, 0);
+	float roughness = max(_Roughness * metallicRoughness.g, 0.002);
 	float alpha = roughness * roughness;
 
-	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
-	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
+	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallicRoughness.b);
+	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallicRoughness.b);
 	float3 V = -payload.direction;
 
 	float NdotV = saturate(dot(N, V));
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
-	//payload.color += (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple * c_diffuse).rgb;
 	payload.color += (EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness, 1e-5)) * 4) * g_skyBoxMultiple * GF).rgb;
 	payload.color += emissive;
 
 	float3 skyLight = (EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple).rgb;
-	float3 giSamplePos = (((position.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
-	int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
-	float weights = 0;
 
-	float3 lp = frac(SH_RESOLUTION * giSamplePos);
-	float4 shDiffuse = float4(0, 0, 0, 0);
-	for (int i = 0; i < 2; i++)
-		for (int j = 0; j < 2; j++)
-			for (int k = 0; k < 2; k++)
-			{
-				int3 _xyz = int3(i, j, k);
-				int3 xyz = _xyz + samplePos1;
-				float3 p1 = abs(lp - (1 - _xyz));
-				float weight = p1.x * p1.y * p1.z;
-				if (dot(N, _xyz - 0.5) >= -1e2)
-				{
-					if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
-					{
-						int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
-						SH9C sh9ca = giBuffer[index];
-						shDiffuse += GetSH9Color(sh9ca, N) * weight;
-						weights += weight;
-					}
-					else
-					{
-						shDiffuse += float4(skyLight * weight, 0);
-						weights += weight;
-					}
-				}
-			}
-	weights = max(weights, 1e-3);
-	shDiffuse /= weights;
+#ifndef ENABLE_GI
+	payload.color += skyLight * c_diffuse;
+#else
+	float3 shDiffuse = GetSH(giBuffer, SH_RESOLUTION, g_GIVolumePosition, g_GIVolumeSize, N, position, skyLight);
 	payload.color += shDiffuse * c_diffuse;
-
+#endif
 #if ENABLE_DIRECTIONAL_LIGHT
 	for (int i = 0; i < 1; i++)
 	{
@@ -309,7 +283,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 				sPos = sPos / sPos.w;
 				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+				if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5), sPos.z).r;
 				else
 				{
@@ -317,7 +291,7 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 					sPos = sPos / sPos.w;
 					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+					if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5) + float2(0.5, 0), sPos.z).r;
 				}
 			}

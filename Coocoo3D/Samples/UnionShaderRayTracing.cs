@@ -40,6 +40,8 @@ public static class UnionShaderRayTracing
                     if ((bool)param.GetSettingsValue("EnableVolumetricLighting"))
                         keywords.Add(new("ENABLE_VOLUME_LIGHTING", "1"));
                 }
+                if ((bool)param.GetSettingsValue("UseGI"))
+                    keywords.Add(new("ENABLE_GI", "1"));
                 var rtpso = param.mainCaches.GetRTPSO(keywords,
                 rayTracingShader,
                 Path.GetFullPath(rayTracingShader.hlslFile, param.relativePath));
@@ -56,14 +58,17 @@ public static class UnionShaderRayTracing
 
                     btas.mesh = renderable.mesh;
                     btas.meshOverride = renderable.meshOverride;
-                    btas.startIndex = material.indexOffset;
-                    btas.indexCount = material.indexCount;
+                    btas.indexStart = renderable.indexStart;
+                    btas.indexCount = renderable.indexCount;
+                    btas.vertexStart = renderable.vertexStart;
+                    btas.vertexCount = renderable.vertexCount;
                     var inst = new RTInstance() { accelerationStruct = btas };
                     inst.transform = renderable.transform;
                     inst.hitGroupName = "rayHit";
                     inst.SRVs = new();
                     inst.SRVs.Add(4, param.TextureFallBack(param.GetTex2D("_Albedo", material)));
                     inst.SRVs.Add(5, param.TextureFallBack(param.GetTex2D("_Emissive", material)));
+                    inst.SRVs.Add(6, param.TextureFallBack(param.GetTex2D("_MetallicRoughness", material)));
                     inst.CBVs = new();
                     inst.CBVs.Add(0, param.GetCBVData(CBVs[1]));
                     tpas.instances.Add(inst);

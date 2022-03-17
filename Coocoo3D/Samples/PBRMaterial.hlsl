@@ -59,7 +59,8 @@ Texture2D ShadowMap0 : register(t2);
 TextureCube EnvCube : register (t3);
 Texture2D BRDFLut : register(t4);
 Texture2D NormalMap : register(t5);
-StructuredBuffer<SH9C> giBuffer : register(t6);
+Texture2D MetallicRoughness : register(t6);
+StructuredBuffer<SH9C> giBuffer : register(t7);
 cbuffer cbAnimMatrices : register(b0)
 {
 	float4x4 g_mConstBoneWorld[MAX_BONE_MATRICES];
@@ -128,13 +129,14 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #endif
 	float NdotV = saturate(dot(N, V));
 	// Burley roughness bias
-	float roughness = max(_Roughness,0.002);
+	float4 metallicRoughness = MetallicRoughness.Sample(s1, input.Tex);
+	float roughness = max(_Roughness * metallicRoughness.g,0.002);
 	float alpha = roughness * roughness;
 
 	float3 albedo = texColor.rgb;
 
-	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic);
-	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic);
+	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallicRoughness.b);
+	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallicRoughness.b);
 
 	float3 outputColor = float3(0,0,0);
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
@@ -147,40 +149,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #ifndef ENABLE_GI
 	outputColor += skyLight * c_diffuse;
 #else
-	float3 giSamplePos = (((wPos.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
-	int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
-	float weights = 0;
-
-	float3 lp = frac(SH_RESOLUTION * giSamplePos);
-	float4 shDiffuse = float4(0, 0, 0, 0);
-	for (int i = 0; i < 2; i++)
-		for (int j = 0; j < 2; j++)
-			for (int k = 0; k < 2; k++)
-			{
-				int3 _xyz = int3(i, j, k);
-				int3 xyz = _xyz + samplePos1;
-				float3 p1 = abs(lp - (1 - _xyz));
-				float weight = p1.x * p1.y * p1.z;
-				//float weight = 1;
-				if (dot(N, _xyz - 0.5) >= -1e2)
-				{
-					if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
-					{
-						int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
-						SH9C sh9ca = giBuffer[index];
-						shDiffuse += GetSH9Color(sh9ca, N) * weight;
-						weights += weight;
-					}
-					else
-					{
-						shDiffuse += float4(skyLight * weight, 0);
-						weights += weight;
-					}
-				}
-			}
-	weights = max(weights, 1e-3);
-	shDiffuse /= weights;
-
+	float3 shDiffuse = GetSH(giBuffer, SH_RESOLUTION, g_GIVolumePosition, g_GIVolumeSize, N, wPos, skyLight);
 	outputColor += shDiffuse.rgb * c_diffuse;
 #endif
 #endif
@@ -208,6 +177,12 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #endif
 #if DEBUG_NORMAL
 	return float4(pow(N * 0.5 + 0.5, 2.2f), 1);
+#endif
+#if DEBUG_TANGENT
+	return float4(pow(normalize(input.Tangent) * 0.5 + 0.5, 2.2f), 1);
+#endif
+#if DEBUG_BITANGENT
+	return float4(pow(normalize(input.Bitangent) * 0.5 + 0.5, 2.2f), 1);
 #endif
 #if DEBUG_POSITION
 	return wPos;
@@ -239,7 +214,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 				sPos = sPos / sPos.w;
 				shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 				shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-				if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+				if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 					inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5 ,0.5), sPos.z).r;
 				else
 				{
@@ -247,7 +222,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 					sPos = sPos / sPos.w;
 					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+					if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5) + float2(0.5, 0), sPos.z).r;
 				}
 #endif
@@ -278,13 +253,13 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	for (int i = 0; i < POINT_LIGHT_COUNT; i++, shadowmapIndex += 6)
 	{
 		float inShadow = 1.0f;
-		float lightDistance = distance(PointLights[i].LightPos, wPos);
-		float lightRange = PointLights[i].LightRange;
-		if (lightRange < lightDistance)
-			continue;
-		float3 lightStrength = PointLights[i].LightColor.rgb / pow(lightDistance, 2);
-
 		float3 vl = PointLights[i].LightPos - wPos;
+		float lightDistance2 = dot(vl, vl);
+		float lightRange = PointLights[i].LightRange;
+		if (pow2(lightRange) < lightDistance2)
+			continue;
+		float3 lightStrength = PointLights[i].LightColor.rgb / lightDistance2;
+
 
 		float3 L = normalize(vl);
 		float3 H = normalize(L + V);
@@ -332,8 +307,6 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 				mapindex++;
 			float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
 			float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
-			if (samplePos.x < 0 || samplePos.x>1 || samplePos.y < 0 || samplePos.y>1)
-				return float4(1, 0, 1, 1);
 			float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
 			inShadow = (shadowDepth) > getDepth(abs(vl.z), lightRange * 0.001f, lightRange) ? 1 : 0;
 		}

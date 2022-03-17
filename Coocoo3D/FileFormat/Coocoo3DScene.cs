@@ -132,6 +132,33 @@ namespace Coocoo3D.FileFormat
                     }
                     scene.objects.Add(sceneObject);
                 }
+                var meshRenderer = obj.GetComponent<MeshRendererComponent>();
+                if (meshRenderer != null)
+                {
+                    CooSceneObject sceneObject = new CooSceneObject(obj);
+                    sceneObject.type = "model";
+                    sceneObject.path = meshRenderer.meshPath;
+                    sceneObject.materials = new Dictionary<string, _cooMaterial>();
+                    foreach (var material in meshRenderer.Materials)
+                    {
+                        _cooMaterial material1 = new _cooMaterial();
+                        material1.transparent = material.Transparent;
+                        material1.textures = new Dictionary<string, string>(material.textures);
+
+                        sceneObject.materials[material.Name] = material1;
+
+                        foreach (var customValue in material.Parameters)
+                        {
+                            if (_func1(ref material1.fValue, customValue)) continue;
+                            if (_func1(ref material1.f2Value, customValue)) continue;
+                            if (_func1(ref material1.f3Value, customValue)) continue;
+                            if (_func1(ref material1.f4Value, customValue)) continue;
+                            if (_func1(ref material1.bValue, customValue)) continue;
+                            if (_func1(ref material1.iValue, customValue)) continue;
+                        }
+                    }
+                    scene.objects.Add(sceneObject);
+                }
                 var lighting = obj.GetComponent<LightingComponent>();
                 if (lighting != null)
                 {
@@ -196,7 +223,21 @@ namespace Coocoo3D.FileFormat
                     }
                     if (obj.materials != null)
                     {
-                        Mat2Mat(obj.materials, renderer, main);
+                        Mat2Mat(obj.materials, renderer.Materials, main);
+                    }
+                    main.CurrentScene.AddGameObject(gameObject);
+                }
+                else if(obj.type == "model")
+                {
+                    string path = obj.path;
+                    ModelPack modelPack = main.mainCaches.GetModel(path);
+
+                    modelPack.LoadMeshComponent(gameObject);
+                    var renderer = gameObject.GetComponent<MeshRendererComponent>();
+
+                    if (obj.materials != null)
+                    {
+                        Mat2Mat(obj.materials, renderer.Materials, main);
                     }
                     main.CurrentScene.AddGameObject(gameObject);
                 }
@@ -226,9 +267,9 @@ namespace Coocoo3D.FileFormat
             }
             main.GameDriverContext.RequireResetPhysics = true;
         }
-        void Mat2Mat(Dictionary<string, _cooMaterial> materials, MMDRendererComponent renderer, Coocoo3DMain main)
+        void Mat2Mat(Dictionary<string, _cooMaterial> materials, List<RenderMaterial> renderMaterials, Coocoo3DMain main)
         {
-            foreach (var mat in renderer.Materials)
+            foreach (var mat in renderMaterials)
             {
                 if (!materials.TryGetValue(mat.Name, out _cooMaterial mat1)) continue;
 

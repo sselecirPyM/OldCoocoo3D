@@ -14,7 +14,9 @@ namespace Coocoo3DGraphics
         }
 
         public bool initialized = false;
-        public int startIndex;
+        public int vertexStart;
+        public int vertexCount;
+        public int indexStart;
         public int indexCount;
         public Mesh mesh;
         public Mesh meshOverride;

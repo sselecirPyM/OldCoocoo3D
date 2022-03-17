@@ -196,13 +196,20 @@ namespace Coocoo3D.UI
 
         public static void LoadEntityIntoScene(Coocoo3DMain main, Scene scene, FileInfo pmxFile)
         {
-            string pmxPath = pmxFile.FullName;
-            ModelPack modelPack = main.mainCaches.GetModel(pmxPath);
+            string path = pmxFile.FullName;
+            ModelPack modelPack = main.mainCaches.GetModel(path);
+            PreloadTextures(main, modelPack);
             if (modelPack.pmx != null)
             {
-                PreloadTextures(main, modelPack);
                 GameObject gameObject = new GameObject();
                 gameObject.LoadPmx(modelPack);
+                scene.AddGameObject(gameObject);
+            }
+            else
+            {
+                GameObject gameObject = new GameObject();
+                gameObject.Name = Path.GetFileNameWithoutExtension(path);
+                modelPack.LoadMeshComponent(gameObject);
                 scene.AddGameObject(gameObject);
             }
 

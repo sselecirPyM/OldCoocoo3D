@@ -223,20 +223,25 @@ namespace Coocoo3D.Core
             {
                 var gameObject = gameObjects[i];
 
-                var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
-                if (renderComponent != null)
+                var render = gameObject.GetComponent<MMDRendererComponent>();
+                var meshRender = gameObject.GetComponent<MeshRendererComponent>();
+                if (render != null)
                 {
-                    rendererComponents.Add(renderComponent);
+                    rendererComponents.Add(render);
                 }
                 if (setTransform.TryGetValue(gameObject, out var transform))
                 {
                     gameObject.Transform = transform;
-                    if (renderComponent != null)
+                    if (render != null)
                     {
-                        renderComponent.SetTransform( transform);
-                        var phyObj = GetOrCreatePhysics(renderComponent);
-                        TransformToNew(renderComponent, phyObj.rigidbodies);
+                        render.SetTransform(transform);
+                        var phyObj = GetOrCreatePhysics(render);
+                        TransformToNew(render, phyObj.rigidbodies);
                         resetPhysics = true;
+                    }
+                    if (meshRender != null)
+                    {
+                        meshRender.transform = transform;
                     }
                 }
             }

@@ -662,6 +662,7 @@ vmd格式动作");
             var lighting = gameObject.GetComponent<LightingComponent>();
             var volumeComponent = gameObject.GetComponent<VolumeComponent>();
             var renderer = gameObject.GetComponent<MMDRendererComponent>();
+            var meshRenderer = gameObject.GetComponent<MeshRendererComponent>();
             var particleEffect = gameObject.GetComponent<ParticleEffectComponent>();
 
             ImGui.InputText("名称", ref gameObject.Name, 256);
@@ -696,6 +697,10 @@ vmd格式动作");
             {
                 RendererComponent(main, renderer);
             }
+            if (meshRenderer != null)
+            {
+                RendererComponent(main, meshRenderer);
+            }
             if (lighting != null && ImGui.TreeNode("光照"))
             {
                 int current = (int)lighting.LightingType;
@@ -717,51 +722,22 @@ vmd格式动作");
             }
         }
 
-        static void RendererComponent(Coocoo3DMain main, MMDRendererComponent rendererComponent)
+        static void RendererComponent(Coocoo3DMain main, MMDRendererComponent renderer)
         {
             var io = ImGui.GetIO();
             if (ImGui.TreeNode("材质"))
             {
-                if (ImGui.BeginChild("materials", new Vector2(120, 400)))
-                {
-                    ImGui.PushItemWidth(120);
-                    for (int i = 0; i < rendererComponent.Materials.Count; i++)
-                    {
-                        RenderMaterial material = rendererComponent.Materials[i];
-                        bool selected = i == materialSelectIndex;
-                        ImGui.Selectable(string.Format("{0}##{1}", material.Name, i), ref selected);
-                        if (selected) materialSelectIndex = i;
-                    }
-                    ImGui.PopItemWidth();
-                }
-                ImGui.EndChild();
-                ImGui.SameLine();
-                if (ImGui.BeginChild("materialProperty", new Vector2(180, 400)))
-                {
-                    if (materialSelectIndex >= 0 && materialSelectIndex < rendererComponent.Materials.Count)
-                    {
-                        var material = rendererComponent.Materials[materialSelectIndex];
-                        ImGui.Text(material.Name);
-
-                        //ImGui.Checkbox("蒙皮", ref material.Skinning);
-
-                        ImGui.Checkbox("透明材质", ref material.Transparent);
-                        var currentPassSetting = main.RPContext.dynamicContextRead.currentPassSetting;
-                        ShowParams(currentPassSetting.ShowParameters, material.Parameters);
-                        ShowTextures(main, "material", currentPassSetting.ShowTextures, material.textures);
-                    }
-                }
-                ImGui.EndChild();
+                ShowMaterials(main, renderer.Materials);
                 ImGui.TreePop();
             }
             if (ImGui.TreeNode("变形"))
             {
-                ImGui.Checkbox("蒙皮", ref rendererComponent.skinning);
+                ImGui.Checkbox("蒙皮", ref renderer.skinning);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("关闭蒙皮可以提高性能");
-                ImGui.Checkbox("锁定动作", ref rendererComponent.LockMotion);
-                var morphStates = rendererComponent.morphStateComponent;
-                if (rendererComponent.LockMotion)
+                ImGui.Checkbox("锁定动作", ref renderer.LockMotion);
+                var morphStates = renderer.morphStateComponent;
+                if (renderer.LockMotion)
                     for (int i = 0; i < morphStates.morphs.Count; i++)
                     {
                         MorphDesc morpth = morphStates.morphs[i];
@@ -772,6 +748,50 @@ vmd格式动作");
                     }
                 ImGui.TreePop();
             }
+        }
+
+        static void RendererComponent(Coocoo3DMain main, MeshRendererComponent renderer)
+        {
+            var io = ImGui.GetIO();
+            if (ImGui.TreeNode("材质"))
+            {
+                ShowMaterials(main,renderer.Materials);
+                ImGui.TreePop();
+            }
+        }
+
+        static void ShowMaterials(Coocoo3DMain main, List<RenderMaterial> materials)
+        {
+            if (ImGui.BeginChild("materials", new Vector2(120, 400)))
+            {
+                ImGui.PushItemWidth(120);
+                for (int i = 0; i < materials.Count; i++)
+                {
+                    RenderMaterial material = materials[i];
+                    bool selected = i == materialSelectIndex;
+                    ImGui.Selectable(string.Format("{0}##{1}", material.Name, i), ref selected);
+                    if (selected) materialSelectIndex = i;
+                }
+                ImGui.PopItemWidth();
+            }
+            ImGui.EndChild();
+            ImGui.SameLine();
+            if (ImGui.BeginChild("materialProperty", new Vector2(180, 400)))
+            {
+                if (materialSelectIndex >= 0 && materialSelectIndex < materials.Count)
+                {
+                    var material = materials[materialSelectIndex];
+                    ImGui.Text(material.Name);
+
+                    //ImGui.Checkbox("蒙皮", ref material.Skinning);
+
+                    ImGui.Checkbox("透明材质", ref material.Transparent);
+                    var currentPassSetting = main.RPContext.dynamicContextRead.currentPassSetting;
+                    ShowParams(currentPassSetting.ShowParameters, material.Parameters);
+                    ShowTextures(main, "material", currentPassSetting.ShowTextures, material.textures);
+                }
+            }
+            ImGui.EndChild();
         }
 
         static void SceneView(Coocoo3DMain appBody, RenderPipeline.VisualChannel channel, float mouseWheelDelta, Vector2 mouseMoveDelta)

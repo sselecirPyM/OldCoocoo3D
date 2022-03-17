@@ -150,11 +150,11 @@ bool pointInLightRange(int index, float3 position)
 	float4 pos1 = float4(position, 1);
 	sPos = mul(pos1, LightMapVP);
 	sPos = sPos / sPos.w;
-	if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+	if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 		return true;
 	sPos = mul(pos1, LightMapVP1);
 	sPos = sPos / sPos.w;
-	if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+	if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 		return true;
 	return false;
 }
@@ -169,7 +169,7 @@ float pointInLight(int index, float3 position)
 	sPos = sPos / sPos.w;
 	shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 	shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-	if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+	if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 		inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5), sPos.z).r;
 	else
 	{
@@ -177,7 +177,7 @@ float pointInLight(int index, float3 position)
 		sPos = sPos / sPos.w;
 		shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
 		shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-		if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
+		if (all(sPos.xy >= -1) && all(sPos.xy <= 1))
 			inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 0.5) + float2(0.5, 0), sPos.z).r;
 	}
 	return inShadow;
@@ -254,55 +254,7 @@ float4 psmain(PSIn input) : SV_TARGET
 #ifndef ENABLE_GI
 		outputColor += skyLight * c_diffuse * AO;
 #else
-		float3 giSamplePos = (((wPos.xyz - g_GIVolumePosition) / g_GIVolumeSize) + 0.5f);
-		int3 samplePos1 = floor(SH_RESOLUTION * giSamplePos);
-		float weights = 0;
-
-		float3 lp = frac(SH_RESOLUTION * giSamplePos);
-		float4 shDiffuse = float4(0, 0, 0, 0);
-#if DEBUG_DIFFUSE_PROBES
-		int3 xyz = round(SH_RESOLUTION * giSamplePos);
-		float3 p1 = abs(lp - 1);
-		if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
-		{
-			int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
-			SH9C sh9ca = giBuffer[index];
-			shDiffuse += GetSH9Color(sh9ca, N);
-		}
-		else
-		{
-			shDiffuse += float4(skyLight, 0);
-		}
-		weights += 1;
-#else
-		for (int i = 0; i < 2; i++)
-			for (int j = 0; j < 2; j++)
-				for (int k = 0; k < 2; k++)
-				{
-					int3 _xyz = int3(i, j, k);
-					int3 xyz = _xyz + samplePos1;
-					float3 p1 = abs(lp - (1 - _xyz));
-					float weight = p1.x * p1.y * p1.z;
-					if (dot(N, _xyz - 0.5) >= -1e2)
-					{
-						if (xyz.x < SH_RESOLUTION && xyz.y < SH_RESOLUTION && xyz.z < SH_RESOLUTION && xyz.x >= 0 & xyz.y >= 0 && xyz.z >= 0)
-						{
-							int index = xyz.x + xyz.y * SH_RESOLUTION + xyz.z * SH_RESOLUTION * SH_RESOLUTION;
-							SH9C sh9ca = giBuffer[index];
-							shDiffuse += GetSH9Color(sh9ca, N) * weight;
-							weights += weight;
-						}
-						else
-						{
-							shDiffuse += float4(skyLight * weight, 0);
-							weights += weight;
-						}
-					}
-				}
-#endif
-		weights = max(weights, 1e-3);
-		shDiffuse /= weights;
-
+		float3 shDiffuse = GetSH(giBuffer, SH_RESOLUTION, g_GIVolumePosition, g_GIVolumeSize, N, wPos, skyLight);
 		outputColor += shDiffuse.rgb * c_diffuse * AO;
 #endif
 #endif
@@ -377,13 +329,13 @@ float4 psmain(PSIn input) : SV_TARGET
 		for (int i = 0; i < POINT_LIGHT_COUNT; i++,shadowmapIndex += 6)
 		{
 			float inShadow = 1.0f;
-			float lightDistance = distance(PointLights[i].LightPos, wPos);
-			float lightRange = PointLights[i].LightRange;
-			if (lightRange < lightDistance)
-				continue;
-			float3 lightStrength = PointLights[i].LightColor.rgb / pow(lightDistance, 2);
 
 			float3 vl = PointLights[i].LightPos - wPos;
+			float lightDistance2 = dot(vl, vl);
+			float lightRange = PointLights[i].LightRange;
+			if (pow2(lightRange) < lightDistance2)
+				continue;
+			float3 lightStrength = PointLights[i].LightColor.rgb / lightDistance2;
 
 			float3 L = normalize(vl);
 			float3 H = normalize(L + V);
@@ -431,8 +383,6 @@ float4 psmain(PSIn input) : SV_TARGET
 					mapindex++;
 				float _x = (float)(mapindex % g_lightMapSplit) / (float)g_lightMapSplit;
 				float _y = (float)(mapindex / g_lightMapSplit) / (float)g_lightMapSplit;
-				if (samplePos.x < 0 || samplePos.x>1 || samplePos.y < 0 || samplePos.y>1)
-					return float4(1, 0, 1, 1);
 				float shadowDepth = ShadowMap0.SampleLevel(s3, samplePos / g_lightMapSplit + float2(_x, _y + 0.5), 0);
 				inShadow = (shadowDepth) > getDepth(abs(vl.z), lightRange * 0.001f, lightRange) ? 1 : 0;
 			}
@@ -470,41 +420,20 @@ float4 psmain(PSIn input) : SV_TARGET
 			uint randomState = RNG::RandomSeed(sx.x + sx.y * 2048 + g_RandomI);
 
 			if (!any(Lightings[i].LightColor))continue;
-			if (Lightings[i].LightType == 0)
+			float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
+			float volumeLightIterStep = volumeLightMaxDistance / volumeLightIterCount;
+			volumeLightIterStep /= sqrt(clamp(1 - pow2(dot(Lightings[i].LightDir, -V)), 0.04, 1));
+			float offset = RNG::Random01(randomState) * volumeLightIterStep;
+			for (int j = 0; j < volumeLightIterCount; j++)
 			{
-				float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
-				float volumeLightIterStep = volumeLightMaxDistance / volumeLightIterCount;
-				volumeLightIterStep /= sqrt(clamp(1 - pow2(dot(Lightings[i].LightDir, -V)), 0.04, 1));
-				float offset = RNG::Random01(randomState) * volumeLightIterStep;
-				float3 samplePos1 = g_camPos;
-				for (int j = 0; j < volumeLightIterCount; j++)
+				if (j * volumeLightIterStep + offset > camDist)
 				{
-					if (j * volumeLightIterStep + offset > camDist)
-					{
-						break;
-					}
-					float inShadow = 1.0f;
-					float4 samplePos = float4(g_camPos - V * (volumeLightIterStep * j + offset), 1);
-					float4 sPos;
-					float2 shadowTexCoords;
-					sPos = mul(samplePos, LightMapVP);
-					sPos = sPos / sPos.w;
-					shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
-					shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-					if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-						inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1), sPos.z).r;
-					else
-					{
-						sPos = mul(samplePos, LightMapVP1);
-						sPos = sPos / sPos.w;
-						shadowTexCoords.x = 0.5f + (sPos.x * 0.5f);
-						shadowTexCoords.y = 0.5f - (sPos.y * 0.5f);
-						if (sPos.x >= -1 && sPos.x <= 1 && sPos.y >= -1 && sPos.y <= 1)
-							inShadow = ShadowMap0.SampleCmpLevelZero(sampleShadowMap0, shadowTexCoords * float2(0.5, 1) + float2(0.5, 0), sPos.z).r;
-					}
-
-					outputColor += inShadow * lightStrength * volumeLightIterStep * volumeLightIntensity;
+					break;
 				}
+				float4 samplePos = float4(g_camPos - V * (volumeLightIterStep * j + offset), 1);
+				float inShadow = pointInLight(0, samplePos.xyz);
+
+				outputColor += inShadow * lightStrength * volumeLightIterStep * volumeLightIntensity;
 			}
 		}
 #endif

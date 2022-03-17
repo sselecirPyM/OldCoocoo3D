@@ -9,12 +9,16 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Mesh = Coocoo3DGraphics.Mesh;
+using glTFLoader;
+using glTFLoader.Schema;
+using System.Runtime.InteropServices;
+using Coocoo3D.Present;
 
 namespace Coocoo3D.ResourceWarp
 {
     public class ModelPack
     {
-        public PMXFormat pmx = new PMXFormat();
+        public PMXFormat pmx;
 
         public string fullPath;
 
@@ -35,8 +39,8 @@ namespace Coocoo3D.ResourceWarp
 
         public List<RenderMaterial> Materials = new List<RenderMaterial>();
 
-        public List<RigidBodyDesc> rigidBodyDescs = new List<RigidBodyDesc>();
-        public List<JointDesc> jointDescs = new List<JointDesc>();
+        public List<RigidBodyDesc> rigidBodyDescs;
+        public List<JointDesc> jointDescs;
 
         public List<BoneEntity> bones;
         public List<MorphDesc> morphs;
@@ -78,26 +82,213 @@ namespace Coocoo3D.ResourceWarp
 
         public void LoadModel(string fileName)
         {
-            //textures = new List<string>();
-            //unsafe
-            //{
-            //    using var assimp = Assimp.GetApi();
+            var dir = Path.GetDirectoryName(fileName);
+            var deserializedFile = Interface.LoadModel(fileName);
+            byte[][] buffers = new byte[(int)deserializedFile.Buffers?.Length][];
+            for (int i = 0; i < deserializedFile.Buffers?.Length; i++)
+            {
+                var expectedLength = deserializedFile.Buffers[i].ByteLength;
 
-            //    var scene = assimp.ImportFile(fileName, (uint)PostProcessSteps.CalculateTangentSpace);
-            //    Console.WriteLine("meshes: " + scene->MNumMeshes);
-            //    for (int i = 0; i < scene->MNumMeshes; i++)
-            //    {
-            //        int vertCount = (int)scene->MMeshes[i]->MNumVertices;
-            //        Console.WriteLine("verts: " + vertCount + " totalVerts: " + pmx.Vertices.Length);
-            //    }
-            //    for (int i = 0; i < scene->MNumTextures; i++)
-            //        Console.WriteLine(scene->MTextures[i]->MFilename.AsString);
+                var bufferBytes = deserializedFile.LoadBinaryBuffer(i, fileName);
+                buffers[i] = bufferBytes;
+            }
+            textures = new List<string>();
+            for (int i = 0; i < deserializedFile.Images?.Length; i++)
+            {
+                var image = deserializedFile.Images[i];
+                string name = Path.GetFullPath(image.Uri, dir);
+                textures.Add(name);
+            }
+            string whiteTexture = Path.GetFullPath("Assets/Textures/white.png");
+            List<RenderMaterial> _materials = new();
+            for (int i = 0; i < deserializedFile.Materials?.Length; i++)
+            {
+                var material = deserializedFile.Materials[i];
+                var renderMaterial = new RenderMaterial()
+                {
+                    Name = material.Name,
+                    textures = new Dictionary<string, string>(),
+                };
+                if (material.PbrMetallicRoughness.BaseColorTexture != null)
+                {
+                    int index = material.PbrMetallicRoughness.BaseColorTexture.Index;
+                    renderMaterial.textures["_Albedo"] = textures[GLTFGetTexture(deserializedFile, index)];
+                }
+                else
+                {
+                    renderMaterial.textures["_Albedo"] = whiteTexture;
+                }
+                if (material.PbrMetallicRoughness.MetallicRoughnessTexture != null)
+                {
+                    int index = material.PbrMetallicRoughness.MetallicRoughnessTexture.Index;
+                    renderMaterial.textures["_MetallicRoughness"] = textures[GLTFGetTexture(deserializedFile, index)];
+                }
+                else
+                {
+                    renderMaterial.textures["_MetallicRoughness"] = whiteTexture;
+                }
+                if (material.EmissiveTexture != null)
+                {
+                    int index = material.EmissiveTexture.Index;
+                    renderMaterial.textures["_Emissive"] = textures[GLTFGetTexture(deserializedFile, index)];
+                    renderMaterial.Parameters["Emissive"] = 1.0f;
+                }
+                if (material.NormalTexture != null)
+                {
+                    int index = material.NormalTexture.Index;
+                    renderMaterial.textures["_Normal"] = textures[GLTFGetTexture(deserializedFile, index)];
+                    renderMaterial.Parameters["UseNormalMap"] = true;
+                }
+
+                renderMaterial.Parameters["Metallic"] = material.PbrMetallicRoughness.MetallicFactor;
+                renderMaterial.Parameters["Roughness"] = material.PbrMetallicRoughness.RoughnessFactor;
+
+                _materials.Add(renderMaterial);
+            }
+            Span<T> GetBuffer<T>(int accessorIndex) where T : struct
+            {
+                var accessor = deserializedFile.Accessors[accessorIndex];
+                var bufferView = deserializedFile.BufferViews[(int)accessor.BufferView];
+                var buffer = buffers[bufferView.Buffer];
+                return MemoryMarshal.Cast<byte, T>(new Span<byte>(buffer, bufferView.ByteOffset, bufferView.ByteLength));
+            }
+
+            Accessor.ComponentTypeEnum GetAccessorComponentType(int accessorIndex)
+            {
+                var accessor = deserializedFile.Accessors[accessorIndex];
+                return accessor.ComponentType;
+            }
+
+            Vector3 scale = Vector3.One;
+            if (deserializedFile.Nodes.Length == 1)
+            {
+                var scale1 = deserializedFile.Nodes[0].Scale;
+                scale = new Vector3(scale1[0], scale1[1], scale1[2]);
+            }
+
+            int vertexCount = 0;
+            int indexCount = 0;
+            for (int i = 0; i < deserializedFile.Meshes?.Length; i++)
+            {
+                var mesh = deserializedFile.Meshes[i];
+                for (int j = 0; j < mesh.Primitives.Length; j++)
+                {
+                    var primitive = mesh.Primitives[j];
+                    primitive.Attributes.TryGetValue("POSITION", out int pos1);
+
+                    var position = GetBuffer<Vector3>(pos1);
+                    vertexCount += position.Length;
+                    var format = GetAccessorComponentType(primitive.Indices.Value);
+                    if (format == Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
+                    {
+                        var indices = GetBuffer<ushort>(primitive.Indices.Value);
+                        indexCount += indices.Length;
+                    }
+                    else if (format == Accessor.ComponentTypeEnum.UNSIGNED_INT)
+                    {
+                        var indices = GetBuffer<uint>(primitive.Indices.Value);
+                        indexCount += indices.Length;
+                    }
+                }
+            }
+            indices = new int[indexCount];
+            this.vertexCount = vertexCount;
+            position = new Vector3[vertexCount];
+            normal = new Vector3[vertexCount];
+            uv = new Vector2[vertexCount];
+            tangent = new Vector4[vertexCount];
+            var positionWriter = new SpanWriter<Vector3>(position);
+            var normalWriter = new SpanWriter<Vector3>(normal);
+            var uvWriter = new SpanWriter<Vector2>(uv);
+            var indicesWriter = new SpanWriter<int>(indices);
+            var tangentWriter = new SpanWriter<Vector4>(tangent);
+            for (int i = 0; i < deserializedFile.Meshes?.Length; i++)
+            {
+                var mesh = deserializedFile.Meshes[i];
+                for (int j = 0; j < mesh.Primitives.Length; j++)
+                {
+                    var primitive = mesh.Primitives[j];
+
+                    var material = _materials[primitive.Material.Value].GetClone();
+                    material.Name = Materials.Count.ToString();
+                    int vertexStart = positionWriter.currentPosition;
+                    material.vertexStart = vertexStart;
+                    //material.vertexStart = 0;
+                    material.indexOffset = indicesWriter.currentPosition;
+                    Materials.Add(material);
+
+                    primitive.Attributes.TryGetValue("POSITION", out int pos1);
+                    var bufferPos1 = GetBuffer<Vector3>(pos1);
+                    positionWriter.Write(bufferPos1);
+                    primitive.Attributes.TryGetValue("NORMAL", out int norm1);
+                    normalWriter.Write(GetBuffer<Vector3>(norm1));
+
+                    primitive.Attributes.TryGetValue("TEXCOORD_0", out int uv1);
+                    uvWriter.Write(GetBuffer<Vector2>(uv1));
+
+                    material.vertexCount = bufferPos1.Length;
+                    //material.vertexCount = vertexCount;
+                    var format = GetAccessorComponentType(primitive.Indices.Value);
+                    if (format == Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
+                    {
+                        var indices = GetBuffer<ushort>(primitive.Indices.Value);
+                        for (int k = 0; k < indices.Length; k++)
+                            indicesWriter.Write(indices[k]);
+                        material.indexCount = indices.Length;
+                    }
+                    else if (format == Accessor.ComponentTypeEnum.UNSIGNED_INT)
+                    {
+                        var indices = GetBuffer<uint>(primitive.Indices.Value);
+                        for (int k = 0; k < indices.Length; k++)
+                            indicesWriter.Write((int)indices[k]);
+                        material.indexCount = indices.Length;
+                    }
+
+                    for (int k = material.indexOffset; k < material.indexOffset + material.indexCount; k += 3)
+                    {
+                        (indices[k], indices[k + 1], indices[k + 2]) = (indices[k + 2], indices[k + 1], indices[k]);
+                    }
+
+                    for (int k = vertexStart; k < vertexStart + bufferPos1.Length; k++)
+                    {
+                        position[k] *= scale;
+                    }
+
+                    if (primitive.Attributes.TryGetValue("TANGENT", out int tan1))
+                    {
+                        tangentWriter.Write(GetBuffer<Vector4>(tan1));
+                    }
+                    else
+                    {
+                        ComputeTangent(vertexStart, bufferPos1.Length, material.indexOffset, material.indexCount);
+                    }
+                    //for (int k = material.indexOffset; k < material.indexOffset + material.indexCount; k++)
+                    //{
+                    //    indices[k] += vertexStart;
+                    //}
+                }
+            }
+
+            //for (int k = 0; k < vertexCount; k++)
+            //{
+            //    position[k] *= scale;
             //}
+
         }
-        public void LoadPMX(BinaryReader reader, string fileName)
+
+        static int GLTFGetTexture(Gltf gltf, int index)
         {
+            return (int)gltf.Textures[index].Source;
+        }
+
+        public void LoadPMX(string fileName)
+        {
+            BinaryReader reader = new BinaryReader(new FileInfo(fileName).OpenRead());
             string folder = Path.GetDirectoryName(fileName);
+
+            pmx = new PMXFormat();
             pmx.Reload(reader);
+            reader.Dispose();
             name = string.Format("{0} {1}", pmx.Name, pmx.NameEN);
             description = string.Format("{0}\n{1}", pmx.Description, pmx.DescriptionEN);
             textures = new List<string>();
@@ -109,12 +300,12 @@ namespace Coocoo3D.ResourceWarp
             }
             skinning = true;
             vertexCount = pmx.Vertices.Length;
-            position = new Vector3[pmx.Vertices.Length];
-            normal = new Vector3[pmx.Vertices.Length];
-            uv = new Vector2[pmx.Vertices.Length];
-            boneId = new ushort[pmx.Vertices.Length * 4];
-            boneWeights = new float[pmx.Vertices.Length * 4];
-            tangent = new Vector4[pmx.Vertices.Length];
+            position = new Vector3[vertexCount];
+            normal = new Vector3[vertexCount];
+            uv = new Vector2[vertexCount];
+            tangent = new Vector4[vertexCount];
+            boneId = new ushort[vertexCount * 4];
+            boneWeights = new float[vertexCount * 4];
             for (int i = 0; i < pmx.Vertices.Length; i++)
             {
                 position[i] = pmx.Vertices[i].Coordinate;
@@ -138,54 +329,59 @@ namespace Coocoo3D.ResourceWarp
 
             indices = new int[pmx.TriangleIndexs.Length];
             pmx.TriangleIndexs.CopyTo(new Span<int>(indices));
+
+            string whiteTexture = Path.GetFullPath("Assets/Textures/white.png");
             int indexOffset = 0;
             for (int i = 0; i < pmx.Materials.Count; i++)
             {
                 var mmdMat = pmx.Materials[i];
 
-                RenderMaterial mat = new RenderMaterial
+                RenderMaterial material = new RenderMaterial
                 {
                     Name = mmdMat.Name,
                     indexCount = mmdMat.TriangeIndexNum,
                     indexOffset = indexOffset,
+                    vertexCount = vertexCount
                 };
                 Vector3 min;
                 Vector3 max;
                 min = position[pmx.TriangleIndexs[indexOffset]];
                 max = position[pmx.TriangleIndexs[indexOffset]];
-                for (int k = 0; k < mat.indexCount; k++)
+                for (int k = 0; k < material.indexCount; k++)
                 {
                     min = Vector3.Min(min, position[pmx.TriangleIndexs[indexOffset + k]]);
                     max = Vector3.Max(max, position[pmx.TriangleIndexs[indexOffset + k]]);
                 }
 
-                mat.boundingBox = new Vortice.Mathematics.BoundingBox(min, max);
-                mat.DrawDoubleFace = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawDoubleFace);
-                mat.Parameters["DiffuseColor"] = mmdMat.DiffuseColor;
-                mat.Parameters["SpecularColor"] = mmdMat.SpecularColor;
-                mat.Parameters["EdgeSize"] = mmdMat.EdgeScale;
-                mat.Parameters["AmbientColor"] = mmdMat.AmbientColor;
-                mat.Parameters["EdgeColor"] = mmdMat.EdgeColor;
-                mat.Parameters["CastShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.CastSelfShadow);
-                mat.Parameters["ReceiveShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawSelfShadow);
+                material.boundingBox = new Vortice.Mathematics.BoundingBox(min, max);
+                material.DrawDoubleFace = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawDoubleFace);
+                material.Parameters["DiffuseColor"] = mmdMat.DiffuseColor;
+                material.Parameters["SpecularColor"] = mmdMat.SpecularColor;
+                material.Parameters["EdgeSize"] = mmdMat.EdgeScale;
+                material.Parameters["AmbientColor"] = mmdMat.AmbientColor;
+                material.Parameters["EdgeColor"] = mmdMat.EdgeColor;
+                material.Parameters["CastShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.CastSelfShadow);
+                material.Parameters["ReceiveShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawSelfShadow);
                 indexOffset += mmdMat.TriangeIndexNum;
                 if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)
                 {
                     string relativePath = pmx.Textures[mmdMat.TextureIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
                     string texPath = Path.GetFullPath(relativePath, folder);
 
-                    mat.textures["_Albedo"] = texPath;
+                    material.textures["_Albedo"] = texPath;
                 }
                 else if (i > 0)
                 {
                     var prevMat = Materials[i - 1];
-                    mat.textures["_Albedo"] = prevMat.textures["_Albedo"];
+                    material.textures["_Albedo"] = prevMat.textures["_Albedo"];
                 }
+                material.textures["_MetallicRoughness"] = whiteTexture;
 
-                Materials.Add(mat);
+                Materials.Add(material);
             }
 
             var rigidBodys = pmx.RigidBodies;
+            rigidBodyDescs = new List<RigidBodyDesc>();
             for (int i = 0; i < rigidBodys.Count; i++)
             {
                 var rigidBodyData = rigidBodys[i];
@@ -194,63 +390,11 @@ namespace Coocoo3D.ResourceWarp
                 rigidBodyDescs.Add(rigidBodyDesc);
             }
             var joints = pmx.Joints;
+            jointDescs = new List<JointDesc>();
             for (int i = 0; i < joints.Count; i++)
                 jointDescs.Add(GetJointDesc(joints[i]));
 
-            {
-                //Vector3[] tangent = new Vector3[vertexCount];
-                Vector3[] bitangent = new Vector3[vertexCount];
-                for (int i = 0; i < vertexCount; i++)
-                {
-                    tangent[i] = new Vector4(0.0F, 0.0F, 0.0F, 0.0F);
-                    bitangent[i] = new Vector3(0.0F, 0.0F, 0.0F);
-                }
-                // Calculate tangent and bitangent for each triangle and add to all three vertices.
-                for (int k = 0; k < indices.Length; k += 3)
-                {
-                    int i0 = indices[k];
-                    int i1 = indices[k + 1];
-                    int i2 = indices[k + 2];
-                    Vector3 p0 = position[i0];
-                    Vector3 p1 = position[i1];
-                    Vector3 p2 = position[i2];
-                    Vector2 w0 = uv[i0];
-                    Vector2 w1 = uv[i1];
-                    Vector2 w2 = uv[i2];
-                    Vector3 e1 = p1 - p0;
-                    Vector3 e2 = p2 - p0;
-                    float x1 = w1.X - w0.X, x2 = w2.X - w0.X;
-                    float y1 = w1.Y - w0.Y, y2 = w2.Y - w0.Y;
-                    float r = 1.0F / (x1 * y2 - x2 * y1);
-                    Vector3 t = (e1 * y2 - e2 * y1) * r;
-                    Vector3 b = (e2 * x1 - e1 * x2) * r;
-                    tangent[i0] += new Vector4(t, 0);
-                    tangent[i1] += new Vector4(t, 0);
-                    tangent[i2] += new Vector4(t, 0);
-                    bitangent[i0] += b;
-                    bitangent[i1] += b;
-                    bitangent[i2] += b;
-                }
-                //// Orthonormalize each tangent and calculate the handedness.
-                //for (int i = 0; i < vertexCount; i++)
-                //{
-                //    Vector3 t = tangent[i];
-                //    Vector3 b = bitangent[i];
-                //    Vector3 n = normalArray[i];
-                //    tangentArray[i].xyz() = Vector3.Normalize(Reject(t, n));
-                //    tangentArray[i].w = (Vector3.Dot(Vector3.Cross(t, b), n) > 0.0F) ? 1.0F : -1.0F;
-                //}
-                for (int i = 0; i < vertexCount; i++)
-                {
-                    float factor = 1.0f;
-                    Vector3 t1 = Vector3.Cross(bitangent[i], normal[i]);
-                    if (Vector3.Dot(t1, new Vector3(tangent[i].X, tangent[i].Y, tangent[i].Z)) > 0)
-                        factor = -1;
-                    else
-                        factor = 1;
-                    tangent[i] = new Vector4(Vector3.Normalize(t1) * factor, factor);
-                }
-            }
+            ComputeTangent(0, vertexCount, 0, indices.Length);
 
             {
                 bones = new List<BoneEntity>();
@@ -300,6 +444,68 @@ namespace Coocoo3D.ResourceWarp
                 {
                     morphs.Add(PMXFormatExtension.Translate(pmx.Morphs[i]));
                 }
+            }
+        }
+
+        void ComputeTangent(int vertexStart, int vertexCount, int indexStart, int indexCount)
+        {
+            int vertexEnd = vertexStart + vertexCount;
+            int indexEnd = indexStart + indexCount;
+
+            Vector3[] bitangent = new Vector3[vertexCount];
+            for (int i = vertexStart; i < vertexEnd; i++)
+            {
+                tangent[i] = new Vector4(0.0F, 0.0F, 0.0F, 0.0F);
+            }
+            for (int i = 0; i < vertexCount; i++)
+            {
+                bitangent[i] = new Vector3(0.0F, 0.0F, 0.0F);
+            }
+
+            // Calculate tangent and bitangent for each triangle and add to all three vertices.
+            for (int k = indexStart; k < indexEnd; k += 3)
+            {
+                int i0 = indices[k];
+                int i1 = indices[k + 1];
+                int i2 = indices[k + 2];
+                Vector3 p0 = position[i0];
+                Vector3 p1 = position[i1];
+                Vector3 p2 = position[i2];
+                Vector2 w0 = uv[i0];
+                Vector2 w1 = uv[i1];
+                Vector2 w2 = uv[i2];
+                Vector3 e1 = p1 - p0;
+                Vector3 e2 = p2 - p0;
+                float x1 = w1.X - w0.X, x2 = w2.X - w0.X;
+                float y1 = w1.Y - w0.Y, y2 = w2.Y - w0.Y;
+                float r = 1.0F / (x1 * y2 - x2 * y1);
+                Vector3 t = (e1 * y2 - e2 * y1) * r;
+                Vector3 b = (e2 * x1 - e1 * x2) * r;
+                tangent[i0 + vertexStart] += new Vector4(t, 0);
+                tangent[i1 + vertexStart] += new Vector4(t, 0);
+                tangent[i2 + vertexStart] += new Vector4(t, 0);
+                bitangent[i0] += b;
+                bitangent[i1] += b;
+                bitangent[i2] += b;
+            }
+            //// Orthonormalize each tangent and calculate the handedness.
+            //for (int i = 0; i < vertexCount; i++)
+            //{
+            //    Vector3 t = tangent[i];
+            //    Vector3 b = bitangent[i];
+            //    Vector3 n = normalArray[i];
+            //    tangentArray[i].xyz() = Vector3.Normalize(Reject(t, n));
+            //    tangentArray[i].w = (Vector3.Dot(Vector3.Cross(t, b), n) > 0.0F) ? 1.0F : -1.0F;
+            //}
+            for (int i = vertexStart; i < vertexEnd; i++)
+            {
+                float factor;
+                Vector3 t1 = Vector3.Cross(bitangent[i - vertexStart], normal[i]);
+                if (Vector3.Dot(t1, new Vector3(tangent[i].X, tangent[i].Y, tangent[i].Z)) > 0)
+                    factor = 1;
+                else
+                    factor = -1;
+                tangent[i] = new Vector4(Vector3.Normalize(t1) * factor, 1);
             }
         }
 
@@ -370,11 +576,23 @@ namespace Coocoo3D.ResourceWarp
                 meshInstance.AddBuffer<Vector3>(position, 0);
                 meshInstance.AddBuffer<Vector3>(normal, 1);
                 meshInstance.AddBuffer<Vector2>(uv, 2);
-                meshInstance.AddBuffer<ushort>(boneId, 3);
-                meshInstance.AddBuffer<float>(boneWeights, 4);
-                meshInstance.AddBuffer<Vector4>(tangent, 5);
+                meshInstance.AddBuffer<Vector4>(tangent, 3);
+                if (boneId != null)
+                    meshInstance.AddBuffer<ushort>(boneId, 4);
+                if (boneWeights != null)
+                    meshInstance.AddBuffer<float>(boneWeights, 5);
             }
             return meshInstance;
+        }
+
+        public void LoadMeshComponent(GameObject gameObject)
+        {
+            var meshRenderer = new MeshRendererComponent();
+            gameObject.AddComponent(meshRenderer);
+            meshRenderer.meshPath = fullPath;
+            meshRenderer.transform = gameObject.Transform;
+            foreach (var material in Materials)
+                meshRenderer.Materials.Add(material.GetClone());
         }
     }
 }

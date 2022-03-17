@@ -173,7 +173,7 @@ namespace Coocoo3D.Components
 
             int h1 = entity.CCDIterateLimit / 2;
             Vector3 posSource = entitySource.GetPos2();
-            if ((posTarget - posSource).LengthSquared() < 1e-8f) return;
+            if ((posTarget - posSource).LengthSquared() < 1e-6f) return;
             for (int i = 0; i < entity.CCDIterateLimit; i++)
             {
                 bool axis_lim = i < h1;
@@ -256,7 +256,7 @@ namespace Coocoo3D.Components
                     UpdateMatrices(IKNeedUpdateIndexs[boneIndex][j]);
                 }
                 posSource = entitySource.GetPos2();
-                if ((posTarget - posSource).LengthSquared() < 1e-8f) return;
+                if ((posTarget - posSource).LengthSquared() < 1e-6f) break;
             }
         }
 
@@ -270,21 +270,19 @@ namespace Coocoo3D.Components
                 int ikTargetIndex = bones[i].IKTargetIndex;
                 if (ikTargetIndex == -1) continue;
                 List<List<int>> ax = new();
-                var entity = bones[i];
-                for (int j = 0; j < entity.boneIKLinks.Length; j++)
+                var bone = bones[i];
+                for (int j = 0; j < bone.boneIKLinks.Length; j++)
                 {
                     List<int> bx = new List<int>();
 
                     Array.Clear(bonesTest, 0, bones.Count);
-                    bonesTest[entity.boneIKLinks[j].LinkedIndex] = true;
+                    bonesTest[bone.boneIKLinks[j].LinkedIndex] = true;
                     for (int k = 0; k < bones.Count; k++)
                     {
-                        if (bones[k].ParentIndex != -1)
-                        {
-                            bonesTest[k] |= bonesTest[bones[k].ParentIndex];
-                            if (bonesTest[k])
-                                bx.Add(k);
-                        }
+                        if (bones[k].ParentIndex == -1) continue;
+                        bonesTest[k] |= bonesTest[bones[k].ParentIndex];
+                        if (bonesTest[k])
+                            bx.Add(k);
                     }
                     ax.Add(bx);
                 }
@@ -295,8 +293,8 @@ namespace Coocoo3D.Components
             for (int i = 0; i < bones.Count; i++)
             {
                 var bone = bones[i];
-                if (bones[i].ParentIndex != -1)
-                    bonesTest[i] |= bonesTest[bones[i].ParentIndex];
+                if (bone.ParentIndex != -1)
+                    bonesTest[i] |= bonesTest[bone.ParentIndex];
                 bonesTest[i] |= bone.IsAppendTranslation || bone.IsAppendRotation;
                 if (bonesTest[i])
                 {
@@ -308,10 +306,10 @@ namespace Coocoo3D.Components
             for (int i = 0; i < bones.Count; i++)
             {
                 var bone = bones[i];
-                if (bones[i].ParentIndex == -1)
+                if (bone.ParentIndex == -1)
                     continue;
-                var parent = bones[bones[i].ParentIndex];
-                bonesTest[i] |= bonesTest[bones[i].ParentIndex];
+                var parent = bones[bone.ParentIndex];
+                bonesTest[i] |= bonesTest[bone.ParentIndex];
                 bonesTest[i] |= parent.IsPhysicsFreeBone;
                 if (bonesTest[i])
                 {
@@ -398,33 +396,6 @@ namespace Coocoo3D.Components
             BoneMorphIKAppend();
         }
     }
-    public class RenderMaterial
-    {
-        public string Name;
-
-        public int indexOffset;
-        public int indexCount;
-        public bool DrawDoubleFace;
-        public bool Transparent;
-        public Dictionary<string, string> textures = new Dictionary<string, string>();
-        public Dictionary<string, object> Parameters = new Dictionary<string, object>();
-
-        public Vortice.Mathematics.BoundingBox boundingBox;
-
-        public RenderMaterial GetClone()
-        {
-            var mat = (RenderMaterial)MemberwiseClone();
-            mat.textures = new Dictionary<string, string>(textures);
-            mat.Parameters = new Dictionary<string, object>(Parameters);
-            return mat;
-        }
-
-        public override string ToString()
-        {
-            return Name;
-        }
-    }
-
 
     public class BoneEntity
     {

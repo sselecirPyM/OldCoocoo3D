@@ -11,6 +11,7 @@ namespace Coocoo3D.RenderPipeline
         None,
         Albedo,
         AO,
+        Bitangent,
         Bloom,
         Depth,
         Diffuse,
@@ -27,6 +28,7 @@ namespace Coocoo3D.RenderPipeline
         Specular,
         SpecularRender,
         TAA,
+        Tangent,
         UV,
     }
 }

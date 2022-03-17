@@ -113,8 +113,11 @@ public static class UnionShaderShadowMap
             param.SetSRVs(param.pass.SRVs, material);
             if (graphicsContext.SetPSO(pso, psoDesc))
             {
-                graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
-                graphicsContext.DrawIndexed(material.indexCount, material.indexOffset, 0);
+                if (renderable.gpuSkinning)
+                {
+                    graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                }
+                graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
             }
         }
     }

@@ -59,7 +59,7 @@ float2 IntegrateBRDF(float NdotV, float roughness)
 
 	float3 N = float3(0.0, 0.0, 1.0);
 
-	const static uint SAMPLE_COUNT = 1024u;
+	const static uint SAMPLE_COUNT = 512u;
 	for (uint i = 0u; i < SAMPLE_COUNT; ++i)
 	{
 		float2 Xi = Hammersley(i, SAMPLE_COUNT);

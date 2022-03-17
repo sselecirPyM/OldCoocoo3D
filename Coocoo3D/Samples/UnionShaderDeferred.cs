@@ -44,8 +44,8 @@ public static class UnionShaderDeferred
                     if (renderable.gpuSkinning)
                     {
                         keywords.Add(new("SKINNING", "1"));
+                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
                     }
-                    graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
                     foreach (var cbv in param.pass.CBVs)
                     {
                         param.WriteCBV(cbv);
@@ -53,7 +53,7 @@ public static class UnionShaderDeferred
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs, material);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, 0);
+                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
                 }
                 break;
             case "DeferredFinalPass":

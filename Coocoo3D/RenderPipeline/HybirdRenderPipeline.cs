@@ -61,7 +61,6 @@ namespace Coocoo3D.RenderPipeline
                 relativePath = System.IO.Path.GetDirectoryName(passSetting.path),
                 //texLoading = texLoading,
                 //texError = texError,
-                renderers = drp.renderers,
                 directionalLights = drp.directionalLights,
                 pointLights = drp.pointLights,
                 mainCaches = mainCaches,

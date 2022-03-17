@@ -63,6 +63,7 @@ namespace Coocoo3D.RenderPipeline
         {
             if (!TextureOnDemand.ContainsKey(fullPath))
             {
+                AddFolder(new DirectoryInfo(Path.GetDirectoryName(fullPath)));
                 TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath, srgb = srgb };
             }
         }
@@ -234,9 +235,7 @@ namespace Coocoo3D.RenderPipeline
 
                     if (".pmx".Equals(file.Extension, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        BinaryReader reader = new BinaryReader(file.OpenRead());
-                        modelPack.LoadPMX(reader, path);
-                        reader.Dispose();
+                        modelPack.LoadPMX(path);
                     }
                     else
                     {

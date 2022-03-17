@@ -8,6 +8,7 @@ public static class UnionShaderPBRForward
     static Dictionary<DebugRenderType, string> debugKeywords = new Dictionary<DebugRenderType, string>()
     {
         { DebugRenderType.Albedo,"DEBUG_ALBEDO"},
+        { DebugRenderType.Bitangent,"DEBUG_BITANGENT"},
         { DebugRenderType.Depth,"DEBUG_DEPTH"},
         { DebugRenderType.Diffuse,"DEBUG_DIFFUSE"},
         { DebugRenderType.DiffuseRender,"DEBUG_DIFFUSE_RENDER"},
@@ -17,6 +18,7 @@ public static class UnionShaderPBRForward
         { DebugRenderType.Roughness,"DEBUG_ROUGHNESS"},
         { DebugRenderType.Specular,"DEBUG_SPECULAR"},
         { DebugRenderType.SpecularRender,"DEBUG_SPECULAR_RENDER"},
+        { DebugRenderType.Tangent,"DEBUG_TANGENT"},
         { DebugRenderType.UV,"DEBUG_UV"},
     };
     public static bool UnionShader(UnionShaderParam param)
@@ -77,7 +79,7 @@ public static class UnionShaderPBRForward
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PBRMaterial.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs, material);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, 0);
+                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
                 }
                 break;
             case "DrawSkyBoxPass":

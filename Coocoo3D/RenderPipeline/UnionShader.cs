@@ -15,11 +15,14 @@ namespace Coocoo3D.RenderPipeline
     public class UnionShaderParam
     {
         public RenderPipelineContext rp;
+        public RenderPipelineDynamicContext drp { get => rp.dynamicContextRead; }
         public RenderMaterial material;
         public MMDRendererComponent renderer;
+        public MeshRendererComponent meshRenderer;
         public PassSetting passSetting;
 
-        public List<MMDRendererComponent> renderers;
+        public List<MMDRendererComponent> renderers { get => drp.renderers; }
+        public List<MeshRendererComponent> meshRenderers { get => drp.meshRenderers; }
 
         public List<DirectionalLightData> directionalLights;
         public List<PointLightData> pointLights;
@@ -87,8 +90,8 @@ namespace Coocoo3D.RenderPipeline
         public double time { get => rp.dynamicContextRead.Time; }
 
         public Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
-        internal Mesh mesh { get => GetMesh(renderer.meshPath); }
-        internal Mesh meshOverride { get => rp.meshOverride[renderer]; }
+        //internal Mesh mesh { get => GetMesh(renderer.meshPath); }
+        //internal Mesh meshOverride { get => rp.meshOverride[renderer]; }
 
         public Random _random;
 
@@ -235,6 +238,11 @@ namespace Coocoo3D.RenderPipeline
             graphicsContext.SetMesh(GetMesh(renderer.meshPath), rp.meshOverride[renderer]);
         }
 
+        public void SetMesh(GraphicsContext graphicsContext, MeshRendererComponent renderer)
+        {
+            graphicsContext.SetMesh(GetMesh(renderer.meshPath));
+        }
+
         public void WriteGPU(List<string> datas, GPUWriter writer)
         {
             if (datas == null || datas.Count == 0) return;
@@ -270,7 +278,12 @@ namespace Coocoo3D.RenderPipeline
                         writer.Write((float)time);
                         break;
                     case "World":
-                        writer.Write(renderer.LocalToWorld);
+                        if (renderer != null)
+                            writer.Write(renderer.LocalToWorld);
+                        else if (meshRenderer != null)
+                            writer.Write(meshRenderer.transform.GetMatrix());
+                        else
+                            writer.Write(Matrix4x4.Identity);
                         break;
                     case "CameraPosition":
                         writer.Write(camera.Position);
@@ -416,22 +429,51 @@ namespace Coocoo3D.RenderPipeline
                 if (setmesh)
                     SetMesh(graphicsContext, renderer);
                 this.renderer = renderer;
+                this.meshRenderer = null;
+                foreach (var material in renderer.Materials)
+                {
+                    this.material = material;
+                    var renderable = new MeshRenderable()
+                    {
+                        mesh = GetMesh(renderer.meshPath),
+                        meshOverride = rp.meshOverride[renderer],
+                        transform = renderer.LocalToWorld,
+                        gpuSkinning = renderer.skinning && !drp.CPUSkinning,
+                    };
+                    WriteRenderable(ref renderable, material);
+                    yield return renderable;
+                }
+            }
+            foreach (var renderer in meshRenderers)
+            {
+                if (setmesh)
+                    SetMesh(graphicsContext, renderer);
+                this.meshRenderer = renderer;
+                this.renderer = null;
                 foreach (var material in renderer.Materials)
                 {
                     this.material = material;
 
-                    yield return new MeshRenderable()
+                    var renderable = new MeshRenderable()
                     {
-                        indexCount = material.indexCount,
-                        indexStart = material.indexOffset,
-                        material = material,
-                        mesh = mesh,
-                        meshOverride = meshOverride,
-                        transform = renderer.LocalToWorld,
-                        gpuSkinning = renderer.skinning && !drp.CPUSkinning,
+                        mesh = GetMesh(renderer.meshPath),
+                        meshOverride = null,
+                        transform = renderer.transform.GetMatrix(),
+                        gpuSkinning = false,
                     };
+                    WriteRenderable(ref renderable, material);
+                    yield return renderable;
                 }
             }
+        }
+
+        void WriteRenderable(ref MeshRenderable renderable, RenderMaterial material)
+        {
+            renderable.material = material;
+            renderable.indexStart = material.indexOffset;
+            renderable.indexCount = material.indexCount;
+            renderable.vertexStart = material.vertexStart;
+            renderable.vertexCount = material.vertexCount;
         }
 
         public IEnumerable<MeshRenderable> EffectRenderables()

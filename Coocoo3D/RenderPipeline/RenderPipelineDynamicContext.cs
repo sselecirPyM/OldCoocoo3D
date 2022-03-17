@@ -21,6 +21,7 @@ namespace Coocoo3D.RenderPipeline
         public Settings settings;
         public List<GameObject> gameObjects = new();
         public List<MMDRendererComponent> renderers = new();
+        public List<MeshRendererComponent> meshRenderers = new();
         public List<VolumeComponent> volumes = new();
         public List<ParticleEffectComponent> particleEffects = new();
 
@@ -80,6 +81,11 @@ namespace Coocoo3D.RenderPipeline
                     renderers.Add(rendererComponent);
                     findRenderer[rendererComponent] = renderers.Count - 1;
                 }
+                MeshRendererComponent meshRendererComponent = gameObject.GetComponent<MeshRendererComponent>();
+                if (meshRendererComponent != null)
+                {
+                    meshRenderers.Add(meshRendererComponent);
+                }
                 ParticleEffectComponent particleEffectComponent = gameObject.GetComponent<ParticleEffectComponent>();
                 if (particleEffectComponent != null)
                 {
@@ -101,6 +107,7 @@ namespace Coocoo3D.RenderPipeline
             renderers.Clear();
             findRenderer.Clear();
             particleEffects.Clear();
+            meshRenderers.Clear();
         }
     }
 }

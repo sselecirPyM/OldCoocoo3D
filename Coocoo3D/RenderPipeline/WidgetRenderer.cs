@@ -10,6 +10,7 @@ using ImGuiNET;
 using Vortice.DXGI;
 using Vortice.Direct3D12;
 using System.Buffers;
+using Coocoo3D.Utility;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -18,6 +19,11 @@ namespace Coocoo3D.RenderPipeline
         GPUBuffer imguiMesh = new GPUBuffer();
         GPUWriter GPUWriter = new GPUWriter();
         string workDir = System.Environment.CurrentDirectory;
+        string imguiShader;
+        public WidgetRenderer()
+        {
+            imguiShader = System.IO.Path.GetFullPath("Shaders/ImGui.hlsl", workDir);
+        }
 
         public void Render(RenderPipelineContext context, GraphicsContext graphicsContext)
         {
@@ -53,7 +59,7 @@ namespace Coocoo3D.RenderPipeline
             desc.renderTargetCount = 1;
             desc.wireFrame = false;
             desc.inputLayout = InputLayout.imgui;
-            var pso = caches.GetPSOWithKeywords(null, System.IO.Path.GetFullPath("Shaders/ImGui.hlsl", workDir));
+            var pso = caches.GetPSOWithKeywords(null, imguiShader);
             graphicsContext.SetPSO(pso, desc);
             Matrix4x4 matrix = new(
                 2.0f / (R - L), 0.0f, 0.0f, (R + L) / (L - R),
@@ -72,8 +78,8 @@ namespace Coocoo3D.RenderPipeline
                 Span<byte> vertexDatas = new Span<byte>(buffer, 0, vertexSize);
                 Span<byte> indexDatas = new Span<byte>(buffer, vertexSize, indexSize);
 
-                SpanWriter vertexWriter = new SpanWriter(vertexDatas);
-                SpanWriter indexWriter = new SpanWriter(indexDatas);
+                var vertexWriter = new SpanWriter<byte>(vertexDatas);
+                var indexWriter = new SpanWriter<byte>(indexDatas);
                 for (int i = 0; i < data.CmdListsCount; i++)
                 {
                     var cmdList = data.CmdListsRange[i];

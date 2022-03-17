@@ -262,6 +262,12 @@
           "ResourceType": "Texture2D",
           "Resource": "_Normal",
           "Flags": "Linear"
+        },
+        {
+          "Index": "3",
+          "ResourceType": "Texture2D",
+          "Resource": "_MetallicRoughness",
+          "Flags": "Linear"
         }
       ]
     },
@@ -459,6 +465,12 @@
         },
         {
           "Index": "6",
+          "ResourceType": "Texture2D",
+          "Resource": "_MetallicRoughness",
+          "Flags": "Linear"
+        },
+        {
+          "Index": "7",
           "ResourceType": "Buffer",
           "Resource": "GIBuffer"
         }
@@ -657,6 +669,7 @@
   "ShowTextures": {
     "_Albedo": "",
     "_Emissive": "",
+    "_MetallicRoughness": "",
     "_Normal": ""
   },
   "ShowSettingTextures": {
@@ -748,12 +761,12 @@
     "UpdateGI": {
       "Name": "更新全局光照（需要光线追踪）",
       "Type": "bool",
-      "Default": "true"
+      "Default": "false"
     },
     "UseGI": {
       "Name": "使用全局光照",
       "Type": "bool",
-      "Default": "true"
+      "Default": "false"
     },
     "GIVolumePosition": {
       "Name": "全局光照体积位置",

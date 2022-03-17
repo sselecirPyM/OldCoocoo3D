@@ -99,3 +99,54 @@ SH9C Add(in SH9C a, in SH9C b, float bweight)
 	}
 	return sh9;
 }
+
+float4 GetSH(StructuredBuffer<SH9C> data, int resolution, float3 center, float3 size, float3 N, float3 worldPos, float3 skyLight)
+{
+	float3 giSamplePos = (((worldPos - center) / size) + 0.5f);
+	int3 samplePos1 = floor(resolution * giSamplePos);
+	float weights = 0;
+	float3 lp = frac(resolution * giSamplePos);
+	float4 shDiffuse = float4(0, 0, 0, 0);
+
+#if DEBUG_DIFFUSE_PROBES
+	int3 xyz = round(resolution * giSamplePos);
+	float3 p1 = abs(lp - 1);
+	if (all(xyz < resolution) && all(xyz >= 0))
+	{
+		int index = xyz.x + xyz.y * resolution + xyz.z * resolution * resolution;
+		SH9C sh9ca = data[index];
+		shDiffuse += GetSH9Color(sh9ca, N);
+	}
+	else
+	{
+		shDiffuse += float4(skyLight, 0);
+	}
+	weights += 1;
+	shDiffuse = max(0, shDiffuse);
+#else
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			for (int k = 0; k < 2; k++)
+			{
+				int3 _xyz = int3(i, j, k);
+				int3 xyz = _xyz + samplePos1;
+				float3 p1 = abs(lp - (1 - _xyz));
+				float weight = p1.x * p1.y * p1.z;
+				if (all(xyz < resolution) && all(xyz >= 0) && dot(N, _xyz - 0.5) >= -1e2)
+				{
+					int index = xyz.x + xyz.y * resolution + xyz.z * resolution * resolution;
+					SH9C sh9ca = data[index];
+					shDiffuse += GetSH9Color(sh9ca, N) * weight;
+					weights += weight;
+				}
+				else
+				{
+					shDiffuse += float4(skyLight * weight, 0);
+					weights += weight;
+				}
+			}
+#endif
+	weights = max(weights, 1e-3);
+	shDiffuse /= weights;
+	return shDiffuse;
+}
