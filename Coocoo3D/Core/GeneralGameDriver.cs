@@ -11,6 +11,7 @@ namespace Coocoo3D.Core
     {
         public override bool Next(RenderPipelineContext rpContext, long now)
         {
+            rpContext.recording = false;
             ref GameDriverContext context = ref rpContext.gameDriverContext;
             if (!(context.NeedRender > 0 || context.Playing))
             {

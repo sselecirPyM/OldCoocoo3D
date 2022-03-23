@@ -225,10 +225,10 @@ void csmain(uint3 dtid : SV_DispatchThreadID)
 	for (int i = 0; i < c_sampleCount; i++)
 	{
 		float2 E = RNG::Hammersley(i, c_sampleCount, uint2(RNG::Random(randomState), RNG::Random(randomState)));
-		float3 vec1 = TangentToWorld(N, RNG::UniformSampleHemisphere(E));
+		float3 vec1 = TangentToWorld(N, RNG::HemisphereSampleCos(E));
 
 		float NdotL = dot(vec1, N);
-		col1 += Image.SampleLevel(s0, vec1, 5) * NdotL;
+		col1 += Image.SampleLevel(s0, vec1, 2) * NdotL;
 	}
 	float xd0 = 1 / (float)(quality + 1);
 	float xd1 = quality / (float)(quality + 1);

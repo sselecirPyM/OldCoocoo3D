@@ -45,15 +45,15 @@ namespace Coocoo3D.RenderPipeline
         }
 
         [NonSerialized]
-        public bool configured;
+        public bool loaded;
 
         public bool Verify()
         {
-            if (RenderTargets == null || RenderTargets.Count == 0)
+            if (RenderTargets == null)
                 return false;
-            if (RenderSequence == null || RenderSequence.Count == 0)
+            if (RenderSequence == null )
                 return false;
-            if (Passes == null || Passes.Count == 0)
+            if (Passes == null )
                 return false;
             foreach (var pass in Passes)
             {

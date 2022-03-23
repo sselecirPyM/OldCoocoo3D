@@ -8,7 +8,7 @@ using Vortice.DXGI;
 
 namespace Coocoo3DGraphics
 {
-    public class _mesh1
+    public class _vertexBuffer
     {
         public ID3D12Resource vertex;
         public VertexBufferView vertexBufferView;
@@ -19,21 +19,8 @@ namespace Coocoo3DGraphics
     {
         public ID3D12Resource indexBuffer;
 
-        //public Dictionary<string, _mesh1> vertexBuffers = new Dictionary<string, _mesh1>();
-
-        //public void AddBuffer<T>(Span<T> verticeData, string name) where T : unmanaged
-        //{
-        //    Span<byte> dat = MemoryMarshal.Cast<T, byte>(verticeData);
-        //    byte[] verticeData1 = new byte[dat.Length];
-        //    dat.CopyTo(verticeData1);
-        //    var bufDef = new _mesh1();
-        //    bufDef.data = verticeData1;
-        //    vertexBuffers[name] = bufDef;
-        //}
-
-
-        public Dictionary<int, _mesh1> vtBuffers = new Dictionary<int, _mesh1>();
-        public List<_mesh1> vtBuffersDisposed = new List<_mesh1>();
+        public Dictionary<int, _vertexBuffer> vtBuffers = new Dictionary<int, _vertexBuffer>();
+        public List<_vertexBuffer> vtBuffersDisposed = new List<_vertexBuffer>();
 
         public int m_indexCount;
         public int m_vertexCount;
@@ -48,13 +35,13 @@ namespace Coocoo3DGraphics
             Span<byte> dat = MemoryMarshal.Cast<T, byte>(verticeData);
             byte[] verticeData1 = new byte[dat.Length];
             dat.CopyTo(verticeData1);
-            var bufDef = new _mesh1();
+            var bufDef = new _vertexBuffer();
             bufDef.data = verticeData1;
             vtBuffers.Add(slot, bufDef);
         }
-        internal _mesh1 AddBuffer(int slot)
+        internal _vertexBuffer AddBuffer(int slot)
         {
-            var bufDef = new _mesh1();
+            var bufDef = new _vertexBuffer();
             vtBuffers.Add(slot, bufDef);
             return bufDef;
         }
@@ -102,6 +89,18 @@ namespace Coocoo3DGraphics
         public int GetVertexCount()
         {
             return m_vertexCount;
+        }
+
+        public bool TryGetBuffer(int index,out byte[] data)
+        {
+            data = null;
+            if (vtBuffers.TryGetValue(index, out var mesh))
+            {
+                data = mesh.data;
+                return true;
+            }
+            else
+                return false;
         }
 
         public void SetIndexFormat(Format format)

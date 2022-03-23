@@ -52,7 +52,8 @@ SamplerState s1 : register(s1);
 Texture2D texture0 :register(t0);
 Texture2D Emissive :register(t1);
 Texture2D NormalMap :register(t2);
-Texture2D MetallicRoughness :register(t3);
+Texture2D Metallic :register(t3);
+Texture2D Roughness :register(t4);
 float2 NormalEncode(float3 n)
 {
 	float2 enc = normalize(n.xy + float2(1e-6, 0)) * (sqrt(-n.z * 0.5 + 0.5));
@@ -81,13 +82,14 @@ MRTOutput psmain(PSSkinnedIn input) : SV_TARGET
 	MRTOutput output;
 	float4 color = texture0.Sample(s1, input.Tex);
 	//clip(color.a - 0.98f);
-	float4 metallicRoughness = MetallicRoughness.Sample(s1, input.Tex);
-	float roughness = max(_Roughness * metallicRoughness.g, 0.002);
+	float4 metallic1 = Metallic.Sample(s1, input.Tex);
+	float4 roughness1 = Roughness.Sample(s1, input.Tex);
+	float roughness = max(_Roughness * roughness1.g, 0.002);
 
 	float3 albedo = color.rgb;
 
-	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallicRoughness.b);
-	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallicRoughness.b);
+	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallic1.b);
+	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallic1.b);
 	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive;
 
 	output.color0 = float4(c_diffuse, c_specular.r);

@@ -59,8 +59,9 @@ Texture2D ShadowMap0 : register(t2);
 TextureCube EnvCube : register (t3);
 Texture2D BRDFLut : register(t4);
 Texture2D NormalMap : register(t5);
-Texture2D MetallicRoughness : register(t6);
-StructuredBuffer<SH9C> giBuffer : register(t7);
+Texture2D Metallic : register(t6);
+Texture2D Roughness : register(t7);
+StructuredBuffer<SH9C> giBuffer : register(t8);
 cbuffer cbAnimMatrices : register(b0)
 {
 	float4x4 g_mConstBoneWorld[MAX_BONE_MATRICES];
@@ -129,14 +130,15 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #endif
 	float NdotV = saturate(dot(N, V));
 	// Burley roughness bias
-	float4 metallicRoughness = MetallicRoughness.Sample(s1, input.Tex);
-	float roughness = max(_Roughness * metallicRoughness.g,0.002);
+	float4 metallic1 = Metallic.Sample(s1, input.Tex);
+	float4 roughness1 = Roughness.Sample(s1, input.Tex);
+	float roughness = max(_Roughness * roughness1.g, 0.002);
 	float alpha = roughness * roughness;
 
 	float3 albedo = texColor.rgb;
 
-	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallicRoughness.b);
-	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallicRoughness.b);
+	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallic1.b);
+	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallic1.b);
 
 	float3 outputColor = float3(0,0,0);
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;

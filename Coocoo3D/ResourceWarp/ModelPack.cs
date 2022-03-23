@@ -121,11 +121,13 @@ namespace Coocoo3D.ResourceWarp
                 if (material.PbrMetallicRoughness.MetallicRoughnessTexture != null)
                 {
                     int index = material.PbrMetallicRoughness.MetallicRoughnessTexture.Index;
-                    renderMaterial.textures["_MetallicRoughness"] = textures[GLTFGetTexture(deserializedFile, index)];
+                    renderMaterial.textures["_Metallic"] = textures[GLTFGetTexture(deserializedFile, index)];
+                    renderMaterial.textures["_Roughness"] = textures[GLTFGetTexture(deserializedFile, index)];
                 }
                 else
                 {
-                    renderMaterial.textures["_MetallicRoughness"] = whiteTexture;
+                    renderMaterial.textures["_Metallic"] = whiteTexture;
+                    renderMaterial.textures["_Roughness"] = whiteTexture;
                 }
                 if (material.EmissiveTexture != null)
                 {
@@ -150,8 +152,28 @@ namespace Coocoo3D.ResourceWarp
                 var accessor = deserializedFile.Accessors[accessorIndex];
                 var bufferView = deserializedFile.BufferViews[(int)accessor.BufferView];
                 var buffer = buffers[bufferView.Buffer];
-                return MemoryMarshal.Cast<byte, T>(new Span<byte>(buffer, bufferView.ByteOffset, bufferView.ByteLength));
+                int typeSize = Marshal.SizeOf(typeof(T));
+                return MemoryMarshal.Cast<byte, T>(new Span<byte>(buffer, bufferView.ByteOffset + accessor.ByteOffset, accessor.Count * typeSize));
             }
+            //Span<T> GetBuffer1<T>(int accessorIndex, int stride) where T : struct
+            //{
+            //    var accessor = deserializedFile.Accessors[accessorIndex];
+            //    var bufferView = deserializedFile.BufferViews[(int)accessor.BufferView];
+            //    var buffer = buffers[bufferView.Buffer];
+            //    int typeSize = Marshal.SizeOf(typeof(T));
+            //    if (typeSize == stride)
+            //        return MemoryMarshal.Cast<byte, T>(new Span<byte>(buffer, bufferView.ByteOffset + accessor.ByteOffset, accessor.Count * typeSize));
+            //    else
+            //    {
+            //        int count = buffer.Length / stride;
+            //        T[] array1 = new T[count];
+            //        for (int i = 0; i < count; i++)
+            //        {
+            //            array1[i] = MemoryMarshal.Read<T>(new ReadOnlySpan<byte>(buffer, i * stride, typeSize));
+            //        }
+            //        return array1;
+            //    }
+            //}
 
             Accessor.ComponentTypeEnum GetAccessorComponentType(int accessorIndex)
             {
@@ -213,7 +235,6 @@ namespace Coocoo3D.ResourceWarp
                     material.Name = Materials.Count.ToString();
                     int vertexStart = positionWriter.currentPosition;
                     material.vertexStart = vertexStart;
-                    //material.vertexStart = 0;
                     material.indexOffset = indicesWriter.currentPosition;
                     Materials.Add(material);
 
@@ -227,7 +248,6 @@ namespace Coocoo3D.ResourceWarp
                     uvWriter.Write(GetBuffer<Vector2>(uv1));
 
                     material.vertexCount = bufferPos1.Length;
-                    //material.vertexCount = vertexCount;
                     var format = GetAccessorComponentType(primitive.Indices.Value);
                     if (format == Accessor.ComponentTypeEnum.UNSIGNED_SHORT)
                     {
@@ -262,18 +282,8 @@ namespace Coocoo3D.ResourceWarp
                     {
                         ComputeTangent(vertexStart, bufferPos1.Length, material.indexOffset, material.indexCount);
                     }
-                    //for (int k = material.indexOffset; k < material.indexOffset + material.indexCount; k++)
-                    //{
-                    //    indices[k] += vertexStart;
-                    //}
                 }
             }
-
-            //for (int k = 0; k < vertexCount; k++)
-            //{
-            //    position[k] *= scale;
-            //}
-
         }
 
         static int GLTFGetTexture(Gltf gltf, int index)
@@ -291,67 +301,97 @@ namespace Coocoo3D.ResourceWarp
             reader.Dispose();
             name = string.Format("{0} {1}", pmx.Name, pmx.NameEN);
             description = string.Format("{0}\n{1}", pmx.Description, pmx.DescriptionEN);
-            textures = new List<string>();
+            HashSet<string> _textures = new HashSet<string>();
             foreach (var tex in pmx.Textures)
             {
                 string relativePath = tex.TexturePath.Replace("//", "\\").Replace('/', '\\');
                 string texPath = Path.GetFullPath(relativePath, folder);
-                textures.Add(texPath);
+                _textures.Add(texPath);
             }
+
+            int indexOffset1 = 0;
+            int vertexCount1 = 0;
+            HashSet<int> indexToVertex1 = new HashSet<int>();
+            for (int i = 0; i < pmx.Materials.Count; i++)
+            {
+                var material = pmx.Materials[i];
+                for (int j = indexOffset1; j < indexOffset1 + material.TriangeIndexNum; j++)
+                    indexToVertex1.Add(pmx.TriangleIndexs[j]);
+                indexOffset1 += material.TriangeIndexNum;
+                vertexCount1 += indexToVertex1.Count;
+                indexToVertex1.Clear();
+            }
+
             skinning = true;
-            vertexCount = pmx.Vertices.Length;
+            vertexCount = vertexCount1;
             position = new Vector3[vertexCount];
             normal = new Vector3[vertexCount];
             uv = new Vector2[vertexCount];
             tangent = new Vector4[vertexCount];
             boneId = new ushort[vertexCount * 4];
             boneWeights = new float[vertexCount * 4];
-            for (int i = 0; i < pmx.Vertices.Length; i++)
-            {
-                position[i] = pmx.Vertices[i].Coordinate;
-                normal[i] = pmx.Vertices[i].Normal;
-                uv[i] = pmx.Vertices[i].UvCoordinate;
-                boneId[i * 4 + 0] = (ushort)pmx.Vertices[i].boneId0;
-                boneId[i * 4 + 1] = (ushort)pmx.Vertices[i].boneId1;
-                boneId[i * 4 + 2] = (ushort)pmx.Vertices[i].boneId2;
-                boneId[i * 4 + 3] = (ushort)pmx.Vertices[i].boneId3;
-
-                boneWeights[i * 4 + 0] = pmx.Vertices[i].Weights.X;
-                boneWeights[i * 4 + 1] = pmx.Vertices[i].Weights.Y;
-                boneWeights[i * 4 + 2] = pmx.Vertices[i].Weights.Z;
-                boneWeights[i * 4 + 3] = pmx.Vertices[i].Weights.W;
-                float weightTotal = boneWeights[i * 4 + 0] + boneWeights[i * 4 + 1] + boneWeights[i * 4 + 2] + boneWeights[i * 4 + 3];
-                boneWeights[i * 4 + 0] /= weightTotal;
-                boneWeights[i * 4 + 1] /= weightTotal;
-                boneWeights[i * 4 + 2] /= weightTotal;
-                boneWeights[i * 4 + 3] /= weightTotal;
-            }
 
             indices = new int[pmx.TriangleIndexs.Length];
             pmx.TriangleIndexs.CopyTo(new Span<int>(indices));
 
+
             string whiteTexture = Path.GetFullPath("Assets/Textures/white.png");
             int indexOffset = 0;
+            int vertexOffset = 0;
+            Dictionary<int, int> vertexIndices = new Dictionary<int, int>();
+            Dictionary<int, int> vertexIndicesAll = new Dictionary<int, int>();
             for (int i = 0; i < pmx.Materials.Count; i++)
             {
                 var mmdMat = pmx.Materials[i];
+
+                Vector3 min;
+                Vector3 max;
+                min = pmx.Vertices[pmx.TriangleIndexs[indexOffset]].Coordinate;
+                max = min;
+                for (int k = 0; k < mmdMat.TriangeIndexNum; k++)
+                {
+                    int pmxIndex = pmx.TriangleIndexs[indexOffset + k];
+                    ref var vert = ref pmx.Vertices[pmxIndex];
+                    min = Vector3.Min(min, vert.Coordinate);
+                    max = Vector3.Max(max, vert.Coordinate);
+
+                    if (vertexIndices.TryGetValue(pmxIndex, out int newIndex))
+                    {
+                    }
+                    else
+                    {
+                        newIndex = vertexIndices.Count + vertexOffset;
+                        vertexIndices[pmxIndex] = newIndex;
+                        vertexIndicesAll[pmxIndex] = newIndex;
+                        position[newIndex] = vert.Coordinate;
+                        normal[newIndex] = vert.Normal;
+                        uv[newIndex] = vert.UvCoordinate;
+                        boneId[newIndex * 4 + 0] = (ushort)vert.boneId0;
+                        boneId[newIndex * 4 + 1] = (ushort)vert.boneId1;
+                        boneId[newIndex * 4 + 2] = (ushort)vert.boneId2;
+                        boneId[newIndex * 4 + 3] = (ushort)vert.boneId3;
+
+                        boneWeights[newIndex * 4 + 0] = vert.Weights.X;
+                        boneWeights[newIndex * 4 + 1] = vert.Weights.Y;
+                        boneWeights[newIndex * 4 + 2] = vert.Weights.Z;
+                        boneWeights[newIndex * 4 + 3] = vert.Weights.W;
+                        float weightTotal = boneWeights[newIndex * 4 + 0] + boneWeights[newIndex * 4 + 1] + boneWeights[newIndex * 4 + 2] + boneWeights[newIndex * 4 + 3];
+                        boneWeights[newIndex * 4 + 0] /= weightTotal;
+                        boneWeights[newIndex * 4 + 1] /= weightTotal;
+                        boneWeights[newIndex * 4 + 2] /= weightTotal;
+                        boneWeights[newIndex * 4 + 3] /= weightTotal;
+                    }
+                    indices[k + indexOffset] = newIndex - vertexOffset;
+                }
 
                 RenderMaterial material = new RenderMaterial
                 {
                     Name = mmdMat.Name,
                     indexCount = mmdMat.TriangeIndexNum,
                     indexOffset = indexOffset,
-                    vertexCount = vertexCount
+                    vertexCount = vertexIndices.Count,
+                    vertexStart = vertexOffset,
                 };
-                Vector3 min;
-                Vector3 max;
-                min = position[pmx.TriangleIndexs[indexOffset]];
-                max = position[pmx.TriangleIndexs[indexOffset]];
-                for (int k = 0; k < material.indexCount; k++)
-                {
-                    min = Vector3.Min(min, position[pmx.TriangleIndexs[indexOffset + k]]);
-                    max = Vector3.Max(max, position[pmx.TriangleIndexs[indexOffset + k]]);
-                }
 
                 material.boundingBox = new Vortice.Mathematics.BoundingBox(min, max);
                 material.DrawDoubleFace = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawDoubleFace);
@@ -363,21 +403,65 @@ namespace Coocoo3D.ResourceWarp
                 material.Parameters["CastShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.CastSelfShadow);
                 material.Parameters["ReceiveShadow"] = mmdMat.DrawFlags.HasFlag(PMX_DrawFlag.DrawSelfShadow);
                 indexOffset += mmdMat.TriangeIndexNum;
+                string texPath = null;
                 if (pmx.Textures.Count > mmdMat.TextureIndex && mmdMat.TextureIndex >= 0)
                 {
                     string relativePath = pmx.Textures[mmdMat.TextureIndex].TexturePath.Replace("//", "\\").Replace('/', '\\');
-                    string texPath = Path.GetFullPath(relativePath, folder);
+                    texPath = Path.GetFullPath(relativePath, folder);
 
                     material.textures["_Albedo"] = texPath;
                 }
-                else if (i > 0)
+                else
                 {
-                    var prevMat = Materials[i - 1];
-                    material.textures["_Albedo"] = prevMat.textures["_Albedo"];
+                    material.textures["_Albedo"] = whiteTexture;
                 }
-                material.textures["_MetallicRoughness"] = whiteTexture;
+                material.textures["_Metallic"] = whiteTexture;
+                material.textures["_Roughness"] = whiteTexture;
+                if (texPath != null && Path.GetFileName(texPath).Contains("diffuse", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    string texFileName = Path.GetFileName(texPath);
+                    string dirName = Path.GetDirectoryName(texPath);
+
+                    void _SetTexture(string _texName, string _texSlot, string _texParam)
+                    {
+                        FileInfo _Tex = new FileInfo(Path.GetFullPath(texFileName.Replace("diffuse", _texName, StringComparison.CurrentCultureIgnoreCase), dirName));
+                        if (_Tex.Exists)
+                        {
+                            material.textures[_texSlot] = _Tex.FullName;
+                            if (_texParam != null)
+                                material.Parameters[_texParam] = 1.0f;
+                            _textures.Add(_Tex.FullName);
+                        }
+                    }
+                    _SetTexture("emissive", "_Emissive", "Emissive");
+                    _SetTexture("metallic", "_Metallic", "Metallic");
+                    _SetTexture("metalness", "_Metallic", "Metallic");
+                    _SetTexture("normal", "_Normal", null);
+                    _SetTexture("roughness", "_Roughness", "Roughness");
+
+                }
 
                 Materials.Add(material);
+                vertexOffset += vertexIndices.Count;
+                vertexIndices.Clear();
+                ComputeTangent(material.vertexStart, material.vertexCount, material.indexOffset, material.indexCount);
+            }
+
+            morphs = new List<MorphDesc>();
+            for (int i = 0; i < pmx.Morphs.Count; i++)
+            {
+                morphs.Add(PMXFormatExtension.Translate(pmx.Morphs[i]));
+            }
+            foreach (var morph in morphs)
+            {
+                if (morph.MorphVertexs != null)
+                {
+                    for (int i = 0; i < morph.MorphVertexs.Length; i++)
+                    {
+                        ref var vertex = ref morph.MorphVertexs[i];
+                        vertex.VertexIndex = vertexIndicesAll[vertex.VertexIndex];
+                    }
+                }
             }
 
             var rigidBodys = pmx.RigidBodies;
@@ -394,57 +478,13 @@ namespace Coocoo3D.ResourceWarp
             for (int i = 0; i < joints.Count; i++)
                 jointDescs.Add(GetJointDesc(joints[i]));
 
-            ComputeTangent(0, vertexCount, 0, indices.Length);
-
+            bones = new List<BoneEntity>();
+            var _bones = pmx.Bones;
+            for (int i = 0; i < _bones.Count; i++)
             {
-                bones = new List<BoneEntity>();
-                var _bones = pmx.Bones;
-                for (int i = 0; i < _bones.Count; i++)
-                {
-                    var _bone = _bones[i];
-                    BoneEntity boneEntity = new();
-                    boneEntity.ParentIndex = (_bone.ParentIndex >= 0 && _bone.ParentIndex < _bones.Count) ? _bone.ParentIndex : -1;
-                    boneEntity.staticPosition = _bone.Position;
-                    boneEntity.rotation = Quaternion.Identity;
-                    boneEntity.index = i;
-
-                    boneEntity.Name = _bone.Name;
-                    boneEntity.NameEN = _bone.NameEN;
-                    boneEntity.Flags = (BoneFlags)_bone.Flags;
-
-                    if (boneEntity.Flags.HasFlag(BoneFlags.HasIK))
-                    {
-                        boneEntity.IKTargetIndex = _bone.boneIK.IKTargetIndex;
-                        boneEntity.CCDIterateLimit = _bone.boneIK.CCDIterateLimit;
-                        boneEntity.CCDAngleLimit = _bone.boneIK.CCDAngleLimit;
-                        boneEntity.boneIKLinks = new BoneEntity.IKLink[_bone.boneIK.IKLinks.Length];
-                        for (int j = 0; j < boneEntity.boneIKLinks.Length; j++)
-                        {
-                            boneEntity.boneIKLinks[j] = IKLink(_bone.boneIK.IKLinks[j]);
-                        }
-                    }
-                    if (_bone.AppendBoneIndex >= 0 && _bone.AppendBoneIndex < _bones.Count)
-                    {
-                        boneEntity.AppendParentIndex = _bone.AppendBoneIndex;
-                        boneEntity.AppendRatio = _bone.AppendBoneRatio;
-                        boneEntity.IsAppendRotation = boneEntity.Flags.HasFlag(BoneFlags.AcquireRotate);
-                        boneEntity.IsAppendTranslation = boneEntity.Flags.HasFlag(BoneFlags.AcquireTranslate);
-                    }
-                    else
-                    {
-                        boneEntity.AppendParentIndex = -1;
-                        boneEntity.AppendRatio = 0;
-                        boneEntity.IsAppendRotation = false;
-                        boneEntity.IsAppendTranslation = false;
-                    }
-                    bones.Add(boneEntity);
-                }
-                morphs = new();
-                for (int i = 0; i < pmx.Morphs.Count; i++)
-                {
-                    morphs.Add(PMXFormatExtension.Translate(pmx.Morphs[i]));
-                }
+                bones.Add(PMXFormatExtension.Translate(_bones[i], i, _bones.Count));
             }
+            textures = _textures.ToList();
         }
 
         void ComputeTangent(int vertexStart, int vertexCount, int indexStart, int indexCount)
@@ -507,64 +547,6 @@ namespace Coocoo3D.ResourceWarp
                     factor = -1;
                 tangent[i] = new Vector4(Vector3.Normalize(t1) * factor, 1);
             }
-        }
-
-        static BoneEntity.IKLink IKLink(in PMX_BoneIKLink ikLink1)
-        {
-            var ikLink = new BoneEntity.IKLink();
-
-            ikLink.HasLimit = ikLink1.HasLimit;
-            ikLink.LimitMax = ikLink1.LimitMax;
-            ikLink.LimitMin = ikLink1.LimitMin;
-            ikLink.LinkedIndex = ikLink1.LinkedIndex;
-
-            Vector3 tempMin = ikLink.LimitMin;
-            Vector3 tempMax = ikLink.LimitMax;
-            ikLink.LimitMin = Vector3.Min(tempMin, tempMax);
-            ikLink.LimitMax = Vector3.Max(tempMin, tempMax);
-
-            if (ikLink.LimitMin.X > -Math.PI * 0.5 && ikLink.LimitMax.X < Math.PI * 0.5)
-                ikLink.TransformOrder = IKTransformOrder.Zxy;
-            else if (ikLink.LimitMin.Y > -Math.PI * 0.5 && ikLink.LimitMax.Y < Math.PI * 0.5)
-                ikLink.TransformOrder = IKTransformOrder.Xyz;
-            else
-                ikLink.TransformOrder = IKTransformOrder.Yzx;
-
-            const float epsilon = 1e-6f;
-            if (ikLink.HasLimit)
-            {
-                if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                    Math.Abs(ikLink.LimitMax.X) < epsilon &&
-                    Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                    Math.Abs(ikLink.LimitMax.Y) < epsilon &&
-                    Math.Abs(ikLink.LimitMin.Z) < epsilon &&
-                    Math.Abs(ikLink.LimitMax.Z) < epsilon)
-                {
-                    ikLink.FixTypes = AxisFixType.FixAll;
-                }
-                else if (Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                         Math.Abs(ikLink.LimitMax.Y) < epsilon &&
-                         Math.Abs(ikLink.LimitMin.Z) < epsilon &&
-                         Math.Abs(ikLink.LimitMax.Z) < epsilon)
-                {
-                    ikLink.FixTypes = AxisFixType.FixX;
-                }
-                else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                         Math.Abs(ikLink.LimitMax.X) < epsilon &&
-                         Math.Abs(ikLink.LimitMin.Z) < epsilon &&
-                         Math.Abs(ikLink.LimitMax.Z) < epsilon)
-                {
-                    ikLink.FixTypes = AxisFixType.FixY;
-                }
-                else if (Math.Abs(ikLink.LimitMin.X) < epsilon &&
-                         Math.Abs(ikLink.LimitMax.X) < epsilon &&
-                         Math.Abs(ikLink.LimitMin.Y) < epsilon &&
-                         Math.Abs(ikLink.LimitMax.Y) < epsilon)
-                {
-                    ikLink.FixTypes = AxisFixType.FixZ;
-                }
-            }
-            return ikLink;
         }
 
         public Mesh GetMesh()

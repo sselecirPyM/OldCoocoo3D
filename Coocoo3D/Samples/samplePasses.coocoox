@@ -246,7 +246,13 @@
         {
           "Index": "6",
           "ResourceType": "Texture2D",
-          "Resource": "_MetallicRoughness",
+          "Resource": "_Metallic",
+          "Flags": "Linear"
+        },
+        {
+          "Index": "7",
+          "ResourceType": "Texture2D",
+          "Resource": "_Roughness",
           "Flags": "Linear"
         }
       ]
@@ -351,7 +357,8 @@
   "ShowTextures": {
     "_Albedo": "",
     "_Emissive": "",
-    "_MetallicRoughness": "",
+    "_Metallic": "",
+    "_Roughness": "",
     "_Normal": ""
   },
   "ShowSettingTextures": {

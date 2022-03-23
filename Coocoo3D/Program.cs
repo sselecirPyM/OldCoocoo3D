@@ -28,77 +28,9 @@ namespace Coocoo3D
             var imguiInput = coocoo3DMain.imguiInput;
             while (!quitRequested)
             {
-                SDL_WaitEvent(out var sdlEvent);
-                do
-                {
-                    switch (sdlEvent.type)
-                    {
-                        case SDL_EventType.SDL_QUIT:
-                            quitRequested = true;
-                            break;
-                        case SDL_EventType.SDL_WINDOWEVENT:
-                            if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
-                            {
-                                Width = sdlEvent.window.data1;
-                                Height = sdlEvent.window.data2;
-                                coocoo3DMain.RequireResize = true;
-                                coocoo3DMain.NewSize = new Vector2(Width, Height);
-                            }
-                            break;
-                        case SDL_EventType.SDL_KEYDOWN:
-                            {
-                                if (sdlKeycode2ImguiKey.TryGetValue(sdlEvent.key.keysym.sym, out int imkey))
-                                    imguiInput.keydown[imkey] = true;
-                            }
-                            break;
-                        case SDL_EventType.SDL_KEYUP:
-                            {
-                                if (sdlKeycode2ImguiKey.TryGetValue(sdlEvent.key.keysym.sym, out int imkey))
-                                    imguiInput.keydown[imkey] = false;
-                                break;
-                            }
-                        case SDL_EventType.SDL_TEXTINPUT:
-                            {
-                                string utf8Str;
-                                unsafe
-                                {
-                                    utf8Str = Marshal.PtrToStringUTF8(new IntPtr(sdlEvent.text.text));
-                                }
-                                foreach (var c in utf8Str)
-                                    imguiInput.InputChar(c);
-                                break;
-                            }
-                        case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-                            imguiInput.mouseDown[SDLMouse2ImguiMouse(sdlEvent.button.button)] = true;
-                            if (sdlEvent.button.button == SDL_BUTTON_LEFT)
-                            {
+                quitRequested = !EventProcess(coocoo3DMain, sdlKeycode2ImguiKey);
 
-                            }
-                            break;
-                        case SDL_EventType.SDL_MOUSEBUTTONUP:
-                            imguiInput.mouseDown[SDLMouse2ImguiMouse(sdlEvent.button.button)] = false;
-                            if (sdlEvent.button.button == SDL_BUTTON_LEFT)
-                            {
-
-                            }
-                            break;
-                        case SDL_EventType.SDL_MOUSEMOTION:
-                            {
-                                int x = sdlEvent.motion.x;
-                                int y = sdlEvent.motion.y;
-                                imguiInput.MousePosition(new Vector2(x, y));
-                                ImguiInput.mouseMoveDelta.Enqueue(new Vector2(sdlEvent.motion.xrel, sdlEvent.motion.yrel));
-
-                            }
-                            break;
-                        case SDL_EventType.SDL_MOUSEWHEEL:
-                            imguiInput.mouseWheelH += sdlEvent.wheel.x;
-                            imguiInput.mouseWheelV += sdlEvent.wheel.y;
-                            break;
-                    }
-                    coocoo3DMain.RequireRender();
-                } while (SDL_PollEvent(out sdlEvent) == 1);
-
+                coocoo3DMain.RequireRender();
                 var modState = SDL_GetModState();
                 imguiInput.KeyAlt = (int)(modState & SDL_Keymod.KMOD_ALT) != 0;
                 imguiInput.KeyShift = (int)(modState & SDL_Keymod.KMOD_SHIFT) != 0;
@@ -119,6 +51,83 @@ namespace Coocoo3D
                     SDL_ShowSimpleMessageBox(SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "error", e.Message + "\n" + e.StackTrace, window);
                 }
             }
+        }
+
+        static bool EventProcess(Core.Coocoo3DMain coocoo3DMain, Dictionary<SDL_Keycode, int> sdlKeycode2ImguiKey)
+        {
+            var imguiInput = coocoo3DMain.imguiInput;
+            SDL_WaitEvent(out var sdlEvent);
+            bool quitRequested = false;
+            do
+            {
+                switch (sdlEvent.type)
+                {
+                    case SDL_EventType.SDL_QUIT:
+                        quitRequested = true;
+                        break;
+                    case SDL_EventType.SDL_WINDOWEVENT:
+                        if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_RESIZED)
+                        {
+                            int Width = sdlEvent.window.data1;
+                            int Height = sdlEvent.window.data2;
+                            coocoo3DMain.Resize(Width, Height);
+                        }
+                        if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED)
+                        {
+                            imguiInput.Focus = true;
+                        }
+                        if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST)
+                        {
+                            imguiInput.Focus = false;
+                        }
+                        break;
+                    case SDL_EventType.SDL_KEYDOWN:
+                        {
+                            if (sdlKeycode2ImguiKey.TryGetValue(sdlEvent.key.keysym.sym, out int imkey))
+                                imguiInput.keydown[imkey] = true;
+                        }
+                        break;
+                    case SDL_EventType.SDL_KEYUP:
+                        {
+                            if (sdlKeycode2ImguiKey.TryGetValue(sdlEvent.key.keysym.sym, out int imkey))
+                                imguiInput.keydown[imkey] = false;
+                            break;
+                        }
+                    case SDL_EventType.SDL_TEXTINPUT:
+                        {
+                            string utf8Str;
+                            unsafe
+                            {
+                                utf8Str = Marshal.PtrToStringUTF8(new IntPtr(sdlEvent.text.text));
+                            }
+                            foreach (var c in utf8Str)
+                                imguiInput.InputChar(c);
+                            break;
+                        }
+                    case SDL_EventType.SDL_MOUSEBUTTONDOWN:
+                        imguiInput.mouseDown[SDLMouse2ImguiMouse(sdlEvent.button.button)] = true;
+                        break;
+                    case SDL_EventType.SDL_MOUSEBUTTONUP:
+                        imguiInput.mouseDown[SDLMouse2ImguiMouse(sdlEvent.button.button)] = false;
+                        break;
+                    case SDL_EventType.SDL_MOUSEMOTION:
+                        {
+                            int x = sdlEvent.motion.x;
+                            int y = sdlEvent.motion.y;
+                            imguiInput.MousePosition(new(x, y));
+                            imguiInput.MouseMoveDelta(new(sdlEvent.motion.xrel, sdlEvent.motion.yrel));
+
+                        }
+                        break;
+                    case SDL_EventType.SDL_MOUSEWHEEL:
+                        imguiInput.mouseWheelH += sdlEvent.wheel.x;
+                        imguiInput.mouseWheelV += sdlEvent.wheel.y;
+                        break;
+                    case SDL_EventType.SDL_APP_WILLENTERFOREGROUND:
+                        break;
+                }
+            } while (SDL_PollEvent(out sdlEvent) == 1);
+            return !quitRequested;
         }
 
         static Dictionary<SDL_Keycode, int> SDLKey()

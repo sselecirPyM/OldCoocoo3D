@@ -9,7 +9,6 @@ using Coocoo3DGraphics;
 using Coocoo3D.Present;
 using Coocoo3D.Utility;
 using Coocoo3D.RenderPipeline;
-using Coocoo3D.UI;
 
 namespace Coocoo3D.Core
 {
@@ -83,7 +82,7 @@ namespace Coocoo3D.Core
         HybirdRenderPipeline hybridRenderPipeline = new HybirdRenderPipeline();
 
         WidgetRenderer widgetRenderer = new WidgetRenderer();
-        public ImguiInput imguiInput = new ImguiInput();
+        public UI.ImguiInput imguiInput = new UI.ImguiInput();
 
         public void RequireRender(bool updateEntities)
         {
@@ -157,10 +156,6 @@ namespace Coocoo3D.Core
                 mainCaches.OnFrame();
             RPContext.PreConfig();
 
-            foreach (var visualChannel in RPContext.visualChannels.Values)
-            {
-                visualChannel.Onframe(RPContext);
-            }
             imguiInput.Update();
             UI.UIImGui.GUI(this);
             GraphicsContext.BeginAlloctor(graphicsDevice);
@@ -185,6 +180,7 @@ namespace Coocoo3D.Core
 
             GameDriver.AfterRender(RPContext, graphicsContext);
             widgetRenderer.Render(RPContext, graphicsContext);
+            RPContext.AfterRender();
             graphicsContext.Present(performanceSettings.VSync);
             graphicsContext.EndCommand();
             graphicsContext.Execute();
@@ -198,6 +194,12 @@ namespace Coocoo3D.Core
         }
         #endregion
         public bool Recording = false;
+
+        public void Resize(int width,int height)
+        {
+            RequireResize = true;
+            NewSize = new Vector2(width, height);
+        }
 
         public void SetWindow(IntPtr hwnd, int width, int height)
         {

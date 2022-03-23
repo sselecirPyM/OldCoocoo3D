@@ -68,7 +68,8 @@ public static class UnionShaderRayTracing
                     inst.SRVs = new();
                     inst.SRVs.Add(4, param.TextureFallBack(param.GetTex2D("_Albedo", material)));
                     inst.SRVs.Add(5, param.TextureFallBack(param.GetTex2D("_Emissive", material)));
-                    inst.SRVs.Add(6, param.TextureFallBack(param.GetTex2D("_MetallicRoughness", material)));
+                    inst.SRVs.Add(6, param.TextureFallBack(param.GetTex2D("_Metallic", material)));
+                    inst.SRVs.Add(7, param.TextureFallBack(param.GetTex2D("_Roughness", material)));
                     inst.CBVs = new();
                     inst.CBVs.Add(0, param.GetCBVData(CBVs[1]));
                     tpas.instances.Add(inst);

@@ -12,12 +12,12 @@ namespace Coocoo3D.UI
 {
     public class ImguiInput
     {
-        public static ConcurrentQueue<Vector2> mouseMoveDelta = new ConcurrentQueue<Vector2>();
         #region mouse inputs
         public bool[] mouseDown = new bool[5];
         public Vector2 mousePos;
         public int mouseWheelH;
         public int mouseWheelV;
+        public ConcurrentQueue<Vector2> mouseMoveDelta = new();
         #endregion
 
         public bool[] keydown = new bool[256];
@@ -25,7 +25,7 @@ namespace Coocoo3D.UI
         public bool KeyShift;
         public bool KeyAlt;
         public bool KeySuper;
-        public ConcurrentQueue<uint> inputChars = new ConcurrentQueue<uint>();
+        public ConcurrentQueue<uint> inputChars = new();
         #region outputs
         public bool WantCaptureMouse;
         public bool WantCaptureKeyboard;
@@ -36,6 +36,8 @@ namespace Coocoo3D.UI
 
         public ImGuiMouseCursor requestCursor;
         #endregion
+        bool previousFocus;
+        public bool Focus;
 
         public void Update()
         {
@@ -58,6 +60,11 @@ namespace Coocoo3D.UI
             io.KeyShift = KeyShift;
             io.KeyAlt = KeyAlt;
             io.KeySuper = KeySuper;
+            if (previousFocus != Focus)
+            {
+                io.AddFocusEvent(Focus);
+            }
+            previousFocus = Focus;
 
             #region outputs
             WantCaptureKeyboard = io.WantCaptureKeyboard;

@@ -12,8 +12,6 @@ namespace Coocoo3DGraphics
         public ID3D12Resource resource;
         public string Name;
         public ResourceStates resourceStates;
-        public ID3D12DescriptorHeap renderTargetView;
-        public ID3D12DescriptorHeap depthStencilView;
         public int width;
         public int height;
         public int mipLevels;
@@ -82,26 +80,6 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public CpuDescriptorHandle GetRenderTargetView(ID3D12Device device)
-        {
-            if (renderTargetView == null)
-            {
-                ThrowIfFailed(device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.RenderTargetView, 1), out renderTargetView));
-                device.CreateRenderTargetView(resource, null, renderTargetView.GetCPUDescriptorHandleForHeapStart());
-            }
-            return renderTargetView.GetCPUDescriptorHandleForHeapStart();
-        }
-
-        public CpuDescriptorHandle GetDepthStencilView(ID3D12Device device)
-        {
-            if (depthStencilView == null)
-            {
-                device.CreateDescriptorHeap(new DescriptorHeapDescription(DescriptorHeapType.DepthStencilView, 1), out depthStencilView);
-                device.CreateDepthStencilView(resource, null, depthStencilView.GetCPUDescriptorHandleForHeapStart());
-            }
-            return depthStencilView.GetCPUDescriptorHandleForHeapStart();
-        }
-
         public Format GetFormat()
         {
             if (dsvFormat != Format.Unknown)
@@ -113,10 +91,6 @@ namespace Coocoo3DGraphics
         {
             resource?.Release();
             resource = null;
-            renderTargetView?.Release();
-            renderTargetView = null;
-            depthStencilView?.Release();
-            depthStencilView = null;
         }
     }
 }

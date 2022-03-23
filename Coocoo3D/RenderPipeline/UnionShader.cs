@@ -48,6 +48,12 @@ namespace Coocoo3D.RenderPipeline
 
         public GraphicsDevice graphicsDevice { get => rp.graphicsDevice; }
 
+        public string skyBoxFile { get => rp.skyBoxTex; }
+
+        public CameraData camera { get => visualChannel.cameraData; }
+
+        public bool recording { get => rp.recording; }
+
         internal Dictionary<string, object> customValue = new Dictionary<string, object>();
         internal Dictionary<string, object> gpuValueOverride = new Dictionary<string, object>();
 
@@ -90,8 +96,6 @@ namespace Coocoo3D.RenderPipeline
         public double time { get => rp.dynamicContextRead.Time; }
 
         public Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
-        //internal Mesh mesh { get => GetMesh(renderer.meshPath); }
-        //internal Mesh meshOverride { get => rp.meshOverride[renderer]; }
 
         public Random _random;
 
@@ -147,32 +151,44 @@ namespace Coocoo3D.RenderPipeline
                 return null;
 
             if (name == "_Output0") return visualChannel.OutputRTV;
+
+            string path = GetTex2DPath(name, material);
+            if (string.IsNullOrEmpty(path))
+                return null;
+            return rp._GetTex2DByName(path);
+        }
+
+        public string GetTex2DPath(string name, RenderMaterial material = null)
+        {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             if (material != null && passSetting.ShowTextures?.ContainsKey(name) == true)
             {
                 if (material.textures.TryGetValue(name, out string texPath))
-                    return rp._GetTex2DByName(texPath);
+                    return texPath;
                 else
                     return null;
             }
             if (passSetting.ShowSettingTextures?.ContainsKey(name) == true)
             {
                 if (settings.textures.TryGetValue(name, out string texPath))
-                    return rp._GetTex2DByName(texPath);
+                    return texPath;
                 else
                     return null;
             }
 
-            Texture2D tex2D;
+            string tex2DPath;
             if (passSetting.RenderTargets.ContainsKey(name))
             {
-                tex2D = rp._GetTex2DByName(_getTextureName(name));
+                tex2DPath = _getTextureName(name);
             }
             else
             {
                 name = passSetting.GetAliases(name);
-                tex2D = rp._GetTex2DByName(name);
+                tex2DPath = name;
             }
-            return tex2D;
+            return tex2DPath;
         }
 
         public TextureCube GetTexCube(string name, RenderMaterial material = null)
@@ -233,16 +249,6 @@ namespace Coocoo3D.RenderPipeline
             return GPUWriter.GetData();
         }
 
-        public void SetMesh(GraphicsContext graphicsContext, MMDRendererComponent renderer)
-        {
-            graphicsContext.SetMesh(GetMesh(renderer.meshPath), rp.meshOverride[renderer]);
-        }
-
-        public void SetMesh(GraphicsContext graphicsContext, MeshRendererComponent renderer)
-        {
-            graphicsContext.SetMesh(GetMesh(renderer.meshPath));
-        }
-
         public void WriteGPU(List<string> datas, GPUWriter writer)
         {
             if (datas == null || datas.Count == 0) return;
@@ -301,56 +307,34 @@ namespace Coocoo3D.RenderPipeline
                         writer.Write(camera.pvMatrix);
                         break;
                     case "WidthHeight":
+                        if (renderTargets != null && renderTargets.Length > 0)
                         {
-                            if (renderTargets != null && renderTargets.Length > 0)
-                            {
-                                Texture2D renderTarget = renderTargets[0];
-                                writer.Write(renderTarget.width);
-                                writer.Write(renderTarget.height);
-                            }
-                            else if (depthStencil != null)
-                            {
-                                writer.Write(depthStencil.width);
-                                writer.Write(depthStencil.height);
-                            }
-                            else
-                            {
-                                writer.Write(0);
-                                writer.Write(0);
-                            }
+                            Texture2D renderTarget = renderTargets[0];
+                            writer.Write(renderTarget.width);
+                            writer.Write(renderTarget.height);
+                        }
+                        else if (depthStencil != null)
+                        {
+                            writer.Write(depthStencil.width);
+                            writer.Write(depthStencil.height);
+                        }
+                        else
+                        {
+                            writer.Write(0);
+                            writer.Write(0);
                         }
                         break;
                     case "DirectionalLightMatrix0":
-                        {
-                            if (drp.directionalLights.Count > 0)
-                                writer.Write(drp.GetLightMatrix(camera.pvMatrix, 0));
-                            else
-                                writer.Write(Matrix4x4.Identity);
-                        }
+                        if (drp.directionalLights.Count > 0)
+                            writer.Write(drp.GetLightMatrix(camera.pvMatrix, 0));
+                        else
+                            writer.Write(Matrix4x4.Identity);
                         break;
                     case "DirectionalLightMatrix1":
-                        {
-                            if (drp.directionalLights.Count > 0)
-                                writer.Write(drp.GetLightMatrix(camera.pvMatrix, 1));
-                            else
-                                writer.Write(Matrix4x4.Identity);
-                        }
-                        break;
-                    case "DirectionalLightMatrix2":
-                        {
-                            if (drp.directionalLights.Count > 0)
-                                writer.Write(drp.GetLightMatrix(camera.pvMatrix, 2));
-                            else
-                                writer.Write(Matrix4x4.Identity);
-                        }
-                        break;
-                    case "DirectionalLightMatrix3":
-                        {
-                            if (drp.directionalLights.Count > 0)
-                                writer.Write(drp.GetLightMatrix(camera.pvMatrix, 3));
-                            else
-                                writer.Write(Matrix4x4.Identity);
-                        }
+                        if (drp.directionalLights.Count > 0)
+                            writer.Write(drp.GetLightMatrix(camera.pvMatrix, 1));
+                        else
+                            writer.Write(Matrix4x4.Identity);
                         break;
                     case "DirectionalLight":
                         {
@@ -426,8 +410,10 @@ namespace Coocoo3D.RenderPipeline
             var drp = rp.dynamicContextRead;
             foreach (var renderer in renderers)
             {
+                var mesh = GetMesh(renderer.meshPath);
+                var meshOverride = rp.meshOverride[renderer];
                 if (setmesh)
-                    SetMesh(graphicsContext, renderer);
+                    graphicsContext.SetMesh(mesh, meshOverride);
                 this.renderer = renderer;
                 this.meshRenderer = null;
                 foreach (var material in renderer.Materials)
@@ -435,8 +421,8 @@ namespace Coocoo3D.RenderPipeline
                     this.material = material;
                     var renderable = new MeshRenderable()
                     {
-                        mesh = GetMesh(renderer.meshPath),
-                        meshOverride = rp.meshOverride[renderer],
+                        mesh = mesh,
+                        meshOverride = meshOverride,
                         transform = renderer.LocalToWorld,
                         gpuSkinning = renderer.skinning && !drp.CPUSkinning,
                     };
@@ -446,17 +432,17 @@ namespace Coocoo3D.RenderPipeline
             }
             foreach (var renderer in meshRenderers)
             {
+                var mesh = GetMesh(renderer.meshPath);
                 if (setmesh)
-                    SetMesh(graphicsContext, renderer);
-                this.meshRenderer = renderer;
+                    graphicsContext.SetMesh(mesh);
                 this.renderer = null;
+                this.meshRenderer = renderer;
                 foreach (var material in renderer.Materials)
                 {
                     this.material = material;
-
                     var renderable = new MeshRenderable()
                     {
-                        mesh = GetMesh(renderer.meshPath),
+                        mesh = mesh,
                         meshOverride = null,
                         transform = renderer.transform.GetMatrix(),
                         gpuSkinning = false,
@@ -474,6 +460,11 @@ namespace Coocoo3D.RenderPipeline
             renderable.indexCount = material.indexCount;
             renderable.vertexStart = material.vertexStart;
             renderable.vertexCount = material.vertexCount;
+        }
+
+        public IEnumerable<RenderSequence> RenderSequences()
+        {
+            return passSetting.RenderSequence;
         }
 
         public IEnumerable<MeshRenderable> EffectRenderables()
@@ -617,6 +608,12 @@ namespace Coocoo3D.RenderPipeline
                 psoDesc.inputLayout = InputLayout.postProcess;
             }
             return psoDesc;
+        }
+
+        public void DispatchPass(RenderSequence sequence)
+        {
+            renderSequence = sequence;
+            HybirdRenderPipeline.DispatchPass(this);
         }
     }
 }

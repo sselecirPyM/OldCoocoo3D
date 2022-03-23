@@ -6,7 +6,6 @@ using System.Numerics;
 using SharpGen.Runtime;
 using Vortice.DXGI;
 using System.Threading;
-using Vortice.Mathematics;
 using Vortice.Direct3D12.Debug;
 using static Coocoo3DGraphics.DXHelper;
 
@@ -14,19 +13,26 @@ namespace Coocoo3DGraphics
 {
     public class GraphicsDevice
     {
-        public struct d3d12RecycleResource
+        public struct recycleResource
         {
-            public ID3D12Object m_recycleResource;
-            public UInt64 m_removeFrame;
+            public ID3D12Object resource;
+            public ulong removeFrame;
+
+            public recycleResource(ID3D12Object resource, ulong removeFrame)
+            {
+                this.resource = resource;
+                this.removeFrame = removeFrame;
+            }
         };
 
         public const int c_frameCount = 3;
         public const int CBVSRVUAVDescriptorCount = 65536;
-        public ID3D12Device5 device;
-        public IDXGIAdapter adapter;
+        internal ID3D12Device5 device;
+        internal IDXGIAdapter adapter;
 
-        public DescriptorHeapX cbvsrvuavHeap;
-        public DescriptorHeapX rtvHeap;
+        internal DescriptorHeapX cbvsrvuavHeap;
+        internal DescriptorHeapX rtvHeap;
+        internal DescriptorHeapX dsvHeap;
 
         internal RingBuffer superRingBuffer = new RingBuffer();
 
@@ -35,9 +41,9 @@ namespace Coocoo3DGraphics
         string m_deviceDescription;
         UInt64 m_deviceVideoMem;
 
-        internal UInt64 m_currentFenceValue = 3;
+        internal UInt64 currentFenceValue = 3;
 
-        internal List<d3d12RecycleResource> m_recycleList = new List<d3d12RecycleResource>();
+        internal List<recycleResource> m_recycleList = new List<recycleResource>();
         List<ID3D12GraphicsCommandList4> m_commandLists = new List<ID3D12GraphicsCommandList4>();
         List<ID3D12GraphicsCommandList4> m_commandLists1 = new List<ID3D12GraphicsCommandList4>();
 
@@ -46,7 +52,7 @@ namespace Coocoo3DGraphics
         IDXGISwapChain3 m_swapChain;
         ID3D12Resource[] m_renderTargets = new ID3D12Resource[c_frameCount];
         ResourceStates[] renderTargetResourceStates = new ResourceStates[c_frameCount];
-        public ID3D12CommandQueue commandQueue;
+        internal ID3D12CommandQueue commandQueue;
         ID3D12CommandAllocator[] commandAllocators = new ID3D12CommandAllocator[c_frameCount];
 
         Format m_backBufferFormat;
@@ -55,8 +61,8 @@ namespace Coocoo3DGraphics
 
         ID3D12Fence fence;
         EventWaitHandle fenceEvent;
-        public uint executeIndex = 0;
-        public ulong executeCount = 3;
+        internal uint executeIndex = 0;
+        internal ulong executeCount = 3;
 
         public Vector2 m_outputSize;
         public Vector2 m_logicalSize;
@@ -248,10 +254,11 @@ namespace Coocoo3DGraphics
             ThrowIfFailed(device.CreateCommandQueue(commandQueuDdescription, out commandQueue));
 
             DescriptorHeapDescription descriptorHeapDescription;
+            descriptorHeapDescription.NodeMask = 0;
+
             descriptorHeapDescription.DescriptorCount = CBVSRVUAVDescriptorCount;
             descriptorHeapDescription.Type = DescriptorHeapType.ConstantBufferViewShaderResourceViewUnorderedAccessView;
             descriptorHeapDescription.Flags = DescriptorHeapFlags.ShaderVisible;
-            descriptorHeapDescription.NodeMask = 0;
             cbvsrvuavHeap = new DescriptorHeapX();
             cbvsrvuavHeap.Initialize(this, descriptorHeapDescription);
 
@@ -260,6 +267,13 @@ namespace Coocoo3DGraphics
             descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
             rtvHeap = new DescriptorHeapX();
             rtvHeap.Initialize(this, descriptorHeapDescription);
+
+            descriptorHeapDescription.DescriptorCount = 16;
+            descriptorHeapDescription.Type = DescriptorHeapType.DepthStencilView;
+            descriptorHeapDescription.Flags = DescriptorHeapFlags.None;
+            dsvHeap = new DescriptorHeapX();
+            dsvHeap.Initialize(this, descriptorHeapDescription);
+
             fenceEvent = new EventWaitHandle(false, EventResetMode.AutoReset);
 
 
@@ -320,17 +334,17 @@ namespace Coocoo3DGraphics
             }
         }
 
-        public CpuDescriptorHandle GetRenderTargetView(ID3D12GraphicsCommandList graphicsCommandList)
+        internal CpuDescriptorHandle GetScreenRenderTargetView(ID3D12GraphicsCommandList graphicsCommandList)
         {
-            var handle = rtvHeap.heap.GetCPUDescriptorHandleForHeapStart() + rtvHeap.IncrementSize * m_swapChain.GetCurrentBackBufferIndex();
-            device.CreateRenderTargetView(GetRenderTarget(graphicsCommandList), null, handle);
+            var resource = GetRenderTarget(graphicsCommandList);
+            var handle = GetRenderTargetView(resource);
             return handle;
         }
 
-        internal void ResourceDelayRecycle(ID3D12Object res)
+        internal void ResourceDelayRecycle(ID3D12Object resource)
         {
-            if (res != null)
-                m_recycleList.Add(new d3d12RecycleResource { m_recycleResource = res, m_removeFrame = m_currentFenceValue });
+            if (resource != null)
+                m_recycleList.Add(new recycleResource(resource, currentFenceValue));
         }
 
         public void CreateWindowSizeDependentResources()
@@ -381,18 +395,9 @@ namespace Coocoo3DGraphics
                 swapChain.Dispose();
             }
 
-
-            // 创建交换链后台缓冲区的呈现目标视图。
+            for (int n = 0; n < c_frameCount; n++)
             {
-                rtvHeap.GetTempCpuHandle();
-                CpuDescriptorHandle rtvDescriptor = rtvHeap.heap.GetCPUDescriptorHandleForHeapStart();
-                for (int n = 0; n < c_frameCount; n++)
-                {
-                    ThrowIfFailed(m_swapChain.GetBuffer(n, out m_renderTargets[n]));
-                    device.CreateRenderTargetView(m_renderTargets[n], null, rtvDescriptor);
-                    rtvDescriptor.Ptr += rtvHeap.IncrementSize;
-                    m_renderTargets[n].Name = "backbuffer";
-                }
+                ThrowIfFailed(m_swapChain.GetBuffer(n, out m_renderTargets[n]));
             }
         }
 
@@ -426,64 +431,63 @@ namespace Coocoo3DGraphics
 
         public void RenderComplete()
         {
-            commandQueue.Signal(fence, m_currentFenceValue);
+            commandQueue.Signal(fence, currentFenceValue);
 
             // 提高帧索引。
             executeIndex = (executeIndex < (c_frameCount - 1)) ? (executeIndex + 1) : 0;
 
             // 检查下一帧是否准备好启动。
-            if (fence.CompletedValue < m_currentFenceValue - c_frameCount + 1)
+            if (fence.CompletedValue < currentFenceValue - c_frameCount + 1)
             {
-                fence.SetEventOnCompletion(m_currentFenceValue - c_frameCount + 1, fenceEvent);
+                fence.SetEventOnCompletion(currentFenceValue - c_frameCount + 1, fenceEvent);
                 fenceEvent.WaitOne();
             }
             Recycle();
 
             // 为下一帧设置围栏值。
-            m_currentFenceValue++;
+            currentFenceValue++;
         }
 
         public void WaitForGpu()
         {
             // 在队列中安排信号命令。
-            commandQueue.Signal(fence, m_currentFenceValue);
+            commandQueue.Signal(fence, currentFenceValue);
 
             // 等待跨越围栏。
-            fence.SetEventOnCompletion(m_currentFenceValue, fenceEvent);
+            fence.SetEventOnCompletion(currentFenceValue, fenceEvent);
             fenceEvent.WaitOne();
 
             Recycle();
 
             // 对当前帧递增围栏值。
-            m_currentFenceValue++;
+            currentFenceValue++;
         }
 
         void Recycle()
         {
-            List<d3d12RecycleResource> temp = new List<d3d12RecycleResource>();
-            for (int i = 0; i < m_recycleList.Count; i++)
-                if (m_recycleList[i].m_removeFrame > m_currentFenceValue - c_frameCount + 1)
-                    temp.Add(m_recycleList[i]);
-                else
-                    m_recycleList[i].m_recycleResource.Release();
-            m_recycleList = temp;
-            for (int i = 0; i < m_commandLists1.Count; i++)
-                m_commandLists.Add(m_commandLists1[i]);
+            ulong completedFrame = fence.CompletedValue;
+            m_recycleList.RemoveAll(x =>
+            {
+                if (x.removeFrame <= completedFrame)
+                {
+                    x.resource.Release();
+                    return true;
+                }
+                return false;
+            });
+
+            m_commandLists.AddRange(m_commandLists1);
             m_commandLists1.Clear();
         }
 
 
-        // 确定呈现器目标的尺寸及其是否将缩小。
         void UpdateRenderTargetSize()
         {
-            // 计算必要的呈现目标大小(以像素为单位)。
             m_outputSize.X = m_logicalSize.X;
             m_outputSize.Y = m_logicalSize.Y;
 
-            // 防止创建大小为零的 DirectX 内容。
             m_outputSize.X = Math.Max(m_outputSize.X, 1);
             m_outputSize.Y = Math.Max(m_outputSize.Y, 1);
-
         }
 
         public bool IsRayTracingSupport()
@@ -520,6 +524,20 @@ namespace Coocoo3DGraphics
                 return true;
         }
 
-        public ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
+        internal CpuDescriptorHandle GetRenderTargetView(ID3D12Resource resource)
+        {
+            var cpuHandle = rtvHeap.GetTempCpuHandle();
+            device.CreateRenderTargetView(resource, null, cpuHandle);
+            return cpuHandle;
+        }
+
+        internal CpuDescriptorHandle GetDepthStencilView(ID3D12Resource resource)
+        {
+            var cpuHandle = dsvHeap.GetTempCpuHandle();
+            device.CreateDepthStencilView(resource, null, cpuHandle);
+            return cpuHandle;
+        }
+
+        internal ID3D12CommandAllocator GetCommandAllocator() { return commandAllocators[executeIndex]; }
     }
 }

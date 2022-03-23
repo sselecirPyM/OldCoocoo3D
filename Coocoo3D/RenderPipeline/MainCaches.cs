@@ -24,7 +24,8 @@ namespace Coocoo3D.RenderPipeline
         public ConcurrentDictionary<string, DirectoryInfo> KnownFolders = new();
 
         public DictionaryWithModifiyIndex<string, Texture2DPack> TextureCaches = new();
-        public DictionaryWithModifiyIndex<string, Texture2DPack> TextureOnDemand = new();
+        public Dictionary<string, Texture2DPack> TextureOnDemand = new();
+        public Dictionary<string, Texture2DPack> TextureLoading = new();
 
         public DictionaryWithModifiyIndex<string, ModelPack> ModelPackCaches = new();
         public DictionaryWithModifiyIndex<string, MMDMotion> Motions = new();
@@ -51,7 +52,7 @@ namespace Coocoo3D.RenderPipeline
 
         public Action _RequireRender;
 
-        public bool ReloadTextures1 = false;
+        public bool ReloadTextures = false;
         public bool ReloadShaders = false;
 
         public void AddFolder(DirectoryInfo folder)
@@ -59,12 +60,12 @@ namespace Coocoo3D.RenderPipeline
             KnownFolders[folder.FullName] = folder;
         }
 
-        public void Texture(string fullPath, bool srgb = true)
+        public void Texture(string fullPath)
         {
             if (!TextureOnDemand.ContainsKey(fullPath))
             {
                 AddFolder(new DirectoryInfo(Path.GetDirectoryName(fullPath)));
-                TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath, srgb = srgb };
+                TextureOnDemand[fullPath] = new Texture2DPack() { fullPath = fullPath };
             }
         }
 
@@ -78,13 +79,13 @@ namespace Coocoo3D.RenderPipeline
 
                 Console.Clear();
             }
-            if (ReloadTextures1.SetFalse() && TextureCaches.Count > 0)
+            if (ReloadTextures.SetFalse() && TextureCaches.Count > 0)
             {
                 var packs = TextureCaches.ToList();
                 foreach (var pair in packs)
                 {
                     if (!TextureOnDemand.ContainsKey(pair.Key) && pair.Value.canReload)
-                        TextureOnDemand.Add(pair.Key, new Texture2DPack() { fullPath = pair.Value.fullPath, srgb = pair.Value.srgb });
+                        TextureOnDemand.Add(pair.Key, new Texture2DPack() { fullPath = pair.Value.fullPath });
                 }
                 foreach (var pair in KnownFiles)
                 {
@@ -92,12 +93,14 @@ namespace Coocoo3D.RenderPipeline
                 }
             }
 
-            if (TextureOnDemand.Count == 0) return;
+            if (TextureOnDemand.Count == 0 && TextureLoading.Count == 0) return;
 
             foreach (var notLoad in TextureOnDemand.Where(u => { return u.Value.loadTask == null; }))
             {
                 var tex1 = TextureCaches.GetOrCreate(notLoad.Key);
                 tex1.Mark(GraphicsObjectStatus.loading);
+                if (TextureLoading.Count > 6) continue;
+
                 InitFolder(Path.GetDirectoryName(notLoad.Value.fullPath));
                 Dictionary<string, object> taskParam = new();
                 taskParam["pack"] = notLoad.Value;
@@ -120,11 +123,13 @@ namespace Coocoo3D.RenderPipeline
                         texturePack1.Mark(GraphicsObjectStatus.error);
                     _RequireRender();
                 }, taskParam);
+                TextureLoading[notLoad.Key] = notLoad.Value;
             }
-            foreach (var loadCompleted in TextureOnDemand.Where(u => { return u.Value.loadTask != null && u.Value.loadTask.IsCompleted; }).ToArray())
+
+            foreach (var loadCompleted in TextureLoading.Where(u => { return u.Value.loadTask != null && u.Value.loadTask.IsCompleted; }).ToArray())
             {
                 var tex1 = TextureCaches.GetOrCreate(loadCompleted.Key);
-                tex1.srgb = loadCompleted.Value.srgb;
+
                 if (loadCompleted.Value.loadTask.Status == TaskStatus.RanToCompletion &&
                    (loadCompleted.Value.Status == GraphicsObjectStatus.loaded ||
                     loadCompleted.Value.Status == GraphicsObjectStatus.error))
@@ -137,6 +142,7 @@ namespace Coocoo3D.RenderPipeline
                         TextureReadyToUpload.Enqueue(new(tex1.texture2D, uploader));
                     }
                     TextureOnDemand.Remove(loadCompleted.Key);
+                    TextureLoading.Remove(loadCompleted.Key);
                 }
             }
         }
@@ -308,7 +314,9 @@ namespace Coocoo3D.RenderPipeline
 
             return GetT(PassDispatchers, path, file =>
             {
-                Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
+                string typeName = Path.GetFileNameWithoutExtension(path);
+
+                Type type = assembly.GetType(typeName);
                 var inst = Activator.CreateInstance(type);
                 var dispatcher = (IPassDispatcher)inst;
                 return dispatcher;
@@ -349,6 +357,7 @@ namespace Coocoo3D.RenderPipeline
                     MetadataReference.CreateFromFile (typeof (Vortice.Dxc.Dxc).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (SharpGen.Runtime.CppObject).Assembly.Location),
                     MetadataReference.CreateFromFile (typeof (SharpGen.Runtime.ComObject).Assembly.Location),
+                    MetadataReference.CreateFromFile (typeof (ProRendererWrap.RPRContext).Assembly.Location),
                 };
                 refs.AddRange(AppDomain.CurrentDomain.GetAssemblies().Where(u => u.GetName().Name.Contains("netstandard") ||
                     u.GetName().Name.Contains("System")).Select(u => MetadataReference.CreateFromFile(u.Location)));

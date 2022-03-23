@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Coocoo3D.ResourceWarp;
 
 namespace Coocoo3D.Core
 {
@@ -48,82 +49,38 @@ namespace Coocoo3D.Core
 
             return true;
         }
-        class Pack1
-        {
-            public Task runningTask;
-            public int renderIndex;
-            public DirectoryInfo saveFolder;
-            public byte[] imageData;
-            public int width;
-            public int height;
-            public void EncodeTask()
-            {
-                Image<Rgba32> image = Image.WrapMemory<Rgba32>(imageData, width, height);
-
-                FileInfo file = new FileInfo(Path.GetFullPath(string.Format("{0}.png", renderIndex), saveFolder.FullName));
-                var stream = file.Open(FileMode.Create);
-                image.SaveAsPng(stream);
-
-                stream.Close();
-            }
-        }
-        const int encFrameCount = 8;
-        int exIndex = 0;
-        Pack1[] packs = new Pack1[encFrameCount];
 
         public ReadBackTexture2D ReadBackTexture2D = new ReadBackTexture2D();
 
         public override void AfterRender(RenderPipelineContext rpContext, GraphicsContext graphicsContext)
         {
+            rpContext.recording = false;
             ref GameDriverContext context = ref rpContext.gameDriverContext;
-
             if (context.PlayTime >= StartTime && (RenderCount - c_frameCount) * FrameIntervalF <= StopTime)
             {
+                rpContext.recording = true;
                 int index1 = RecordCount % c_frameCount;
                 var visualchannel = rpContext.visualChannels["main"];
 
-                if (ReadBackTexture2D.GetWidth() != visualchannel.outputSize.X || ReadBackTexture2D.GetHeight() != visualchannel.outputSize.Y)
+                int width = visualchannel.outputSize.X;
+                int height = visualchannel.outputSize.Y;
+
+                if (ReadBackTexture2D.GetWidth() != width || ReadBackTexture2D.GetHeight() != height)
                 {
-                    ReadBackTexture2D.Reload(visualchannel.outputSize.X, visualchannel.outputSize.Y, 4);
+                    ReadBackTexture2D.Reload(width, height, 4);
                     graphicsContext.UpdateReadBackTexture(ReadBackTexture2D);
                 }
 
                 graphicsContext.CopyTexture(ReadBackTexture2D, visualchannel.OutputRTV, index1);
+
                 if (RecordCount >= c_frameCount)
                 {
-                    int width = ReadBackTexture2D.GetWidth();
-                    int height = ReadBackTexture2D.GetHeight();
-                    if (packs[exIndex] == null)
-                        packs[exIndex] = new Pack1();
-                    else if (!packs[exIndex].runningTask.IsCompleted)
-                    {
-                        packs[exIndex].runningTask.Wait();
-                    }
-                    var pack = packs[exIndex];
-                    pack.width = width;
-                    pack.height = height;
-                    pack.saveFolder = saveFolder;
-                    if (pack.imageData == null || pack.imageData.Length != width * height * 4)
-                        pack.imageData = new byte[width * height * 4];
-
-                    ReadBackTexture2D.GetRaw<byte>(index1, pack.imageData);
-
-                    pack.renderIndex = RecordCount - c_frameCount;
-                    pack.runningTask = Task.Run(pack.EncodeTask);
-                    exIndex = (exIndex + 1) % packs.Length;
+                    int renderIndex = RecordCount - c_frameCount;
+                    var data = ReadBackTexture2D.StartRead<byte>(index1);
+                    TextureHelper.SaveToFile(data, width, height, Path.GetFullPath(string.Format("{0}.png", renderIndex), saveFolder.FullName));
+                    ReadBackTexture2D.StopRead(index1);
                 }
                 RecordCount++;
-            }
-            else
-            {
-                for (int i = 0; i < packs.Length; i++)
-                {
-                    if (packs[i] != null && !packs[i].runningTask.IsCompleted)
-                    {
-                        packs[i].runningTask.Wait();
-                        packs[i] = null;
-                    }
-                }
             }
         }
         public float StartTime;

@@ -27,7 +27,7 @@ namespace Coocoo3D.Present
         public Vector3 LookAtPoint = new Vector3(0, 10, 0);
         public float Distance = -45;
         public Vector3 Angle;
-        public float Fov = MathF.PI / 6;
+        public float Fov = 0.6632251157578452f;//38 degree
         public float AspectRatio = 1;
         public float farClip = 3000.0f;
         public float nearClip = 2.0f;
@@ -60,9 +60,9 @@ namespace Coocoo3D.Present
         public CameraData GetCameraData(Vector2 offset)
         {
             Matrix4x4 rotateMatrix = Matrix4x4.CreateFromYawPitchRoll(-Angle.Y, -Angle.X, -Angle.Z);
-            var pos = Vector3.Transform(Vector3.UnitZ * Distance, rotateMatrix * Matrix4x4.CreateTranslation(LookAtPoint));
+            var position = Vector3.Transform(Vector3.UnitZ * Distance, rotateMatrix * Matrix4x4.CreateTranslation(LookAtPoint));
             var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, rotateMatrix));
-            Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(pos, LookAtPoint, up);
+            Matrix4x4 vMatrix = Matrix4x4.CreateLookAt(position, LookAtPoint, up);
             float nearClip1 = MathF.Max(nearClip, 0.001f);
             float farClip1 = MathF.Max(farClip, nearClip1 + 1e-1f);
             float fov1 = Math.Clamp(Fov, 1e-3f, MathF.PI - 1e-3f);
@@ -78,7 +78,7 @@ namespace Coocoo3D.Present
                 Distance = Distance,
                 Fov = Fov,
                 LookAtPoint = LookAtPoint,
-                Position = pos,
+                Position = position,
                 vMatrix = vMatrix,
                 pMatrix = pMatrix,
                 vpMatrix = vpMatrix,

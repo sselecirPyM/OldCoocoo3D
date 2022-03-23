@@ -15,31 +15,31 @@ namespace Coocoo3D.UI
 {
     static class UIImGui
     {
-        public static void GUI(Coocoo3DMain appBody)
+        public static void GUI(Coocoo3DMain main)
         {
             if (!initialized)
             {
-                InitTex(appBody);
+                InitTex(main);
                 InitKeyMap();
                 initialized = true;
             }
             var io = ImGui.GetIO();
             Vector2 mouseMoveDelta = new Vector2();
-            while (ImguiInput.mouseMoveDelta.TryDequeue(out var moveDelta))
+            while (main.imguiInput.mouseMoveDelta.TryDequeue(out var moveDelta))
             {
                 mouseMoveDelta += moveDelta;
             }
 
-            var context = appBody.RPContext;
+            var context = main.RPContext;
             io.DisplaySize = new Vector2(context.screenSize.X, context.screenSize.Y);
             io.DeltaTime = (float)context.dynamicContextRead.RealDeltaTime;
             Present.GameObject selectedObject = null;
 
             positionChange = false;
             rotationChange = false;
-            if (appBody.SelectedGameObjects.Count == 1)
+            if (main.SelectedGameObjects.Count == 1)
             {
-                selectedObject = appBody.SelectedGameObjects[0];
+                selectedObject = main.SelectedGameObjects[0];
                 position = selectedObject.Transform.position;
                 if (rotationCache != selectedObject.Transform.rotation)
                 {
@@ -54,19 +54,19 @@ namespace Coocoo3D.UI
             if (demoWindowOpen)
                 ImGui.ShowDemoWindow(ref demoWindowOpen);
 
-            DockSpace(appBody);
+            DockSpace(main);
             ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("常用"))
             {
-                Common(appBody);
+                Common(main);
             }
             ImGui.End();
             ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowPos(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("资源"))
             {
-                var _openRequest = Resources(appBody);
+                var _openRequest = Resources(main);
                 if (openRequest == null)
                     openRequest = _openRequest;
             }
@@ -75,18 +75,18 @@ namespace Coocoo3D.UI
             ImGui.SetNextWindowSize(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("设置"))
             {
-                SettingsPanel(appBody);
+                SettingsPanel(main);
             }
             ImGui.End();
             ImGui.SetNextWindowSize(new Vector2(350, 300), ImGuiCond.FirstUseEver);
             ImGui.SetNextWindowPos(new Vector2(750, 0), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("场景层级"))
             {
-                SceneHierarchy(appBody);
+                SceneHierarchy(main);
             }
             ImGui.End();
             int d = 0;
-            foreach (var visualChannel in appBody.RPContext.visualChannels.Values)
+            foreach (var visualChannel in main.RPContext.visualChannels.Values)
             {
                 ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.FirstUseEver);
                 ImGui.SetNextWindowPos(new Vector2(300 + d, 0), ImGuiCond.FirstUseEver);
@@ -95,7 +95,7 @@ namespace Coocoo3D.UI
                     bool open = true;
                     if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name), ref open))
                     {
-                        SceneView(appBody, visualChannel, io.MouseWheel, mouseMoveDelta);
+                        SceneView(main, visualChannel, io.MouseWheel, mouseMoveDelta);
                     }
                     if (!open)
                     {
@@ -106,7 +106,7 @@ namespace Coocoo3D.UI
                 {
                     if (ImGui.Begin(string.Format("场景视图 - {0}###SceneView/{0}", visualChannel.Name)))
                     {
-                        SceneView(appBody, visualChannel, io.MouseWheel, mouseMoveDelta);
+                        SceneView(main, visualChannel, io.MouseWheel, mouseMoveDelta);
                     }
                 }
                 ImGui.End();
@@ -118,11 +118,11 @@ namespace Coocoo3D.UI
             {
                 if (selectedObject != null)
                 {
-                    GameObjectPanel(appBody, selectedObject);
+                    GameObjectPanel(main, selectedObject);
                 }
             }
             ImGui.End();
-            Popups(appBody);
+            Popups(main);
             ImGui.Render();
             if (selectedObject != null)
             {
@@ -133,7 +133,7 @@ namespace Coocoo3D.UI
                 }
                 if (transformChange)
                 {
-                    appBody.CurrentScene.setTransform[selectedObject] = new Present.Transform(position, rotationCache);
+                    main.CurrentScene.setTransform[selectedObject] = new(position, rotationCache);
                 }
             }
         }
@@ -283,7 +283,7 @@ namespace Coocoo3D.UI
             }
             if (ImGui.Button("重新加载纹理"))
             {
-                appBody.mainCaches.ReloadTextures1 = true;
+                appBody.mainCaches.ReloadTextures = true;
             }
             if (ImGui.Button("重新加载Shader"))
             {
@@ -909,8 +909,8 @@ vmd格式动作");
         public static void NewLighting(Coocoo3DMain main)
         {
             LightingComponent lightingComponent = new LightingComponent();
-            lightingComponent.Color = new Vector3(3, 3, 3);
-            lightingComponent.Range = 10;
+            lightingComponent.Color = new Vector3(10, 10, 10);
+            lightingComponent.Range = 50;
             GameObject gameObject = new GameObject();
             gameObject.AddComponent(lightingComponent);
             gameObject.Name = "Lighting";

@@ -106,6 +106,8 @@ namespace Coocoo3D.RenderPipeline
             },
         };
 
+        public bool recording = false;
+
         public bool CPUSkinning = false;
 
         public void Load()
@@ -118,8 +120,9 @@ namespace Coocoo3D.RenderPipeline
 
             quadMesh.ReloadNDCQuad();
             mainCaches.MeshReadyToUpload.Enqueue(quadMesh);
-            mainCaches.GetPassSetting("Samples\\samplePasses.coocoox");
-            mainCaches.GetPassSetting("Samples\\sampleDeferredPasses.coocoox");
+            DirectoryInfo directoryInfo = new DirectoryInfo("Samples");
+            foreach (var file in directoryInfo.GetFiles("*.coocoox"))
+                mainCaches.GetPassSetting(file.FullName);
             currentPassSetting1 = Path.GetFullPath(currentPassSetting1);
         }
 
@@ -237,8 +240,9 @@ namespace Coocoo3D.RenderPipeline
                                 _d3[j] = pos0;
                         }
                     });
-                    graphicsContext.BeginUpdateMesh(mesh);
-                    graphicsContext.UpdateMesh(mesh, d3.Slice(0, model.vertexCount), 0);
+                    //graphicsContext.BeginUpdateMesh(mesh);
+                    //graphicsContext.UpdateMesh(mesh, d3.Slice(0, model.vertexCount), 0);
+                    mesh.AddBuffer(d3.Slice(0, model.vertexCount), 0);//for compatibility
 
                     Parallel.For(0, (model.vertexCount + parallelSize - 1) / parallelSize, u =>
                     {
@@ -266,9 +270,11 @@ namespace Coocoo3D.RenderPipeline
                         }
                     });
 
-                    graphicsContext.UpdateMesh(mesh, d3.Slice(0, model.vertexCount), 1);
+                    //graphicsContext.UpdateMesh(mesh, d3.Slice(0, model.vertexCount), 1);
+                    mesh.AddBuffer(d3.Slice(0, model.vertexCount), 1);//for compatibility
 
-                    graphicsContext.EndUpdateMesh(mesh);
+                    //graphicsContext.EndUpdateMesh(mesh);
+                    graphicsContext.UploadMesh(mesh);//for compatibility
                     for (int k = 0; k < renderer.boneMatricesData.Length; k++)
                         renderer.boneMatricesData[k] = Matrix4x4.Transpose(renderer.boneMatricesData[k]);
                     graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], renderer.boneMatricesData);
@@ -312,10 +318,14 @@ namespace Coocoo3D.RenderPipeline
                     mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
                 }
             }
-            ConfigPassSettings(dynamicContextRead.currentPassSetting);
+            LoadPassSettings(dynamicContextRead.currentPassSetting);
             foreach (var visualChannel in visualChannels.Values)
             {
                 PrepareRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
+            }
+            foreach (var visualChannel in visualChannels.Values)
+            {
+                visualChannel.Onframe(this);
             }
         }
         public void PrepareRenderTarget(PassSetting passSetting, VisualChannel visualChannel)
@@ -419,9 +429,9 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public bool ConfigPassSettings(PassSetting passSetting)
+        public bool LoadPassSettings(PassSetting passSetting)
         {
-            if (passSetting.configured) return true;
+            if (passSetting.loaded) return true;
             if (!passSetting.Verify()) return false;
             string path1 = Path.GetDirectoryName(passSetting.path);
 
@@ -429,14 +439,17 @@ namespace Coocoo3D.RenderPipeline
                 foreach (var shader in passSetting.RayTracingShaders)
                     passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
 
+            Dictionary<string, string> unionShaderAliases = new Dictionary<string, string>();
             if (passSetting.UnionShaders != null)
                 foreach (var shader in passSetting.UnionShaders)
-                    passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
+                    unionShaderAliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
 
             foreach (var pass in passSetting.Passes)
             {
-                if (!passSetting.aliases.ContainsKey(pass.Value.UnionShader))
-                    passSetting.aliases[pass.Value.UnionShader] = Path.GetFullPath(pass.Value.UnionShader, path1);
+                if (!unionShaderAliases.TryGetValue(pass.Value.UnionShader, out var val))
+                    pass.Value.UnionShader = Path.GetFullPath(pass.Value.UnionShader, path1);
+                else
+                    pass.Value.UnionShader = val;
             }
 
             if (passSetting.Texture2Ds != null)
@@ -491,7 +504,7 @@ namespace Coocoo3D.RenderPipeline
                 }
                 sequence.rootSignatureKey = stringBuilder.ToString();
             }
-            passSetting.configured = true;
+            passSetting.loaded = true;
             return true;
 
         }
@@ -576,6 +589,16 @@ namespace Coocoo3D.RenderPipeline
         public void SetPersistentValue<T>(string name, T value)
         {
             customData[name] = value;
+        }
+
+        public void SaveToFile(Texture2D tex, string path)
+        {
+
+        }
+
+        public void AfterRender()
+        {
+
         }
 
         public void Dispose()

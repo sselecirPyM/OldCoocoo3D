@@ -100,6 +100,7 @@ namespace Coocoo3D.UI
             }
             if (UIImGui.requireRecord.SetFalse())
             {
+                appBody.GameDriverContext.NeedRender = 0;
                 string path = OpenResourceFolder();
                 if (!string.IsNullOrEmpty(path))
                 {

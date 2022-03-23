@@ -222,7 +222,8 @@ StructuredBuffer<float3> Normals : register(t2, space1);
 StructuredBuffer<float2> UVs : register(t3, space1);
 Texture2D<float4> Albedo : register(t4, space1);
 Texture2D<float4> Emissive : register(t5, space1);
-Texture2D<float4> MetallicRoughness : register(t6, space1);
+Texture2D<float4> Metallic : register(t6, space1);
+Texture2D<float4> Roughness : register(t7, space1);
 
 [shader("closesthit")]
 void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
@@ -244,12 +245,13 @@ void closestHit(inout RayPayload payload, in BuiltInTriangleIntersectionAttribut
 	float4 albedo = Albedo.SampleLevel(s1, uv, 0);
 	float3 emissive = Emissive.SampleLevel(s1, uv, 0) * _Emissive;
 
-	float4 metallicRoughness = MetallicRoughness.SampleLevel(s1, uv, 0);
-	float roughness = max(_Roughness * metallicRoughness.g, 0.002);
+	float4 metallic1 = Metallic.SampleLevel(s1, uv, 0);
+	float4 roughness1 = Roughness.SampleLevel(s1, uv, 0);
+	float roughness = max(_Roughness * roughness1.g, 0.002);
 	float alpha = roughness * roughness;
 
-	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallicRoughness.b);
-	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallicRoughness.b);
+	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallic1.b);
+	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallic1.b);
 	float3 V = -payload.direction;
 
 	float NdotV = saturate(dot(N, V));

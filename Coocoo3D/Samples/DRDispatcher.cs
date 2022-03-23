@@ -47,16 +47,14 @@ public class DRDispatcher : IPassDispatcher
         pointLightSplit *= 2;
         param.SetGPUValueOverride("LightMapSplit", pointLightSplit);
 
-        foreach (var renderSequence in passSetting.RenderSequence)
+        foreach (var renderSequence in param.RenderSequences())
         {
             if (renderSequence.Type == "RayTracing" && !rayTracing)
             {
                 continue;
             }
-            param.renderSequence = renderSequence;
-            var Pass = passSetting.Passes[renderSequence.Name];
 
-            HybirdRenderPipeline.DispatchPass(param);
+            param.DispatchPass(renderSequence);
         }
     }
 }

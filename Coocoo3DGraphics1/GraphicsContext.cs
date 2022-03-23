@@ -647,10 +647,6 @@ namespace Coocoo3DGraphics
             texture.format = uploader.m_format;
 
             var textureDesc = Texture2DDescription(texture);
-            texture.depthStencilView?.Release();
-            texture.depthStencilView = null;
-            texture.renderTargetView?.Release();
-            texture.renderTargetView = null;
 
             CreateResource(textureDesc, null, ref texture.resource);
 
@@ -688,14 +684,41 @@ namespace Coocoo3DGraphics
             texture.Status = GraphicsObjectStatus.loaded;
         }
 
+        public void UploadTexture(Texture2D texture, byte[] data)
+        {
+            int bitsPerPixel = (int)GraphicsDevice.BitsPerPixel(texture.format);
+            int width = (int)texture.width;
+            int height = texture.height;
+
+            ID3D12Resource uploadBuffer = null;
+            CreateBuffer(align_to(64, width) *align_to(64, height) * bitsPerPixel / 8, ref uploadBuffer, ResourceStates.GenericRead, HeapType.Upload);
+            uploadBuffer.Name = "uploadbuffer tex";
+            graphicsDevice.ResourceDelayRecycle(uploadBuffer);
+
+            SubresourceData[] subresources = new SubresourceData[texture.mipLevels];
+            IntPtr pdata = Marshal.UnsafeAddrOfPinnedArrayElement(data, 0);
+            for (int i = 0; i < texture.mipLevels; i++)
+            {
+                SubresourceData subresourcedata = new SubresourceData();
+                subresourcedata.DataPointer = pdata;
+                subresourcedata.RowPitch = (IntPtr)(width * bitsPerPixel / 8);
+                subresourcedata.SlicePitch = (IntPtr)(width * height * bitsPerPixel / 8);
+                pdata += width * height * bitsPerPixel / 8;
+
+                subresources[i] = subresourcedata;
+                width /= 2;
+                height /= 2;
+            }
+            texture.StateChange(m_commandList, ResourceStates.CopyDestination);
+            UpdateSubresources(m_commandList, texture.resource, uploadBuffer, 0, 0, texture.mipLevels, subresources);
+            texture.StateChange(m_commandList, ResourceStates.GenericRead);
+            InReference(texture.resource);
+        }
+
         public void UpdateRenderTexture(Texture2D texture)
         {
             var textureDesc = Texture2DDescription(texture);
 
-            texture.depthStencilView?.Release();
-            texture.depthStencilView = null;
-            texture.renderTargetView?.Release();
-            texture.renderTargetView = null;
             ClearValue clearValue = texture.dsvFormat != Format.Unknown
                 ? new ClearValue(texture.dsvFormat, new DepthStencilValue(1.0f, 0))
                 : new ClearValue(texture.format, new Vortice.Mathematics.Color4());
@@ -913,8 +936,7 @@ namespace Coocoo3DGraphics
             m_commandList.RSSetScissorRect(texture.width, texture.height);
             m_commandList.RSSetViewport(0, 0, texture.width, texture.height);
             texture.StateChange(m_commandList, ResourceStates.DepthWrite);
-            var dsv = texture.GetDepthStencilView(graphicsDevice.device);
-            InReference(texture.depthStencilView);
+            var dsv = graphicsDevice.GetDepthStencilView(texture.resource);
             InReference(texture.resource);
             if (clear)
                 m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
@@ -926,16 +948,14 @@ namespace Coocoo3DGraphics
             m_commandList.RSSetScissorRect(RTV.width, RTV.height);
             m_commandList.RSSetViewport(0, 0, RTV.width, RTV.height);
             RTV.StateChange(m_commandList, ResourceStates.RenderTarget);
-            var rtv = RTV.GetRenderTargetView(graphicsDevice.device);
-            InReference(RTV.renderTargetView);
+            var rtv = graphicsDevice.GetRenderTargetView(RTV.resource);
             InReference(RTV.resource);
             if (clearRTV)
                 m_commandList.ClearRenderTargetView(rtv, new Vortice.Mathematics.Color4(color));
             if (DSV != null)
             {
                 DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
-                var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
-                InReference(DSV.depthStencilView);
+                var dsv = graphicsDevice.GetDepthStencilView(DSV.resource);
                 InReference(DSV.resource);
                 if (clearDSV)
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
@@ -960,8 +980,7 @@ namespace Coocoo3DGraphics
             if (DSV != null)
             {
                 DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
-                var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
-                InReference(DSV.depthStencilView);
+                var dsv = graphicsDevice.GetDepthStencilView(DSV.resource);
                 InReference(DSV.resource);
                 if (clearDSV)
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
@@ -982,8 +1001,7 @@ namespace Coocoo3DGraphics
             for (int i = 0; i < RTVs.Count; i++)
             {
                 RTVs[i].StateChange(m_commandList, ResourceStates.RenderTarget);
-                handles[i] = RTVs[i].GetRenderTargetView(graphicsDevice.device);
-                InReference(RTVs[i].renderTargetView);
+                handles[i] = graphicsDevice.GetRenderTargetView(RTVs[i].resource);
                 InReference(RTVs[i].resource);
                 if (clearRTV)
                     m_commandList.ClearRenderTargetView(handles[i], new Vortice.Mathematics.Color4(color));
@@ -991,8 +1009,7 @@ namespace Coocoo3DGraphics
             if (DSV != null)
             {
                 DSV.StateChange(m_commandList, ResourceStates.DepthWrite);
-                var dsv = DSV.GetDepthStencilView(graphicsDevice.device);
-                InReference(DSV.depthStencilView);
+                var dsv = graphicsDevice.GetDepthStencilView(DSV.resource);
                 InReference(DSV.resource);
                 if (clearDSV)
                     m_commandList.ClearDepthStencilView(dsv, ClearFlags.Depth | ClearFlags.Stencil, 1.0f, 0);
@@ -1018,7 +1035,7 @@ namespace Coocoo3DGraphics
 
             m_commandList.RSSetScissorRect((int)size.X, (int)size.Y);
             m_commandList.RSSetViewport(0, 0, (int)size.X, (int)size.Y);
-            var renderTargetView = graphicsDevice.GetRenderTargetView(m_commandList);
+            var renderTargetView = graphicsDevice.GetScreenRenderTargetView(m_commandList);
             if (clearScreen)
                 m_commandList.ClearRenderTargetView(renderTargetView, new Vortice.Mathematics.Color4(color));
             m_commandList.OMSetRenderTargets(renderTargetView);

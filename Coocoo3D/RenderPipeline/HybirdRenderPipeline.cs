@@ -114,7 +114,7 @@ namespace Coocoo3D.RenderPipeline
                 param.renderer = null;
                 param.material = null;
                 param.rayTracingShader = null;
-                bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(param);
+                bool? executed = mainCaches.GetUnionShader(pass.UnionShader)?.Invoke(param);
             }
             else if (renderSequence.Type == "DrawScreen")
             {
@@ -123,7 +123,7 @@ namespace Coocoo3D.RenderPipeline
                 param.rayTracingShader = null;
                 graphicsContext.SetMesh(context.quadMesh);
 
-                bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(param);
+                bool? executed = mainCaches.GetUnionShader(pass.UnionShader)?.Invoke(param);
             }
             else if (renderSequence.Type == "RayTracing")
             {
@@ -132,7 +132,7 @@ namespace Coocoo3D.RenderPipeline
                     param.renderer = null;
                     param.material = null;
                     param.rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(pass.RayTracingShader));
-                    bool? executed = mainCaches.GetUnionShader(passSetting.GetAliases(pass.UnionShader))?.Invoke(param);
+                    bool? executed = mainCaches.GetUnionShader(pass.UnionShader)?.Invoke(param);
                 }
                 else
                 {

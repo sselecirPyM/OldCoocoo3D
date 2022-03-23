@@ -266,7 +266,13 @@
         {
           "Index": "3",
           "ResourceType": "Texture2D",
-          "Resource": "_MetallicRoughness",
+          "Resource": "_Metallic",
+          "Flags": "Linear"
+        },
+        {
+          "Index": "4",
+          "ResourceType": "Texture2D",
+          "Resource": "_Roughness",
           "Flags": "Linear"
         }
       ]
@@ -466,11 +472,17 @@
         {
           "Index": "6",
           "ResourceType": "Texture2D",
-          "Resource": "_MetallicRoughness",
+          "Resource": "_Metallic",
           "Flags": "Linear"
         },
         {
           "Index": "7",
+          "ResourceType": "Texture2D",
+          "Resource": "_Roughness",
+          "Flags": "Linear"
+        },
+        {
+          "Index": "8",
           "ResourceType": "Buffer",
           "Resource": "GIBuffer"
         }
@@ -669,7 +681,8 @@
   "ShowTextures": {
     "_Albedo": "",
     "_Emissive": "",
-    "_MetallicRoughness": "",
+    "_Metallic": "",
+    "_Roughness": "",
     "_Normal": ""
   },
   "ShowSettingTextures": {
@@ -740,7 +753,7 @@
     "EnableRayTracing": {
       "Name": "启用光线追踪（如果有）",
       "Type": "bool",
-      "Default": "true"
+      "Default": "false"
     },
     "RayTracingReflectionThreshold": {
       "Name": "光线追踪反射阈值",

@@ -14,7 +14,6 @@ namespace Coocoo3D.ResourceWarp
     {
         public Texture2D texture2D = new Texture2D();
         public bool canReload = true;
-        public bool srgb = true;
         public string fullPath;
 
         public GraphicsObjectStatus Status;
@@ -37,22 +36,21 @@ namespace Coocoo3D.ResourceWarp
             {
                 switch (storageItem.Extension.ToLower())
                 {
-                    case ".hdr":
-                    case ".exr":
-                    case ".tif":
-                    case ".tiff":
-                    case ".dds":
+                    case ".jpg":
+                    case ".jpeg":
+                    case ".jfif":
+                    case ".png":
+                    case ".gif":
+                    case ".tga":
                         {
-                            var img = new MagickImage(storageItem);
-                            byte[] data = img.ToByteArray(MagickFormat.Rgba);
-                            int d = data.Length / img.Width / img.Height;
-                            uploader.Texture2DRawLessCopy(data, d == 8 ? Format.R16G16B16A16_UNorm : Format.R8G8B8A8_UNorm_SRgb, img.Width, img.Height, 1);
+                            byte[] data = GetImageData(texFile.OpenRead(), out int width, out int height, out _, out int mipMap);
+                            uploader.Texture2DRawLessCopy(data, Format.R8G8B8A8_UNorm_SRgb, width, height, mipMap);
                         }
                         break;
                     default:
                         {
-                            byte[] data = GetImageData(texFile.OpenRead(), out int width, out int height, out _, out int mipMap);
-                            uploader.Texture2DRawLessCopy(data, srgb ? Format.R8G8B8A8_UNorm_SRgb : Format.R8G8B8A8_UNorm, width, height, mipMap);
+                            byte[] data = GetImageDataMagick(texFile.OpenRead(), out int width, out int height, out int bitPerPixel, out int mipMap);
+                            uploader.Texture2DRawLessCopy(data, bitPerPixel == 16 * 4 ? Format.R16G16B16A16_UNorm : Format.R8G8B8A8_UNorm_SRgb, width, height, mipMap);
                         }
                         break;
                 }
@@ -60,57 +58,46 @@ namespace Coocoo3D.ResourceWarp
                 Status = GraphicsObjectStatus.loaded;
                 return true;
             }
-            catch
+            catch (Exception e)
             {
+                Console.WriteLine(e);
+                Console.WriteLine(e.StackTrace);
                 return false;
             }
         }
 
-        public static byte[] GetImageData(Stream stream, out int width, out int height, out int bitPerPixel)
-        {
-            Image<Rgba32> image = Image.Load<Rgba32>(stream);
-            var frame0 = image.Frames[0];
-            byte[] bytes = new byte[frame0.Width* frame0.Height *4];
-            frame0.CopyPixelDataTo(bytes);
-            width = frame0.Width;
-            height = frame0.Height;
-            bitPerPixel = image.PixelType.BitsPerPixel;
-            return bytes;
-        }
         public static byte[] GetImageData(Stream stream, out int width, out int height, out int bitPerPixel, out int mipMap)
         {
             Image<Rgba32> image = Image.Load<Rgba32>(stream);
             var frame0 = image.Frames[0];
             int width1 = frame0.Width;
             int height1 = frame0.Height;
-            int sizex = GetTexSize(width1);
-            int sizey = GetTexSize(height1);
+            int sizex = GetAlign(width1);
+            int sizey = GetAlign(height1);
             if (width1 != sizex || height1 != sizey)
             {
-                width1 = (width1 + sizex - 1) / sizex * sizex;
-                height1 = (height1 + sizey - 1) / sizey * sizey;
                 image.Mutate(x => x.Resize(width1, height1, KnownResamplers.Box));
             }
-            width = width1;
-            height = height1;
+            width1 = sizex;
+            height1 = sizey;
+            width = sizex;
+            height = sizey;
 
             bitPerPixel = image.PixelType.BitsPerPixel;
+            int bytePerPixel = bitPerPixel / 8;
 
-            int totalCount = frame0.Width * frame0.Height * 4;
-            int totalSize1 = GetTotalSize(totalCount, width, height, out mipMap);
+            int totalCount = sizex * sizey * bytePerPixel;
+            int totalSize = GetTotalSize(totalCount, width, height, out mipMap);
 
-            byte[] bytes = new byte[totalSize1];
+            byte[] bytes = new byte[totalSize];
 
             frame0.CopyPixelDataTo(bytes);
 
-
-            int d = totalCount;
-            int bytePerPixel = d / (width1 * height1);
-            while (width1 > 64 && height1 > 64)
+            for (int i = 1; i < mipMap; i++)
             {
                 width1 /= 2;
                 height1 /= 2;
-                d = bytePerPixel * width1 * height1;
+                int d = bytePerPixel * width1 * height1;
                 image.Mutate(x => x.Resize(width1, height1, KnownResamplers.Box));
                 var frame1 = image.Frames[0];
                 frame1.CopyPixelDataTo(new Span<byte>(bytes, totalCount, d));
@@ -119,14 +106,58 @@ namespace Coocoo3D.ResourceWarp
 
             return bytes;
         }
-
-        static int GetTexSize(int height1)
+        public static byte[] GetImageDataMagick(Stream stream, out int width, out int height, out int bitPerPixel, out int mipMap)
         {
-            int sizey;
-            for (sizey = 64; sizey < 8192; sizey <<= 1)
-                if (sizey >= height1 * 0.95)
+            var img = new MagickImage(stream);
+            int width1 = img.Width;
+            int height1 = img.Height;
+            int sizex = GetAlign(width1);
+            int sizey = GetAlign(height1);
+
+            var size = new MagickGeometry(sizex, sizey)
+            {
+                IgnoreAspectRatio = true,
+            };
+            if (width1 != sizex || height1 != sizey)
+            {
+                img.Resize(size);
+            }
+            width1 = sizex;
+            height1 = sizey;
+            width = sizex;
+            height = sizey;
+
+            bitPerPixel = Math.Max(img.BitDepth(), 8) * 4;
+            int bytePerPixel = bitPerPixel / 8;
+
+            int totalCount = sizex * sizey * bytePerPixel;
+            int totalSize = GetTotalSize(totalCount, width, height, out mipMap);
+
+            byte[] bytes = new byte[totalSize];
+
+            img.ToByteArray(MagickFormat.Rgba).CopyTo(new Span<byte>(bytes, 0, bytePerPixel * width1 * height1));
+
+            for (int i = 1; i < mipMap; i++)
+            {
+                width1 /= 2;
+                height1 /= 2;
+                int d = bytePerPixel * width1 * height1;
+                img.Resize(width1, height1);
+
+                img.ToByteArray(MagickFormat.Rgba).CopyTo(new Span<byte>(bytes, totalCount, d));
+                totalCount += d;
+            }
+
+            return bytes;
+        }
+
+        static int GetAlign(int x)
+        {
+            int size;
+            for (size = 64; size < 8192; size <<= 1)
+                if (size >= x * 0.95)
                     break;
-            return sizey;
+            return size;
         }
 
         static int GetTotalSize(int size, int width, int height, out int level)
@@ -135,6 +166,8 @@ namespace Coocoo3D.ResourceWarp
             int bytePerPixel = d / (width * height);
             int totalCount = size;
             level = 1;
+            if (width > 4096 || height > 4096)
+                return totalCount;
             while (width > 64 && height > 64)
             {
                 width /= 2;

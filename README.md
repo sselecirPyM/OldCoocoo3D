@@ -19,6 +19,7 @@
 * 全局光照
 * SSAO
 * TAA
+* AMD Radeon Prorender 渲染（不支持自发光）
 
 ## 截图
 
@@ -35,3 +36,10 @@
 ![屏幕截图 2022-03-14 213859](https://user-images.githubusercontent.com/63526047/158183752-837d9481-96b8-4097-ae7a-1c15477a217e.png)
 
 ![屏幕截图 2022-03-17 131925](https://user-images.githubusercontent.com/63526047/158742418-dca992c7-bc91-4bdb-8569-0a541887cd5e.png)
+
+## 使用Radeon Prorender
+RadeonProRender64.dll和Northstar64.dll未包含在此存储库中，请从Radeon Prorender SDK中获取。
+
+[https://gpuopen.com/radeon-pro-render/](https://gpuopen.com/radeon-pro-render/)
+
+使用Radeon Prorender时软件路径、图片路径必须全英文。
