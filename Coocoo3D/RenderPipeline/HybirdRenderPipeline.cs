@@ -1,8 +1,4 @@
-﻿using Coocoo3D.Components;
-using Coocoo3D.Numerics;
-using Coocoo3D.Present;
-using Coocoo3DGraphics;
-using Coocoo3D.RenderPipeline.Wrap;
+﻿using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,9 +10,9 @@ using Vortice.DXGI;
 
 namespace Coocoo3D.RenderPipeline
 {
-    public class HybirdRenderPipeline
+    public static class HybirdRenderPipeline
     {
-        public void BeginFrame(RenderPipelineContext context)
+        internal static void BeginFrame(RenderPipelineContext context)
         {
             var mainCaches = context.mainCaches;
             while(mainCaches.TextureReadyToUpload.TryDequeue(out var uploadPack))
@@ -31,7 +27,7 @@ namespace Coocoo3D.RenderPipeline
             context.writerReuse.Clear();
             MiscProcess.Process(context, context.writerReuse);
         }
-        public void EndFrame(RenderPipelineContext context)
+        internal static void EndFrame(RenderPipelineContext context)
         {
             var drp = context.dynamicContextRead;
             var passSetting = drp.currentPassSetting;
@@ -39,7 +35,7 @@ namespace Coocoo3D.RenderPipeline
             var dispatcher = mainCaches.GetPassDispatcher(passSetting.Dispatcher);
             dispatcher?.FrameEnd(context);
         }
-        public void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
+        internal static void RenderCamera(RenderPipelineContext context, VisualChannel visualChannel)
         {
             var graphicsContext = visualChannel.graphicsContext;
             var drp = context.dynamicContextRead;
@@ -91,17 +87,18 @@ namespace Coocoo3D.RenderPipeline
             Texture2D depthStencil = param.GetTex2D(renderSequence.DepthStencil);
 
             Texture2D[] renderTargets = null;
-            if (renderSequence.RenderTargets == null || renderSequence.RenderTargets.Count == 0)
+            var seqRTs = renderSequence.RenderTargets;
+            if (seqRTs == null || seqRTs.Count == 0)
             {
                 if (depthStencil != null)
                     graphicsContext.SetDSV(depthStencil, renderSequence.ClearDepth);
             }
             else
             {
-                renderTargets = new Texture2D[renderSequence.RenderTargets.Count];
-                for (int i = 0; i < renderSequence.RenderTargets.Count; i++)
+                renderTargets = new Texture2D[seqRTs.Count];
+                for (int i = 0; i < seqRTs.Count; i++)
                 {
-                    renderTargets[i] = param.GetTex2D(renderSequence.RenderTargets[i]);
+                    renderTargets[i] = param.GetTex2D(seqRTs[i]);
                 }
                 graphicsContext.SetRTVDSV(renderTargets, depthStencil, Vector4.Zero, renderSequence.ClearRenderTarget, renderSequence.ClearDepth);
             }
@@ -113,16 +110,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 param.renderer = null;
                 param.material = null;
-                param.rayTracingShader = null;
-                bool? executed = mainCaches.GetUnionShader(pass.UnionShader)?.Invoke(param);
-            }
-            else if (renderSequence.Type == "DrawScreen")
-            {
-                param.renderer = null;
-                param.material = null;
-                param.rayTracingShader = null;
-                graphicsContext.SetMesh(context.quadMesh);
-
                 bool? executed = mainCaches.GetUnionShader(pass.UnionShader)?.Invoke(param);
             }
             else if (renderSequence.Type == "RayTracing")
@@ -131,7 +118,6 @@ namespace Coocoo3D.RenderPipeline
                 {
                     param.renderer = null;
                     param.material = null;
-                    param.rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(pass.RayTracingShader));
                     bool? executed = mainCaches.GetUnionShader(pass.UnionShader)?.Invoke(param);
                 }
                 else

@@ -8,6 +8,7 @@ using Coocoo3DGraphics;
 using Vortice.Direct3D12;
 using Vortice.DXGI;
 using System.Numerics;
+using System.IO;
 
 namespace Coocoo3D.RenderPipeline
 {
@@ -51,9 +52,9 @@ namespace Coocoo3D.RenderPipeline
         {
             if (RenderTargets == null)
                 return false;
-            if (RenderSequence == null )
+            if (RenderSequence == null)
                 return false;
-            if (Passes == null )
+            if (Passes == null)
                 return false;
             foreach (var pass in Passes)
             {
@@ -81,6 +82,85 @@ namespace Coocoo3D.RenderPipeline
                     return false;
             }
 
+            return true;
+        }
+
+        public bool Initialize()
+        {
+            if (loaded) return true;
+            if (!Verify()) return false;
+            string path1 = Path.GetDirectoryName(path);
+
+            if (RayTracingShaders != null)
+                foreach (var shader in RayTracingShaders)
+                    aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
+
+            Dictionary<string, string> unionShaderAliases = new Dictionary<string, string>();
+            if (UnionShaders != null)
+                foreach (var shader in UnionShaders)
+                    unionShaderAliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
+
+            foreach (var pass in Passes)
+            {
+                if (!unionShaderAliases.TryGetValue(pass.Value.UnionShader, out var val))
+                    pass.Value.UnionShader = Path.GetFullPath(pass.Value.UnionShader, path1);
+                else
+                    pass.Value.UnionShader = val;
+            }
+
+            if (Texture2Ds != null)
+                foreach (var texture in Texture2Ds)
+                    aliases[texture.Key] = Path.GetFullPath(texture.Value, path1);
+
+            if (Dispatcher != null)
+                Dispatcher = Path.GetFullPath(Dispatcher, path1);
+            else
+                Console.WriteLine("Missing dispacher.");
+            foreach (var sequence in RenderSequence)
+            {
+                var pass = Passes[sequence.Name];
+                int SlotComparison(SlotRes x1, SlotRes y1)
+                {
+                    return x1.Index.CompareTo(y1.Index);
+                }
+                StringBuilder stringBuilder = new StringBuilder();
+                pass.CBVs?.Sort(SlotComparison);
+                pass.SRVs?.Sort(SlotComparison);
+                pass.UAVs?.Sort(SlotComparison);
+
+                if (pass.CBVs != null)
+                {
+                    int count = 0;
+                    foreach (var cbv in pass.CBVs)
+                    {
+                        for (int i = count; i < cbv.Index + 1; i++)
+                            stringBuilder.Append('C');
+                        count = cbv.Index + 1;
+                    }
+                }
+                if (pass.SRVs != null)
+                {
+                    int count = 0;
+                    foreach (var srv in pass.SRVs)
+                    {
+                        for (int i = count; i < srv.Index + 1; i++)
+                            stringBuilder.Append('s');
+                        count = srv.Index + 1;
+                    }
+                }
+                if (pass.UAVs != null)
+                {
+                    int count = 0;
+                    foreach (var uav in pass.UAVs)
+                    {
+                        for (int i = count; i < uav.Index + 1; i++)
+                            stringBuilder.Append('u');
+                        count = uav.Index + 1;
+                    }
+                }
+                sequence.rootSignatureKey = stringBuilder.ToString();
+            }
+            loaded = true;
             return true;
         }
     }
@@ -126,22 +206,20 @@ namespace Coocoo3D.RenderPipeline
 
     public class RenderTarget
     {
-        public VarSize Size;
-        public Format Format;
-        public RenderTargetFlag flag;
-    }
-    public class VarSize
-    {
-        public string Source;
+        [DefaultValue(1.0f)]
+        public float width = 1;
+        [DefaultValue(1.0f)]
+        public float height = 1;
+        [DefaultValue(1.0f)]
+        public float depth = 1;
 
         [DefaultValue(1.0f)]
         public float Multiplier = 1.0f;
-        [DefaultValue(1)]
-        public int x = 1;
-        [DefaultValue(1)]
-        public int y = 1;
-        [DefaultValue(1)]
-        public int z = 1;
+
+        public string Source;
+
+        public Format Format;
+        public RenderTargetFlag flag;
     }
     public struct _AssetDefine
     {

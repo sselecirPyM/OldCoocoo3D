@@ -35,6 +35,7 @@ public static class UnionShaderPBRForward
             case "DrawObjectPass":
             case "DrawTransparentPass":
                 param.WriteCBV(param.pass.CBVs[1]);
+                string forwardShaderPath = Path.GetFullPath("PBRMaterial.hlsl", param.relativePath);
                 foreach (var renderable in param.MeshRenderables())
                 {
                     var material = renderable.material;
@@ -56,7 +57,7 @@ public static class UnionShaderPBRForward
                     if (renderable.gpuSkinning)
                     {
                         keywords.Add(new("SKINNING", "1"));
-                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(), 0, 0, 0);
                     }
 
                     if (directionalLights.Count != 0)
@@ -76,10 +77,10 @@ public static class UnionShaderPBRForward
                     //    param.WriteCBV(cbv);
                     //}
                     param.WriteCBV(param.pass.CBVs[0]);
-                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PBRMaterial.hlsl", param.relativePath));
+                    pso = mainCaches.GetPSOWithKeywords(keywords, forwardShaderPath);
                     param.SetSRVs(param.pass.SRVs, material);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
+                        param.DrawRenderable(renderable);
                 }
                 break;
             case "DrawSkyBoxPass":
@@ -93,7 +94,7 @@ public static class UnionShaderPBRForward
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                     {
-                        graphicsContext.DrawIndexed(6, 0, 0);
+                        param.DrawScreenQuad();
                     }
                 }
                 break;

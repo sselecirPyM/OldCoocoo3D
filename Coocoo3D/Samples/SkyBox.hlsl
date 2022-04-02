@@ -25,6 +25,7 @@ cbuffer cb0 : register(b0)
 	float4x4 g_mProjToWorld;
 	float3   g_vCamPos;
 	float g_skyBoxMultiple;
+	float _Brightness;
 };
 TextureCube EnvCube : register (t0);
 SamplerState s0 : register(s0);
@@ -33,5 +34,5 @@ float4 psmain(PSIn input) : SV_TARGET
 {
 	float4 vx = mul(float4(input.uv,0,1),g_mProjToWorld);
 	float3 viewDir = vx.xyz / vx.w - g_vCamPos;
-	return float4(EnvCube.Sample(s0, viewDir).rgb * g_skyBoxMultiple,1);
+	return float4(EnvCube.Sample(s0, viewDir).rgb * g_skyBoxMultiple * _Brightness, 1);
 }

@@ -40,45 +40,36 @@ namespace Coocoo3D.Core
 
         public void AddGameObject(GameObject gameObject)
         {
-            lock (this)
-            {
-                gameObjectLoadList.Add(gameObject);
-            }
+            gameObjectLoadList.Add(gameObject);
         }
 
         public void RemoveGameObject(GameObject gameObject)
         {
-            lock (this)
-            {
-                gameObjectRemoveList.Add(gameObject);
-            }
+            gameObjectRemoveList.Add(gameObject);
         }
 
         public void DealProcessList()
         {
-            lock (this)
+            for (int i = 0; i < gameObjectLoadList.Count; i++)
             {
-                for (int i = 0; i < gameObjectLoadList.Count; i++)
-                {
-                    var gameObject = gameObjectLoadList[i];
-                    var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
+                var gameObject = gameObjectLoadList[i];
+                var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
 
-                    gameObjects.Add(gameObject);
-                }
-                for (int i = 0; i < gameObjectRemoveList.Count; i++)
-                {
-                    var gameObject = gameObjectRemoveList[i];
-                    gameObjects.Remove(gameObject);
-                    var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
-                    if (renderComponent != null && physicsObjects.TryGetValue(renderComponent, out var phyObj))
-                    {
-                        RemovePhysics(renderComponent, phyObj.rigidbodies, phyObj.joints);
-                        physicsObjects.Remove(renderComponent);
-                    }
-                }
-                gameObjectLoadList.Clear();
-                gameObjectRemoveList.Clear();
+                gameObjects.Add(gameObject);
             }
+            for (int i = 0; i < gameObjectRemoveList.Count; i++)
+            {
+                var gameObject = gameObjectRemoveList[i];
+                gameObjects.Remove(gameObject);
+                var renderComponent = gameObject.GetComponent<MMDRendererComponent>();
+                if (renderComponent != null && physicsObjects.TryGetValue(renderComponent, out var phyObj))
+                {
+                    RemovePhysics(renderComponent, phyObj.rigidbodies, phyObj.joints);
+                    physicsObjects.Remove(renderComponent);
+                }
+            }
+            gameObjectLoadList.Clear();
+            gameObjectRemoveList.Clear();
         }
 
         public void _ResetPhysics(IList<MMDRendererComponent> rendererComponents)

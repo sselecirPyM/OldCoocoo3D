@@ -19,7 +19,6 @@ namespace Coocoo3D.RenderPipeline
         }
 
         public Settings settings;
-        public List<GameObject> gameObjects = new();
         public List<MMDRendererComponent> renderers = new();
         public List<MeshRendererComponent> meshRenderers = new();
         public List<VolumeComponent> volumes = new();
@@ -57,7 +56,7 @@ namespace Coocoo3D.RenderPipeline
             return lightCameraMatrix0;
         }
 
-        public void Preprocess()
+        public void Preprocess(IList<GameObject> gameObjects)
         {
             foreach (GameObject gameObject in gameObjects)
             {
@@ -92,6 +91,10 @@ namespace Coocoo3D.RenderPipeline
                     particleEffects.Add(particleEffectComponent);
                 }
             }
+            for (int i = 0; i < renderers.Count; i++)
+            {
+                renderers[i].WriteMatriticesData();
+            }
         }
 
         public void FrameBegin()
@@ -100,7 +103,6 @@ namespace Coocoo3D.RenderPipeline
             {
                 lightMatrixCaches[i].Clear();
             }
-            gameObjects.Clear();
             directionalLights.Clear();
             pointLights.Clear();
             volumes.Clear();

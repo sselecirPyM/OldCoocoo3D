@@ -3,7 +3,6 @@
   "RenderSequence": [
     {
       "Name": "PostProcessingPass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
       ]
@@ -11,9 +10,7 @@
   ],
   "RenderTargets": {
     "_Result": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R32G32B32A32_Float"
     }
   },
@@ -77,6 +74,16 @@
       "Type": "float",
       "Step": "0.01"
     },
+    "IOR": {
+      "Name": "IOR",
+      "Type": "float",
+      "Default": "1.46",
+      "Step": "0.01"
+    },
+    "Refraction": {
+      "Name": "折射",
+      "Type": "bool"
+    },
     "CastShadow": {
       "Name": "投射阴影",
       "Type": "bool",
@@ -108,6 +115,18 @@
       "Step": "0.1",
       "Min": "0.0",
       "Max": "60.0"
+    },
+    "ViewportSampleCount": {
+      "Name": "视口采样次数",
+      "Type": "int",
+      "Default": "2",
+      "Min": "1"
+    },
+    "RecordSampleCount": {
+      "Name": "录制采样次数",
+      "Type": "int",
+      "Default": "128",
+      "Min": "1"
     }
   }
 }

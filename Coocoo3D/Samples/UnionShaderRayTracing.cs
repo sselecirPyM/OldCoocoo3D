@@ -27,9 +27,10 @@ public static class UnionShaderRayTracing
         var mainCaches = param.mainCaches;
         var directionalLights = param.directionalLights;
         var pointLights = param.pointLights;
-        var rayTracingShader = param.rayTracingShader;
         var renderers = param.renderers;
         var camera = param.visualChannel.cameraData;
+        var passSetting = param.passSetting;
+        var rayTracingShader = mainCaches.GetRayTracingShader(passSetting.GetAliases(param.pass.RayTracingShader));
         switch (param.passName)
         {
             case "RayTracingPass":

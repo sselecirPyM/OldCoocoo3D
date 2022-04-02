@@ -39,11 +39,8 @@ namespace Coocoo3D.RenderPipeline
 
         public void RequireRender(bool updateEntities)
         {
-            NeedRender = 10;
-        }
-
-        public void RequireRender()
-        {
+            if (updateEntities)
+                RequireResetPhysics = true;
             NeedRender = 10;
         }
     }
@@ -281,15 +278,15 @@ namespace Coocoo3D.RenderPipeline
                 }
                 else
                 {
-                    for (int k = 0; k < renderer.boneMatricesData.Length; k++)
-                        renderer.boneMatricesData[k] = Matrix4x4.Transpose(renderer.boneMatricesData[k]);
-                    graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], renderer.boneMatricesData);
                     if (renderer.meshNeedUpdate)
                     {
                         graphicsContext.BeginUpdateMesh(mesh);
                         graphicsContext.UpdateMesh<Vector3>(mesh, renderer.meshPosData1, 0);
                         graphicsContext.EndUpdateMesh(mesh);
                     }
+                    for (int k = 0; k < renderer.boneMatricesData.Length; k++)
+                        renderer.boneMatricesData[k] = Matrix4x4.Transpose(renderer.boneMatricesData[k]);
+                    graphicsContext.UpdateResource<Matrix4x4>(CBs_Bone[i], renderer.boneMatricesData);
                 }
             }
             #endregion
@@ -318,7 +315,7 @@ namespace Coocoo3D.RenderPipeline
                     mainCaches.SetTexture(visualChannel1.GetTexName("Output"), visualChannel1.OutputRTV);
                 }
             }
-            LoadPassSettings(dynamicContextRead.currentPassSetting);
+            dynamicContextRead.currentPassSetting.Initialize();
             foreach (var visualChannel in visualChannels.Values)
             {
                 PrepareRenderTarget(dynamicContextRead.currentPassSetting, visualChannel);
@@ -331,42 +328,46 @@ namespace Coocoo3D.RenderPipeline
         public void PrepareRenderTarget(PassSetting passSetting, VisualChannel visualChannel)
         {
             if (passSetting == null) return;
+            var settings = dynamicContextRead.settings;
 
             var outputSize = visualChannel.outputSize;
-            foreach (var rt1 in passSetting.RenderTargets)
+            if (passSetting.RenderTargets != null)
             {
-                string rtName = visualChannel.GetTexName(rt1.Key, rt1.Value);
-                var rt = rt1.Value;
-                if (!RTs.TryGetValue(rtName, out var tex2d))
+                foreach (var rt1 in passSetting.RenderTargets)
                 {
-                    tex2d = new Texture2D();
-                    tex2d.Name = rtName;
-                    RTs[rtName] = tex2d;
-                }
-                int x;
-                int y;
-                if (rt.Size.Source == "OutputSize")
-                {
-                    x = (int)(outputSize.X * rt.Size.Multiplier + 0.5f);
-                    y = (int)(outputSize.Y * rt.Size.Multiplier + 0.5f);
-                }
-                else if (rt.Size.Source == "ShadowMapSize")
-                {
-                    x = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
-                    y = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
-                }
-                else
-                {
-                    x = rt.Size.x;
-                    y = rt.Size.y;
-                }
-                if (tex2d.width != x || tex2d.height != y || tex2d.GetFormat() != rt.Format)
-                {
-                    if (rt.Format == Format.D16_UNorm || rt.Format == Format.D24_UNorm_S8_UInt || rt.Format == Format.D32_Float)
-                        tex2d.ReloadAsDepthStencil(x, y, rt.Format);
+                    string rtName = visualChannel.GetTexName(rt1.Key, rt1.Value);
+                    var rt = rt1.Value;
+                    if (!RTs.TryGetValue(rtName, out var tex2d))
+                    {
+                        tex2d = new Texture2D();
+                        tex2d.Name = rtName;
+                        RTs[rtName] = tex2d;
+                    }
+                    int x;
+                    int y;
+                    if (rt.Source == "OutputSize")
+                    {
+                        x = (int)(outputSize.X * rt.Multiplier + 0.5f);
+                        y = (int)(outputSize.Y * rt.Multiplier + 0.5f);
+                    }
+                    else if (rt.Source == "ShadowMapSize")
+                    {
+                        x = (int)(settings.ShadowMapResolution * rt.Multiplier + 0.5f);
+                        y = (int)(settings.ShadowMapResolution * rt.Multiplier + 0.5f);
+                    }
                     else
-                        tex2d.ReloadAsRTVUAV(x, y, rt.Format);
-                    graphicsContext.UpdateRenderTexture(tex2d);
+                    {
+                        x = (int)rt.width;
+                        y = (int)rt.height;
+                    }
+                    if (tex2d.width != x || tex2d.height != y || tex2d.GetFormat() != rt.Format)
+                    {
+                        if (rt.Format == Format.D16_UNorm || rt.Format == Format.D24_UNorm_S8_UInt || rt.Format == Format.D32_Float)
+                            tex2d.ReloadAsDepthStencil(x, y, rt.Format);
+                        else
+                            tex2d.ReloadAsRTVUAV(x, y, rt.Format);
+                        graphicsContext.UpdateRenderTexture(tex2d);
+                    }
                 }
             }
             if (passSetting.RenderTargetCubes != null)
@@ -383,20 +384,20 @@ namespace Coocoo3D.RenderPipeline
                     }
                     int x;
                     int y;
-                    if (rt.Size.Source == "OutputSize")
+                    if (rt.Source == "OutputSize")
                     {
-                        x = (int)(outputSize.X * rt.Size.Multiplier + 0.5f);
-                        y = (int)(outputSize.Y * rt.Size.Multiplier + 0.5f);
+                        x = (int)(outputSize.X * rt.Multiplier + 0.5f);
+                        y = (int)(outputSize.Y * rt.Multiplier + 0.5f);
                     }
-                    else if (rt.Size.Source == "ShadowMapSize")
+                    else if (rt.Source == "ShadowMapSize")
                     {
-                        x = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
-                        y = (int)(dynamicContextRead.settings.ShadowMapResolution * rt.Size.Multiplier + 0.5f);
+                        x = (int)(settings.ShadowMapResolution * rt.Multiplier + 0.5f);
+                        y = (int)(settings.ShadowMapResolution * rt.Multiplier + 0.5f);
                     }
                     else
                     {
-                        x = rt.Size.x;
-                        y = rt.Size.y;
+                        x = (int)rt.width;
+                        y = (int)rt.height;
                     }
                     if (texCube.width != x || texCube.height != y)
                     {
@@ -420,93 +421,13 @@ namespace Coocoo3D.RenderPipeline
                         buffer.Name = rtName;
                         dynamicBuffers[rtName] = buffer;
                     }
-                    if (rt.Size.x != buffer.size)
+                    if (rt.width != buffer.size)
                     {
-                        buffer.size = rt.Size.x;
+                        buffer.size = (int)rt.width;
                         graphicsContext.UpdateDynamicBuffer(buffer);
                     }
                 }
             }
-        }
-
-        public bool LoadPassSettings(PassSetting passSetting)
-        {
-            if (passSetting.loaded) return true;
-            if (!passSetting.Verify()) return false;
-            string path1 = Path.GetDirectoryName(passSetting.path);
-
-            if (passSetting.RayTracingShaders != null)
-                foreach (var shader in passSetting.RayTracingShaders)
-                    passSetting.aliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
-
-            Dictionary<string, string> unionShaderAliases = new Dictionary<string, string>();
-            if (passSetting.UnionShaders != null)
-                foreach (var shader in passSetting.UnionShaders)
-                    unionShaderAliases[shader.Key] = Path.GetFullPath(shader.Value, path1);
-
-            foreach (var pass in passSetting.Passes)
-            {
-                if (!unionShaderAliases.TryGetValue(pass.Value.UnionShader, out var val))
-                    pass.Value.UnionShader = Path.GetFullPath(pass.Value.UnionShader, path1);
-                else
-                    pass.Value.UnionShader = val;
-            }
-
-            if (passSetting.Texture2Ds != null)
-                foreach (var texture in passSetting.Texture2Ds)
-                    passSetting.aliases[texture.Key] = Path.GetFullPath(texture.Value, path1);
-
-            if (passSetting.Dispatcher != null)
-                passSetting.Dispatcher = Path.GetFullPath(passSetting.Dispatcher, path1);
-            else
-                Console.WriteLine("Missing dispacher.");
-            foreach (var sequence in passSetting.RenderSequence)
-            {
-                var pass = passSetting.Passes[sequence.Name];
-                int SlotComparison(SlotRes x1, SlotRes y1)
-                {
-                    return x1.Index.CompareTo(y1.Index);
-                }
-                StringBuilder stringBuilder = new StringBuilder();
-                pass.CBVs?.Sort(SlotComparison);
-                pass.SRVs?.Sort(SlotComparison);
-                pass.UAVs?.Sort(SlotComparison);
-
-                if (pass.CBVs != null)
-                {
-                    int count = 0;
-                    foreach (var cbv in pass.CBVs)
-                    {
-                        for (int i = count; i < cbv.Index + 1; i++)
-                            stringBuilder.Append('C');
-                        count = cbv.Index + 1;
-                    }
-                }
-                if (pass.SRVs != null)
-                {
-                    int count = 0;
-                    foreach (var srv in pass.SRVs)
-                    {
-                        for (int i = count; i < srv.Index + 1; i++)
-                            stringBuilder.Append('s');
-                        count = srv.Index + 1;
-                    }
-                }
-                if (pass.UAVs != null)
-                {
-                    int count = 0;
-                    foreach (var uav in pass.UAVs)
-                    {
-                        for (int i = count; i < uav.Index + 1; i++)
-                            stringBuilder.Append('u');
-                        count = uav.Index + 1;
-                    }
-                }
-                sequence.rootSignatureKey = stringBuilder.ToString();
-            }
-            passSetting.loaded = true;
-            return true;
-
         }
 
         public ModelPack GetModelPack(string path) => mainCaches.GetModel(path);
@@ -589,11 +510,6 @@ namespace Coocoo3D.RenderPipeline
         public void SetPersistentValue<T>(string name, T value)
         {
             customData[name] = value;
-        }
-
-        public void SaveToFile(Texture2D tex, string path)
-        {
-
         }
 
         public void AfterRender()

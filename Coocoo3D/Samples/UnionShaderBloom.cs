@@ -45,7 +45,7 @@ public static class UnionShaderBloom
         }
         param.SetSRVs(param.pass.SRVs);
         if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-            graphicsContext.DrawIndexed(6, 0, 0);
+            param.DrawScreenQuad();
         return true;
     }
 }

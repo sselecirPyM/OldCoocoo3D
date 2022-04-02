@@ -66,6 +66,7 @@ cbuffer cb0 : register(b0)
 	int g_AORaySampleCount;
 	int g_RandomI;
 	int g_lightMapSplit;
+	float _Brightness;
 };
 cbuffer cb1 : register(b1)
 {
@@ -438,5 +439,5 @@ float4 psmain(PSIn input) : SV_TARGET
 		}
 #endif
 #endif
-	return float4(outputColor, 1);
+	return float4(outputColor * _Brightness, 1);
 }

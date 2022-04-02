@@ -28,7 +28,6 @@ namespace ProRendererWrap
             int vertexCount = vertices.Length / 4 / 3;
             int[] num_face_vertices = new int[numIndices / 3];
             Array.Fill<int>(num_face_vertices, 3);
-            float[] texcoords1 = ArrayPool<float>.Shared.Rent(vertexCount * 2);
 
             Check(ContextCreateMesh(context._handle, vertices, vertexCount, 12, normals, vertexCount, 12, texcoords, vertexCount, 8,
                 indices, 4, indices, 4, indices, 4, num_face_vertices, num_face_vertices.LongLength, out _handle));
@@ -45,9 +44,18 @@ namespace ProRendererWrap
             {
                 texCoords1[i * 2 + 1] = 1 - texCoords1[i * 2 + 1];
             }
+            //byte[] indices2 = ArrayPool<byte>.Shared.Rent(indices.Length);
+            //indices.CopyTo(indices2);
+            //Span<int> indiceX = MemoryMarshal.Cast<byte, int>(new Span<byte>(indices2, 0, indices.Length));
+            //for (int i = 0; i < indiceX.Length; i += 3)
+            //{
+            //    (indiceX[i], indiceX[i + 1], indiceX[i + 2]) = (indiceX[i + 2], indiceX[i + 1], indiceX[i]);
+            //}
+
             Check(ContextCreateMesh(context._handle, vertices, vertexCount, 12, normals, vertexCount, 12, MemoryMarshal.AsBytes<float>(texCoords1), vertexCount, 8,
                 indices, 4, indices, 4, indices, 4, num_face_vertices, num_face_vertices.LongLength, out _handle));
             ArrayPool<float>.Shared.Return(texCoords1);
+            //ArrayPool<byte>.Shared.Return(indices2);
         }
         public RPRShape(RPRShape shape)
         {

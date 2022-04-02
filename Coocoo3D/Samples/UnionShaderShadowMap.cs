@@ -16,9 +16,9 @@ public static class UnionShaderShadowMap
             if (param.pass.CBVs.Count < 2)
                 return false;
             graphicsContext.RSSetScissorRectAndViewport(0, 0, width / 2, height / 2);
-            Render1(param, 0);
+            DrawShadow(param, 0);
             graphicsContext.RSSetScissorRectAndViewport(width / 2, 0, width, height / 2);
-            Render1(param, 1);
+            DrawShadow(param, 1);
         }
         int pointLightIndex = 0;
         int shadowIndex = 0;
@@ -33,32 +33,32 @@ public static class UnionShaderShadowMap
 
             SetViewport(param, width, height, shadowIndex, split);
             SetMatrix(param, lightPos, new Vector3(1, 0, 0), new Vector3(0, -1, 0), lightRange * 0.001f, lightRange);
-            Render1(param, 2);
+            DrawShadow(param, 2);
             shadowIndex++;
 
             SetViewport(param, width, height, shadowIndex, split);
             SetMatrix(param, lightPos, new Vector3(-1, 0, 0), new Vector3(0, 1, 0), lightRange * 0.001f, lightRange);
-            Render1(param, 2);
+            DrawShadow(param, 2);
             shadowIndex++;
 
             SetViewport(param, width, height, shadowIndex, split);
             SetMatrix(param, lightPos, new Vector3(0, 1, 0), new Vector3(0, 0, -1), lightRange * 0.001f, lightRange);
-            Render1(param, 2);
+            DrawShadow(param, 2);
             shadowIndex++;
 
             SetViewport(param, width, height, shadowIndex, split);
             SetMatrix(param, lightPos, new Vector3(0, -1, 0), new Vector3(0, 0, 1), lightRange * 0.001f, lightRange);
-            Render1(param, 2);
+            DrawShadow(param, 2);
             shadowIndex++;
 
             SetViewport(param, width, height, shadowIndex, split);
             SetMatrix(param, lightPos, new Vector3(0, 0, 1), new Vector3(-1, 0, 0), lightRange * 0.001f, lightRange);
-            Render1(param, 2);
+            DrawShadow(param, 2);
             shadowIndex++;
 
             SetViewport(param, width, height, shadowIndex, split);
             SetMatrix(param, lightPos, new Vector3(0, 0, -1), new Vector3(1, 0, 0), lightRange * 0.001f, lightRange);
-            Render1(param, 2);
+            DrawShadow(param, 2);
             shadowIndex++;
 
             pointLightIndex++;
@@ -86,7 +86,7 @@ public static class UnionShaderShadowMap
         graphicsContext.RSSetScissorRectAndViewport(x, y, x + sizeX1, y + sizeY1);
     }
 
-    static void Render1(UnionShaderParam param, int cbvIndex)
+    static void DrawShadow(UnionShaderParam param, int cbvIndex)
     {
         var graphicsContext = param.graphicsContext;
         var mainCaches = param.mainCaches;
@@ -115,9 +115,9 @@ public static class UnionShaderShadowMap
             {
                 if (renderable.gpuSkinning)
                 {
-                    graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                    graphicsContext.SetCBVRSlot(param.GetBoneBuffer(), 0, 0, 0);
                 }
-                graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
+                param.DrawRenderable(renderable);
             }
         }
     }

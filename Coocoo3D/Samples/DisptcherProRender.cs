@@ -79,7 +79,7 @@ public class DisptcherProRender : IPassDispatcher, IDisposable
         Vector3 angle = param.camera.Angle;
         camera.SetNearPlane(param.camera.near);
         camera.SetFarPlane(param.camera.far);
-        camera.LookAt(param.camera.Position, param.camera.LookAtPoint, Vector3.Normalize(Vector3.Transform(Vector3.UnitY, Matrix4x4.CreateFromYawPitchRoll(-angle.Y, -angle.X, -angle.Z))));
+        camera.LookAt(param.camera.Position, param.camera.LookAtPoint, Vector3.Transform(Vector3.UnitY, Matrix4x4.CreateFromYawPitchRoll(-angle.Y, -angle.X, -angle.Z)));
         scene.SetCamera(camera);
 
         List<RPRShape> shapes = new List<RPRShape>();
@@ -102,7 +102,7 @@ public class DisptcherProRender : IPassDispatcher, IDisposable
             lights.Add(light1);
         }
 
-        foreach(var light in param.pointLights)
+        foreach (var light in param.pointLights)
         {
             var light1 = RPRLight.PointLight(context);
             light1.SetTransform(Matrix4x4.CreateTranslation(light.Position));
@@ -148,15 +148,19 @@ public class DisptcherProRender : IPassDispatcher, IDisposable
             float Metallic = (float)param.GetSettingsValue(renderable.material, "Metallic");
             float Roughness = (float)param.GetSettingsValue(renderable.material, "Roughness");
             float Emissive = (float)param.GetSettingsValue(renderable.material, "Emissive");
+            bool refraction = (bool)param.GetSettingsValue(renderable.material, "Refraction");
+            float IOR = (float)param.GetSettingsValue(renderable.material, "IOR");
 
             materialNode.SetInputNByKey(Rpr.MaterialInput.UBER_DIFFUSE_COLOR, colorTexNode);
             materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_DIFFUSE_ROUGHNESS, Roughness, Roughness, Roughness, Roughness);
             materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_DIFFUSE_WEIGHT, 1.0f, 1.0f, 1.0f, 1.0f);
+            materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFLECTION_IOR, IOR, IOR, IOR, IOR);
             materialNode.SetInputNByKey(Rpr.MaterialInput.UBER_REFLECTION_COLOR, colorTexNode);
             materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFLECTION_METALNESS, Metallic, Metallic, Metallic, Metallic);
             materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFLECTION_ROUGHNESS, Roughness, Roughness, Roughness, Roughness);
             materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFLECTION_WEIGHT, 1.0f, 1.0f, 1.0f, 1.0f);
-            materialNode.SetInputUByKey(Rpr.MaterialInput.UBER_REFLECTION_MODE, (uint)Rpr.UberMaterialMode.METALNESS);
+            if (!refraction)
+                materialNode.SetInputUByKey(Rpr.MaterialInput.UBER_REFLECTION_MODE, (uint)Rpr.UberMaterialMode.METALNESS);
             if (roughnessTexNode != null)
             {
                 materialNodes.Add(roughnessTexNode);
@@ -175,22 +179,31 @@ public class DisptcherProRender : IPassDispatcher, IDisposable
                 selectZ.SetInputUByKey(Rpr.MaterialInput.OP, (uint)Rpr.MaterialNodeOp.SELECT_Z);
                 selectZ.SetInputNByKey(Rpr.MaterialInput.COLOR0, metallicTexNode);
                 materialNodes.Add(selectZ);
-
-                materialNode.SetInputNByKey(Rpr.MaterialInput.UBER_REFLECTION_METALNESS, selectZ);
+                if (!refraction)
+                    materialNode.SetInputNByKey(Rpr.MaterialInput.UBER_REFLECTION_METALNESS, selectZ);
             }
             if (emissiveTexNode != null)
             {
                 materialNodes.Add(emissiveTexNode);
                 materialNode.SetInputNByKey(Rpr.MaterialInput.UBER_EMISSION_COLOR, emissiveTexNode);
                 //materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_EMISSION_WEIGHT, Emissive, Emissive, Emissive, Emissive);
-
                 //materialNode.SetInputUByKey(Rpr.MaterialInput.UBER_EMISSION_MODE,Rpr.UberMaterialEmissionMode.);
+            }
+            if (refraction)
+            {
+                materialNode.SetInputNByKey(Rpr.MaterialInput.UBER_REFRACTION_COLOR, colorTexNode);
+                //materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFRACTION_COLOR, refractionColor.X, refractionColor.Y, refractionColor.Z, 1);
+                materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFRACTION_IOR, IOR, IOR, IOR, IOR);
+                materialNode.SetInputFByKey(Rpr.MaterialInput.UBER_REFRACTION_WEIGHT, 1, 1, 1, 1);
             }
             shape.SetMaterial(materialNode);
         }
 
+        int ViewportSampleCount = Math.Clamp((int)param.GetSettingsValue("ViewportSampleCount"), 1, 8);
+        int RecordSampleCount = (int)param.GetSettingsValue("RecordSampleCount");
+
         context.SetParameterByKey1u(Rpr.ContextInfo.TONE_MAPPING_TYPE, (uint)Rpr.ToneMappingOperator.NONE);
-        context.SetParameterByKey1u(Rpr.ContextInfo.ITERATIONS, param.recording ? (uint)128 : (uint)2);
+        context.SetParameterByKey1u(Rpr.ContextInfo.ITERATIONS, param.recording ? (uint)RecordSampleCount : (uint)ViewportSampleCount);
         frameBuffer.Clear();
         frameBufferResolved.Clear();
         context.SetAOV(Rpr.Aov.COLOR, frameBuffer);

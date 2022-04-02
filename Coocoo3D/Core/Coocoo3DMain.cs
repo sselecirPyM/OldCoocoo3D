@@ -31,7 +31,6 @@ namespace Coocoo3D.Core
         #region Time
         public long LatestRenderTime = 0;
 
-        public double deltaTime1;
         public float framePerSecond;
         public long fpsPreviousUpdate;
         public int fpsRenderCount;
@@ -40,8 +39,6 @@ namespace Coocoo3D.Core
         {
             MultiThreadRendering = true,
             SaveCpuPower = true,
-            AutoReloadShaders = true,
-            AutoReloadTextures = true,
             VSync = false,
         };
 
@@ -52,8 +49,7 @@ namespace Coocoo3D.Core
         {
             RPContext.Load();
             GameDriver = _GeneralGameDriver;
-            mainCaches._RequireRender = RequireRender;
-
+            mainCaches._RequireRender = () => RequireRender(false);
 
             CurrentScene = new Scene();
             CurrentScene.physics3DScene.Initialize();
@@ -69,7 +65,7 @@ namespace Coocoo3D.Core
                     long now = stopwatch1.ElapsedTicks;
                     if ((now - LatestRenderTime) / 1e7f < RPContext.gameDriverContext.FrameInterval) continue;
                     bool actualRender = RenderFrame();
-                    if ((performanceSettings.SaveCpuPower && !Recording) && (!performanceSettings.VSync || !actualRender))
+                    if (performanceSettings.SaveCpuPower && !Recording && (!performanceSettings.VSync || !actualRender))
                         System.Threading.Thread.Sleep(1);
                 }
             });
@@ -79,32 +75,26 @@ namespace Coocoo3D.Core
             RequireRender();
         }
         #region Rendering
-        HybirdRenderPipeline hybridRenderPipeline = new HybirdRenderPipeline();
 
         WidgetRenderer widgetRenderer = new WidgetRenderer();
         public UI.ImguiInput imguiInput = new UI.ImguiInput();
 
-        public void RequireRender(bool updateEntities)
+        public void RequireRender(bool updateEntities = false)
         {
             GameDriverContext.RequireRender(updateEntities);
-        }
-        public void RequireRender()
-        {
-            GameDriverContext.RequireRender();
         }
 
         public RenderPipelineContext RPContext = new RenderPipelineContext();
 
         public System.Diagnostics.Stopwatch stopwatch1 = System.Diagnostics.Stopwatch.StartNew();
-        public GraphicsContext graphicsContext { get => RPContext.graphicsContext; }
+        GraphicsContext graphicsContext { get => RPContext.graphicsContext; }
         Task RenderTask1;
 
         private bool RenderFrame()
         {
             long now = stopwatch1.ElapsedTicks;
-            var deltaTime = now - LatestRenderTime;
             long stopwatchFrequency = System.Diagnostics.Stopwatch.Frequency;
-            deltaTime1 = deltaTime / (double)stopwatchFrequency;
+            double deltaTime = (now - LatestRenderTime) / (double)stopwatchFrequency;
             if (!GameDriver.Next(RPContext, now))
             {
                 return false;
@@ -123,7 +113,7 @@ namespace Coocoo3D.Core
             RPContext.BeginDynamicContext(CurrentScene);
             RPContext.dynamicContextWrite.Time = gdc.PlayTime;
             RPContext.dynamicContextWrite.DeltaTime = gdc.Playing ? gdc.DeltaTime : 0;
-            RPContext.dynamicContextWrite.RealDeltaTime = deltaTime1;
+            RPContext.dynamicContextWrite.RealDeltaTime = deltaTime;
 
             CurrentScene.DealProcessList();
 
@@ -133,16 +123,8 @@ namespace Coocoo3D.Core
                 CurrentScene.Simulation(gdc.PlayTime, gdc.DeltaTime, gdc.RequireResetPhysics);
                 gdc.RequireResetPhysics = false;
             }
-            lock (CurrentScene)
-            {
-                RPContext.dynamicContextWrite.gameObjects.AddRange(CurrentScene.gameObjects);
-            }
-            RPContext.dynamicContextWrite.Preprocess();
-            var rendererComponents = RPContext.dynamicContextWrite.renderers;
-            for (int i = 0; i < rendererComponents.Count; i++)
-            {
-                rendererComponents[i].WriteMatriticesData();
-            }
+
+            RPContext.dynamicContextWrite.Preprocess(CurrentScene.gameObjects);
 
             #endregion
             if (RenderTask1 != null && RenderTask1.Status != TaskStatus.RanToCompletion) RenderTask1.Wait();
@@ -161,7 +143,7 @@ namespace Coocoo3D.Core
             GraphicsContext.BeginAlloctor(graphicsDevice);
             graphicsContext.Begin();
             RPContext.UpdateGPUResource();
-            hybridRenderPipeline.BeginFrame(RPContext);
+            HybirdRenderPipeline.BeginFrame(RPContext);
 
             if (performanceSettings.MultiThreadRendering)
                 RenderTask1 = Task.Run(RenderFunction);
@@ -174,9 +156,9 @@ namespace Coocoo3D.Core
         {
             foreach (var visualChannel in RPContext.visualChannels.Values)
             {
-                hybridRenderPipeline.RenderCamera(RPContext, visualChannel);
+                HybirdRenderPipeline.RenderCamera(RPContext, visualChannel);
             }
-            hybridRenderPipeline.EndFrame(RPContext);
+            HybirdRenderPipeline.EndFrame(RPContext);
 
             GameDriver.AfterRender(RPContext, graphicsContext);
             widgetRenderer.Render(RPContext, graphicsContext);
@@ -195,7 +177,24 @@ namespace Coocoo3D.Core
         #endregion
         public bool Recording = false;
 
-        public void Resize(int width,int height)
+        public void ToPlayMode()
+        {
+            if (Recording)
+            {
+                GameDriver = _GeneralGameDriver;
+                Recording = false;
+            }
+        }
+
+        public void ToRecordMode(System.IO.DirectoryInfo saveDir)
+        {
+            _RecorderGameDriver.saveFolder = saveDir;
+            _RecorderGameDriver.SwitchEffect();
+            GameDriver = _RecorderGameDriver;
+            Recording = true;
+        }
+
+        public void Resize(int width, int height)
         {
             RequireResize = true;
             NewSize = new Vector2(width, height);
@@ -211,8 +210,6 @@ namespace Coocoo3D.Core
     {
         public bool MultiThreadRendering;
         public bool SaveCpuPower;
-        public bool AutoReloadShaders;
-        public bool AutoReloadTextures;
         public bool VSync;
     }
 }

@@ -30,6 +30,7 @@ cbuffer cb1 : register(b1)
 	float _Roughness;
 	float _Emissive;
 	float _Specular;
+	float _Brightness;
 }
 
 cbuffer cb2 : register(b2)
@@ -329,5 +330,5 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #if ENABLE_FOG
 	outputColor = lerp(pow(max(_fogColor , 1e-6),2.2f), outputColor,1 / exp(max((camDist - _startDistance) / 10,0.00001) * _fogDensity));
 #endif
-	return float4(outputColor, texColor.a);
+	return float4(outputColor * _Brightness, texColor.a);
 }

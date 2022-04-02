@@ -42,6 +42,7 @@ namespace Coocoo3D.ResourceWarp
                     case ".png":
                     case ".gif":
                     case ".tga":
+                    case ".bmp":
                         {
                             byte[] data = GetImageData(texFile.OpenRead(), out int width, out int height, out _, out int mipMap);
                             uploader.Texture2DRawLessCopy(data, Format.R8G8B8A8_UNorm_SRgb, width, height, mipMap);
@@ -76,7 +77,7 @@ namespace Coocoo3D.ResourceWarp
             int sizey = GetAlign(height1);
             if (width1 != sizex || height1 != sizey)
             {
-                image.Mutate(x => x.Resize(width1, height1, KnownResamplers.Box));
+                image.Mutate(x => x.Resize(sizex, sizey, KnownResamplers.Bicubic));
             }
             width1 = sizex;
             height1 = sizey;

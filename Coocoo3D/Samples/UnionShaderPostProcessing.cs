@@ -79,7 +79,7 @@ public static class UnionShaderPostProcessing
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("PostProcessing.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(6, 0, 0);
+                        param.DrawScreenQuad();
                     if (param.pass.SRVs.Count > 3)
                     {
                         param.SwapTexture("_Result", "_PreviousResult");

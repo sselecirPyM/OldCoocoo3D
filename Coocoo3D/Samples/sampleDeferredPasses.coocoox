@@ -2,8 +2,7 @@
   "Name": "延迟渲染",
   "RenderSequence": [
     {
-      "Name": "PreprocessBRDF",
-      "Type": "DrawScreen"
+      "Name": "PreprocessBRDF"
     },
     {
       "Name": "ShadowMapPass0",
@@ -32,14 +31,12 @@
     },
     {
       "Name": "DenoisePass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_ScreenColor2"
       ]
     },
     {
       "Name": "DeferredFinalPass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Result"
       ]
@@ -53,28 +50,24 @@
     },
     {
       "Name": "BloomBlur1",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Blur0"
       ]
     },
     {
       "Name": "BloomBlur2",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Result"
       ]
     },
     {
       "Name": "TAAPass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
       ]
     },
     {
       "Name": "PostProcessingPass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
       ]
@@ -82,100 +75,70 @@
   ],
   "RenderTargets": {
     "_ShadowMap0": {
-      "Size": {
-        "Source": "ShadowMapSize"
-      },
+      "Source": "ShadowMapSize",
       "Format": "D32_Float"
     },
     "_ScreenDepth0": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "D32_Float"
     },
     "_ScreenColor0": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_ScreenColor1": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_ScreenColor2": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_ScreenColor3": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_RayTracing0": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_Blur0": {
-      "Size": {
-        "Multiplier": "0.5",
-        "Source": "OutputSize"
-      },
+      "Multiplier": "0.5",
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_Result": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_PreviousResult": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_PreviousScreenDepth0": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+      "Source": "OutputSize",
       "Format": "D32_Float"
     },
     "_BRDFLUT": {
-      "Size": {
-        "X": 256,
-        "Y": 256
-      },
+      "Width": 256,
+      "Height": 256,
       "Flag": "Shared",
       "Format": "R16G16B16A16_Float"
     }
   },
   "RenderTargetCubes": {
     "_EnvironmentCapture": {
-      "Size": {
-        "X": 64,
-        "Y": 64
-      },
+      "Width": 64,
+      "Height": 64,
       "Format": "R16G16B16A16_UNorm"
     }
   },
   "DynamicBuffers": {
     "GIBuffer": {
-      "Size": {
-        "X": 589824
-      }
+      "Width": 589824
     },
     "GIBufferWrite": {
-      "Size": {
-        "X": 589824
-      }
+      "Width": 589824
     }
   },
   "Passes": {
@@ -305,7 +268,8 @@
             "AOLimit",
             "AORaySampleCount",
             "RandomI",
-            "LightMapSplit"
+            "LightMapSplit",
+            "Brightness"
           ]
         },
         {
@@ -414,7 +378,8 @@
             "Metallic",
             "Roughness",
             "Emissive",
-            "Specular"
+            "Specular",
+            "Brightness"
           ]
         },
         {
@@ -726,6 +691,16 @@
       "Min": "0",
       "Max": "1"
     },
+    "IOR": {
+      "Name": "IOR",
+      "Type": "float",
+      "Default": "1.46",
+      "Step": "0.01"
+    },
+    "Refraction": {
+      "Name": "折射",
+      "Type": "bool"
+    },
     "CastShadow": {
       "Name": "投射阴影",
       "Type": "bool",
@@ -747,6 +722,13 @@
       "Name": "天空盒亮度",
       "Type": "float",
       "Default": "3",
+      "Step": "0.01",
+      "Min": "0"
+    },
+    "Brightness": {
+      "Name": "亮度调节",
+      "Type": "float",
+      "Default": "1",
       "Step": "0.01",
       "Min": "0"
     },

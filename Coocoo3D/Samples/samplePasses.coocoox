@@ -2,12 +2,10 @@
   "Name": "前向渲染",
   "RenderSequence": [
     {
-      "Name": "PreprocessBRDF",
-      "Type": "DrawScreen"
+      "Name": "PreprocessBRDF"
     },
     {
       "Name": "DrawSkyBoxPass",
-      "Type": "DrawScreen",
       "ClearDepth": "true",
       "RenderTargets": [
         "_Result"
@@ -30,28 +28,24 @@
     },
     {
       "Name": "BloomBlur1",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Blur0"
       ]
     },
     {
       "Name": "BloomBlur2",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Result"
       ]
     },
     {
       "Name": "TAAPass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
       ]
     },
     {
       "Name": "PostProcessingPass",
-      "Type": "DrawScreen",
       "RenderTargets": [
         "_Output0"
       ]
@@ -59,47 +53,33 @@
   ],
   "RenderTargets": {
     "_ShadowMap0": {
-      "Size": {
-        "Source": "ShadowMapSize"
-      },
+        "Source": "ShadowMapSize",
       "Format": "D32_Float"
     },
     "_ScreenDepth0": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+        "Source": "OutputSize",
       "Format": "D32_Float"
     },
     "_Blur0": {
-      "Size": {
         "Multiplier": "0.5",
-        "Source": "OutputSize"
-      },
+        "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_Result": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+        "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_PreviousResult": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+        "Source": "OutputSize",
       "Format": "R16G16B16A16_Float"
     },
     "_PreviousScreenDepth0": {
-      "Size": {
-        "Source": "OutputSize"
-      },
+        "Source": "OutputSize",
       "Format": "D32_Float"
     },
     "_BRDFLUT": {
-      "Size": {
-        "X": 256,
-        "Y": 256
-      },
+      "Width": 256,
+      "Height": 256,
       "Flag": "Shared",
       "Format": "R16G16B16A16_Float"
     }
@@ -164,7 +144,8 @@
           "Datas": [
             "CameraInvert",
             "CameraPosition",
-            "IndirectMultiplier"
+            "IndirectMultiplier",
+            "Brightness"
           ]
         }
       ],
@@ -189,7 +170,7 @@
             "Roughness",
             "Emissive",
             "Specular",
-            "WidthHeight"
+            "Brightness"
           ]
         },
         {
@@ -206,7 +187,6 @@
             "FogStartDistance",
             "FogEndDistance",
             "LightMapSplit"
-
           ]
         }
       ],
@@ -394,6 +374,16 @@
       "Type": "float",
       "Step": "0.01"
     },
+    "IOR": {
+      "Name": "IOR",
+      "Type": "float",
+      "Default": "1.46",
+      "Step": "0.01"
+    },
+    "Refraction": {
+      "Name": "折射",
+      "Type": "bool"
+    },
     "CastShadow": {
       "Name": "投射阴影",
       "Type": "bool",
@@ -415,6 +405,13 @@
       "Name": "天空盒亮度",
       "Type": "float",
       "Default": "3",
+      "Step": "0.01",
+      "Min": "0"
+    },
+    "Brightness": {
+      "Name": "亮度调节",
+      "Type": "float",
+      "Default": "1",
       "Step": "0.01",
       "Min": "0"
     },

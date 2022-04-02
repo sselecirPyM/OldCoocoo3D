@@ -17,8 +17,8 @@ namespace Coocoo3D.RenderPipeline
         public RenderPipelineContext rp;
         public RenderPipelineDynamicContext drp { get => rp.dynamicContextRead; }
         public RenderMaterial material;
-        public MMDRendererComponent renderer;
-        public MeshRendererComponent meshRenderer;
+        internal MMDRendererComponent renderer;
+        internal MeshRendererComponent meshRenderer;
         public PassSetting passSetting;
 
         public List<MMDRendererComponent> renderers { get => drp.renderers; }
@@ -43,8 +43,6 @@ namespace Coocoo3D.RenderPipeline
 
         public Texture2D texLoading;
         public Texture2D texError;
-
-        public RayTracingShader rayTracingShader;
 
         public GraphicsDevice graphicsDevice { get => rp.graphicsDevice; }
 
@@ -99,7 +97,7 @@ namespace Coocoo3D.RenderPipeline
 
         public Random _random;
 
-        public Random random { get => _random ??= new Random(rp.frameRenderCount); }
+        public Random random { get => _random ??= new Random(rp.dynamicContextRead.frameRenderIndex); }
 
         public bool CPUSkinning { get => rp.CPUSkinning; set => rp.CPUSkinning = value; }
 
@@ -140,9 +138,9 @@ namespace Coocoo3D.RenderPipeline
             return false;
         }
 
-        public CBuffer GetBoneBuffer(MMDRendererComponent rendererComponent)
+        public CBuffer GetBoneBuffer()
         {
-            return rp.GetBoneBuffer(rendererComponent);
+            return rp.GetBoneBuffer(renderer);
         }
 
         public Texture2D GetTex2D(string name, RenderMaterial material = null)
@@ -451,6 +449,9 @@ namespace Coocoo3D.RenderPipeline
                     yield return renderable;
                 }
             }
+            this.renderer = null;
+            this.meshRenderer = null;
+            material = null;
         }
 
         void WriteRenderable(ref MeshRenderable renderable, RenderMaterial material)
@@ -477,6 +478,17 @@ namespace Coocoo3D.RenderPipeline
                     type = RenderableType.Particle
                 };
             }
+        }
+
+        public void DrawScreenQuad()
+        {
+            graphicsContext.SetMesh(rp.quadMesh);
+            graphicsContext.DrawIndexed(6, 0, 0);
+        }
+
+        public void DrawRenderable(in MeshRenderable renderable)
+        {
+            graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
         }
 
         public void SetSRVs(List<SlotRes> SRVs, RenderMaterial material = null)
@@ -601,7 +613,10 @@ namespace Coocoo3D.RenderPipeline
             {
                 psoDesc.inputLayout = InputLayout.mmd;
                 psoDesc.wireFrame = settings.Wireframe;
-                psoDesc.cullMode = material.DrawDoubleFace ? Vortice.Direct3D12.CullMode.None : Vortice.Direct3D12.CullMode.Back;
+                if (material != null)
+                    psoDesc.cullMode = material.DrawDoubleFace ? Vortice.Direct3D12.CullMode.None : Vortice.Direct3D12.CullMode.Back;
+                else
+                    psoDesc.cullMode = Vortice.Direct3D12.CullMode.None;
             }
             else
             {

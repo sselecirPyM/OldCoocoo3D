@@ -31,6 +31,7 @@ public static class UnionShaderDeferred
         switch (param.passName)
         {
             case "GBufferPass":
+                string gbufferShaderPath = Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath);
                 foreach (var renderable in param.MeshRenderables())
                 {
                     List<ValueTuple<string, string>> keywords = new();
@@ -44,16 +45,16 @@ public static class UnionShaderDeferred
                     if (renderable.gpuSkinning)
                     {
                         keywords.Add(new("SKINNING", "1"));
-                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(param.renderer), 0, 0, 0);
+                        graphicsContext.SetCBVRSlot(param.GetBoneBuffer(), 0, 0, 0);
                     }
                     foreach (var cbv in param.pass.CBVs)
                     {
                         param.WriteCBV(cbv);
                     }
-                    pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredGBuffer.hlsl", param.relativePath));
+                    pso = mainCaches.GetPSOWithKeywords(keywords, gbufferShaderPath);
                     param.SetSRVs(param.pass.SRVs, material);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(renderable.indexCount, renderable.indexStart, renderable.vertexStart);
+                        param.DrawRenderable(renderable);
                 }
                 break;
             case "DeferredFinalPass":
@@ -90,7 +91,7 @@ public static class UnionShaderDeferred
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(6, 0, 0);
+                        param.DrawScreenQuad();
                 }
                 break;
             case "DenoisePass":
@@ -110,7 +111,7 @@ public static class UnionShaderDeferred
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("RayTracingDenoise.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        graphicsContext.DrawIndexed(6, 0, 0);
+                        param.DrawScreenQuad();
                 }
                 break;
             default:

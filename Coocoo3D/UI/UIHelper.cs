@@ -106,10 +106,7 @@ namespace Coocoo3D.UI
                 {
                     DirectoryInfo folder = new DirectoryInfo(path);
                     if (folder == null) return;
-                    appBody._RecorderGameDriver.saveFolder = folder;
-                    appBody._RecorderGameDriver.SwitchEffect();
-                    appBody.GameDriver = appBody._RecorderGameDriver;
-                    appBody.Recording = true;
+                    appBody.ToRecordMode(folder);
                 }
             }
             if (UIImGui.requireSave.SetFalse())
