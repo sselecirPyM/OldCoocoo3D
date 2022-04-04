@@ -295,6 +295,9 @@ namespace Coocoo3D.RenderPipeline
                     case "Camera":
                         writer.Write(camera.vpMatrix);
                         break;
+                    case "CameraView":
+                        writer.Write(camera.vMatrix);
+                        break;
                     case "CameraInfo":
                         writer.Write(camera.far);
                         writer.Write(camera.near);
@@ -605,7 +608,7 @@ namespace Coocoo3D.RenderPipeline
             psoDesc.cullMode = renderSequence.CullMode;
             psoDesc.depthBias = renderSequence.DepthBias;
             psoDesc.slopeScaledDepthBias = renderSequence.SlopeScaledDepthBias;
-            psoDesc.primitiveTopologyType = Vortice.Direct3D12.PrimitiveTopologyType.Triangle;
+            psoDesc.primitiveTopologyType = PrimitiveTopologyType.Triangle;
             psoDesc.renderTargetCount = renderSequence.RenderTargets == null ? 0 : renderSequence.RenderTargets.Count;
             psoDesc.wireFrame = false;
 
@@ -614,9 +617,9 @@ namespace Coocoo3D.RenderPipeline
                 psoDesc.inputLayout = InputLayout.mmd;
                 psoDesc.wireFrame = settings.Wireframe;
                 if (material != null)
-                    psoDesc.cullMode = material.DrawDoubleFace ? Vortice.Direct3D12.CullMode.None : Vortice.Direct3D12.CullMode.Back;
+                    psoDesc.cullMode = material.DrawDoubleFace ? CullMode.None : CullMode.Back;
                 else
-                    psoDesc.cullMode = Vortice.Direct3D12.CullMode.None;
+                    psoDesc.cullMode = CullMode.None;
             }
             else
             {

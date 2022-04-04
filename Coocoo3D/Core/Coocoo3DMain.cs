@@ -131,7 +131,7 @@ namespace Coocoo3D.Core
             (RPContext.dynamicContextRead, RPContext.dynamicContextWrite) = (RPContext.dynamicContextWrite, RPContext.dynamicContextRead);
             if (RequireResize.SetFalse())
             {
-                graphicsDevice.SetLogicalSize(NewSize);
+                RPContext.swapChain.Resize(NewSize.X, NewSize.Y);
                 graphicsDevice.WaitForGpu();
             }
             if (!Recording)
@@ -163,9 +163,10 @@ namespace Coocoo3D.Core
             GameDriver.AfterRender(RPContext, graphicsContext);
             widgetRenderer.Render(RPContext, graphicsContext);
             RPContext.AfterRender();
-            graphicsContext.Present(performanceSettings.VSync);
+            graphicsContext.Present(RPContext.swapChain, performanceSettings.VSync);
             graphicsContext.EndCommand();
             graphicsContext.Execute();
+            graphicsDevice.RenderComplete();
         }
 
         public void Dispose()
@@ -202,7 +203,7 @@ namespace Coocoo3D.Core
 
         public void SetWindow(IntPtr hwnd, int width, int height)
         {
-            graphicsDevice.SetSwapChainPanel(hwnd, width, height);
+            RPContext.swapChain.Initialize(graphicsDevice, hwnd, width, height);
         }
     }
 

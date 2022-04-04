@@ -98,18 +98,18 @@ namespace Coocoo3D.UI
                 }
                 appBody.RequireRender(true);
             }
-            if (UIImGui.requireRecord.SetFalse())
+            if (UIImGui.requestRecord.SetFalse())
             {
                 appBody.GameDriverContext.NeedRender = 0;
                 string path = OpenResourceFolder();
                 if (!string.IsNullOrEmpty(path))
                 {
                     DirectoryInfo folder = new DirectoryInfo(path);
-                    if (folder == null) return;
+                    if (!folder.Exists) return;
                     appBody.ToRecordMode(folder);
                 }
             }
-            if (UIImGui.requireSave.SetFalse())
+            if (UIImGui.requestSave.SetFalse())
             {
                 FileOpenDialog fileDialog = new FileOpenDialog()
                 {

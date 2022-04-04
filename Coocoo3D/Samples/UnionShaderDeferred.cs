@@ -81,7 +81,7 @@ public static class UnionShaderDeferred
                         keywords.Add(new("ENABLE_POINT_LIGHT", "1"));
                         keywords.Add(new("POINT_LIGHT_COUNT", pointLights.Count.ToString()));
                     }
-                    if (param.GetCustomValue("RayTracing", false))
+                    if (param.GetCustomValue("RayTracingReflect", false))
                         keywords.Add(new("RAY_TRACING", "1"));
 
                     foreach (var cbv in param.pass.CBVs)
@@ -97,7 +97,7 @@ public static class UnionShaderDeferred
             case "DenoisePass":
                 {
                     List<ValueTuple<string, string>> keywords = new();
-                    if (!param.GetCustomValue("RayTracing", false))
+                    if (!param.GetCustomValue("RayTracingReflect", false))
                         return true;
 
                     var psoDesc = param.GetPSODesc();

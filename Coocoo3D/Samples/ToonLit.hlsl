@@ -1,3 +1,8 @@
+//Copyright (c) 2020 ColinLeung-NiloCat
+// For more information, visit -> https://github.com/ColinLeung-NiloCat/UnityURPToonLitShaderExample
+// 
+//Copyright (c) 2022 sselecirPyM
+
 #ifdef SKINNING
 #define MAX_BONE_MATRICES 1024
 #endif
@@ -31,7 +36,46 @@ cbuffer cb1 : register(b1)
 	float _Emissive;
 	float _Specular;
 	float _Brightness;
+
+	//emission
+	//float _UseEmission;
+	//float3 _EmissionColor;
+	float _EmissionMulByBaseColor;
+	//float4 _EmissionMapChannelMask;
+	//lighting
+	float3 _IndirectLightMinColor;
+	//float _IndirectLightMultiplier;
+	//float _DirectLightMultiplier;
+	float _CelShadeMidPoint;
+	float _CelShadeSoftness;
+	//float _MainLightIgnoreCelShade;
+	//float _AdditionalLightIgnoreCelShade;
+	//shadow
+	float _ReceiveShadowMappingAmount;
+	//float _ReceiveShadowMappingPosOffset;
+	float3 _ShadowMapColor;
+	//Outline
+	float _OutlineWidth;
+	float3 _OutlineColor;
+	float _OutlineZOffset;
+	float _OutlineZOffsetMaskRemapStart;
+	float _OutlineZOffsetMaskRemapEnd;
 }
+
+struct ToonSurfaceData
+{
+	half3   albedo;
+	half    alpha;
+	half3   emission;
+	half    occlusion;
+};
+struct ToonLightingData
+{
+	half3   normalWS;
+	float3  positionWS;
+	half3   viewDirectionWS;
+	float4  shadowCoord;
+};
 
 cbuffer cb2 : register(b2)
 {
@@ -53,6 +97,127 @@ cbuffer cb2 : register(b2)
 	int  g_lightMapSplit;
 	float3 g_GIVolumePosition;
 	float3 g_GIVolumeSize;
+}
+
+const static bool _IsFace = false;
+
+
+ToonSurfaceData InitializeSurfaceData(float4 baseColor, float3 emissiveColor, float occulsion)
+{
+	ToonSurfaceData output;
+
+	// albedo & alpha
+	float4 baseColorFinal = baseColor;
+	output.albedo = baseColorFinal.rgb;
+	output.alpha = baseColorFinal.a;
+	//DoClipTestToTargetAlphaValue(output.alpha);// early exit if possible
+
+	// emission
+	output.emission = emissiveColor;
+
+	// occlusion
+	output.occlusion = occulsion;
+
+	return output;
+}
+
+ToonLightingData InitializeLightingData(float3 positionWS, float3 cameraPosition, float3 normal)
+{
+	ToonLightingData lightingData;
+	lightingData.positionWS = positionWS;
+	lightingData.viewDirectionWS = normalize(cameraPosition - lightingData.positionWS);
+	lightingData.normalWS = normalize(normal); //interpolated normal is NOT unit vector, we need to normalize it
+
+	return lightingData;
+}
+
+float GetOutlineCameraFovAndDistanceFixMultiplier(float positionVS_Z)
+{
+	float cameraMulFix;
+	////////////////////////////////
+	// Perspective camera case
+	////////////////////////////////
+
+	// keep outline similar width on screen accoss all camera distance       
+	cameraMulFix = abs(positionVS_Z);
+
+	// can replace to a tonemap function if a smooth stop is needed
+	cameraMulFix = saturate(cameraMulFix);
+
+	// keep outline similar width on screen accoss all camera fov
+	cameraMulFix *= g_cameraFov * 180 / 3.14159265358979;
+
+	return cameraMulFix * 0.00005; // mul a const to make return result = default normal expand amount WS
+}
+
+float3 TransformPositionWSToOutlinePositionWS(float3 positionWS, float positionVS_Z, float3 normalWS)
+{
+	//you can replace it to your own method! Here we will write a simple world space method for tutorial reason, it is not the best method!
+	float outlineExpandAmount = _OutlineWidth * GetOutlineCameraFovAndDistanceFixMultiplier(positionVS_Z);
+	return positionWS + normalWS * outlineExpandAmount;
+}
+
+half3 ShadeGI(ToonSurfaceData surfaceData, ToonLightingData lightingData, float3 averageSH)
+{
+	// hide 3D feeling by ignoring all detail SH (leaving only the constant SH term)
+	// we just want some average envi indirect color only
+	//half3 averageSH = SampleSH(0);
+
+	// can prevent result becomes completely black if lightprobe was not baked 
+	averageSH = max(_IndirectLightMinColor, averageSH);
+
+	// occlusion (maximum 50% darken for indirect to prevent result becomes completely black)
+	half indirectOcclusion = lerp(1, surfaceData.occlusion, 0.5);
+	return averageSH * indirectOcclusion;
+}
+
+half3 ShadeSingleLight(ToonSurfaceData surfaceData, ToonLightingData lightingData, float3 lightColor, float3 direction, float distanceAttenuation, float shadowAttenuation, bool isAdditionalLight)
+{
+	half3 N = lightingData.normalWS;
+	half3 L = direction;
+
+	half NoL = dot(N, L);
+
+	half lightAttenuation = 1;
+
+	// light's distance & angle fade for point light & spot light (see GetAdditionalPerObjectLight(...) in Lighting.hlsl)
+	distanceAttenuation = min(4, distanceAttenuation); //clamp to prevent light over bright if point/spot light too close to vertex
+
+	// N dot L
+	// simplest 1 line cel shade, you can always replace this line by your own method!
+	half litOrShadowArea = smoothstep(_CelShadeMidPoint - _CelShadeSoftness, _CelShadeMidPoint + _CelShadeSoftness, NoL);
+
+	// occlusion
+	litOrShadowArea *= surfaceData.occlusion;
+
+	// face ignore celshade since it is usually very ugly using NoL method
+	litOrShadowArea = _IsFace ? lerp(0.5, 1, litOrShadowArea) : litOrShadowArea;
+
+	// light's shadow map
+	litOrShadowArea *= lerp(1, shadowAttenuation, _ReceiveShadowMappingAmount);
+
+	half3 litOrShadowColor = lerp(pow(_ShadowMapColor, 2.2f), 1, litOrShadowArea);
+
+	half3 lightAttenuationRGB = litOrShadowColor * distanceAttenuation;
+
+	// saturate() light.color to prevent over bright
+	// additional light reduce intensity since it is additive
+	return saturate(lightColor) * lightAttenuationRGB * (isAdditionalLight ? 0.25 : 1);
+}
+
+half3 ShadeEmission(ToonSurfaceData surfaceData)
+{
+	half3 emissionResult = lerp(surfaceData.emission, surfaceData.emission * surfaceData.albedo, _EmissionMulByBaseColor); // optional mul albedo
+	return emissionResult;
+}
+
+half3 CompositeAllLightResults(half3 indirectResult, half3 mainLightResult, half3 additionalLightSumResult, half3 emissionResult, ToonSurfaceData surfaceData, ToonLightingData lightingData)
+{
+	// [remember you can write anything here, this is just a simple tutorial method]
+	// here we prevent light over bright,
+	// while still want to preserve light color's hue
+	half3 rawLightSum = max(indirectResult, mainLightResult + additionalLightSumResult); // pick the highest between indirect and direct light
+	return surfaceData.albedo * rawLightSum + emissionResult;
 }
 #define SH_RESOLUTION (16)
 SamplerState s0 : register(s0);
@@ -93,6 +258,10 @@ PSSkinnedIn vsmain(VSSkinnedIn input)
 	output.Tangent = normalize(mul(vSkinned.Tan, (float3x3)g_mWorld));
 	output.Bitangent = cross(output.Norm, output.Tangent) * input.Tan.w;
 	output.Tex = input.Tex;
+	float3 view = mul(vSkinned.Pos, g_mWorldToView);
+#ifdef OUTLINE
+	pos = TransformPositionWSToOutlinePositionWS(pos, view.z, output.Norm);
+#endif
 
 	output.Pos = mul(float4(pos, 1), g_mWorldToProj);
 	output.wPos = float4(pos, 1);
@@ -135,6 +304,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float3 N = normalize(mul(dn, tbn));
 #endif
 	float NdotV = saturate(dot(N, V));
+
 	// Burley roughness bias
 	float4 metallic1 = Metallic.Sample(s1, input.Tex);
 	float4 roughness1 = Roughness.Sample(s1, input.Tex);
@@ -146,27 +316,37 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 	float3 c_diffuse = lerp(albedo * (1 - _Specular * 0.08f), 0, _Metallic * metallic1.b);
 	float3 c_specular = lerp(_Specular * 0.08f, albedo, _Metallic * metallic1.b);
 
-	float3 outputColor = float3(0,0,0);
+	float3 outputColor = float3(0, 0, 0);
 	float2 AB = BRDFLut.SampleLevel(s0, float2(NdotV, roughness), 0).rg;
 	float3 GF = c_specular * AB.x + AB.y;
 
 	float3 emissive = Emissive.Sample(s1, input.Tex) * _Emissive;
 
-#if ENABLE_DIFFUSE
+	// fillin ToonSurfaceData struct:
+	ToonSurfaceData surfaceData = InitializeSurfaceData(texColor, emissive, 1.0f);
+
+	// fillin ToonLightingData struct:
+	ToonLightingData lightingData = InitializeLightingData(wPos.xyz, g_camPos, N);
+	float3 mainLightResult = float3(0, 0, 0);
+	float3 additionalLightSumResult = float3(0, 0, 0);
+	float3 emissionResult = ShadeEmission(surfaceData);
+
+	float3 giResult = float3 (0, 0, 0);
 	float3 skyLight = EnvCube.SampleLevel(s0, N, 5) * g_skyBoxMultiple;
 #ifndef ENABLE_GI
-	outputColor += skyLight * c_diffuse;
+	giResult = skyLight * c_diffuse;
 #else
 	float3 shDiffuse = GetSH(giBuffer, SH_RESOLUTION, g_GIVolumePosition, g_GIVolumeSize, N, wPos, skyLight);
-	outputColor += shDiffuse.rgb * c_diffuse;
+	giResult = shDiffuse.rgb * c_diffuse;
 #endif
-#endif
+
 #if ENABLE_SPECULR
 	outputColor += EnvCube.SampleLevel(s0, reflect(-V, N), sqrt(max(roughness,1e-5)) * 4) * g_skyBoxMultiple * GF;
 #endif
 #if ENABLE_EMISSIVE
 	outputColor += emissive;
 #endif
+
 #if DEBUG_ALBEDO
 	return float4(albedo, 1);
 #endif
@@ -212,7 +392,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 		if (Lightings[i].LightType == 0)
 		{
 			float inShadow = 1.0f;
-			float3 lightStrength = max(Lightings[i].LightColor.rgb, 0);
+			float3 lightStrength = max(Lightings[i].LightColor.rgb, 0) / 3.14159265;
 			if (i == 0)
 			{
 #ifndef DISBLE_SHADOW_RECEIVE
@@ -252,7 +432,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 			float3 specular_factor = 0;
 #endif
 
-			outputColor += NdotL * lightStrength * (((c_diffuse * diffuse_factor / COO_PI) + specular_factor)) * inShadow;
+			mainLightResult = ShadeSingleLight(surfaceData, lightingData, lightStrength, L, 1, inShadow, false);
 		}
 	}
 #endif //ENABLE_DIRECTIONAL_LIGHT
@@ -266,7 +446,7 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 		float lightRange = PointLights[i].LightRange;
 		if (pow2(lightRange) < lightDistance2)
 			continue;
-		float3 lightStrength = PointLights[i].LightColor.rgb / lightDistance2;
+		float3 lightStrength = PointLights[i].LightColor.rgb;
 
 
 		float3 L = normalize(vl);
@@ -329,11 +509,19 @@ float4 psmain(PSSkinnedIn input) : SV_TARGET
 #else
 		float3 specular_factor = 0;
 #endif
-		outputColor += NdotL * lightStrength * ((c_diffuse * diffuse_factor / COO_PI) + specular_factor) * inShadow;
+		float lightStrength1 = sqrt(dot(lightStrength, lightStrength) / 3);
+		additionalLightSumResult += ShadeSingleLight(surfaceData, lightingData, lightStrength / lightStrength1, L, lightStrength1 / lightDistance2, inShadow, true);
 	}
 #endif //ENABLE_POINT_LIGHT
+	outputColor = CompositeAllLightResults(giResult, mainLightResult, additionalLightSumResult, emissionResult, surfaceData, lightingData);
+
+#ifdef OUTLINE
+	outputColor = outputColor * _OutlineColor;
+#endif
+
 #if ENABLE_FOG
 	outputColor = lerp(pow(max(_fogColor , 1e-6),2.2f), outputColor,1 / exp(max((camDist - _startDistance) / 10,0.00001) * _fogDensity));
 #endif
+
 	return float4(outputColor * _Brightness, texColor.a);
 }

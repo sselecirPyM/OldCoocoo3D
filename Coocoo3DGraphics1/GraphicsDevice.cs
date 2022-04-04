@@ -25,7 +25,6 @@ namespace Coocoo3DGraphics
             }
         };
 
-        public const int c_frameCount = 3;
         public const int CBVSRVUAVDescriptorCount = 65536;
         internal ID3D12Device5 device;
         internal IDXGIAdapter adapter;
@@ -47,15 +46,10 @@ namespace Coocoo3DGraphics
         List<ID3D12GraphicsCommandList4> m_commandLists = new List<ID3D12GraphicsCommandList4>();
         List<ID3D12GraphicsCommandList4> m_commandLists1 = new List<ID3D12GraphicsCommandList4>();
 
-        IntPtr hwnd;
-        IDXGIFactory4 m_dxgiFactory;
-        IDXGISwapChain3 m_swapChain;
-        ID3D12Resource[] m_renderTargets = new ID3D12Resource[c_frameCount];
-        ResourceStates[] renderTargetResourceStates = new ResourceStates[c_frameCount];
+        internal IDXGIFactory4 m_dxgiFactory;
+
         internal ID3D12CommandQueue commandQueue;
         ID3D12CommandAllocator[] commandAllocators = new ID3D12CommandAllocator[c_frameCount];
-
-        Format m_backBufferFormat;
 
         bool m_isRayTracingSupport;
 
@@ -64,161 +58,8 @@ namespace Coocoo3DGraphics
         internal uint executeIndex = 0;
         internal ulong executeCount = 3;
 
-        public Vector2 m_outputSize;
-        public Vector2 m_logicalSize;
-
-        public static uint BitsPerPixel(Format format)
+        public GraphicsDevice()
         {
-            switch (format)
-            {
-                case Format.R32G32B32A32_Typeless:
-                case Format.R32G32B32A32_Float:
-                case Format.R32G32B32A32_UInt:
-                case Format.R32G32B32A32_SInt:
-                    return 128;
-
-                case Format.R32G32B32_Typeless:
-                case Format.R32G32B32_Float:
-                case Format.R32G32B32_UInt:
-                case Format.R32G32B32_SInt:
-                    return 96;
-
-                case Format.R16G16B16A16_Typeless:
-                case Format.R16G16B16A16_Float:
-                case Format.R16G16B16A16_UNorm:
-                case Format.R16G16B16A16_UInt:
-                case Format.R16G16B16A16_SNorm:
-                case Format.R16G16B16A16_SInt:
-                case Format.R32G32_Typeless:
-                case Format.R32G32_Float:
-                case Format.R32G32_UInt:
-                case Format.R32G32_SInt:
-                case Format.R32G8X24_Typeless:
-                case Format.D32_Float_S8X24_UInt:
-                case Format.R32_Float_X8X24_Typeless:
-                case Format.X32_Typeless_G8X24_UInt:
-                case Format.Y416:
-                case Format.Y210:
-                case Format.Y216:
-                    return 64;
-
-                case Format.R10G10B10A2_Typeless:
-                case Format.R10G10B10A2_UNorm:
-                case Format.R10G10B10A2_UInt:
-                case Format.R11G11B10_Float:
-                case Format.R8G8B8A8_Typeless:
-                case Format.R8G8B8A8_UNorm:
-                case Format.R8G8B8A8_UNorm_SRgb:
-                case Format.R8G8B8A8_UInt:
-                case Format.R8G8B8A8_SNorm:
-                case Format.R8G8B8A8_SInt:
-                case Format.R16G16_Typeless:
-                case Format.R16G16_Float:
-                case Format.R16G16_UNorm:
-                case Format.R16G16_UInt:
-                case Format.R16G16_SNorm:
-                case Format.R16G16_SInt:
-                case Format.R32_Typeless:
-                case Format.D32_Float:
-                case Format.R32_Float:
-                case Format.R32_UInt:
-                case Format.R32_SInt:
-                case Format.R24G8_Typeless:
-                case Format.D24_UNorm_S8_UInt:
-                case Format.R24_UNorm_X8_Typeless:
-                case Format.X24_Typeless_G8_UInt:
-                case Format.R9G9B9E5_SharedExp:
-                case Format.R8G8_B8G8_UNorm:
-                case Format.G8R8_G8B8_UNorm:
-                case Format.B8G8R8A8_UNorm:
-                case Format.B8G8R8X8_UNorm:
-                case Format.R10G10B10_Xr_Bias_A2_UNorm:
-                case Format.B8G8R8A8_Typeless:
-                case Format.B8G8R8A8_UNorm_SRgb:
-                case Format.B8G8R8X8_Typeless:
-                case Format.B8G8R8X8_UNorm_SRgb:
-                case Format.AYUV:
-                case Format.Y410:
-                case Format.YUY2:
-                    return 32;
-
-                case Format.P010:
-                case Format.P016:
-                    return 24;
-
-                case Format.R8G8_Typeless:
-                case Format.R8G8_UNorm:
-                case Format.R8G8_UInt:
-                case Format.R8G8_SNorm:
-                case Format.R8G8_SInt:
-                case Format.R16_Typeless:
-                case Format.R16_Float:
-                case Format.D16_UNorm:
-                case Format.R16_UNorm:
-                case Format.R16_UInt:
-                case Format.R16_SNorm:
-                case Format.R16_SInt:
-                case Format.B5G6R5_UNorm:
-                case Format.B5G5R5A1_UNorm:
-                case Format.A8P8:
-                case Format.B4G4R4A4_UNorm:
-                    return 16;
-
-                case Format.NV12:
-                //case Format.420_OPAQUE:
-                case Format.Opaque420:
-                case Format.NV11:
-                    return 12;
-
-                case Format.R8_Typeless:
-                case Format.R8_UNorm:
-                case Format.R8_UInt:
-                case Format.R8_SNorm:
-                case Format.R8_SInt:
-                case Format.A8_UNorm:
-                case Format.AI44:
-                case Format.IA44:
-                case Format.P8:
-                    return 8;
-
-                case Format.R1_UNorm:
-                    return 1;
-
-                case Format.BC1_Typeless:
-                case Format.BC1_UNorm:
-                case Format.BC1_UNorm_SRgb:
-                case Format.BC4_Typeless:
-                case Format.BC4_UNorm:
-                case Format.BC4_SNorm:
-                    return 4;
-
-                case Format.BC2_Typeless:
-                case Format.BC2_UNorm:
-                case Format.BC2_UNorm_SRgb:
-                case Format.BC3_Typeless:
-                case Format.BC3_UNorm:
-                case Format.BC3_UNorm_SRgb:
-                case Format.BC5_Typeless:
-                case Format.BC5_UNorm:
-                case Format.BC5_SNorm:
-                case Format.BC6H_Typeless:
-                case Format.BC6H_Uf16:
-                case Format.BC6H_Sf16:
-                case Format.BC7_Typeless:
-                case Format.BC7_UNorm:
-                case Format.BC7_UNorm_SRgb:
-                    return 8;
-
-                default:
-                    return 0;
-            }
-        }
-
-        public Vector2 GetOutputSize() => m_outputSize;
-
-        public GraphicsDevice(Format backBufferFormat = Format.R8G8B8A8_UNorm)
-        {
-            m_backBufferFormat = backBufferFormat;
             CreateDeviceResource();
         }
 
@@ -246,12 +87,8 @@ namespace Coocoo3DGraphics
             device?.Dispose();
             ThrowIfFailed(D3D12.D3D12CreateDevice(this.adapter, out device));
             m_isRayTracingSupport = CheckRayTracingSupport(device);
-            CommandQueueDescription commandQueuDdescription;
-            commandQueuDdescription.Flags = CommandQueueFlags.None;
-            commandQueuDdescription.Type = CommandListType.Direct;
-            commandQueuDdescription.NodeMask = 0;
-            commandQueuDdescription.Priority = 0;
-            ThrowIfFailed(device.CreateCommandQueue(commandQueuDdescription, out commandQueue));
+
+            ThrowIfFailed(device.CreateCommandQueue(new CommandQueueDescription(CommandListType.Direct), out commandQueue));
 
             DescriptorHeapDescription descriptorHeapDescription;
             descriptorHeapDescription.NodeMask = 0;
@@ -309,124 +146,10 @@ namespace Coocoo3DGraphics
             m_commandLists1.Add(commandList);
         }
 
-        public ID3D12Resource GetRenderTarget(ID3D12GraphicsCommandList graphicsCommandList)
-        {
-            int index = m_swapChain.GetCurrentBackBufferIndex();
-            var state = renderTargetResourceStates[index];
-            var stateAfter = ResourceStates.RenderTarget;
-            if (state != stateAfter)
-            {
-                graphicsCommandList.ResourceBarrierTransition(m_renderTargets[index], state, stateAfter);
-                renderTargetResourceStates[index] = stateAfter;
-            }
-            return m_renderTargets[index];
-        }
-
-        public void EndRenderTarget(ID3D12GraphicsCommandList graphicsCommandList)
-        {
-            int index = m_swapChain.GetCurrentBackBufferIndex();
-            var state = renderTargetResourceStates[index];
-            var stateAfter = ResourceStates.Present;
-            if (state != stateAfter)
-            {
-                graphicsCommandList.ResourceBarrierTransition(m_renderTargets[index], state, stateAfter);
-                renderTargetResourceStates[index] = stateAfter;
-            }
-        }
-
-        internal CpuDescriptorHandle GetScreenRenderTargetView(ID3D12GraphicsCommandList graphicsCommandList)
-        {
-            var resource = GetRenderTarget(graphicsCommandList);
-            var handle = GetRenderTargetView(resource);
-            return handle;
-        }
-
         internal void ResourceDelayRecycle(ID3D12Object resource)
         {
             if (resource != null)
                 m_recycleList.Add(new recycleResource(resource, currentFenceValue));
-        }
-
-        public void CreateWindowSizeDependentResources()
-        {
-            // 等到以前的所有 GPU 工作完成。
-            WaitForGpu();
-
-            // 清除特定于先前窗口大小的内容。
-            for (int n = 0; n < c_frameCount; n++)
-            {
-                m_renderTargets[n]?.Dispose();
-                m_renderTargets[n] = null;
-                renderTargetResourceStates[n] = ResourceStates.Common;
-            }
-
-            UpdateRenderTargetSize();
-
-            int backBufferWidth = (int)Math.Round(m_outputSize.X);
-            int backBufferHeight = (int)Math.Round(m_outputSize.Y);
-            if (m_swapChain != null)
-            {
-                // 如果交换链已存在，请调整其大小。
-                Result hr = m_swapChain.ResizeBuffers(c_frameCount, backBufferWidth, backBufferHeight, m_backBufferFormat, SwapChainFlags.AllowTearing);
-
-                ThrowIfFailed(hr);
-            }
-            else
-            {
-                // 否则，使用与现有 Direct3D 设备相同的适配器新建一个。
-                SwapChainDescription1 swapChainDescription1 = new SwapChainDescription1();
-
-                swapChainDescription1.Width = backBufferWidth;                      // 匹配窗口的大小。
-                swapChainDescription1.Height = backBufferHeight;
-                swapChainDescription1.Format = m_backBufferFormat;
-                swapChainDescription1.Stereo = false;
-                swapChainDescription1.SampleDescription.Count = 1;                         // 请不要使用多采样。
-                swapChainDescription1.SampleDescription.Quality = 0;
-                swapChainDescription1.Usage = Usage.RenderTargetOutput;
-                swapChainDescription1.BufferCount = c_frameCount;                   // 使用三重缓冲最大程度地减小延迟。
-                swapChainDescription1.SwapEffect = SwapEffect.FlipSequential;
-                swapChainDescription1.Flags = SwapChainFlags.AllowTearing;
-                swapChainDescription1.Scaling = Scaling.Stretch;
-                swapChainDescription1.AlphaMode = AlphaMode.Ignore;
-
-                var swapChain = m_dxgiFactory.CreateSwapChainForHwnd(commandQueue, hwnd, swapChainDescription1);
-                m_swapChain?.Dispose();
-                m_swapChain = swapChain.QueryInterface<IDXGISwapChain3>();
-                swapChain.Dispose();
-            }
-
-            for (int n = 0; n < c_frameCount; n++)
-            {
-                ThrowIfFailed(m_swapChain.GetBuffer(n, out m_renderTargets[n]));
-            }
-        }
-
-        public void SetLogicalSize(Vector2 logicalSize)
-        {
-            if (m_logicalSize != logicalSize)
-            {
-                m_logicalSize = logicalSize;
-                CreateWindowSizeDependentResources();
-            }
-        }
-
-        internal void Present(bool vsync)
-        {
-            // 第一个参数指示 DXGI 进行阻止直到 VSync，这使应用程序
-            // 在下一个 VSync 前进入休眠。这将确保我们不会浪费任何周期渲染
-            // 从不会在屏幕上显示的帧。
-            Result hr;
-            if (vsync)
-            {
-                hr = m_swapChain.Present(1, 0);
-            }
-            else
-            {
-                hr = m_swapChain.Present(0, PresentFlags.AllowTearing);
-            }
-
-            ThrowIfFailed(hr);
-            RenderComplete();
         }
 
         public void RenderComplete()
@@ -480,16 +203,6 @@ namespace Coocoo3DGraphics
             m_commandLists1.Clear();
         }
 
-
-        void UpdateRenderTargetSize()
-        {
-            m_outputSize.X = m_logicalSize.X;
-            m_outputSize.Y = m_logicalSize.Y;
-
-            m_outputSize.X = Math.Max(m_outputSize.X, 1);
-            m_outputSize.Y = Math.Max(m_outputSize.Y, 1);
-        }
-
         public bool IsRayTracingSupport()
         {
             return m_isRayTracingSupport;
@@ -503,15 +216,6 @@ namespace Coocoo3DGraphics
         public ulong GetDeviceVideoMemory()
         {
             return m_deviceVideoMem;
-        }
-
-        public void SetSwapChainPanel(IntPtr hwnd, float width, float height)
-        {
-            this.hwnd = hwnd;
-
-            m_logicalSize = new Vector2(width, height);
-
-            CreateWindowSizeDependentResources();
         }
 
         static bool CheckRayTracingSupport(ID3D12Device device)

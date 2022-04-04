@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Coocoo3DGraphics;
-using Vortice.Direct3D12;
 using Vortice.DXGI;
 using System.Numerics;
 using System.IO;

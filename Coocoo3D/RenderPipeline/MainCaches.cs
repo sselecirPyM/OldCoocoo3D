@@ -297,7 +297,14 @@ namespace Coocoo3D.RenderPipeline
 
             return GetT(UnionShaders, path, file =>
             {
-                Type type = assembly.GetType(Path.GetFileNameWithoutExtension(path));
+                string typeName = Path.GetFileNameWithoutExtension(path);
+                Type type = assembly.GetType(typeName);
+                if (type == null)
+                {
+                    Console.WriteLine(path);
+                    Console.WriteLine("Can not find type \"" + typeName + "\"");
+                    return null;
+                }
                 var info = type.GetMethod("UnionShader");
                 var unionShader = (UnionShader)Delegate.CreateDelegate(typeof(UnionShader), info);
                 return unionShader;

@@ -56,6 +56,22 @@ namespace Coocoo3DGraphics
         particle = 4,
     };
 
+    public enum CullMode
+    {
+        None = 1,
+        Front = 2,
+        Back = 3,
+    }
+
+    public enum PrimitiveTopologyType
+    {
+        Undefined = 0,
+        Point = 1,
+        Line = 2,
+        Triangle = 3,
+        Patch = 4,
+    }
+
     public struct PSODesc : IEquatable<PSODesc>
     {
         public InputLayout inputLayout;
@@ -91,12 +107,12 @@ namespace Coocoo3DGraphics
         public override int GetHashCode()
         {
             HashCode hash = new HashCode();
-            hash.Add(inputLayout);
-            hash.Add(blendState);
-            hash.Add(cullMode);
-            hash.Add(primitiveTopologyType);
-            hash.Add(rtvFormat);
-            hash.Add(dsvFormat);
+            hash.Add((int)inputLayout);
+            hash.Add((int)blendState);
+            hash.Add((int)cullMode);
+            hash.Add((int)primitiveTopologyType);
+            hash.Add((int)rtvFormat);
+            hash.Add((int)dsvFormat);
             hash.Add(renderTargetCount);
             hash.Add(depthBias);
             hash.Add(slopeScaledDepthBias);
@@ -229,7 +245,7 @@ namespace Coocoo3DGraphics
                 if (pixelShader != null)
                     state.PixelShader = pixelShader;
                 state.SampleMask = uint.MaxValue;
-                state.PrimitiveTopologyType = psoDesc.primitiveTopologyType;
+                state.PrimitiveTopologyType = (Vortice.Direct3D12.PrimitiveTopologyType)psoDesc.primitiveTopologyType;
                 state.BlendState = BlendDescSelect(psoDesc.blendState);
                 state.SampleDescription = new SampleDescription(1, 0);
 
@@ -240,7 +256,7 @@ namespace Coocoo3DGraphics
                 }
                 CullMode cullMode = psoDesc.cullMode;
                 if (cullMode == 0) cullMode = CullMode.None;
-                RasterizerDescription rasterizerDescription = new RasterizerDescription(cullMode, psoDesc.wireFrame ? FillMode.Wireframe : FillMode.Solid);
+                RasterizerDescription rasterizerDescription = new RasterizerDescription((Vortice.Direct3D12.CullMode)cullMode, psoDesc.wireFrame ? FillMode.Wireframe : FillMode.Solid);
                 rasterizerDescription.DepthBias = psoDesc.depthBias;
                 rasterizerDescription.SlopeScaledDepthBias = psoDesc.slopeScaledDepthBias;
                 if (psoDesc.dsvFormat != Format.Unknown)

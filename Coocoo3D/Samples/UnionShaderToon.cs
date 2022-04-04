@@ -3,7 +3,7 @@ using Coocoo3D.RenderPipeline;
 using Coocoo3DGraphics;
 using System.IO;
 using System.Collections.Generic;
-public static class UnionShaderPBRForward
+public static class UnionShaderToon
 {
     static Dictionary<DebugRenderType, string> debugKeywords = new Dictionary<DebugRenderType, string>()
     {
@@ -34,21 +34,28 @@ public static class UnionShaderPBRForward
         {
             case "DrawObjectPass":
             case "DrawTransparentPass":
+            case "OutlinePass":
                 param.WriteCBV(param.pass.CBVs[1]);
+                string toonShaderPath = Path.GetFullPath("ToonLit.hlsl", param.relativePath);
                 string forwardShaderPath = Path.GetFullPath("PBRMaterial.hlsl", param.relativePath);
                 foreach (var renderable in param.MeshRenderables())
                 {
                     var material = renderable.material;
                     if (param.passName == "DrawTransparentPass" && !material.Transparent) continue;
-
+                    if (param.passName == "OutlinePass" && !(bool)param.GetSettingsValue(material, "ToonShading")) continue;
                     var psoDesc = param.GetPSODesc();
                     bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
 
                     List<ValueTuple<string, string>> keywords = new();
                     if (!material.Transparent)
                         psoDesc.blendState = BlendState.None;
+                    if (param.passName == "OutlinePass")
+                    {
+                        psoDesc.cullMode = CullMode.Front;
+                        keywords.Add(new("OUTLINE", "1"));
+                    }
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
-                        keywords.Add(new(debugKeyword,"1"));
+                        keywords.Add(new(debugKeyword, "1"));
                     if ((bool)param.GetSettingsValue("EnableFog"))
                         keywords.Add(new("ENABLE_FOG", "1"));
                     if ((bool)param.GetSettingsValue(material, "UseNormalMap"))
@@ -79,7 +86,10 @@ public static class UnionShaderPBRForward
                     //    param.WriteCBV(cbv);
                     //}
                     param.WriteCBV(param.pass.CBVs[0]);
-                    pso = mainCaches.GetPSOWithKeywords(keywords, forwardShaderPath);
+                    if ((bool)param.GetSettingsValue(material, "ToonShading"))
+                        pso = mainCaches.GetPSOWithKeywords(keywords, toonShaderPath);
+                    else
+                        pso = mainCaches.GetPSOWithKeywords(keywords, forwardShaderPath);
                     param.SetSRVs(param.pass.SRVs, material);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                         param.DrawRenderable(renderable);

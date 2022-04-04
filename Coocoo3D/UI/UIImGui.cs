@@ -66,7 +66,7 @@ namespace Coocoo3D.UI
             ImGui.SetNextWindowPos(new Vector2(300, 400), ImGuiCond.FirstUseEver);
             if (ImGui.Begin("资源"))
             {
-                var _openRequest = Resources(main);
+                var _openRequest = Resources();
                 if (openRequest == null)
                     openRequest = _openRequest;
             }
@@ -122,7 +122,7 @@ namespace Coocoo3D.UI
                 }
             }
             ImGui.End();
-            Popups(main);
+            Popups(main, selectedObject);
             ImGui.Render();
             if (selectedObject != null)
             {
@@ -181,7 +181,7 @@ namespace Coocoo3D.UI
                 ImGui.DragFloat("FPS", ref recordSettings.FPS, 1, 1, 1000);
                 if (ImGui.Button("开始录制"))
                 {
-                    requireRecord = true;
+                    requestRecord = true;
                 }
                 ImGui.TreePop();
             }
@@ -235,7 +235,7 @@ namespace Coocoo3D.UI
             ref Settings settings = ref scene.settings;
             ImGui.Checkbox("线框", ref settings.Wireframe);
             ImGui.DragInt("阴影分辨率", ref settings.ShadowMapResolution, 128, 512, 8192);
-            ImGui.SliderInt("天空盒最高质量", ref settings.SkyBoxMaxQuality, 256, 2048);//大于1512时fp16下会有可观测的精度损失(亮度降低)
+            ImGui.SliderInt("天空盒最高质量", ref settings.SkyBoxMaxQuality, 256, 2048);
 
             ComboBox("调试渲染", ref scene.settings.DebugRenderType);
 
@@ -279,7 +279,7 @@ namespace Coocoo3D.UI
             }
             if (ImGui.Button("保存场景"))
             {
-                requireSave = true;
+                requestSave = true;
             }
             if (ImGui.Button("重新加载纹理"))
             {
@@ -461,9 +461,9 @@ namespace Coocoo3D.UI
             }
         }
 
-        static void ShowTextures(Coocoo3DMain appBody, string id, Dictionary<string, string> showTextures, Dictionary<string, string> textures)
+        static void ShowTextures(Coocoo3DMain main, string id, Dictionary<string, string> showTextures, Dictionary<string, string> textures)
         {
-            var cache = appBody.mainCaches;
+            var cache = main.mainCaches;
             if (showTextures != null)
                 foreach (var texSlot in showTextures)
                 {
@@ -473,9 +473,12 @@ namespace Coocoo3D.UI
                     ImGui.Text(texSlot.Key);
                     if (ImGui.ImageButton(imageId, imageSize))
                     {
-                        requireOpenSelectResource = true;
-                        stringValues["fileOpen"] = id;
-                        stringValues["material"] = texSlot.Key;
+                        StartSelectResource(id, texSlot.Key);
+                    }
+                    if (CheckResourceSelect(id, texSlot.Key, out string result))
+                    {
+                        cache.Texture(result);
+                        textures[texSlot.Key] = result;
                     }
                     if (textures.TryGetValue(texSlot.Key, out var texture0) && cache.TryGetTexture(texture0, out var texture))
                     {
@@ -492,16 +495,9 @@ namespace Coocoo3D.UI
                         cache.SetTexture(key, null);
                     }
                 }
-            if (filePropSelect != null && stringValues.GetOrCreate("fileOpen", (string a) => "") == id)
-            {
-                stringValues["fileOpen"] = "";
-                cache.Texture(filePropSelect);
-                textures[stringValues["material"]] = filePropSelect;
-                filePropSelect = null;
-            }
         }
 
-        static void DockSpace(Coocoo3DMain appBody)
+        static void DockSpace(Coocoo3DMain main)
         {
             ImGuiWindowFlags window_flags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
                 | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoBackground;
@@ -515,9 +511,9 @@ namespace Coocoo3D.UI
 
             if (ImGui.Begin("Dockspace", window_flags))
             {
-                string texName = appBody.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("Output");
+                string texName = main.RPContext.visualChannels.FirstOrDefault().Value.GetTexName("Output");
                 ImGuiDockNodeFlags dockNodeFlag = ImGuiDockNodeFlags.PassthruCentralNode;
-                IntPtr imageId = appBody.mainCaches.GetPtr(texName);
+                IntPtr imageId = main.mainCaches.GetPtr(texName);
                 ImGui.GetWindowDrawList().AddImage(imageId, viewPort.WorkPos, viewPort.WorkPos + viewPort.WorkSize);
                 ImGui.DockSpace(ImGui.GetID("MyDockSpace"), Vector2.Zero, dockNodeFlag);
             }
@@ -525,7 +521,7 @@ namespace Coocoo3D.UI
             ImGui.PopStyleVar(3);
         }
 
-        static _openRequest Resources(Coocoo3DMain appBody)
+        static _openRequest Resources()
         {
             if (ImGui.Button("打开文件夹"))
             {
@@ -620,10 +616,10 @@ vmd格式动作");
             //    UISharedCode.NewVolume(appBody);
             //}
             //ImGui.SameLine();
+            bool removeObject = false;
             if (ImGui.Button("移除物体"))
             {
-                foreach (var gameObject in appBody.SelectedGameObjects)
-                    appBody.CurrentScene.RemoveGameObject(gameObject);
+                removeObject = true;
             }
             //while (gameObjectSelected.Count < appBody.CurrentScene.gameObjects.Count)
             //{
@@ -634,7 +630,7 @@ vmd格式动作");
             {
                 Present.GameObject gameObject = gameObjects[i];
                 bool selected = gameObjectSelectIndex == i;
-                ImGui.Selectable(gameObject.Name + "###" + gameObject.GetHashCode(), ref selected);
+                bool selected1 = ImGui.Selectable(gameObject.Name + "###" + gameObject.GetHashCode(), ref selected);
                 if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
                 {
                     int n_next = i + (ImGui.GetMouseDragDelta(0).Y < 0.0f ? -1 : 1);
@@ -645,15 +641,19 @@ vmd格式动作");
                         ImGui.ResetMouseDragDelta();
                     }
                 }
-                if (selected && (appBody.SelectedGameObjects.Count < 1 || appBody.SelectedGameObjects[0] != gameObject))
+                if (selected1 || appBody.SelectedGameObjects.Count < 1)
                 {
                     gameObjectSelectIndex = i;
-                    //lock (appBody.SelectedGameObjects)
-                    //{
                     appBody.SelectedGameObjects.Clear();
                     appBody.SelectedGameObjects.Add(gameObject);
-                    //}
                 }
+            }
+            if (removeObject)
+            {
+                foreach (var gameObject in appBody.SelectedGameObjects)
+                    appBody.CurrentScene.RemoveGameObject(gameObject);
+                appBody.SelectedGameObjects.Clear();
+                gameObjectSelectIndex = -1;
             }
         }
 
@@ -755,7 +755,7 @@ vmd格式动作");
             var io = ImGui.GetIO();
             if (ImGui.TreeNode("材质"))
             {
-                ShowMaterials(main,renderer.Materials);
+                ShowMaterials(main, renderer.Materials);
                 ImGui.TreePop();
             }
         }
@@ -776,15 +776,16 @@ vmd格式动作");
             }
             ImGui.EndChild();
             ImGui.SameLine();
-            if (ImGui.BeginChild("materialProperty", new Vector2(180, 400)))
+            if (ImGui.BeginChild("materialProperty", new Vector2(200, 400)))
             {
                 if (materialSelectIndex >= 0 && materialSelectIndex < materials.Count)
                 {
                     var material = materials[materialSelectIndex];
                     ImGui.Text(material.Name);
-
-                    //ImGui.Checkbox("蒙皮", ref material.Skinning);
-
+                    if (ImGui.Button("修改此物体所有材质"))
+                    {
+                        StartEditParam();
+                    }
                     ImGui.Checkbox("透明材质", ref material.Transparent);
                     var currentPassSetting = main.RPContext.dynamicContextRead.currentPassSetting;
                     ShowParams(currentPassSetting.ShowParameters, material.Parameters);
@@ -867,22 +868,92 @@ vmd格式动作");
             }
         }
 
-        static void Popups(Coocoo3DMain appBody)
+        static void StartSelectResource(string id, string slot)
         {
-            if (requireOpenSelectResource.SetFalse())
+            requestOpenResource = true;
+            fileOpenId = id;
+            fileOpenSlot = slot;
+        }
+
+        static bool CheckResourceSelect(string id, string slot, out string selectedResource)
+        {
+            if (id == fileOpenId && slot == fileOpenSlot && fileOpenResult != null)
+            {
+                selectedResource = fileOpenResult;
+                fileOpenResult = null;
+                fileOpenId = null;
+                fileOpenSlot = null;
+                return true;
+            }
+            else
+                selectedResource = null;
+            return false;
+        }
+
+        static void StartEditParam()
+        {
+            paramEdit = new Dictionary<string, object>();
+            requestParamEdit = true;
+        }
+
+        static void Popups(Coocoo3DMain main, GameObject gameObject)
+        {
+            if (requestOpenResource.SetFalse())
             {
                 ImGui.OpenPopup("选择资源");
-                openResourcePopup = true;
+                popupOpenResource = true;
             }
             ImGui.SetNextWindowSize(new Vector2(400, 400), ImGuiCond.Appearing);
-            if (ImGui.BeginPopupModal("选择资源", ref openResourcePopup))
+            if (ImGui.BeginPopupModal("选择资源", ref popupOpenResource))
             {
-                if (ImGui.Button("关闭")) openResourcePopup = false;
-                var _open = Resources(appBody);
+                if (ImGui.Button("关闭"))
+                {
+                    popupOpenResource = false;
+                }
+                var _open = Resources();
                 if (_open != null)
                 {
-                    filePropSelect = _open.file.FullName;
-                    openResourcePopup = false;
+                    fileOpenResult = _open.file.FullName;
+                    popupOpenResource = false;
+                }
+                ImGui.EndPopup();
+            }
+            if (requestParamEdit.SetFalse())
+            {
+                ImGui.OpenPopup("编辑参数");
+                popupParamEdit = true;
+            }
+            var currentPassSetting = main.RPContext.dynamicContextRead.currentPassSetting;
+            if (ImGui.BeginPopupModal("编辑参数", ref popupParamEdit))
+            {
+                ShowParams(currentPassSetting.ShowParameters, paramEdit);
+
+                if (ImGui.Button("确定"))
+                {
+                    var meshRenderer = gameObject.GetComponent<MeshRendererComponent>();
+                    var mmdRenderer = gameObject.GetComponent<MMDRendererComponent>();
+                    IList<RenderMaterial> materials = null;
+                    if (meshRenderer != null)
+                    {
+                        materials = meshRenderer.Materials;
+                    }
+                    if (mmdRenderer != null)
+                    {
+                        materials = mmdRenderer.Materials;
+                    }
+                    foreach (var material in materials)
+                        foreach (var param in paramEdit)
+                        {
+                            material.Parameters[param.Key] = param.Value;
+                        }
+
+                    paramEdit = null;
+
+                    popupParamEdit = false;
+                }
+                if (ImGui.Button("取消"))
+                {
+                    popupParamEdit = false;
                 }
                 ImGui.EndPopup();
             }
@@ -909,7 +980,7 @@ vmd格式动作");
         public static void NewLighting(Coocoo3DMain main)
         {
             LightingComponent lightingComponent = new LightingComponent();
-            lightingComponent.Color = new Vector3(10, 10, 10);
+            lightingComponent.Color = new Vector3(3, 3, 3);
             lightingComponent.Range = 50;
             GameObject gameObject = new GameObject();
             gameObject.AddComponent(lightingComponent);
@@ -941,6 +1012,8 @@ vmd格式动作");
             main.RequireRender();
         }
 
+        static string fileOpenId = null;
+
         public static bool initialized = false;
 
         public static bool demoWindowOpen = false;
@@ -951,10 +1024,10 @@ vmd格式动作");
         public static bool positionChange;
 
         public static int materialSelectIndex = 0;
-        public static int gameObjectSelectIndex = 0;
+        public static int gameObjectSelectIndex = -1;
         public static bool requireOpenFolder;
-        public static bool requireRecord;
-        public static bool requireSave;
+        public static bool requestRecord;
+        public static bool requestSave;
 
         public static Stack<DirectoryInfo> viewStack = new Stack<DirectoryInfo>();
         public static List<FileSystemInfo> storageItems = new List<FileSystemInfo>();
@@ -1033,16 +1106,20 @@ vmd格式动作");
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         }
 
-        static bool requireOpenSelectResource = false;
-        static bool openResourcePopup;
-        static string filePropSelect;
+        static bool requestOpenResource = false;
+        static bool popupOpenResource = false;
+        static string fileOpenResult;
+        static string fileOpenSlot;
+
+        static bool requestParamEdit = false;
+        static bool popupParamEdit = false;
+        static Dictionary<string, object> paramEdit;
+
 
         static string[] lightTypeString = new[] { "方向光", "点光" };
         static int renderPipelineIndex = 0;
         static string[] renderPipelines = new string[0] { };
         static string[] renderPipelineKeys = new string[0] { };
-
-        static Dictionary<string, string> stringValues = new Dictionary<string, string>();
     }
     class _openRequest
     {

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Coocoo3D.RenderPipeline.Wrap;
 using ImGuiNET;
 using Vortice.DXGI;
-using Vortice.Direct3D12;
 using System.Buffers;
 using Coocoo3D.Utility;
 
@@ -34,7 +33,7 @@ namespace Coocoo3D.RenderPipeline
 
             var rs = context.mainCaches.GetRootSignature("CCs");
 
-            graphicsContext.SetRenderTargetScreen(context.dynamicContextRead.settings.BackgroundColor, true);
+            graphicsContext.SetRenderTargetSwapChain(context.swapChain, context.dynamicContextRead.settings.BackgroundColor, true);
 
             graphicsContext.SetRootSignature(rs);
 

@@ -659,7 +659,7 @@ namespace Coocoo3DGraphics
             SubresourceData[] subresources = new SubresourceData[textureDesc.MipLevels];
 
             IntPtr pdata = Marshal.UnsafeAddrOfPinnedArrayElement(uploader.m_data, 0);
-            int bitsPerPixel = (int)GraphicsDevice.BitsPerPixel(textureDesc.Format);
+            int bitsPerPixel = (int)BitsPerPixel(textureDesc.Format);
             int width = (int)textureDesc.Width;
             int height = textureDesc.Height;
             for (int i = 0; i < textureDesc.MipLevels; i++)
@@ -686,12 +686,12 @@ namespace Coocoo3DGraphics
 
         public void UploadTexture(Texture2D texture, byte[] data)
         {
-            int bitsPerPixel = (int)GraphicsDevice.BitsPerPixel(texture.format);
+            int bitsPerPixel = (int)BitsPerPixel(texture.format);
             int width = (int)texture.width;
             int height = texture.height;
 
             ID3D12Resource uploadBuffer = null;
-            CreateBuffer(align_to(64, width) *align_to(64, height) * bitsPerPixel / 8, ref uploadBuffer, ResourceStates.GenericRead, HeapType.Upload);
+            CreateBuffer(align_to(64, width) * align_to(64, height) * bitsPerPixel / 8, ref uploadBuffer, ResourceStates.GenericRead, HeapType.Upload);
             uploadBuffer.Name = "uploadbuffer tex";
             graphicsDevice.ResourceDelayRecycle(uploadBuffer);
 
@@ -921,12 +921,12 @@ namespace Coocoo3DGraphics
             currentUAVs.Clear();
         }
 
-        public void ClearScreen(Vector4 color)
+        public void ClearSwapChain(SwapChain swapChain, Vector4 color)
         {
-            var handle1 = graphicsDevice.rtvHeap.GetTempCpuHandle();
-            graphicsDevice.device.CreateRenderTargetView(graphicsDevice.GetRenderTarget(m_commandList), null, handle1);
+            var handle1 = graphicsDevice.GetRenderTargetView(swapChain.GetResource(m_commandList));
             m_commandList.ClearRenderTargetView(handle1, new Vortice.Mathematics.Color(color));
         }
+
         public void SetRTV(Texture2D RTV, Vector4 color, bool clear) => SetRTVDSV(RTV, null, color, clear, false);
 
         public void SetRTV(IList<Texture2D> RTVs, Vector4 color, bool clear) => SetRTVDSV(RTVs, null, color, clear, false);
@@ -1029,14 +1029,12 @@ namespace Coocoo3DGraphics
             rootSignature.GetRootSignature(graphicsDevice);
         }
 
-        public void SetRenderTargetScreen(Vector4 color, bool clearScreen)
+        public void SetRenderTargetSwapChain(SwapChain swapChain, Vector4 color, bool clear)
         {
-            var size = graphicsDevice.m_outputSize;
-
-            m_commandList.RSSetScissorRect((int)size.X, (int)size.Y);
-            m_commandList.RSSetViewport(0, 0, (int)size.X, (int)size.Y);
-            var renderTargetView = graphicsDevice.GetScreenRenderTargetView(m_commandList);
-            if (clearScreen)
+            m_commandList.RSSetScissorRect(swapChain.width, swapChain.height);
+            m_commandList.RSSetViewport(0, 0, swapChain.width, swapChain.height);
+            var renderTargetView = graphicsDevice.GetRenderTargetView(swapChain.GetResource(m_commandList));
+            if (clear)
                 m_commandList.ClearRenderTargetView(renderTargetView, new Vortice.Mathematics.Color4(color));
             m_commandList.OMSetRenderTargets(renderTargetView);
         }
@@ -1184,8 +1182,11 @@ namespace Coocoo3DGraphics
 
         public void EndCommand()
         {
-            if (present)
-                graphicsDevice.EndRenderTarget(m_commandList);
+            foreach (var pair in presents)
+            {
+                pair.Key.EndRenderTarget(m_commandList);
+            }
+
             m_commandList.Close();
         }
 
@@ -1194,9 +1195,13 @@ namespace Coocoo3DGraphics
             graphicsDevice.commandQueue.ExecuteCommandList(m_commandList);
             graphicsDevice.ReturnCommandList(m_commandList);
             m_commandList = null;
-            if (present)
-                graphicsDevice.Present(presentVsync);
-            present = false;
+
+            foreach (var pair in presents)
+            {
+                pair.Key.Present(pair.Value);
+            }
+            presents.Clear();
+
             foreach (var resource in referenceThisCommand)
             {
                 graphicsDevice.ResourceDelayRecycle(resource);
@@ -1204,10 +1209,9 @@ namespace Coocoo3DGraphics
             referenceThisCommand.Clear();
         }
 
-        public void Present(bool vsync)
+        public void Present(SwapChain swapChain, bool vsync)
         {
-            present = true;
-            presentVsync = vsync;
+            presents[swapChain] = vsync;
         }
 
         public static void BeginAlloctor(GraphicsDevice device)
@@ -1378,7 +1382,6 @@ namespace Coocoo3DGraphics
 
         public UnnamedInputLayout currentInputLayout;
 
-        public bool present;
-        public bool presentVsync;
+        Dictionary<SwapChain, bool> presents = new Dictionary<SwapChain, bool>();
     }
 }

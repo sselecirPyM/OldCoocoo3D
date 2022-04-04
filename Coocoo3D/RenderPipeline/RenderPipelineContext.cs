@@ -76,6 +76,7 @@ namespace Coocoo3D.RenderPipeline
 
         public GraphicsDevice graphicsDevice;
         public GraphicsContext graphicsContext = new GraphicsContext();
+        public SwapChain swapChain = new SwapChain();
 
         public RenderPipelineDynamicContext dynamicContextRead = new();
         public RenderPipelineDynamicContext dynamicContextWrite = new();
@@ -83,7 +84,7 @@ namespace Coocoo3D.RenderPipeline
         public List<CBuffer> CBs_Bone = new();
 
         public Format outputFormat = Format.R8G8B8A8_UNorm;
-        public Format swapChainFormat = Format.R8G8B8A8_UNorm;
+        public Format swapChainFormat { get => swapChain.format; }
 
         public string currentPassSetting1 = "Samples\\samplePasses.coocoox";
 
@@ -109,7 +110,7 @@ namespace Coocoo3D.RenderPipeline
 
         public void Load()
         {
-            graphicsDevice = new GraphicsDevice(swapChainFormat);
+            graphicsDevice = new GraphicsDevice();
             graphicsContext.Reload(graphicsDevice);
             currentChannel = AddVisualChannel("main");
 
@@ -294,8 +295,8 @@ namespace Coocoo3D.RenderPipeline
 
         public void PreConfig()
         {
-            screenSize.X = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().X), 1);
-            screenSize.Y = Math.Max((int)Math.Round(graphicsDevice.GetOutputSize().Y), 1);
+            screenSize.X = swapChain.width;
+            screenSize.Y = swapChain.height;
 
             while (delayAddVisualChannel.TryDequeue(out var vcName))
             {

@@ -26,13 +26,25 @@ public class DRDispatcher : IPassDispatcher
         param.texError = mainCaches.GetTextureLoaded(Path.GetFullPath("error.png", param.relativePath), graphicsContext);
 
         bool rayTracing = false;
+        bool rayTracingReflect = true;
+        bool rayTracingGI = true;
         foreach (var renderSequence in passSetting.RenderSequence)
-            if (renderSequence.Type == "RayTracing" && param.IsRayTracingSupport)
+            if (renderSequence.Type == "RayTracing")
                 rayTracing = true;
 
         if ((bool?)param.GetSettingsValue("EnableRayTracing") != true)
-            rayTracing = false;
+            rayTracingReflect = false;
+
+        if ((bool?)param.GetSettingsValue("UpdateGI") != true)
+            rayTracingGI = false;
+
+        rayTracing = rayTracing && (rayTracingReflect || rayTracingGI) && param.IsRayTracingSupport;
+
+        rayTracingReflect &= rayTracing;
+        rayTracingGI &= rayTracing;
+
         param.SetCustomValue("RayTracing", rayTracing);
+        param.SetCustomValue("RayTracingReflect", rayTracingReflect);
         param.CPUSkinning = rayTracing;
         var random = param.random;
         if ((bool?)param.GetSettingsValue("EnableTAA") == true)

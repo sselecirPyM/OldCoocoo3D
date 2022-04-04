@@ -97,9 +97,11 @@ public static class UnionShaderRayTracing
                     graphicsContext.DispatchRays(16, 16, 16, call);
                     param.SwapBuffer("GIBuffer", "GIBufferWrite");
                 }
-
-                call.rayGenShader = "rayGen";
-                graphicsContext.DispatchRays(width, height, 1, call);
+                if ((bool)param.GetSettingsValue("EnableRayTracing"))
+                {
+                    call.rayGenShader = "rayGen";
+                    graphicsContext.DispatchRays(width, height, 1, call);
+                }
 
                 foreach (var inst in tpas.instances)
                     inst.accelerationStruct.Dispose();

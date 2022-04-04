@@ -177,7 +177,9 @@
           "Index": 2,
           "Datas": [
             "Camera",
+            "CameraView",
             "CameraPosition",
+            "CameraInfo",
             "DirectionalLightMatrix0",
             "DirectionalLightMatrix1",
             "DirectionalLight",
