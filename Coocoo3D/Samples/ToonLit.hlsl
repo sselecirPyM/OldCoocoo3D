@@ -57,9 +57,9 @@ cbuffer cb1 : register(b1)
 	//Outline
 	float _OutlineWidth;
 	float3 _OutlineColor;
-	float _OutlineZOffset;
-	float _OutlineZOffsetMaskRemapStart;
-	float _OutlineZOffsetMaskRemapEnd;
+	//float _OutlineZOffset;
+	//float _OutlineZOffsetMaskRemapStart;
+	//float _OutlineZOffsetMaskRemapEnd;
 }
 
 struct ToonSurfaceData

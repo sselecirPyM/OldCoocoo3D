@@ -21,7 +21,7 @@ namespace Coocoo3D
             SDL_GetWindowWMInfo(window, ref info);
             IntPtr hwnd = info.info.win.window;
             coocoo3DMain.SetWindow(hwnd, Width, Height);
-
+            SDL_SetWindowTitle(window, "Coocoo3D GPU: " + coocoo3DMain.deviceDescription);
             Dictionary<SDL_Keycode, int> sdlKeycode2ImguiKey = SDLKey();
             Dictionary<ImGuiMouseCursor, IntPtr> cursors = CreateSDLCursor();
 

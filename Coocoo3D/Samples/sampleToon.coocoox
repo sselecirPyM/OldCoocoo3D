@@ -185,10 +185,7 @@
             "_ReceiveShadowMappingAmount",
             "_ShadowMapColor",
             "_OutlineWidth",
-            "_OutlineColor",
-            "_OutlineZOffset",
-            "_OutlineZOffsetMaskRemapStart",
-            "_OutlineZOffsetMaskRemapEnd"
+            "_OutlineColor"
           ]
         },
         {
@@ -278,10 +275,7 @@
             "_ReceiveShadowMappingAmount",
             "_ShadowMapColor",
             "_OutlineWidth",
-            "_OutlineColor",
-            "_OutlineZOffset",
-            "_OutlineZOffsetMaskRemapStart",
-            "_OutlineZOffsetMaskRemapEnd"
+            "_OutlineColor"
           ]
         },
         {
@@ -449,9 +443,9 @@
   "Dispatcher": "Dispatcher.cs",
   "ShowTextures": {
     "_Albedo": "",
-    "_Emissive": "",
     "_Metallic": "",
     "_Roughness": "",
+    "_Emissive": "",
     "_Normal": ""
   },
   "ShowSettingTextures": {
@@ -459,6 +453,10 @@
   "Texture2Ds": {
   },
   "ShowParameters": {
+    "Transparent": {
+      "Name": "透明材质",
+      "Type": "bool"
+    },
     "Metallic": {
       "Name": "金属度",
       "Type": "sliderFloat",
@@ -496,6 +494,7 @@
       "Type": "float"
     },
     "_IndirectLightMinColor": {
+      "Name": "间接光最小颜色",
       "Type": "color3",
       "Default": "[0.1,0.1,0.1]"
     },
@@ -515,31 +514,19 @@
       "Step": "0.01"
     },
     "_ShadowMapColor": {
+      "Name": "阴影颜色",
       "Type": "color3",
       "Default": "[1,0.825,0.78]"
     },
     "_OutlineWidth": {
+      "Name": "描边宽度",
       "Type": "float",
       "Default": "10"
     },
     "_OutlineColor": {
+      "Name": "描边颜色",
       "Type": "color3",
       "Default": "[0.5,0.5,0.5]"
-    },
-    "_OutlineZOffset": {
-      "Type": "float",
-      "Default": "0.0001",
-      "Step": "0.0001"
-    },
-    "_OutlineZOffsetMaskRemapStart": {
-      "Type": "float",
-      "Default": "0",
-      "Step": "0.01"
-    },
-    "_OutlineZOffsetMaskRemapEnd": {
-      "Type": "float",
-      "Default": "1",
-      "Step": "0.01"
     },
     "IOR": {
       "Name": "IOR",
@@ -584,8 +571,7 @@
     },
     "EnableBloom": {
       "Name": "启用泛光",
-      "Type": "bool",
-      "Default": "true"
+      "Type": "bool"
     },
     "BloomThreshold": {
       "Name": "泛光阈值",
@@ -633,7 +619,7 @@
       "Name": "启用TAA抗锯齿",
       "Type": "bool",
       "Default": "false",
-      "Tooltip": "与bloom共用会导致性能降低"
+      "Tooltip": ""
     },
     "TAAFrameFactor": {
       "Name": "TAA当前帧因子",

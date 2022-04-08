@@ -33,7 +33,7 @@ namespace Coocoo3D.UI
             var context = main.RPContext;
             io.DisplaySize = new Vector2(context.screenSize.X, context.screenSize.Y);
             io.DeltaTime = (float)context.dynamicContextRead.RealDeltaTime;
-            Present.GameObject selectedObject = null;
+            GameObject selectedObject = null;
 
             positionChange = false;
             rotationChange = false;
@@ -220,18 +220,18 @@ namespace Coocoo3D.UI
             ImGui.Text("Fps:" + appBody.framePerSecond);
         }
 
-        static void SettingsPanel(Coocoo3DMain appBody)
+        static void SettingsPanel(Coocoo3DMain main)
         {
-            ImGui.Checkbox("垂直同步", ref appBody.performanceSettings.VSync);
-            ImGui.Checkbox("节省CPU", ref appBody.performanceSettings.SaveCpuPower);
-            ImGui.Checkbox("多线程渲染", ref appBody.performanceSettings.MultiThreadRendering);
-            float a = (float)(1.0 / Math.Clamp(appBody.GameDriverContext.FrameInterval, 1e-4, 1));
+            ImGui.Checkbox("垂直同步", ref main.performanceSettings.VSync);
+            ImGui.Checkbox("节省CPU", ref main.performanceSettings.SaveCpuPower);
+            ImGui.Checkbox("多线程渲染", ref main.performanceSettings.MultiThreadRendering);
+            float a = (float)(1.0 / Math.Clamp(main.GameDriverContext.FrameInterval, 1e-4, 1));
             if (ImGui.DragFloat("帧率限制", ref a, 10, 1, 5000))
             {
                 if (a == a)
-                    appBody.GameDriverContext.FrameInterval = 1 / a;
+                    main.GameDriverContext.FrameInterval = 1 / a;
             }
-            var scene = appBody.CurrentScene;
+            var scene = main.CurrentScene;
             ref Settings settings = ref scene.settings;
             ImGui.Checkbox("线框", ref settings.Wireframe);
             ImGui.DragInt("阴影分辨率", ref settings.ShadowMapResolution, 128, 512, 8192);
@@ -239,17 +239,17 @@ namespace Coocoo3D.UI
 
             ComboBox("调试渲染", ref scene.settings.DebugRenderType);
 
-            var currentPassSetting = appBody.RPContext.dynamicContextRead.currentPassSetting;
+            var currentPassSetting = main.RPContext.dynamicContextRead.currentPassSetting;
             ShowParams(currentPassSetting.ShowSettingParameters, settings.Parameters, settings.ParametersModifyIndex);
-            ShowTextures(appBody, "settings", currentPassSetting.ShowSettingTextures, settings.textures);
-
-            if (appBody.mainCaches.PassSettings.Count != renderPipelines.Length)
+            ShowTextures(main, "settings", currentPassSetting.ShowSettingTextures, settings.textures);
+            var passSettings = main.mainCaches.PassSettings;
+            if (passSettings.Count != renderPipelines.Length)
             {
-                renderPipelines = new string[appBody.mainCaches.PassSettings.Count];
-                renderPipelineKeys = new string[appBody.mainCaches.PassSettings.Count];
+                renderPipelines = new string[passSettings.Count];
+                renderPipelineKeys = new string[passSettings.Count];
             }
             int _i = 0;
-            foreach (var pair in appBody.mainCaches.PassSettings)
+            foreach (var pair in passSettings)
             {
                 renderPipelines[_i] = pair.Value.Name;
                 renderPipelineKeys[_i] = pair.Key;
@@ -257,21 +257,21 @@ namespace Coocoo3D.UI
             }
             for (int i = 0; i < renderPipelineKeys.Length; i++)
             {
-                if (renderPipelineKeys[i] == appBody.RPContext.currentPassSetting1)
+                if (renderPipelineKeys[i] == main.RPContext.currentPassSetting1)
                     renderPipelineIndex = i;
             }
             if (ImGui.Combo("渲染管线", ref renderPipelineIndex, renderPipelines, renderPipelines.Length))
             {
-                appBody.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
+                main.RPContext.currentPassSetting1 = renderPipelineKeys[renderPipelineIndex];
             }
             if (ImGui.Button("添加视口"))
             {
                 int c = 1;
                 while (true)
                 {
-                    if (!appBody.RPContext.visualChannels.ContainsKey(c.ToString()))
+                    if (!main.RPContext.visualChannels.ContainsKey(c.ToString()))
                     {
-                        appBody.RPContext.DelayAddVisualChannel(c.ToString());
+                        main.RPContext.DelayAddVisualChannel(c.ToString());
                         break;
                     }
                     c++;
@@ -283,17 +283,25 @@ namespace Coocoo3D.UI
             }
             if (ImGui.Button("重新加载纹理"))
             {
-                appBody.mainCaches.ReloadTextures = true;
+                main.mainCaches.ReloadTextures = true;
             }
             if (ImGui.Button("重新加载Shader"))
             {
-                appBody.mainCaches.ReloadShaders = true;
+                main.mainCaches.ReloadShaders = true;
             }
+            ImGui.TextUnformatted("绘制三角形数：" + main.drawTriangleCount); ;
         }
 
-        static void ShowParams(Dictionary<string, RenderPipeline.PassParameter> showParams, Dictionary<string, object> values, Dictionary<string, int> modifyIndexs = null)
+        static void ShowParams(
+            Dictionary<string, RenderPipeline.PassParameter> showParams,
+            Dictionary<string, object> values,
+            Dictionary<string, int> modifyIndexs = null)
         {
             if (showParams == null) return;
+            ImGui.Separator();
+
+            string filter = ImFilter("查找参数", "搜索参数名称");
+
             bool tempB;
             float tempF;
             Vector2 tempF2;
@@ -303,7 +311,10 @@ namespace Coocoo3D.UI
             foreach (var param in showParams)
             {
                 var val = param.Value;
-                if (val.IsHidden) continue;
+                if (!Contains(val.Name, filter) && !Contains(param.Key, filter))
+                    continue;
+                if (val.IsHidden)
+                    continue;
                 switch (val.Type)
                 {
                     case "bool":
@@ -464,37 +475,44 @@ namespace Coocoo3D.UI
         static void ShowTextures(Coocoo3DMain main, string id, Dictionary<string, string> showTextures, Dictionary<string, string> textures)
         {
             var cache = main.mainCaches;
-            if (showTextures != null)
-                foreach (var texSlot in showTextures)
+            if (showTextures == null) return;
+            if (showTextures.Count == 0) return;
+            string filter = ImFilter("查找纹理", "查找纹理");
+            foreach (var texSlot in showTextures)
+            {
+                Coocoo3DGraphics.Texture2D texture = null;
+                bool hasTexture = textures.TryGetValue(texSlot.Key, out var texture0) && cache.TryGetTexture(texture0, out texture);
+
+                if (!Contains(texSlot.Key, filter) && (!hasTexture || !Contains(texture0, filter))) continue;
+
+                string key = "imgui/" + texSlot.Key;
+                Vector2 imageSize = new Vector2(120, 120);
+                IntPtr imageId = cache.GetPtr(key);
+                ImGui.Text(texSlot.Key);
+                if (ImGui.ImageButton(imageId, imageSize))
                 {
-                    string key = "imgui/" + texSlot.Key;
-                    Vector2 imageSize = new Vector2(120, 120);
-                    IntPtr imageId = cache.GetPtr(key);
-                    ImGui.Text(texSlot.Key);
-                    if (ImGui.ImageButton(imageId, imageSize))
+                    StartSelectResource(id, texSlot.Key);
+                }
+                if (CheckResourceSelect(id, texSlot.Key, out string result))
+                {
+                    cache.Texture(result);
+                    textures[texSlot.Key] = result;
+                }
+                if (hasTexture)
+                {
+                    cache.SetTexture(key, texture);
+                    if (ImGui.IsItemHovered())
                     {
-                        StartSelectResource(id, texSlot.Key);
-                    }
-                    if (CheckResourceSelect(id, texSlot.Key, out string result))
-                    {
-                        cache.Texture(result);
-                        textures[texSlot.Key] = result;
-                    }
-                    if (textures.TryGetValue(texSlot.Key, out var texture0) && cache.TryGetTexture(texture0, out var texture))
-                    {
-                        cache.SetTexture(key, texture);
-                        if (ImGui.IsItemHovered())
-                        {
-                            ImGui.BeginTooltip();
-                            ImGui.Text(texture0);
-                            ImGui.EndTooltip();
-                        }
-                    }
-                    else
-                    {
-                        cache.SetTexture(key, null);
+                        ImGui.BeginTooltip();
+                        ImGui.Text(texture0);
+                        ImGui.EndTooltip();
                     }
                 }
+                else
+                {
+                    cache.SetTexture(key, null);
+                }
+            }
         }
 
         static void DockSpace(Coocoo3DMain main)
@@ -521,12 +539,14 @@ namespace Coocoo3D.UI
             ImGui.PopStyleVar(3);
         }
 
-        static _openRequest Resources()
+        static bool c0;
+        static FileInfo Resources()
         {
             if (ImGui.Button("打开文件夹"))
             {
                 requireOpenFolder = true;
             }
+            ImGui.SameLine();
             if (ImGui.Button("刷新"))
             {
                 viewRequest = currentFolder;
@@ -537,34 +557,61 @@ namespace Coocoo3D.UI
                 if (viewStack.Count > 0)
                     viewRequest = viewStack.Pop();
             }
-            ImGui.BeginChild("资源");
-            _openRequest open1 = null;
+            string filter = ImFilter("查找文件", "查找文件");
+
+            ImGuiTableFlags tableFlags = ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersOuter | ImGuiTableFlags.BordersV |
+                ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable | ImGuiTableFlags.Hideable;
+            if (c0)//avoid bug
+                tableFlags |= ImGuiTableFlags.ScrollY;
+            c0 = true;
+
+            var windowSize = ImGui.GetWindowSize();
+            var itemSize = windowSize - ImGui.GetCursorPos();
+            itemSize.X = 0;
+            itemSize.Y -= 8;
+
+            ImGui.BeginTable("resources", 2, tableFlags, Vector2.Max(itemSize, new Vector2(0, 28)), 0);
+            ImGui.TableSetupScrollFreeze(0, 1);
+            ImGui.TableSetupColumn("文件名");
+            ImGui.TableSetupColumn("大小");
+            ImGui.TableHeadersRow();
+            FileInfo open1 = null;
+
             lock (storageItems)
             {
                 bool _requireClear = false;
                 foreach (var item in storageItems)
                 {
-                    if (ImGui.Selectable(item.Name, false, ImGuiSelectableFlags.AllowDoubleClick) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                    if (!Contains(item.Name, filter))
+                        continue;
+                    ImGui.TableNextRow();
+                    ImGui.TableSetColumnIndex(0);
+                    DirectoryInfo folder = item as DirectoryInfo;
+                    FileInfo file = item as FileInfo;
+                    if (ImGui.Selectable(item.Name, false, ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowDoubleClick) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
                     {
-                        if (item is DirectoryInfo folder)
+                        if (folder != null)
                         {
                             viewStack.Push(currentFolder);
                             viewRequest = folder;
                             _requireClear = true;
                         }
-                        else if (item is FileInfo file)
+                        else if (file != null)
                         {
-                            var requireOpen1 = new _openRequest();
-                            requireOpen1.file = file;
-                            requireOpen1.folder = currentFolder;
-                            open1 = requireOpen1;
+                            open1 = file;
                         }
+                    }
+                    ImGui.TableSetColumnIndex(1);
+                    if (file != null)
+                    {
+                        ImGui.TextUnformatted(String.Format("{0} KB", (file.Length + 1023) / 1024));
                     }
                 }
                 if (_requireClear)
                     storageItems.Clear();
             }
-            ImGui.EndChild();
+
+            ImGui.EndTable();
             return open1;
         }
 
@@ -580,7 +627,7 @@ namespace Coocoo3D.UI
             }
             if (ImGui.TreeNode("支持格式"))
             {
-                ImGui.Text(@"当前版本支持pmx格式模型，
+                ImGui.Text(@"当前版本支持pmx、glTF格式模型，
 vmd格式动作");
                 ImGui.TreePop();
             }
@@ -625,10 +672,12 @@ vmd格式动作");
             //{
             //    gameObjectSelected.Add(false);
             //}
+            string filter = ImFilter("查找物体", "查找名称");
             var gameObjects = appBody.CurrentScene.gameObjects;
             for (int i = 0; i < gameObjects.Count; i++)
             {
-                Present.GameObject gameObject = gameObjects[i];
+                GameObject gameObject = gameObjects[i];
+                if (!Contains(gameObject.Name, filter)) continue;
                 bool selected = gameObjectSelectIndex == i;
                 bool selected1 = ImGui.Selectable(gameObject.Name + "###" + gameObject.GetHashCode(), ref selected);
                 if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
@@ -657,7 +706,7 @@ vmd格式动作");
             }
         }
 
-        static void GameObjectPanel(Coocoo3DMain main, Present.GameObject gameObject)
+        static void GameObjectPanel(Coocoo3DMain main, GameObject gameObject)
         {
             var lighting = gameObject.GetComponent<LightingComponent>();
             var volumeComponent = gameObject.GetComponent<VolumeComponent>();
@@ -708,7 +757,7 @@ vmd格式动作");
                 ImGui.DragFloat("范围", ref lighting.Range);
                 ImGui.Combo("类型", ref current, lightTypeString, 2);
                 ImGui.TreePop();
-                lighting.LightingType = (Present.LightingType)current;
+                lighting.LightingType = (LightingType)current;
             }
             if (volumeComponent != null && ImGui.TreeNode("体积"))
             {
@@ -724,7 +773,6 @@ vmd格式动作");
 
         static void RendererComponent(Coocoo3DMain main, MMDRendererComponent renderer)
         {
-            var io = ImGui.GetIO();
             if (ImGui.TreeNode("材质"))
             {
                 ShowMaterials(main, renderer.Materials);
@@ -738,21 +786,24 @@ vmd格式动作");
                 ImGui.Checkbox("锁定动作", ref renderer.LockMotion);
                 var morphStates = renderer.morphStateComponent;
                 if (renderer.LockMotion)
+                {
+                    string filter= ImFilter("搜索变形", "搜索变形");
                     for (int i = 0; i < morphStates.morphs.Count; i++)
                     {
                         MorphDesc morpth = morphStates.morphs[i];
+                        if (!Contains(morpth.Name, filter)) continue;
                         if (ImGui.SliderFloat(morpth.Name, ref morphStates.Weights.Origin[i], 0, 1))
                         {
                             main.GameDriverContext.RequireResetPhysics = true;
                         }
                     }
+                }
                 ImGui.TreePop();
             }
         }
 
         static void RendererComponent(Coocoo3DMain main, MeshRendererComponent renderer)
         {
-            var io = ImGui.GetIO();
             if (ImGui.TreeNode("材质"))
             {
                 ShowMaterials(main, renderer.Materials);
@@ -786,7 +837,6 @@ vmd格式动作");
                     {
                         StartEditParam();
                     }
-                    ImGui.Checkbox("透明材质", ref material.Transparent);
                     var currentPassSetting = main.RPContext.dynamicContextRead.currentPassSetting;
                     ShowParams(currentPassSetting.ShowParameters, material.Parameters);
                     ShowTextures(main, "material", currentPassSetting.ShowTextures, material.textures);
@@ -828,7 +878,7 @@ vmd格式动作");
             var scene = appBody.CurrentScene;
             for (int i = 0; i < scene.gameObjects.Count; i++)
             {
-                Present.GameObject obj = scene.gameObjects[i];
+                GameObject obj = scene.gameObjects[i];
                 Vector4 p1 = Vector4.Transform(new Vector4(obj.Transform.position, 1), vpMatrix);
                 p1 /= p1.W;
                 p1.Y = -p1.Y;
@@ -913,7 +963,7 @@ vmd格式动作");
                 var _open = Resources();
                 if (_open != null)
                 {
-                    fileOpenResult = _open.file.FullName;
+                    fileOpenResult = _open.FullName;
                     popupOpenResource = false;
                 }
                 ImGui.EndPopup();
@@ -977,7 +1027,7 @@ vmd格式动作");
         }
 
 
-        public static void NewLighting(Coocoo3DMain main)
+        static void NewLighting(Coocoo3DMain main)
         {
             LightingComponent lightingComponent = new LightingComponent();
             lightingComponent.Color = new Vector3(3, 3, 3);
@@ -987,9 +1037,9 @@ vmd格式动作");
             gameObject.Name = "Lighting";
             gameObject.Transform = new(new Vector3(0, 1, 0), Quaternion.CreateFromYawPitchRoll(0, 1.3962634015954636615389526147909f, 0));
             main.CurrentScene.AddGameObject(gameObject);
-            main.RequireRender();
         }
-        public static void NewVolume(Coocoo3DMain main)
+
+        static void NewVolume(Coocoo3DMain main)
         {
             VolumeComponent volumeComponent = new VolumeComponent();
             volumeComponent.Size = new Vector3(100, 50, 100);
@@ -998,10 +1048,9 @@ vmd格式动作");
             gameObject.Name = "Volume";
             gameObject.Transform = new(new Vector3(0, 25, 0), Quaternion.Identity);
             main.CurrentScene.AddGameObject(gameObject);
-            main.RequireRender();
         }
 
-        public static void NewParticle(Coocoo3DMain main)
+        static void NewParticle(Coocoo3DMain main)
         {
             ParticleEffectComponent particleEffectComponent = new ParticleEffectComponent();
             GameObject gameObject = new GameObject();
@@ -1009,7 +1058,6 @@ vmd格式动作");
             gameObject.Name = "Particle";
             gameObject.Transform = new(new Vector3(0, 0, 0), Quaternion.Identity);
             main.CurrentScene.AddGameObject(gameObject);
-            main.RequireRender();
         }
 
         static string fileOpenId = null;
@@ -1033,7 +1081,7 @@ vmd格式动作");
         public static List<FileSystemInfo> storageItems = new List<FileSystemInfo>();
         public static DirectoryInfo currentFolder;
         public static DirectoryInfo viewRequest;
-        public static _openRequest openRequest;
+        public static FileInfo openRequest;
         //public static List<bool> gameObjectSelected = new List<bool>();
 
         static Vector3 QuaternionToEularYXZ(Quaternion quaternion)
@@ -1115,15 +1163,26 @@ vmd格式动作");
         static bool popupParamEdit = false;
         static Dictionary<string, object> paramEdit;
 
-
         static string[] lightTypeString = new[] { "方向光", "点光" };
         static int renderPipelineIndex = 0;
         static string[] renderPipelines = new string[0] { };
         static string[] renderPipelineKeys = new string[0] { };
-    }
-    class _openRequest
-    {
-        public FileInfo file;
-        public DirectoryInfo folder;
+
+        static string ImFilter(string lable, string hint)
+        {
+            uint id = ImGui.GetID(lable);
+            string filter = filters.GetValueOrDefault(id, "");
+            if (ImGui.InputTextWithHint(lable, hint, ref filter, 128))
+            {
+                filters[id] = filter;
+            }
+            return filter;
+        }
+        static Dictionary<uint, string> filters = new Dictionary<uint, string>();
+
+        static bool Contains(string input, string filter)
+        {
+            return input.Contains(filter, StringComparison.CurrentCultureIgnoreCase);
+        }
     }
 }

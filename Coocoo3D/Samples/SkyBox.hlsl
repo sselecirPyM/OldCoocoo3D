@@ -1,21 +1,19 @@
 struct VSIn
 {
-	float4 Pos	: POSITION;			//Position
+	uint vertexId : SV_VertexID;
 };
 
 struct PSIn
 {
-	float4 Pos	: SV_POSITION;		//Position
-	float2 uv	: TEXCOORD;
+	float4 position	: SV_POSITION;
+	float2 texcoord	: TEXCOORD;
 };
 
 PSIn vsmain(VSIn input)
 {
 	PSIn output;
-	output.Pos = float4(input.Pos.xyz, 1);
-	output.Pos.z = 1 - 1e-6;
-	output.uv = input.Pos.xy;
-	//output.uv.y = 1 - output.uv.y;
+	output.texcoord = float2((input.vertexId << 1) & 2, input.vertexId & 2);
+	output.position = float4(output.texcoord.xy * 2.0 - 1.0, 0.0, 1.0);
 
 	return output;
 }
@@ -32,7 +30,7 @@ SamplerState s0 : register(s0);
 
 float4 psmain(PSIn input) : SV_TARGET
 {
-	float4 vx = mul(float4(input.uv,0,1),g_mProjToWorld);
+	float4 vx = mul(float4(input.texcoord * 2 - 1,0,1),g_mProjToWorld);
 	float3 viewDir = vx.xyz / vx.w - g_vCamPos;
 	return float4(EnvCube.Sample(s0, viewDir).rgb * g_skyBoxMultiple * _Brightness, 1);
 }

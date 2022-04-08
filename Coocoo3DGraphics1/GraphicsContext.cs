@@ -32,6 +32,8 @@ namespace Coocoo3DGraphics
         public Dictionary<int, ulong> currentSRVs = new Dictionary<int, ulong>();
         public Dictionary<int, ulong> currentUAVs = new Dictionary<int, ulong>();
 
+        public int TriangleCount { get; private set; }
+
         public void Reload(GraphicsDevice device)
         {
             this.graphicsDevice = device;
@@ -906,6 +908,7 @@ namespace Coocoo3DGraphics
             m_commandList.Reset(graphicsDevice.GetCommandAllocator());
             m_commandList.SetDescriptorHeaps(1, new ID3D12DescriptorHeap[] { graphicsDevice.cbvsrvuavHeap.heap });
             ClearState();
+            TriangleCount = 0;
         }
 
         public void ClearState()
@@ -1043,11 +1046,11 @@ namespace Coocoo3DGraphics
         {
             PipelineBinding();
             m_commandList.DrawInstanced(vertexCount, 1, startVertexLocation, 0);
+            TriangleCount += vertexCount / 3;
         }
 
         public void DrawIndexed(int indexCount, int startIndexLocation, int baseVertexLocation)
         {
-            PipelineBinding();
             DrawIndexedInstanced(indexCount, 1, startIndexLocation, baseVertexLocation, 0);
         }
 
@@ -1055,6 +1058,7 @@ namespace Coocoo3DGraphics
         {
             PipelineBinding();
             m_commandList.DrawIndexedInstanced(indexCountPerInstance, instanceCount, startIndexLocation, baseVertexLocation, startInstanceLocation);
+            TriangleCount += indexCountPerInstance / 3 * instanceCount;
         }
 
         void PipelineBindingCompute()
@@ -1212,11 +1216,6 @@ namespace Coocoo3DGraphics
         public void Present(SwapChain swapChain, bool vsync)
         {
             presents[swapChain] = vsync;
-        }
-
-        public static void BeginAlloctor(GraphicsDevice device)
-        {
-            device.GetCommandAllocator().Reset();
         }
 
         void CreateBuffer(int bufferLength, ref ID3D12Resource resource, ResourceStates resourceStates = ResourceStates.CopyDestination, HeapType heapType = HeapType.Default)

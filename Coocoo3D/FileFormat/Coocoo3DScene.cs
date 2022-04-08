@@ -58,7 +58,6 @@ namespace Coocoo3D.FileFormat
     public class _cooMaterial
     {
         public Dictionary<string, string> textures;
-        public bool transparent;
 
         public Dictionary<string, bool> bValue;
         public Dictionary<string, int> iValue;
@@ -115,7 +114,6 @@ namespace Coocoo3D.FileFormat
                     foreach (var material in renderer.Materials)
                     {
                         _cooMaterial material1 = new _cooMaterial();
-                        material1.transparent = material.Transparent;
                         material1.textures = new Dictionary<string, string>(material.textures);
 
                         sceneObject.materials[material.Name] = material1;
@@ -142,7 +140,6 @@ namespace Coocoo3D.FileFormat
                     foreach (var material in meshRenderer.Materials)
                     {
                         _cooMaterial material1 = new _cooMaterial();
-                        material1.transparent = material.Transparent;
                         material1.textures = new Dictionary<string, string>(material.textures);
 
                         sceneObject.materials[material.Name] = material1;
@@ -273,7 +270,6 @@ namespace Coocoo3D.FileFormat
             {
                 if (!materials.TryGetValue(mat.Name, out _cooMaterial mat1)) continue;
 
-                mat.Transparent = mat1.transparent;
 
                 _func2(mat1.fValue, mat.Parameters);
                 _func2(mat1.f2Value, mat.Parameters);

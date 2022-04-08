@@ -36,7 +36,8 @@ public static class UnionShaderDeferred
                 {
                     List<ValueTuple<string, string>> keywords = new();
                     var material = renderable.material;
-                    if (material.Transparent) continue;
+                    bool transparent = (bool?)param.GetSettingsValue(material, "Transparent") == true;
+                    if (transparent) continue;
                     var psoDesc = param.GetPSODesc();
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(new(debugKeyword, "1"));
@@ -91,7 +92,7 @@ public static class UnionShaderDeferred
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("DeferredFinal.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        param.DrawScreenQuad();
+                        param.DrawQuad();
                 }
                 break;
             case "DenoisePass":
@@ -111,7 +112,7 @@ public static class UnionShaderDeferred
                     pso = mainCaches.GetPSOWithKeywords(keywords, Path.GetFullPath("RayTracingDenoise.hlsl", param.relativePath));
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
-                        param.DrawScreenQuad();
+                        param.DrawQuad();
                 }
                 break;
             default:

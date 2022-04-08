@@ -8,23 +8,20 @@ Texture2D texture0 : register(t0);
 SamplerState s0 : register(s0);
 struct VSIn
 {
-	float4 Pos	: POSITION;			//Position
+	uint vertexId : SV_VertexID;
 };
 
 struct PSIn
 {
-	float4 Pos	: SV_POSITION;		//Position
-	float2 uv	: TEXCOORD;
+	float4 position	: SV_POSITION;
+	float2 texcoord	: TEXCOORD;
 };
 
 PSIn vsmain(VSIn input)
 {
 	PSIn output;
-	output.Pos = float4(input.Pos.xyz, 1);
-	output.Pos.z = 1 - 1e-6;
-	output.uv = input.Pos.xy;
-	output.uv = -output.uv * 0.5 + 0.5;
-	output.uv.x = 1 - output.uv.x;
+	output.texcoord = float2((input.vertexId << 1) & 2, input.vertexId & 2);
+	output.position = float4(output.texcoord.xy * 2.0 - 1.0, 0.0, 1.0);
 
 	return output;
 }
@@ -50,8 +47,9 @@ const static float weights[16] = {
 #ifdef BLOOM_1
 float4 psmain(PSIn input) : SV_TARGET
 {
+	input.texcoord.y = 1 - input.texcoord.y;
 	float2 offset = float2(1, 0) / textureSize;
-	float2 coords = input.uv;
+	float2 coords = input.texcoord;
 	float4 color = 0;
 	for (int i = countOfWeights - 1; i > 0; i--)
 	{
@@ -68,8 +66,9 @@ float4 psmain(PSIn input) : SV_TARGET
 #ifdef BLOOM_2
 float4 psmain(PSIn input) : SV_TARGET
 {
+	input.texcoord.y = 1 - input.texcoord.y;
 	float2 offset = float2(0, 2) / textureSize;
-	float2 coords = input.uv;
+	float2 coords = input.texcoord;
 
 	float4 color = 0;
 	for (int i = countOfWeights - 1; i > 0; i--)

@@ -91,7 +91,7 @@ cbuffer cb0 : register(b0) {
 	int2 textureSize;
 }
 
-[numthreads(16, 16, 1)]
+[numthreads(8, 8, 1)]
 void csmain(uint3 dtid : SV_DispatchThreadID)
 {
 	brdf[dtid.xy] = float4(IntegrateBRDF((dtid.x + 0.5) / textureSize.x, (dtid.y + 0.5) / textureSize.y), 0, 0);

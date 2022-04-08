@@ -50,8 +50,8 @@ namespace Coocoo3DGraphics
     public enum InputLayout
     {
         mmd = 0,
-        postProcess = 1,
-        skinned = 2,
+        noInput = 1,
+        //skinned = 2,
         imgui = 3,
         particle = 4,
     };
@@ -141,16 +141,17 @@ namespace Coocoo3DGraphics
             new InputElementDescription("WEIGHTS", 0, Format.R32G32B32A32_Float, 0, 5)
             );
 
-        static readonly InputLayoutDescription inputLayoutSkinned = new InputLayoutDescription(
-            new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0),
-            new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 0),
-            new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0),
-            new InputElementDescription("TANGENT", 0, Format.R32G32B32A32_Float, 0),
-            new InputElementDescription("EDGESCALE", 0, Format.R32_Float, 0)
-            );
-        static readonly InputLayoutDescription inputLayoutPosOnly = new InputLayoutDescription(
-            new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0)
-            );
+        //static readonly InputLayoutDescription inputLayoutSkinned = new InputLayoutDescription(
+        //    new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0),
+        //    new InputElementDescription("NORMAL", 0, Format.R32G32B32_Float, 0),
+        //    new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0),
+        //    new InputElementDescription("TANGENT", 0, Format.R32G32B32A32_Float, 0),
+        //    new InputElementDescription("EDGESCALE", 0, Format.R32_Float, 0)
+        //    );
+        //static readonly InputLayoutDescription inputLayoutPosOnly = new InputLayoutDescription(
+        //    new InputElementDescription("POSITION", 0, Format.R32G32B32_Float, 0)
+        //    );
+        static readonly InputLayoutDescription inputLayoutNoInput = new InputLayoutDescription();
         static readonly InputLayoutDescription inputLayoutImGui = new InputLayoutDescription(
             new InputElementDescription("POSITION", 0, Format.R32G32_Float, 0),
             new InputElementDescription("TEXCOORD", 0, Format.R32G32_Float, 0),
@@ -228,10 +229,10 @@ namespace Coocoo3DGraphics
 
                 if (psoDesc.inputLayout == InputLayout.mmd)
                     state.InputLayout = inputLayoutMMD;
-                else if (psoDesc.inputLayout == InputLayout.postProcess)
-                    state.InputLayout = inputLayoutPosOnly;
-                else if (psoDesc.inputLayout == InputLayout.skinned)
-                    state.InputLayout = inputLayoutSkinned;
+                else if (psoDesc.inputLayout == InputLayout.noInput)
+                    state.InputLayout = inputLayoutNoInput;
+                //else if (psoDesc.inputLayout == InputLayout.skinned)
+                //    state.InputLayout = inputLayoutSkinned;
                 else if (psoDesc.inputLayout == InputLayout.imgui)
                     state.InputLayout = inputLayoutImGui;
                 else if (psoDesc.inputLayout == InputLayout.particle)

@@ -647,9 +647,9 @@
   "Dispatcher": "DRDispatcher.cs",
   "ShowTextures": {
     "_Albedo": "",
-    "_Emissive": "",
     "_Metallic": "",
     "_Roughness": "",
+    "_Emissive": "",
     "_Normal": ""
   },
   "ShowSettingTextures": {
@@ -657,6 +657,10 @@
   "Texture2Ds": {
   },
   "ShowParameters": {
+    "Transparent": {
+      "Name": "透明材质",
+      "Type": "bool"
+    },
     "Metallic": {
       "Name": "金属度",
       "Type": "sliderFloat",
@@ -778,8 +782,7 @@
     },
     "EnableBloom": {
       "Name": "启用泛光",
-      "Type": "bool",
-      "Default": "true"
+      "Type": "bool"
     },
     "BloomThreshold": {
       "Name": "泛光阈值",
@@ -877,7 +880,7 @@
       "Name": "启用TAA抗锯齿",
       "Type": "bool",
       "Default": "false",
-      "Tooltip": "与bloom共用会导致性能降低"
+      "Tooltip": ""
     },
     "TAAFrameFactor": {
       "Name": "TAA当前帧因子",

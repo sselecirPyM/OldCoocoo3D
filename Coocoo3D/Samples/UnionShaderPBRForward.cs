@@ -39,13 +39,14 @@ public static class UnionShaderPBRForward
                 foreach (var renderable in param.MeshRenderables())
                 {
                     var material = renderable.material;
-                    if (param.passName == "DrawTransparentPass" && !material.Transparent) continue;
+                    bool transparent = (bool?)param.GetSettingsValue(material, "Transparent") == true;
+                    if (param.passName == "DrawTransparentPass" && !transparent) continue;
 
                     var psoDesc = param.GetPSODesc();
                     bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
 
                     List<ValueTuple<string, string>> keywords = new();
-                    if (!material.Transparent)
+                    if (!transparent)
                         psoDesc.blendState = BlendState.None;
                     if (debugKeywords.TryGetValue(param.settings.DebugRenderType, out string debugKeyword))
                         keywords.Add(new(debugKeyword,"1"));
@@ -96,7 +97,7 @@ public static class UnionShaderPBRForward
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                     {
-                        param.DrawScreenQuad();
+                        param.DrawQuad();
                     }
                 }
                 break;

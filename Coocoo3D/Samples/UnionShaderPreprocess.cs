@@ -49,7 +49,7 @@ public static class UnionShaderPreprocess
 
         var computeShader = mainCaches.GetComputeShader(Path.GetFullPath("BRDFLUT.hlsl", param.relativePath));
         if (computeShader != null && graphicsContext.SetPSO(computeShader))
-            graphicsContext.Dispatch(brdfTex.width / 16, brdfTex.height / 16, 1);
+            graphicsContext.Dispatch(brdfTex.width / 8, brdfTex.height / 8, 1);
         return true;
     }
 }

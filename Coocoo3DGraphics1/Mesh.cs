@@ -59,27 +59,6 @@ namespace Coocoo3DGraphics
                 this.m_indexCount = indexData.Length;
             }
         }
-        public void ReloadNDCQuad()
-        {
-            this.m_vertexCount = 4;
-            Vector3[] positions = {
-                new Vector3(-1, -1, 0),
-                new Vector3(-1, 1, 0),
-                new Vector3(1, -1, 0),
-                new Vector3(1, 1, 0),
-            };
-            int[] indices =
-            {
-                0, 1, 2,
-                2, 1, 3,
-            };
-            byte[] _data = new byte[12 * 4];
-            MemoryMarshal.Cast<Vector3, byte>(positions).CopyTo(_data);
-            AddBuffer<byte>(_data, 0);
-            m_indexCount = 6;
-            m_indexData = new byte[4 * 6];
-            MemoryMarshal.Cast<int, byte>(indices).CopyTo(m_indexData);
-        }
 
         public int GetIndexCount()
         {

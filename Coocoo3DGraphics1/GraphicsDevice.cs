@@ -46,7 +46,7 @@ namespace Coocoo3DGraphics
         List<ID3D12GraphicsCommandList4> m_commandLists = new List<ID3D12GraphicsCommandList4>();
         List<ID3D12GraphicsCommandList4> m_commandLists1 = new List<ID3D12GraphicsCommandList4>();
 
-        internal IDXGIFactory4 m_dxgiFactory;
+        internal IDXGIFactory6 m_dxgiFactory;
 
         internal ID3D12CommandQueue commandQueue;
         ID3D12CommandAllocator[] commandAllocators = new ID3D12CommandAllocator[c_frameCount];
@@ -63,7 +63,7 @@ namespace Coocoo3DGraphics
             CreateDeviceResource();
         }
 
-        public void CreateDeviceResource()
+        internal void CreateDeviceResource()
         {
 #if DEBUG
             if (D3D12.D3D12GetDebugInterface<ID3D12Debug>(out var pDx12Debug).Success)
@@ -75,17 +75,23 @@ namespace Coocoo3DGraphics
             while (true)
             {
                 adapter?.Dispose();
-                var hr = m_dxgiFactory.EnumAdapters(index1, out adapter);
+                var hr = m_dxgiFactory.EnumAdapterByGpuPreference(index1, GpuPreference.HighPerformance, out adapter);
                 if (hr == Result.Ok)
                 {
-                    break;
+                    var hr1 = D3D12.D3D12CreateDevice<ID3D12Device5>(this.adapter, out var device1);
+                    if (hr1 == Result.Ok)
+                    {
+                        device?.Dispose();
+                        device = device1;
+                        break;
+                    }
                 }
+                else if (hr == -2005270526)
+                    throw new Exception("No direct3d12 device.");
                 index1++;
             }
             m_deviceDescription = adapter.Description.Description;
             m_deviceVideoMem = (ulong)(long)adapter.Description.DedicatedVideoMemory;
-            device?.Dispose();
-            ThrowIfFailed(D3D12.D3D12CreateDevice(this.adapter, out device));
             m_isRayTracingSupport = CheckRayTracingSupport(device);
 
             ThrowIfFailed(device.CreateCommandQueue(new CommandQueueDescription(CommandListType.Direct), out commandQueue));
@@ -150,6 +156,11 @@ namespace Coocoo3DGraphics
         {
             if (resource != null)
                 m_recycleList.Add(new recycleResource(resource, currentFenceValue));
+        }
+
+        public void RenderBegin()
+        {
+            GetCommandAllocator().Reset();
         }
 
         public void RenderComplete()

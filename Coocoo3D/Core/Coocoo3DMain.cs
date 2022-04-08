@@ -16,6 +16,7 @@ namespace Coocoo3D.Core
     public class Coocoo3DMain : IDisposable
     {
         GraphicsDevice graphicsDevice { get => RPContext.graphicsDevice; }
+        internal string deviceDescription { get => graphicsDevice.GetDeviceDescription(); }
         public MainCaches mainCaches { get => RPContext.mainCaches; }
 
         public Scene CurrentScene;
@@ -140,7 +141,7 @@ namespace Coocoo3D.Core
 
             imguiInput.Update();
             UI.UIImGui.GUI(this);
-            GraphicsContext.BeginAlloctor(graphicsDevice);
+            graphicsDevice.RenderBegin();
             graphicsContext.Begin();
             RPContext.UpdateGPUResource();
             HybirdRenderPipeline.BeginFrame(RPContext);
@@ -166,6 +167,7 @@ namespace Coocoo3D.Core
             graphicsContext.Present(RPContext.swapChain, performanceSettings.VSync);
             graphicsContext.EndCommand();
             graphicsContext.Execute();
+            drawTriangleCount = graphicsContext.TriangleCount;
             graphicsDevice.RenderComplete();
         }
 
@@ -177,6 +179,7 @@ namespace Coocoo3D.Core
         }
         #endregion
         public bool Recording = false;
+        public int drawTriangleCount = 0;
 
         public void ToPlayMode()
         {

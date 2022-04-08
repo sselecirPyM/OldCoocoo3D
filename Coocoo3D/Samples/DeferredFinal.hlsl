@@ -46,7 +46,7 @@ cbuffer cb0 : register(b0)
 	float g_cameraNearClip;
 	float g_cameraFOV;
 	float g_cameraAspectRatio;
-	float3   g_camPos;
+	float3 g_camPos;
 	float g_skyBoxMultiple;
 	float3 _fogColor;
 	float _fogDensity;
@@ -98,23 +98,22 @@ float3 NormalDecode(float2 enc)
 	return nn.xyz * 2 + float3(0, 0, -1);
 }
 
-struct PSIn
-{
-	float4 Pos	: SV_POSITION;		//Position
-	float2 uv	: TEXCOORD;
-};
 struct VSIn
 {
-	float4 Pos	: POSITION;			//Position
+	uint vertexId : SV_VertexID;
+};
+
+struct PSIn
+{
+	float4 position	: SV_POSITION;
+	float2 texcoord	: TEXCOORD;
 };
 
 PSIn vsmain(VSIn input)
 {
 	PSIn output;
-	output.Pos = float4(input.Pos.xyz, 1);
-	output.Pos.z = 1 - 1e-6;
-	output.uv = input.Pos.xy;
-	//output.uv.y = 1 - output.uv.y;
+	output.texcoord = float2((input.vertexId << 1) & 2, input.vertexId & 2);
+	output.position = float4(output.texcoord.xy * 2.0 - 1.0, 0.0, 1.0);
 
 	return output;
 }
@@ -186,7 +185,7 @@ float pointInLight(int index, float3 position)
 #endif
 float4 psmain(PSIn input) : SV_TARGET
 {
-	float2 uv = input.uv * 0.5 + 0.5;
+	float2 uv = input.texcoord;
 	uv.y = 1 - uv.y;
 
 	float depth1 = gbufferDepth.SampleLevel(s3, uv, 0).r;
@@ -196,7 +195,7 @@ float4 psmain(PSIn input) : SV_TARGET
 	float4 buffer3Color = gbuffer3.SampleLevel(s3, uv, 0);
 
 
-	float4 wPos = mul(float4(input.uv, depth1, 1), g_mProjToWorld);
+	float4 wPos = mul(float4(input.texcoord * 2 - 1, depth1, 1), g_mProjToWorld);
 	wPos /= wPos.w;
 
 	float3 V = normalize(g_camPos - wPos);
@@ -308,7 +307,6 @@ float4 psmain(PSIn input) : SV_TARGET
 				float3 NdotH = saturate(dot(N, H));
 
 				inShadow = pointInLight(0, wPos.xyz);
-
 
 #if ENABLE_DIFFUSE
 				float diffuse_factor = Diffuse_Burley(NdotL, NdotV, LdotH, roughness);

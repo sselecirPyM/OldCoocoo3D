@@ -18,7 +18,7 @@ namespace Coocoo3D.UI
     {
         public static DirectoryInfo folder;
 
-        public static void OnFrame(Coocoo3DMain appBody)
+        public static void OnFrame(Coocoo3DMain main)
         {
             if (UIImGui.requireOpenFolder.SetFalse())
             {
@@ -27,9 +27,9 @@ namespace Coocoo3D.UI
                 {
                     folder = new DirectoryInfo(path);
                     UIImGui.viewRequest = folder;
-                    appBody.mainCaches.AddFolder(folder);
+                    main.mainCaches.AddFolder(folder);
                 }
-                appBody.RequireRender();
+                main.RequireRender();
             }
             if (UIImGui.viewRequest != null)
             {
@@ -37,40 +37,38 @@ namespace Coocoo3D.UI
                 UIImGui.viewRequest = null;
                 UIImGui.currentFolder = view;
                 SetViewFolder(view.GetFileSystemInfos());
-                appBody.RequireRender();
+                main.RequireRender();
             }
             if (UIImGui.openRequest != null)
             {
-                var requireOpen = UIImGui.openRequest;
+                var file = UIImGui.openRequest;
                 UIImGui.openRequest = null;
-                var file = requireOpen.file;
-                var folder = requireOpen.folder;
 
                 string ext = file.Extension.ToLower();
                 switch (ext)
                 {
                     case ".pmx":
                     case ".gltf":
-                        LoadEntityIntoScene(appBody, appBody.CurrentScene, file);
+                        LoadEntityIntoScene(main, main.CurrentScene, file);
                         break;
                     case ".vmd":
                         BinaryReader reader = new BinaryReader(file.OpenRead());
                         VMDFormat motionSet = VMDFormat.Load(reader);
                         if (motionSet.CameraKeyFrames.Count != 0)
                         {
-                            var camera = appBody.RPContext.currentChannel.camera;
+                            var camera = main.RPContext.currentChannel.camera;
                             camera.cameraMotion.cameraKeyFrames = motionSet.CameraKeyFrames;
                             camera.CameraMotionOn = true;
                         }
                         else
                         {
-                            foreach (var gameObject in appBody.SelectedGameObjects)
+                            foreach (var gameObject in main.SelectedGameObjects)
                             {
                                 var renderer = gameObject.GetComponent<Components.MMDRendererComponent>();
                                 if (renderer != null) { renderer.motionPath = file.FullName; }
                             }
 
-                            appBody.GameDriverContext.RequireResetPhysics = true;
+                            main.GameDriverContext.RequireResetPhysics = true;
                         }
                         break;
                     case ".png":
@@ -82,31 +80,31 @@ namespace Coocoo3D.UI
                     case ".tiff":
                     case ".tga":
                     case ".dds":
-                        appBody.RPContext.SetSkyBox(file.FullName);
+                        main.RPContext.SetSkyBox(file.FullName);
                         break;
                     case ".coocoo3dscene":
                         var scene = ReadJsonStream<Coocoo3DScene>(file.OpenRead());
-                        scene.ToScene(appBody);
+                        scene.ToScene(main);
                         break;
                     case ".coocoox":
-                        appBody.RPContext.mainCaches.GetPassSetting(file.FullName);
-                        appBody.RPContext.currentPassSetting1 = file.FullName;
+                        main.RPContext.mainCaches.GetPassSetting(file.FullName);
+                        main.RPContext.currentPassSetting1 = file.FullName;
                         break;
                     case ".cs":
-                        appBody.RPContext.mainCaches.GetUnionShader(file.FullName);
+                        main.RPContext.mainCaches.GetUnionShader(file.FullName);
                         break;
                 }
-                appBody.RequireRender(true);
+                main.RequireRender(true);
             }
             if (UIImGui.requestRecord.SetFalse())
             {
-                appBody.GameDriverContext.NeedRender = 0;
+                main.GameDriverContext.NeedRender = 0;
                 string path = OpenResourceFolder();
                 if (!string.IsNullOrEmpty(path))
                 {
                     DirectoryInfo folder = new DirectoryInfo(path);
                     if (!folder.Exists) return;
-                    appBody.ToRecordMode(folder);
+                    main.ToRecordMode(folder);
                 }
             }
             if (UIImGui.requestSave.SetFalse())
@@ -125,7 +123,7 @@ namespace Coocoo3D.UI
                 fileDialog.maxFileTitle = fileDialog.fileTitle.Length;
                 if (GetSaveFileName(fileDialog))
                 {
-                    var scene = Coocoo3DScene.FromScene(appBody);
+                    var scene = Coocoo3DScene.FromScene(main);
 
                     SaveJsonStream(new FileInfo(fileDialog.file).OpenWrite(), scene);
                 }

@@ -93,7 +93,7 @@ namespace Coocoo3D.RenderPipeline
         public double realDeltaTime { get => rp.dynamicContextRead.RealDeltaTime; }
         public double time { get => rp.dynamicContextRead.Time; }
 
-        public Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
+        internal Mesh GetMesh(string path) => mainCaches.GetModel(path).GetMesh();
 
         public Random _random;
 
@@ -483,10 +483,10 @@ namespace Coocoo3D.RenderPipeline
             }
         }
 
-        public void DrawScreenQuad()
+        public void DrawQuad(int instanceCount = 1)
         {
             graphicsContext.SetMesh(rp.quadMesh);
-            graphicsContext.DrawIndexed(6, 0, 0);
+            graphicsContext.DrawIndexedInstanced(6, instanceCount, 0, 0, 0);
         }
 
         public void DrawRenderable(in MeshRenderable renderable)
@@ -623,7 +623,7 @@ namespace Coocoo3D.RenderPipeline
             }
             else
             {
-                psoDesc.inputLayout = InputLayout.postProcess;
+                psoDesc.inputLayout = InputLayout.noInput;
             }
             return psoDesc;
         }

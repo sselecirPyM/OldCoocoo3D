@@ -2,6 +2,7 @@
 using Coocoo3D.Core;
 using Coocoo3D.Numerics;
 using Coocoo3D.ResourceWarp;
+using Coocoo3D.Utility;
 using Coocoo3DGraphics;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
-using Coocoo3D.Utility;
 using Vortice.DXGI;
 using System.Runtime.InteropServices;
 
@@ -116,7 +116,7 @@ namespace Coocoo3D.RenderPipeline
 
             SkyBoxChanged = true;
 
-            quadMesh.ReloadNDCQuad();
+            quadMesh.ReloadIndex<int>(4, new int[] { 0, 1, 2, 2, 1, 3 });
             mainCaches.MeshReadyToUpload.Enqueue(quadMesh);
             DirectoryInfo directoryInfo = new DirectoryInfo("Samples");
             foreach (var file in directoryInfo.GetFiles("*.coocoox"))

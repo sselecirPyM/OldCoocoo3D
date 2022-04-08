@@ -41,13 +41,14 @@ public static class UnionShaderToon
                 foreach (var renderable in param.MeshRenderables())
                 {
                     var material = renderable.material;
-                    if (param.passName == "DrawTransparentPass" && !material.Transparent) continue;
+                    bool transparent = (bool?)param.GetSettingsValue(material, "Transparent") == true;
+                    if (param.passName == "DrawTransparentPass" && !transparent) continue;
                     if (param.passName == "OutlinePass" && !(bool)param.GetSettingsValue(material, "ToonShading")) continue;
                     var psoDesc = param.GetPSODesc();
                     bool receiveShadow = (bool)param.GetSettingsValue(material, "ReceiveShadow");
 
                     List<ValueTuple<string, string>> keywords = new();
-                    if (!material.Transparent)
+                    if (!transparent)
                         psoDesc.blendState = BlendState.None;
                     if (param.passName == "OutlinePass")
                     {
@@ -106,7 +107,7 @@ public static class UnionShaderToon
                     param.SetSRVs(param.pass.SRVs, null);
                     if (pso != null && graphicsContext.SetPSO(pso, psoDesc))
                     {
-                        param.DrawScreenQuad();
+                        param.DrawQuad();
                     }
                 }
                 break;

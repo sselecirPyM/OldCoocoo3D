@@ -23,30 +23,29 @@ float3 NormalDecode(float2 enc)
 	return nn.xyz * 2 + float3(0, 0, -1);
 }
 
-struct PSIn
-{
-	float4 Pos	: SV_POSITION;		//Position
-	float2 uv	: TEXCOORD;
-};
 struct VSIn
 {
-	float4 Pos	: POSITION;			//Position
+	uint vertexId : SV_VertexID;
+};
+
+struct PSIn
+{
+	float4 position	: SV_POSITION;
+	float2 texcoord	: TEXCOORD;
 };
 
 PSIn vsmain(VSIn input)
 {
 	PSIn output;
-	output.Pos = float4(input.Pos.xyz, 1);
-	output.Pos.z = 1 - 1e-6;
-	output.uv = input.Pos.xy;
-	//output.uv.y = 1 - output.uv.y;
+	output.texcoord = float2((input.vertexId << 1) & 2, input.vertexId & 2);
+	output.position = float4(output.texcoord.xy * 2.0 - 1.0, 0.0, 1.0);
 
 	return output;
 }
 
 float4 psmain(PSIn input) : SV_TARGET
 {
-	float2 uv = input.uv * 0.5 + 0.5;
+	float2 uv = input.texcoord;
 	uv.y = 1 - uv.y;
 
 	float depth0 = gbufferDepth.SampleLevel(s3, uv, 0).r;

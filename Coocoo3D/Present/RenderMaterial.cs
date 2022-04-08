@@ -15,7 +15,6 @@ namespace Coocoo3D.Present
         public int vertexStart;
         public int vertexCount;
         public bool DrawDoubleFace;
-        public bool Transparent;
         public Dictionary<string, string> textures = new Dictionary<string, string>();
         public Dictionary<string, object> Parameters = new Dictionary<string, object>();
 
